@@ -47,3 +47,8 @@ coverage/
 # Impeccable skill — platform engine binaries (16MB, identical per harness).
 # The launcher downloads the engine on first run, so docs travel but binaries don't.
 **/skills/impeccable/scripts/bin/
+
+# Three.js graphics skills (~94MB per harness, binary LUTs). Installed locally per
+# CLI from https://threejsresources.com/ai/skills; not versioned.
+**/skills/threejs-*/
+**/skills/.threejs-awesome-graphics-agent-skills.json
