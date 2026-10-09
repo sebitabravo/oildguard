@@ -33,3 +33,14 @@ bun test src
 ```
 
 `bun run build` runs `astro check` followed by `astro build`. `bun run preview` serves the production build on port 5173, and `bun test src` runs the frontend tests.
+
+## Docker Compose
+
+The frontend service reads `PUBLIC_BACKEND_URL` and defaults to
+`http://localhost:8000`. After changing frontend dependencies, recreate the
+service and renew its anonymous `node_modules` volume so it cannot mask the
+dependencies baked into the new image:
+
+```sh
+docker compose up -d --build -V frontend
+```

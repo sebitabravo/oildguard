@@ -72,10 +72,16 @@ services:
     container_name: oilguard-frontend
     ports:
       - "5173:5173"
+    volumes:
+      # Bind mount so the dev server serves live source instead of the frozen
+      # COPY baked in at build time. The anonymous volume preserves the image's
+      # node_modules, so dependencies stay image-managed rather than host-managed.
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
     environment:
-      VITE_BACKEND_URL: http://localhost:8000
+      PUBLIC_BACKEND_URL: http://localhost:8000
 
 volumes:
   influxdb-data:

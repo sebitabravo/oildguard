@@ -6,7 +6,8 @@ Field names match `SignalRow` in `frontend/src/sim/signals.ts` 1:1
 OpenAPI: `GET /openapi.json`, interactive docs at `/docs`.
 
 Base URL (local): `http://localhost:8000`.
-In compose the dashboard uses `VITE_BACKEND_URL=http://localhost:8000`.
+The frontend reads `PUBLIC_BACKEND_URL`; Compose sets it to
+`http://localhost:8000` for the local dashboard.
 
 ## Endpoints
 

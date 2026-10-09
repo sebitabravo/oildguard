@@ -2,12 +2,12 @@
 //
 // Thin typed wrapper over backend/main.py (see backend/API.md).
 // Consumed by the T11 dashboard; no UI changes in T8.
-// Base URL defaults to VITE_BACKEND_URL (compose sets http://localhost:8000).
+// Base URL defaults to PUBLIC_BACKEND_URL (compose sets http://localhost:8000).
 
 import type { RestWindow, SignalRow } from "./signals";
 
 export const BACKEND_URL: string =
-  (import.meta.env?.VITE_BACKEND_URL as string | undefined) ??
+  (import.meta.env?.PUBLIC_BACKEND_URL as string | undefined) ??
   "http://localhost:8000";
 
 export interface HealthResponse {
