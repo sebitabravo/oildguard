@@ -430,6 +430,13 @@ export default function BenchScene({
     renderer.domElement.style.cursor = "grab";
 
     // HTML overlay labels, positioned imperatively each frame (no re-render).
+    // T5 fix: pressure + temperature markers sit close together from the
+    // default camera, so their labels overlapped. Each label gets a small
+    // vertical nudge (pressure up, temperature down) to keep both readable.
+    const LABEL_DY: Record<string, number> = {
+      pressure: -14,
+      temperature: 16,
+    };
     const proj = new THREE.Vector3();
     const placeLabels = () => {
       const w = host.clientWidth;
@@ -440,7 +447,7 @@ export default function BenchScene({
         proj.set(...sensor.position).project(camera);
         const visible = proj.z < 1;
         const x = (proj.x * 0.5 + 0.5) * w;
-        const y = (-proj.y * 0.5 + 0.5) * h;
+        const y = (-proj.y * 0.5 + 0.5) * h + (LABEL_DY[sensor.id] ?? 0);
         el.style.display = visible ? "block" : "none";
         el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(12px, -50%)`;
       }

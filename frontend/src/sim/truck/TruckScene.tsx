@@ -8,23 +8,45 @@ import {
   HAUL_STATE_HEX,
   LOAD_POS,
   WAIT_PATH,
+  isMovingState,
   isRecalState,
   stateAt,
   type HaulState,
 } from "./cycle";
 
-// T4 truck + open-pit scene (Sim B, S2).
+// T4 truck + open-pit scene (Sim B, S2) + T5 modes/cameras polish.
 // Simplified 930E (chassis box + cab + tiltable dump bed + 6 cylinder
 // wheels, rear-axle pair highlighted as the GDY106 motorized units) on a
 // haul-road loop with LOAD / HAUL / DUMP / WAIT ground pads. The haul-cycle
 // FSM auto-loops the truck along waypoints; the RECAL badge follows
 // measured stillness (stopped + leveled + engine-on), and wheel spin is
 // illustrative — true rotor/wheel speeds are shown as text narrative.
+// T5 adds: moving (blue) / rest (green) mode tint on the truck + HUD badge,
+// camera presets (Pit / Cab / Side / Wheel, lerped; any manual orbit drops
+// back to free), and pause + 1 s step support via the stepTick prop.
+//
+// Honesty note (kept from T4): WAIT is the empty RETURN DRIVE, so it is a
+// moving state — the RECAL badge stays gated during WAIT and lights only at
+// LOAD / DUMP. See docs/t5-modes-cameras.md.
 
 interface TruckSceneProps {
   paused: boolean;
+  /** Increment to advance the FSM clock 1 s (only meaningful while paused). */
+  stepTick: number;
   onPhase: (state: HaulState) => void;
 }
+
+type CamPreset = "pit" | "cab" | "side" | "wheel" | "free";
+
+const CAM_PRESETS: Array<{ id: Exclude<CamPreset, "free">; label: string }> = [
+  { id: "pit", label: "Pit overview" },
+  { id: "cab", label: "Cab" },
+  { id: "side", label: "Side" },
+  { id: "wheel", label: "Wheel close-up" },
+];
+
+const MODE_MOVING_CSS = "#3a7bd5";
+const MODE_REST_CSS = "#2fbf71";
 
 interface ZoneDef {
   id: HaulState;
@@ -90,7 +112,7 @@ function pathPos(state: HaulState, tInState: number): [number, number] {
   return [LOAD_POS[0], LOAD_POS[1]];
 }
 
-export default function TruckScene({ paused, onPhase }: TruckSceneProps) {
+export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const labelRefs = useRef(new Map<string, HTMLDivElement>());
   const barRef = useRef<HTMLDivElement>(null);
@@ -98,6 +120,19 @@ export default function TruckScene({ paused, onPhase }: TruckSceneProps) {
   pausedRef.current = paused;
   const onPhaseRef = useRef(onPhase);
   onPhaseRef.current = onPhase;
+  // Camera preset is mirrored in a ref: the mount effect runs once, so the
+  // animation loop reads presetRef (live) while buttons render presetUi.
+  const [presetUi, setPresetUi] = useState<CamPreset>("pit");
+  const presetRef = useRef<CamPreset>("pit");
+  const setPreset = (p: CamPreset) => {
+    presetRef.current = p;
+    setPresetUi(p);
+  };
+  // Step requests accumulate here; the loop consumes them as +1 s jumps.
+  const pendingStepRef = useRef(0);
+  useEffect(() => {
+    if (stepTick > 0) pendingStepRef.current += 1;
+  }, [stepTick]);
   const [hud, setHud] = useState<{ state: HaulState; cycle: number }>({
     state: "LOAD",
     cycle: 1,
@@ -127,6 +162,14 @@ export default function TruckScene({ paused, onPhase }: TruckSceneProps) {
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.update();
+    // T5: any manual orbit drops the camera back to free (presets re-engage
+    // from the buttons; no fight between follow-lerp and the user).
+    controls.addEventListener("start", () => {
+      if (presetRef.current !== "free") {
+        presetRef.current = "free";
+        setPresetUi("free");
+      }
+    });
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.9));
     const directional = new THREE.DirectionalLight(0xffffff, 1.6);
@@ -187,6 +230,15 @@ export default function TruckScene({ paused, onPhase }: TruckSceneProps) {
       oreMat,
       groundMat,
     ];
+    // T5 mode ring: flat glow under the truck, blue while moving, green at
+    // rest. Follows the truck automatically (child of the truck group).
+    const modeRingMat = new THREE.MeshBasicMaterial({
+      color: 0x2fbf71,
+      transparent: true,
+      opacity: 0.55,
+      side: THREE.DoubleSide,
+    });
+    disposables.push(modeRingMat);
 
     // Ground + grid.
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(64, 44), groundMat);
@@ -296,6 +348,14 @@ export default function TruckScene({ paused, onPhase }: TruckSceneProps) {
     tbox(truck, 4.4, 0.5, 2.2, darkSteel, 0, 1.35, 0); // chassis
     tbox(truck, 1.5, 1.3, 2.0, cabMat, 1.55, 2.25, 0); // cab
     tbox(truck, 0.4, 0.6, 2.0, darkSteel, 2.4, 1.2, 0); // bumper
+    const modeRing = new THREE.Mesh(
+      new THREE.RingGeometry(2.7, 3.1, 40),
+      modeRingMat
+    );
+    modeRing.rotation.x = -Math.PI / 2;
+    modeRing.position.y = 0.06;
+    truck.add(modeRing);
+    disposables.push(modeRing.geometry);
     // Dump bed on a rear pivot so the front lifts in DUMP.
     const bedPivot = new THREE.Group();
     bedPivot.position.set(-2.0, 1.95, 0);
@@ -369,9 +429,16 @@ export default function TruckScene({ paused, onPhase }: TruckSceneProps) {
     truck.position.set(LOAD_POS[0], 0, LOAD_POS[1]);
 
     let frameId = 0;
+    const camGoal = new THREE.Vector3();
+    const tgtGoal = new THREE.Vector3();
     const animate = () => {
       const dt = Math.min(clock.getDelta(), 0.05);
       if (!pausedRef.current) elapsed += dt;
+      // T5 step: each button press jumps the FSM clock +1 s (pause first).
+      if (pendingStepRef.current > 0) {
+        elapsed += pendingStepRef.current * 1;
+        pendingStepRef.current = 0;
+      }
       const info = stateAt(elapsed);
       if (info.state !== cur) {
         if (cur === "WAIT" && info.state === "LOAD") cycle += 1;
@@ -393,6 +460,13 @@ export default function TruckScene({ paused, onPhase }: TruckSceneProps) {
         yaw += shortestAngle(target - yaw) * Math.min(1, dt * 4);
       }
       truck.rotation.y = yaw;
+
+      // T5 mode tint: blue while moving (HAUL + WAIT return drive), green
+      // at rest (LOAD / DUMP). Same stillness signal as the RECAL badge.
+      const movingLive = isMovingState(cur);
+      cabMat.emissive.setHex(movingLive ? 0x1a3fa0 : 0x145f3c);
+      cabMat.emissiveIntensity = 0.5;
+      modeRingMat.color.setHex(movingLive ? 0x3a7bd5 : 0x2fbf71);
 
       // Dump bed tilts in DUMP only; chassis stays level (recal narrative).
       const tiltTarget = cur === "DUMP" ? DUMP_TILT : 0;
@@ -418,6 +492,42 @@ export default function TruckScene({ paused, onPhase }: TruckSceneProps) {
       if (barRef.current) {
         const frac = info.tInState / HAUL_DURATIONS[cur];
         barRef.current.style.width = `${Math.round(frac * 100)}%`;
+      }
+
+      // T5 camera presets: exponential lerp of position + target. Pit is a
+      // static overview; Cab / Side / Wheel track the truck (offsets in
+      // world space, cab/side rotated by heading). dt keeps flowing while
+      // paused so presets + step stay usable with the FSM frozen.
+      const preset = presetRef.current;
+      if (preset !== "free") {
+        if (preset === "pit") {
+          camGoal.set(0, 15, 18);
+          tgtGoal.set(0, 0, 0);
+        } else if (preset === "side") {
+          const fx = Math.cos(yaw);
+          const fz = -Math.sin(yaw);
+          camGoal.set(px - fz * 9.5, 3.4, pz + fx * 9.5);
+          tgtGoal.set(px, 1.2, pz);
+        } else if (preset === "cab") {
+          const fx = Math.cos(yaw);
+          const fz = -Math.sin(yaw);
+          camGoal.set(px + fx * 5.4 - fz * 2.8, 3.1, pz + fz * 5.4 + fx * 2.8);
+          tgtGoal.set(px + fx * 1.5, 1.9, pz + fz * 1.5);
+        } else {
+          // Wheel close-up: rear-axle (+Z) motorized wheel in world space.
+          // Three.js rotation-Y: x' = x cos + z sin, z' = -x sin + z cos.
+          const lx = -1.6;
+          const lz = 1.15;
+          const c = Math.cos(yaw);
+          const s = Math.sin(yaw);
+          const wx = px + lx * c + lz * s;
+          const wz = pz - lx * s + lz * c;
+          camGoal.set(wx + 2.1, 1.7, wz + 2.5);
+          tgtGoal.set(wx, 0.7, wz);
+        }
+        const k = 1 - Math.exp(-3.2 * dt);
+        camera.position.lerp(camGoal, k);
+        controls.target.lerp(tgtGoal, k);
       }
 
       controls.update();
@@ -446,6 +556,8 @@ export default function TruckScene({ paused, onPhase }: TruckSceneProps) {
 
   const css = HAUL_STATE_CSS[hud.state];
   const recal = isRecalState(hud.state);
+  const moving = isMovingState(hud.state);
+  const modeCss = moving ? MODE_MOVING_CSS : MODE_REST_CSS;
 
   return (
     <div style={{ position: "relative", width: "100%", height: 480 }}>
@@ -463,7 +575,7 @@ export default function TruckScene({ paused, onPhase }: TruckSceneProps) {
             position: "absolute",
             left: 12,
             top: 12,
-            width: 240,
+            width: 264,
             fontSize: 13,
             fontWeight: 700,
             color: "#e8edf5",
@@ -484,6 +596,22 @@ export default function TruckScene({ paused, onPhase }: TruckSceneProps) {
             }}
           />
           {hud.state} · cycle {hud.cycle}
+          <span
+            style={{
+              display: "inline-block",
+              marginLeft: 8,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: 0.4,
+              color: moving ? "#dbe7ff" : "#0e1420",
+              background: modeCss,
+              borderRadius: 4,
+              padding: "2px 8px",
+              verticalAlign: "1px",
+            }}
+          >
+            {moving ? "MOVING" : "REST"}
+          </span>
           <div
             style={{
               height: 4,
@@ -497,6 +625,54 @@ export default function TruckScene({ paused, onPhase }: TruckSceneProps) {
               ref={barRef}
               style={{ height: "100%", width: "0%", background: css }}
             />
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 4,
+              flexWrap: "wrap",
+              marginTop: 8,
+              pointerEvents: "auto",
+            }}
+          >
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: "#9fb0c9",
+                marginRight: 2,
+                lineHeight: "22px",
+              }}
+            >
+              Camera:
+            </span>
+            {CAM_PRESETS.map((p) => {
+              const active = presetUi === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setPreset(p.id)}
+                  title={
+                    presetUi === "free" || !active
+                      ? `Fly camera to ${p.label} (lerp)`
+                      : `${p.label} (tracking)`
+                  }
+                  style={{
+                    cursor: "pointer",
+                    fontSize: 11,
+                    fontWeight: active ? 700 : 500,
+                    color: active ? "#0e1420" : "#e8edf5",
+                    background: active ? "#f5a623" : "transparent",
+                    border: "1px solid #f5a623",
+                    borderRadius: 4,
+                    padding: "2px 8px",
+                  }}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
           </div>
         </div>
         <div
@@ -598,11 +774,12 @@ export default function TruckScene({ paused, onPhase }: TruckSceneProps) {
             fontWeight: 700,
             color: "#0e1420",
             background: "#e0a52a",
+            border: `2px solid ${modeCss}`,
             borderRadius: 4,
             padding: "2px 8px",
           }}
         >
-          930E
+          930E · {moving ? "MOVING" : "REST"}
         </div>
       </div>
     </div>
