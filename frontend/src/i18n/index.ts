@@ -111,6 +111,18 @@ export const dict = {
   "dash.backend.probing": { en: "Probing backend…", es: "Consultando el backend…" },
   "dash.backend.connected": { en: "Backend connected", es: "Backend conectado" },
   "dash.backend.offline": { en: "Backend unavailable · local DEMO data", es: "Backend no disponible · datos DEMO locales" },
+  "dash.backend.note.noT10": {
+    en: "No evaluation is available for the current data store.",
+    es: "No hay una evaluación disponible para el almacenamiento actual.",
+  },
+  "dash.backend.note.noRows": {
+    en: "no rows ingested yet; POST SignalRow batches to /ingest, then GET /alerts walks the N1–N4 ladder.",
+    es: "Aún no se han ingerido filas; envía lotes de SignalRow a /ingest y luego GET /alerts recorre la escalera N1–N4.",
+  },
+  "dash.backend.source.defaultEmpty": {
+    en: "default (no rows ingested yet)",
+    es: "predeterminado (aún no se han ingerido filas)",
+  },
   "dash.fleet.title": { en: "Fleet wheel monitoring", es: "Monitoreo de ruedas de flota" },
   "dash.fleet.proxy": { en: "SYNTHETIC-PROXY · demo values only · no live per-wheel feed", es: "SUSTITUTO SINTÉTICO · solo valores de demostración · sin datos reales por rueda" },
   "dash.fleet.assumptions": {

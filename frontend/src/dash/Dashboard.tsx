@@ -39,6 +39,7 @@ import { emitDemoOil, type DemoStageId } from "./demoBus";
 import { t, useLang } from "../i18n";
 import { buildWheelDetailHref } from "../sim/bench/wheelUrl";
 import { DEMO_FLEET_WHEELS, evaluateCombinedRisk, latestWheelMetrics } from "./fleetRisk";
+import { localizeDashboardBackendText } from "./backendNotes";
 
 type Source = "loading" | "live" | "demo";
 
@@ -408,7 +409,7 @@ export default function Dashboard() {
             <span style={{ color: "var(--og-muted)" }}>
               {demoActive
                 ? (es ? DEMO_LAB_NOTE_ES : DEMO_LAB_NOTE)
-                : `${es ? "origen" : "source"}: ${level?.data.source ?? (es ? "sin datos del backend" : "no backend payload yet")}`}
+                : `${es ? "origen" : "source"}: ${localizeDashboardBackendText(level?.data.source ?? (es ? "sin datos del backend" : "no backend payload yet"), lang)}`}
             </span>
           </div>
         </div>
@@ -465,7 +466,7 @@ export default function Dashboard() {
             )}
             {alerts && !demoActive && (
               <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--og-muted)" }}>
-                {alerts.data.note} · {alerts.data.fallback}
+                {localizeDashboardBackendText(alerts.data.note, lang)} · {localizeDashboardBackendText(alerts.data.fallback, lang)}
               </p>
             )}
           </div>
