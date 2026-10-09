@@ -35,13 +35,13 @@ Success means a maintenance engineer can read a trend, trust where each number c
 
 ## Positioning
 
-Non-invasive, non-contact sensing of a final drive that is not designed to be instrumented: a chain installed on existing service points, with no drilling, no permanent modification, and no component that rotates with the wheel or touches the oil. The settling transient is repurposed as a viscosity proxy, and every displayed value carries its own provenance.
+Non-invasive, non-contact sensing of a final drive that is not designed to be instrumented: a chain installed on existing service points, with no drilling, no permanent modification, and no component touching the oil. Existing service points on the GDY106 output train (items 56/41/39) rotate with the output. The settling transient is repurposed as a viscosity proxy, and every displayed value carries its own provenance.
 
 **The competitive frame is a live Komatsu patent, verified.** US 12,073,660 B2, "System and method for monitoring the state of the oil of truck wheels", Komatsu Reman Center Chile SA, granted 2024-08-27, active, expires 2040-09-23. It monitors oil state through an autonomous sensor that **rotates with the wheel in motion** and has **direct access to the oil**, combined with the motor's electric signature.
 
 The defensible axis is therefore narrower than "quantity versus quality". The patent description states that its sensor "can also be used to detect an oil level, for example, in an engine oil housing." Level is inside the patent's own disclosure. What the patent does not claim is the axis OilGuard actually occupies:
 
-- fixed service points that do not rotate, so nothing is mounted on a moving part;
+- existing service points on the GDY106 output train (items 56/41/39) rotate with the output;
 - no contact with the lubricant, so the instrument cannot be abraded by the very wear it monitors;
 - no permanent modification to the machine.
 
@@ -145,7 +145,7 @@ Edge node is an ESP32-S3 acquiring vibration at 1 kHz and pressure and temperatu
 ## Product Principles
 
 1. Provenance before precision. A number without a source is a liability on safety-critical equipment, so source beats accuracy everywhere they conflict.
-2. No-drill, no-contact, no moving parts. Anything that opens the gear case, touches the lubricant, or rides the rotation fails the product test.
+2. No-drill, no-contact, no permanent modification. Anything that opens the gear case, touches the lubricant, or permanently modifies the machine fails the product test. Existing service points on the GDY106 output train (items 56/41/39) rotate with the output.
 3. Read-only, always. The instrument watches the machine and never reaches its control. This is the safety posture and the security posture at once.
 4. Honest scope beats broad scope. One validated final drive, named limits, and explicit future work outrank a wider claim nobody can defend.
 5. Fail visible, never silent. Degrade to a labeled local dataset rather than erroring out or, worse, presenting stale data as live.
