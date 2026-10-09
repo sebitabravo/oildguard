@@ -22,6 +22,12 @@ const navigation: Array<{ id: Section; label: DictKey; href: string }> = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f2b705'/%3E%3C/svg%3E" />
     <title>OilGuard Mining — Digital twin</title>
+    <script is:inline>
+      document.documentElement.style.visibility = "hidden";
+      try {
+        if (localStorage.getItem("oilguard-lang") === "es") document.documentElement.lang = "es";
+      } catch {}
+    </script>
   </head>
   <body>
     <div class="og-app">
@@ -33,7 +39,7 @@ const navigation: Array<{ id: Section; label: DictKey; href: string }> = [
             <div class="og-brand__tag" data-i18n-en={t("app.tagline", "en")} data-i18n-es={t("app.tagline", "es")}>{t("app.tagline", "en")}</div>
           </div>
         </div>
-        <nav class="og-nav" aria-label={t("nav.label", "en")} data-i18n-en={t("nav.label", "en")} data-i18n-es={t("nav.label", "es")}>
+        <nav class="og-nav" aria-label={t("nav.label", "en")} data-i18n-aria-en={t("nav.label", "en")} data-i18n-aria-es={t("nav.label", "es")}>
           {navigation.map((item) => (
             <a
               class="og-nav__item"
@@ -47,11 +53,24 @@ const navigation: Array<{ id: Section; label: DictKey; href: string }> = [
           ))}
         </nav>
         <div class="og-top__spacer"></div>
-        <div class="og-seg" role="group" aria-label={t("lang.label", "en")} data-i18n-en={t("lang.label", "en")} data-i18n-es={t("lang.label", "es")}>
+        <div class="og-seg" role="group" aria-label={t("lang.label", "en")} data-i18n-aria-en={t("lang.label", "en")} data-i18n-aria-es={t("lang.label", "es")}>
           <button type="button" class="og-seg__btn" data-lang="en" aria-pressed="true">EN</button>
           <button type="button" class="og-seg__btn" data-lang="es" aria-pressed="false">ES</button>
         </div>
       </header>
+      <script is:inline>
+        const language = document.documentElement.lang === "es" ? "es" : "en";
+        document.querySelectorAll("[data-i18n-en]").forEach((element) => {
+          element.textContent = element.dataset[language === "en" ? "i18nEn" : "i18nEs"] ?? "";
+        });
+        document.querySelectorAll("[data-i18n-aria-en]").forEach((element) => {
+          element.setAttribute("aria-label", element.dataset[language === "en" ? "i18nAriaEn" : "i18nAriaEs"] ?? "");
+        });
+        document.querySelectorAll("[data-lang]").forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset.lang === language));
+        });
+        document.documentElement.style.visibility = "";
+      </script>
       <main class="og-content"><slot /></main>
     </div>
     <script>
@@ -70,6 +89,12 @@ const navigation: Array<{ id: Section; label: DictKey; href: string }> = [
         document.documentElement.lang = language;
         document.querySelectorAll<HTMLElement>("[data-i18n-en]").forEach((element) => {
           element.textContent = element.dataset[`i18n${language === "en" ? "En" : "Es"}`] ?? "";
+        });
+        document.querySelectorAll<HTMLElement>("[data-i18n-aria-en]").forEach((element) => {
+          element.setAttribute(
+            "aria-label",
+            element.dataset[`i18nAria${language === "en" ? "En" : "Es"}`] ?? "",
+          );
         });
         document.querySelectorAll<HTMLButtonElement>("[data-lang]").forEach((button) => {
           button.setAttribute("aria-pressed", String(button.dataset.lang === language));
