@@ -71,7 +71,7 @@ physically consistent digital twin that delivers what the pre-proposal
 - [x] T1 — Research pack (route: delegated research, read-only; trigger: broad external research + 3 manuals).
 - [x] T2 — Test runners + physics core + anchor replacement (route: delegated writer; trigger: 2+ non-trivial files across sim/ai/frontend).
 - [x] T3 — Rendering foundation + app shell (route: delegated writer; trigger: 2+ non-trivial frontend files).
-- [ ] T4 — Parametric 930E-4SE model (route: delegated writer; trigger: new large 3D module).
+- [x] T4 — Parametric 930E-4SE model (route: delegated writer; trigger: new large 3D module).
 - [ ] T5 — Open-pit mine + fleet + PLM-III FSM (route: delegated writer; trigger: new 3D env + FSM across files).
 - [ ] T6 — GDY106 cutaway twin (route: delegated writer; trigger: new large 3D module + physics coupling).
 - [ ] T7 — Fleet dashboard + combined risk (route: delegated writer; trigger: dashboard + ai ladder files).
@@ -98,17 +98,21 @@ physically consistent digital twin that delivers what the pre-proposal
 
 | Task | Commit | Route | Evidence |
 |------|--------|-------|----------|
+| T1 | `65c30a4` | delegated research (read-only) | `docs/research/twin-reference.md` (354 lines; VERIFIED/DERIVED/ASSUMPTION tags). Key: brochure AESS778-02 dims 15.60×8.69×7.37 m, wheelbase 6.35 m, front track 6.15 m, rear track 5.36 m, dual spacing ~1.66 m, turning circle 29.7 m (OM 30.4 m is a conversion error), 53/80R63 OD ~3.75–3.84 m; LS stage 4 planets; cavity ASSUMPTION R_o 0.50 / R_i 0.15 / L 0.70 / free 0.8 → head 0.268 m, ~2.3 kPa, 17.7 Pa/L; rotating output ⇒ rimming above ~26 km/h; PLM III 8 states; no verifiable CC0/CC-BY 930E glTF ⇒ procedural model. |
 | T2 | `c4a9ba6` `58ba2e1` `2b9603d` | delegated (writer trigger: sim/ai/frontend multi-file) | `./test.sh` → pytest 61 passed, bun 16 pass (parent re-ran bun: 16 pass); `tsc --noEmit` exit 0; `ai/demo_leak.py --seconds 120` N1→N2→N3→N4 PASS; `ai/run_demo.py` T9 PASS (clean 1/228 FP unchanged); compose OK. GearCase ASSUMPTION R_OUT 0.60 / R_IN 0.22 / L 0.42 m → head 0.305 m, 2.61 kPa @95 L 60 °C, 0–10 kPa ±0.1 %FS → ±0.51 L. Shared-ring train Zr 92: HS 16/38×3 (6.750), LS 24/34×4 (4.833), 32.625 (+0.015 %). Thresholds re-derived (sigma floor 0.005 kPa, beta clip ±0.05 kPa/°C, noise 0.01/0.04 kPa). RDD: assess high (test.sh shell/exec) → review due; consent pending with user. |
+| T3 | `af17ba4` `2c5405e` | delegated (writer trigger: 2+ frontend files) | `./test.sh` → pytest 61, bun 49 pass; `tsc` clean; `vite build` OK (JS 741 kB, GLB out of dist); CDP tab-switch ×37 no context leak; screenshots `docs/screenshots/t3-shell-*.png` (parent viewed mine + wheel: shell OK, scenes still placeholder → T4–T6). GLB moved to `docs/reference-models/`. Note: :5173 is held by an OrbStack container serving a stale build — use another port for dev screenshots. |
+| T4 | `ce980d1` `3f4deda` | delegated (writer died at API session limit after writing all files; parent verified + committed) | parent: `npx tsc --noEmit` clean; `bun test src` 87 pass / 0 fail; pre-commit gate ran `./test.sh` green on both commits. Screenshots viewed (3/4, side, wheel, dump at t=22): recognizable 930E — stairway, deck, cab, canopy, dual rears 53/80R63, GDY106 hub, hoist cylinders telescoping at 45°. Weak: pixelated "930E" plate, flat ground ring dominates. RDD: medium, slice_budget_reached → user DECLINED this candidate. Docker :5173 now serves live source (other session's bind-mount fix, uncommitted, not ours); headless Chrome needs `--timeout` (virtual-time-budget hangs with live.js). |
 
 Housekeeping: `f4aa44c` ignore `.playwright-mcp/` `.atl/`; stale unreferenced screenshots moved to `/tmp/oilguard-old-screens` (not deleted).
 
 Screenshot procedure (all visual tasks): headless Chrome
-`--headless=new --use-angle=swiftshader --enable-unsafe-swiftshader --window-size=1600,1000 --virtual-time-budget=8000 --screenshot=<png> <url>`
+
+`--headless=new --use-angle=swiftshader --enable-unsafe-swiftshader --window-size=1600,1000 --timeout=12000 (virtual-time-budget hangs since live.js; run in background, one instance at a time) --screenshot=<png> <url>`
+
 against the Vite dev server on :5173.
 
-| T1 | (docs commit below) | delegated research (read-only) | `docs/research/twin-reference.md` (354 lines; VERIFIED/DERIVED/ASSUMPTION tags). Key: brochure AESS778-02 dims 15.60×8.69×7.37 m, wheelbase 6.35 m, front track 6.15 m, rear track 5.36 m, dual spacing ~1.66 m, turning circle 29.7 m (OM 30.4 m is a conversion error), 53/80R63 OD ~3.75–3.84 m; LS stage 4 planets; cavity ASSUMPTION R_o 0.50 / R_i 0.15 / L 0.70 / free 0.8 → head 0.268 m, ~2.3 kPa, 17.7 Pa/L; rotating output ⇒ rimming above ~26 km/h; PLM III 8 states; no verifiable CC0/CC-BY 930E glTF ⇒ procedural model. |
-| T3 | `af17ba4` `2c5405e` | delegated (writer trigger: 2+ frontend files) | `./test.sh` → pytest 61, bun 49 pass; `tsc` clean; `vite build` OK (JS 741 kB, GLB out of dist); CDP tab-switch ×37 no context leak; screenshots `docs/screenshots/t3-shell-*.png` (parent viewed mine + wheel: shell OK, scenes still placeholder → T4–T6). GLB moved to `docs/reference-models/`. Note: :5173 is held by an OrbStack container serving a stale build — use another port for dev screenshots. |
+RDD outcomes: T2 slice c4a9ba6 declined; T2+T3 range lens_context_budget_exceeded; T4 declined.
 
 ## Next step
 
-RDD review for T2+T3 range; then T4 (930E) → T5 (pit + fleet) → T10 (rotating physics) → T6 (GDY106) → T7 → T8 → T9.
+T5 running; then (pit + fleet) → T10 (rotating physics) → T6 (GDY106) → T7 → T8 → T9.
