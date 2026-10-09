@@ -17,11 +17,15 @@ Scenarios: clean | slow-leak (0.5 %/h default) | abrupt-drop |
 sensor-drift | link-outage. Ground truth travels in level_liters /
 level_pct / label / link_down columns. See sim/SCHEMA.md.
 
-SYNTHETIC-PROXY (field-anchor pending h(L) bench): PRESSURE_AT_FULL_KPA =
-28.0 kPa at 95 L is a pipeline gain, NOT a hydrostatic head — 28 kPa would
-imply a ~3.2 m oil head (absurd; realistic 0.3-0.5 m gives ~2.6-4.4 kPa).
-Kept running unchanged for the N1-N4 demo; bench-ready literature priors
-live in sim/physics.py. See docs/thesis-annex.md §2 (930E/GDY106 scope).
+Pressure model: ``p = rho(T) * g * h(V_pool)`` with the gear-case geometry of
+``sim/geometry.py`` (ASSUMPTION until the bench measures h(L)); 95 L gives
+~2.6 kPa, not the former 28 kPa pipeline gain (which implied a 3.2 m head).
+While the wheel turns, a hold-up volume is lifted onto gears and walls
+(``V_HOLDUP_MAX_L`` scaled by wheel speed), so the static pool and its
+pressure drop; at stop it drains back with ``tau = SETTLE_TAU0_S * viscosity``
+(the settling transient of the pre-proposal, section 3.1). Pressure noise is
+sized for a 0-10 kPa class transducer. SYNTHETIC-PROXY until bench data.
+See docs/thesis-annex.md section 2.
 
 Stdlib only (no extra deps).
 """
@@ -35,20 +39,37 @@ import random
 from datetime import datetime, timezone
 from typing import Iterator
 
+try:  # ejecución como paquete o como script (python3 sim/generate.py)
+    from sim.geometry import DEFAULT_GEAR_CASE
+    from sim.physics import pressure_kpa_from_volume
+except ImportError:  # pragma: no cover
+    from geometry import DEFAULT_GEAR_CASE  # type: ignore
+    from physics import pressure_kpa_from_volume  # type: ignore
+
 SAMPLE_RATE_HZ = 10
 DT_S = 1.0 / SAMPLE_RATE_HZ
 VIB_RAW_HZ = 1000
 VIB_SAMPLES_PER_WINDOW = VIB_RAW_HZ // SAMPLE_RATE_HZ  # 100
 
 CAPACITY_L = 95.0  # GDY106 nominal, SAE 85W-140
-PRESSURE_AT_FULL_KPA = 28.0  # synthetic rest pressure at 95 L
 TEMP_NOMINAL_C = 75.0
 GEAR_RATIO = 32.62  # rotor 3000 RPM -> wheel ~92 RPM
 ROTOR_MAX_RPM = 3000.0
+WHEEL_RPM_MAX = ROTOR_MAX_RPM / GEAR_RATIO
+
+# ASSUMPTION: aceite elevado hacia engranajes y paredes a velocidad máxima de la rueda.
+V_HOLDUP_MAX_L = 6.0
+# Constante de vaciado con viscosidad nominal (proxy = 1.0); igual al tau nominal de settling.py.
+SETTLE_TAU0_S = 0.75
 
 LEAK_PCT_PER_H = 0.5  # spec default for slow-leak
 ABRUPT_DROP_L = 15.0
-DRIFT_KPA_PER_S = 0.05
+# Transductor clase 0-10 kPa, +-0.1 %FS: ruido blanco de reposo 0.01 kPa (~0.5 L a 95 L).
+# En marcha el chapoteo lo cuadruplica (misma proporción 4x que la escala previa).
+PRESSURE_NOISE_REST_KPA = 0.01
+PRESSURE_NOISE_MOVING_KPA = 0.04
+# Misma deriva relativa que antes (~21 % de la lectura en 120 s) sobre la escala real de ~2.6 kPa.
+DRIFT_KPA_PER_S = 0.005
 DRIFT_C_PER_S = 0.02
 
 # FSM durations (s), mirrors HAUL_DURATIONS in cycle.ts.
@@ -98,6 +119,16 @@ def is_recal_state(state: str) -> bool:
     return state in ("LOAD", "DUMP")
 
 
+def holdup_volume_l(wheel_rpm: float) -> float:
+    """Volumen retenido fuera de la piscina estática mientras la rueda gira (lineal en rpm)."""
+    return V_HOLDUP_MAX_L * max(0.0, min(1.0, wheel_rpm / WHEEL_RPM_MAX))
+
+
+def drained_holdup_l(v_at_stop_l: float, t_since_stop_s: float, tau_s: float) -> float:
+    """Retorno exponencial del aceite retenido tras detenerse."""
+    return v_at_stop_l * math.exp(-max(0.0, t_since_stop_s) / tau_s)
+
+
 def _vib_window_features(moving: bool, rng: random.Random) -> tuple[float, float]:
     """Synthesize 100 samples of 1 kHz accel, return (RMS, kurtosis).
 
@@ -130,6 +161,7 @@ def iter_rows(
     leak_pct_per_h: float = LEAK_PCT_PER_H,
     drop_liters: float = ABRUPT_DROP_L,
     start: datetime | None = None,
+    viscosity_proxy: float = 1.0,
 ) -> Iterator[dict]:
     rng = random.Random(seed)
     n = int(round(seconds * SAMPLE_RATE_HZ))
@@ -139,6 +171,11 @@ def iter_rows(
     drop_at_s = seconds * 0.5
     outage_from = seconds * 0.4
     outage_to = seconds * 0.6
+    tau_s = SETTLE_TAU0_S * viscosity_proxy
+    holdup_l = 0.0
+    was_moving = False
+    t_stop = 0.0
+    holdup_at_stop = 0.0
 
     for i in range(n):
         t_s = i * DT_S
@@ -176,11 +213,19 @@ def iter_rows(
             slope = rng.gauss(0.0, 0.25)  # leveled pad: |slope| < ~1 deg
         wheel = rotor / GEAR_RATIO
 
+        # --- hold-up: sube con la rueda en marcha y drena al detenerse ---
+        if moving:
+            holdup_l = holdup_volume_l(wheel)
+        else:
+            if was_moving:
+                t_stop, holdup_at_stop = t_s, holdup_l
+            holdup_l = drained_holdup_l(holdup_at_stop, t_s - t_stop, tau_s)
+        was_moving = moving
+
         # --- pressure / temperature (observed) ---
-        p_true = PRESSURE_AT_FULL_KPA * (level / CAPACITY_L)
-        p_true += -0.03 * (TEMP_NOMINAL_C - 75.0)  # placeholder temp coeff
-        p_noise = rng.gauss(0.0, 0.6 if moving else 0.15)
+        p_noise = rng.gauss(0.0, PRESSURE_NOISE_MOVING_KPA if moving else PRESSURE_NOISE_REST_KPA)
         temp = TEMP_NOMINAL_C + (0.8 if moving else 0.0) + rng.gauss(0.0, 0.2)
+        p_true = pressure_kpa_from_volume(max(0.0, level - holdup_l), temp, DEFAULT_GEAR_CASE)
         if scenario == "sensor-drift" and t_s >= leak_onset_s:
             drift_t = t_s - leak_onset_s
             p_obs = p_true + p_noise + DRIFT_KPA_PER_S * drift_t
@@ -231,6 +276,8 @@ def parse_args(argv=None):
     p.add_argument("--leak-pct-per-h", type=float, default=LEAK_PCT_PER_H,
                    help="slow-leak rate in %%/h (spec default 0.5)")
     p.add_argument("--drop-liters", type=float, default=ABRUPT_DROP_L)
+    p.add_argument("--viscosity-proxy", type=float, default=1.0,
+                   help="drain-back time scale of the held-up oil (1.0 = nominal 85W-140)")
     return p.parse_args(argv)
 
 
@@ -239,7 +286,8 @@ def main(argv=None) -> int:
     if args.seconds <= 0:
         raise SystemExit("--seconds must be > 0")
     rows = list(iter_rows(args.scenario, args.seconds, args.device_id,
-                          args.seed, args.leak_pct_per_h, args.drop_liters))
+                          args.seed, args.leak_pct_per_h, args.drop_liters,
+                          viscosity_proxy=args.viscosity_proxy))
     with open(args.out, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=HEADER)
         w.writeheader()

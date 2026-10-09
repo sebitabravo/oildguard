@@ -39,7 +39,7 @@ from `sim/generate.py`).
       "slope_deg": 0.13,
       "rotor_rpm": 113.6,
       "wheel_rpm": 3.48,
-      "pressure_kpa": 27.966,
+      "pressure_kpa": 2.579,
       "temperature_c": 74.94,
       "vib_rms_g": 0.324,
       "vib_kurtosis": 2.415,

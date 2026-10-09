@@ -9,8 +9,8 @@ proven until the S7 bench drain-and-weigh calibration.**
 
 **Level regression** (`ai/level.py`): same rest-gated,
 temperature-compensated residual as T9 (baseline = first rest window,
-σ floored at 0.10 kPa), mapped through the T6 synthetic anchor
-(28 kPa at 95 L): `level = 95 + (residual − mu) / (28/95)`. Anchoring on
+σ floored at 0.005 kPa), mapped through the nonlinear gear-case geometry:
+`level = V(p_95L(T_ref) + residual − mu)` (`sim/physics.py:volume_from_pressure_kpa`). Anchoring on
 the baseline mean makes each run self-recalibrating — the first rest
 window reads 95 L by construction and only deviations move the estimate.
 Cost, stated openly: a leak already present in the baseline reads high.

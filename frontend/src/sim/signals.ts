@@ -91,7 +91,15 @@ export const CAPACITY_L = 95;
 export const GEAR_RATIO = 32.62;
 export const ROTOR_MAX_RPM = 3000;
 export const LEAK_PCT_PER_H = 0.5;
-export const PRESSURE_AT_FULL_KPA = 28;
+// La presión sale de la geometría compartida (twin/physics.ts: pressureKpaFromVolume),
+// no de un ancla lineal. Las constantes siguientes espejan sim/generate.py.
+export const PRESSURE_NOISE_REST_KPA = 0.01;
+export const PRESSURE_NOISE_MOVING_KPA = 0.04;
+export const WHEEL_RPM_MAX = ROTOR_MAX_RPM / GEAR_RATIO;
+/** ASSUMPTION: aceite elevado a velocidad máxima de la rueda (L). */
+export const V_HOLDUP_MAX_L = 6;
+/** Constante de vaciado con viscosidad nominal (s). */
+export const SETTLE_TAU0_S = 0.75;
 
 // T7 move/rest detector contract (S3 slice).
 //

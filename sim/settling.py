@@ -48,8 +48,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 SETTLE_FIT_S = 6.0
 BIN_S = 0.5  # 5 samples/bin at 10 Hz: stable RMS energy AND ~1 sine period
 # (1.8-2.2 Hz stub band), so phase ripple averages out instead of aliasing.
-INJECT_AMPLITUDE_KPA = 1.5  # synthetic wobble size at the edge instant
-EPS_KPA = 0.05  # envelope "settled" floor for the ms projection
+# Escalas ajustadas a la señal real de ~2.6 kPa: la oscilación inyectada vale ~el hold-up
+# (6 L ~ 0.12 kPa) y el piso de "asentado" 0.005 kPa (medio ruido de un transductor 0-10 kPa).
+INJECT_AMPLITUDE_KPA = 0.15  # synthetic wobble size at the edge instant
+EPS_KPA = 0.005  # envelope "settled" floor for the ms projection
 
 SETTLE_HEADER = [
     "edge_id",

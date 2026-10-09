@@ -23,12 +23,12 @@ readings NOW; promote fusion AFTER the bench drain-and-weigh
   anomaly-only; LAB leak (x257, labeled) walks N1→N2→N3→N4 with RUL countdown
   in hours/cycles/shifts; backend smoke serves the same escalation
   (`docs/t10-rul-ladder.md`, `docs/demo-script.md`).
-- What is NOT proven: fused pressure→level field accuracy (anchor 28 kPa at
-  95 L, temp beta, vibration confirmation, 0.5 %/h detectability horizon).
+- What is NOT proven: fused pressure→level field accuracy (gear-case geometry
+  h(L), temp beta, vibration confirmation, 0.5 %/h detectability horizon).
   Status PARTIAL per `docs/calibration.md` — bench correlation PENDING.
-  The 28 kPa anchor is SYNTHETIC-PROXY (field-anchor pending h(L) bench:
-  ~3.2 m implied head is absurd; realistic ≈2.6–4.4 kPa — priors in
-  `sim/physics.py`, see `docs/thesis-annex.md` §2).
+  The pressure model is SYNTHETIC-PROXY (ASSUMED gear-case geometry,
+  ≈ 2.6 kPa at 95 L; the former 28 kPa gain implied an absurd ~3.2 m head —
+  see `sim/geometry.py` and `docs/thesis-annex.md` §2).
 
 ## Pivot decision (recorded)
 

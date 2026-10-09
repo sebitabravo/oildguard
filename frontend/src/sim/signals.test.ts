@@ -2,8 +2,13 @@ import { describe, expect, test } from "bun:test";
 import {
   CAPACITY_L,
   GEAR_RATIO,
+  PRESSURE_NOISE_MOVING_KPA,
+  PRESSURE_NOISE_REST_KPA,
   ROTOR_MAX_RPM,
+  SETTLE_TAU0_S,
   SIGNAL_CSV_HEADER,
+  V_HOLDUP_MAX_L,
+  WHEEL_RPM_MAX,
   isRestWindow,
   type RestWindow,
 } from "./signals";
@@ -29,5 +34,18 @@ describe("signals contract", () => {
     } as const;
     expect(isRestWindow({ ...base, state: "rest" } as RestWindow)).toBe(true);
     expect(isRestWindow({ ...base, state: "moving" } as RestWindow)).toBe(false);
+  });
+});
+
+describe("pipeline constants mirror sim/generate.py", () => {
+  test("hold-up and drain-back parameters", () => {
+    expect(V_HOLDUP_MAX_L).toBe(6);
+    expect(SETTLE_TAU0_S).toBe(0.75);
+    expect(WHEEL_RPM_MAX).toBeCloseTo(91.97, 1);
+  });
+
+  test("noise is sized for a 0-10 kPa class transducer", () => {
+    expect(PRESSURE_NOISE_REST_KPA).toBe(0.01);
+    expect(PRESSURE_NOISE_MOVING_KPA).toBe(4 * PRESSURE_NOISE_REST_KPA);
   });
 });

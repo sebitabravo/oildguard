@@ -137,21 +137,27 @@ def volume_from_pressure_kpa(pressure_kpa: float, temp_c: float,
     return volume_from_head(head, gc)
 
 
+def kpa_per_liter(volume_l: float, temp_c: float,
+                  gc: GearCase = DEFAULT_GEAR_CASE) -> float:
+    """Sensibilidad local ``dp/dV`` (kPa por litro) al nivel ``volume_l``.
+
+    Depende del nivel: la superficie libre se ensancha con la altura, así que
+    un litro adicional sube menos la columna (y la presión) a niveles altos.
+    """
+    dv_dh_l_per_m = dV_dh(head_from_volume(volume_l, gc), gc) * 1000.0
+    if dv_dh_l_per_m <= 0.0:
+        return float("inf")
+    return oil_density_kg_m3(temp_c) * G / 1000.0 / dv_dh_l_per_m
+
+
 def sensor_resolution_l(fs_kpa: float, accuracy_pct_fs: float, volume_l: float,
                         temp_c: float, gc: GearCase = DEFAULT_GEAR_CASE) -> float:
     """Incertidumbre de nivel en litros de un transductor ``fs_kpa`` con ``accuracy_pct_fs``.
 
-    ``error_kpa / (dp/dV)`` evaluado en el nivel ``volume_l``; dp/dV sale de la
-    sensibilidad de la geometría, así que depende del nivel (peor donde la
-    superficie libre es más ancha).
+    ``error_kpa / (dp/dV)`` evaluado en el nivel ``volume_l``.
     """
     err_kpa = fs_kpa * accuracy_pct_fs / 100.0
-    h = head_from_volume(volume_l, gc)
-    dv_dh_l_per_m = dV_dh(h, gc) * 1000.0
-    if dv_dh_l_per_m <= 0.0:
-        return float("inf")
-    dp_dv = oil_density_kg_m3(temp_c) * G / 1000.0 / dv_dh_l_per_m  # kPa por litro
-    return err_kpa / dp_dv
+    return err_kpa / kpa_per_liter(volume_l, temp_c, gc)
 
 
 def wheel_rpm(rotor_rpm: float, ratio: float = GEAR_RATIO) -> float:

@@ -6,11 +6,10 @@ Anomaly-only + precise rest readings viable NOW. Do NOT read this doc as proven 
 
 Physics anchors (non-negotiable, 930E/GDY106 32.62:1 scope ONLY — 980E-5
 GDY108-C 35.02:1 stays future work without validation): 95 L SAE 85W-140
-per GDY106 wheel motor; synthetic rest anchor 28 kPa at 95 L
-(`sim/generate.py`, `ai/level.py`) is SYNTHETIC-PROXY (field-anchor pending
-h(L) bench: 28 kPa implies an absurd ~3.2 m head; realistic 0.3–0.5 m gives
-≈2.6–4.4 kPa — bench-ready literature priors in `sim/physics.py`, see
-`docs/thesis-annex.md` §2); warning < 50% (47.5 L), critical < 30%
+per GDY106 wheel motor; the pipeline pressure `rho(T)·g·h(V)` (≈ 2.6 kPa
+at 95 L, ASSUMED gear-case geometry in `sim/geometry.py`) is SYNTHETIC-PROXY
+until this bench measures the true h(L) (the former 28 kPa gain implied an
+absurd ~3.2 m head; see `docs/thesis-annex.md` §2); warning < 50% (47.5 L), critical < 30%
 (28.5 L); rest-gating stopped + leveled + engine-on.
 
 ## 1. Procedure (drain-and-weigh)
@@ -72,7 +71,7 @@ If unmet → pivot stands (see §3), no threshold tuning to hide it.
 Verdict: **fusion PARTIAL.** The pipeline from rest-gating → residual →
 level → RUL → N1–N4 is proven as logic on synthetic-proxy data with all
 rates labeled (x60 T9, x257 T10). Field accuracy (rate 0.5 %/h, anchor
-28 kPa at 95 L, temp beta, vibration channels) is UNPROVEN until this
+gear-case geometry h(L), temp beta, vibration channels) is UNPROVEN until this
 procedure runs with weighed oil. The staged pivot is already implemented:
 RUL suppresses to anomaly-only when n<10, σ_L>2 L, slope≥0, or R²<0.3, and
 N1/N2/N4 keep firing on residuals (`docs/t10-rul-ladder.md` S7 pointer).

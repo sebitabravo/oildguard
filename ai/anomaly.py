@@ -6,7 +6,7 @@ Rest-gated pressure residual with linear temperature compensation:
 
     T_REF  = mean temperature of the baseline rest window
     beta   = least-squares slope of pressure on temperature in that window
-             (0 when temperature variance is negligible; clipped to +-0.5)
+             (0 when temperature variance is negligible; clipped to +-0.05 kPa/°C)
     r      = p_obs - beta * (T_obs - T_REF)
     z      = (r - mu) / sigma   (mu/sigma from the baseline window)
 
@@ -39,7 +39,11 @@ import math
 import statistics
 import sys
 
-SIGMA_FLOOR_KPA = 0.10  # below T6 rest noise (0.15); avoids zero-division
+# Mitad del ruido de reposo del transductor 0-10 kPa (0.01 kPa, ~0.25 L a 95 L): evita la
+# división por cero sin tapar la resolución real. Con 0.10 kPa (~5 L) el piso ahogaría todo.
+SIGMA_FLOOR_KPA = 0.005
+# Cota del coeficiente térmico empírico: ~25x el efecto físico rho(T) (~0.002 kPa/°C).
+BETA_CLIP_KPA_PER_C = 0.05
 MIN_BASELINE_N = 10
 BASELINE_FALLBACK_N = 30
 DEFAULT_Z_THRESHOLD = 3.0
@@ -119,7 +123,7 @@ def fit_baseline(rest_samples: list[dict]) -> dict:
     var_t = sum((t - t_ref) ** 2 for t in ts) / n if n > 1 else 0.0
     if var_t > 1e-4 and n >= MIN_BASELINE_N:
         cov = sum((p - mean_p) * (t - t_ref) for p, t in zip(ps, ts)) / n
-        beta = max(-0.5, min(0.5, cov / var_t))
+        beta = max(-BETA_CLIP_KPA_PER_C, min(BETA_CLIP_KPA_PER_C, cov / var_t))
     else:
         beta = 0.0
     resid = [p - beta * (t - t_ref) for p, t in zip(ps, ts)]

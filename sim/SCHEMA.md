@@ -38,7 +38,7 @@ in the demo loop. WAIT is the empty return drive (moving, recal gated).
 | `slope_deg` | deg | stopped ≈ 0 ± 0.3; moving synthetic grade |
 | `rotor_rpm` | rpm | moving ≈ 2850 ± 80 (max 3000); stopped idle ≈ 120 |
 | `wheel_rpm` | rpm | rotor / 32.62 (≈ 92 at full speed) |
-| `pressure_kpa` | kPa | observed; synthetic rest ≈ 28 at 95 L, ∝ level |
+| `pressure_kpa` | kPa | observed bottom pressure `rho(T)·g·h(V)` from the gear-case geometry (`sim/geometry.py`): ≈ 2.6 at 95 L, nonlinear in level; range 0–5 kPa (0–10 kPa class transducer, noise 0.01 kPa at rest / 0.04 moving); moving rows read ≈ 0.11 kPa lower (hold-up) and recover after a stop with tau = 0.75 s · viscosity proxy |
 | `temperature_c` | °C | observed; operating ≈ 75 + 0.8 moving |
 | `vib_rms_g` | g | rest ≈ 0.35, moving ≈ 1.2 + impact transients |
 | `vib_kurtosis` | — | ≈ 3 baseline; +2.5 for 1 s at abrupt-drop instant |
@@ -59,7 +59,7 @@ contract can adopt unchanged.
 | `clean` | level = 95 L | noise only, label `normal` |
 | `slow-leak` | −0.5 %/h from t = 2 s (0.475 L/h; `--leak-pct-per-h` override) | pressure follows level down |
 | `abrupt-drop` | −15 L step at t = seconds/2 (`--drop-liters`) | pressure step + kurtosis spike 1 s |
-| `sensor-drift` | level stays 95 L | pressure +0.05 kPa/s, temp +0.02 °C/s from t = 2 s |
+| `sensor-drift` | level stays 95 L | pressure +0.005 kPa/s, temp +0.02 °C/s from t = 2 s |
 | `link-outage` | level stays 95 L, `link_down` = 1 on [0.4, 0.6] × seconds | values intact, flagged buffered |
 
 Note: at the spec-true 0.5 %/h, a 30 s demo drops ≈ 0.004 L — invisible
@@ -105,4 +105,4 @@ OUTAGE BUFFERING PROOF: PASS (no rows lost, order restored by seq)
 
 Slow-leak tail (truth creeps 95 → 94.9963 L over 30 s at the true rate);
 abrupt-drop steps 95 → 80 L at mid-run; sensor-drift pressure climbs
-≈ 27.97 → 28.66 kPa while truth holds 95 L — the T9 anomaly inputs.
+≈ 2.58 → 2.69 kPa (30 s run) while truth holds 95 L — the T9 anomaly inputs.

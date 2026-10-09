@@ -4,36 +4,38 @@ MODEL LABEL: ``synthetic-proxy`` — NOT proven until the S7 bench
 drain-and-weigh calibration. Every output carries the label; do not
 present these levels as a validated measurement.
 
-SYNTHETIC-PROXY (field-anchor pending h(L) bench): the ``28 kPa at 95 L``
-anchor (``KPA_PER_L = 28/95``) is a pipeline gain, NOT hydrostatics —
-28 kPa implies a ~3.2 m head (absurd; realistic 0.3-0.5 m gives ~2.6-4.4
-kPa). Kept unchanged for the N1-N4 demo; literature priors in
-``sim/physics.py``. See ``docs/thesis-annex.md`` §2 (930E/GDY106 scope).
+SYNTHETIC-PROXY (field-anchor pending h(L) bench): pressure maps to oil
+volume through the ASSUMED gear-case geometry (``sim/geometry.py``) and the
+hydrostatics of ``sim/physics.py``: ``p = rho(T) * g * h(V)``. The former
+linear ``28 kPa at 95 L`` gain implied a 3.2 m head and is gone. See
+``docs/thesis-annex.md`` section 2 (930E/GDY106 scope).
 
 Method
 ------
 Same rest-gated, temperature-compensated residual as T9 (``ai/anomaly.py``;
-baseline = first rest window, sigma floored at 0.10 kPa), mapped to oil
-volume through the T6 synthetic anchor ``28 kPa at 95 L``:
+baseline = first rest window, sigma floored at ``SIGMA_FLOOR_KPA``), mapped to
+oil volume through the NONLINEAR pool geometry:
 
-    level_L = CAPACITY_L + (residual - mu) / KPA_PER_L
+    p_anchor = pressure_kpa_from_volume(CAPACITY_L, T_ref)
+    level_L  = volume_from_pressure_kpa(p_anchor + (residual - mu), T_ref)
 
-with ``KPA_PER_L = 28 / 95``. Anchoring on the baseline mean (instead of
-the absolute 28 kPa anchor) makes each run self-recalibrating: the first
-rest window reads 95 L by construction and only DEVIATIONS from it move
-the estimate. That matches the recalibration narrative (stillness
-windows), at the cost that an already-leaking baseline reads high —
-documented, not hidden (see ``baseline`` provenance in every output).
+Anchoring on the baseline mean (instead of the absolute pressure) makes each
+run self-recalibrating: the first rest window reads 95 L by construction and
+only DEVIATIONS from it move the estimate. That matches the recalibration
+narrative (stillness windows), at the cost that an already-leaking baseline
+reads high — documented, not hidden (see ``baseline`` provenance in every
+output).
 
 Only rest samples are estimated; moving samples are gated out (counted,
 ``level_liters = None``), never estimated.
 
 Confidence is a baseline-precision property, not per-sample luck::
 
-    sigma_L = sigma_kpa / KPA_PER_L
+    sigma_L = sigma_kpa / kpa_per_liter(95 L, T_ref)
     confidence = clamp(1 - sigma_L / 5.0, 0, 1)
 
-i.e. a rest-noise floor of ~0.46 L (typical T6) yields ~0.91. A noisy
+i.e. a rest-noise floor of ~0.5 L (0.01 kPa on a 0-10 kPa class transducer)
+yields ~0.9. A noisy
 baseline degrades every estimate openly; ``ai/rul.py`` suppresses RUL
 entirely when ``sigma_L > 2.0 L`` (lubrication/precision gate).
 
@@ -48,11 +50,14 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from ai.anomaly import SIGMA_FLOOR_KPA, fit_baseline, residual  # noqa: E402
+from sim.physics import (  # noqa: E402
+    kpa_per_liter,
+    pressure_kpa_from_volume,
+    volume_from_pressure_kpa,
+)
 
 MODEL_LABEL = "synthetic-proxy"  # NOT proven until S7 bench proof
 CAPACITY_L = 95.0  # GDY106 nominal, SAE 85W-140 (physics anchor)
-PRESSURE_AT_FULL_KPA = 28.0  # T6 synthetic rest pressure at 95 L
-KPA_PER_L = PRESSURE_AT_FULL_KPA / CAPACITY_L
 WARN_PCT = 50.0  # warning < 50%
 CRIT_PCT = 30.0  # critical < 30%
 MIN_BASELINE_N = 10
@@ -137,7 +142,6 @@ def estimate(samples: list[dict]) -> dict:
         "n_rows": len(parsed),
         "n_rest": len(rest),
         "n_gated_out": gated_out,
-        "kpa_per_liter": KPA_PER_L,
         "capacity_liters": CAPACITY_L,
         "warn_pct": WARN_PCT,
         "crit_pct": CRIT_PCT,
@@ -171,7 +175,10 @@ def estimate(samples: list[dict]) -> dict:
     base["source"] = baseline_source
     out["baseline"] = base
     mu, sigma, beta, t_ref = base["mu"], base["sigma"], base["beta"], base["t_ref"]
-    sigma_l = sigma / KPA_PER_L
+    kpa_per_l = kpa_per_liter(CAPACITY_L, t_ref)
+    out["kpa_per_liter"] = kpa_per_l
+    sigma_l = sigma / kpa_per_l
+    p_anchor = pressure_kpa_from_volume(CAPACITY_L, t_ref)
     out["sigma_liters"] = round(sigma_l, 4)
     confidence = max(0.0, min(1.0, 1.0 - sigma_l / 5.0))
     out["confidence"] = round(confidence, 3)
@@ -194,7 +201,7 @@ def estimate(samples: list[dict]) -> dict:
             continue
         res = residual(s["pressure_kpa"], s["temperature_c"], beta, t_ref)
         z = (res - mu) / sigma if sigma > 0 else 0.0
-        level = CAPACITY_L + (res - mu) / KPA_PER_L
+        level = volume_from_pressure_kpa(p_anchor + (res - mu), t_ref)
         estimates.append({
             "seq": s["seq"], "t_s": s["t_s"], "t_iso": s["t_iso"],
             "device_id": s["device_id"], "zone": s["zone"],
@@ -216,7 +223,8 @@ def estimate(samples: list[dict]) -> dict:
     out["sigma_floor_kpa"] = SIGMA_FLOOR_KPA
     out["note"] = (
         f"model={MODEL_LABEL} (UNPROVEN until S7 bench drain-and-weigh; "
-        f"synthetic anchor {PRESSURE_AT_FULL_KPA} kPa at {CAPACITY_L} L). "
+        f"assumed gear-case geometry, {p_anchor:.3f} kPa at {CAPACITY_L} L "
+        f"and {t_ref:.1f} C). "
         f"Baseline {baseline_source} also anchors 95 L — a leak already "
         f"present in the baseline reads high."
     )

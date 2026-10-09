@@ -24,41 +24,105 @@ value, an explicit assumption, or an empty bench slot.
 | P6 | Viscosity 85W-140 | 350–420 cSt @40 °C; 26–28.6 cSt @100 °C; VI 95–103 | VERIFIED | Same PDS set as P5; J306 limits (85W ≤150 000 cP @−12 °C; 140 grade 24.0–41.0 cSt @100 °C) contain the PDS band |
 | P7 | Density thermal prior β = 7e-4 /°C | Linear `rho(T)` prior | ASSUMPTION | `sim/physics.py:oil_density_kg_m3` — typical mineral-gear-oil order of magnitude; bench fits true β from weighed runs |
 | P8 | Viscosity-vs-T curve form | Log-linear interpolation, 40 °C ↔ 100 °C midpoints | ASSUMPTION | `sim/physics.py:viscosity_mid_cst` — placeholder; bench fits Walther/Vogel from settling-tau vs temperature |
-| P9 | Demo pressure anchor 28 kPa @ 95 L | Pipeline constant | **SYNTHETIC-PROXY** (field-anchor pending h(L) bench) | `sim/generate.py:38`, `ai/level.py:48`; flagged at every surface — see §2 |
+| P9 | Pressure anchor `p = rho(T)·g·h(V)` from the gear-case geometry (P13) | 95 L → h ≈ 0.305 m → 2.65 / 2.61 / 2.57 kPa at 40 / 60 / 80 °C; replaces the former 28 kPa @ 95 L gain | **DERIVED** (P5 VERIFIED density, P7 ASSUMED β, P13 ASSUMED cavity); SYNTHETIC-PROXY until the bench measures h(L) | `sim/physics.py:pressure_kpa_from_volume`, `sim/generate.py`, `ai/level.py`; numbers in §2 |
 | P10 | 20-min stabilization per level step | Bench procedure step | ASSUMPTION (placeholder) | `docs/calibration.md` §1 — timer logged; bench may shorten/lengthen with degassing evidence |
 | P11 | 980E-5 / GDY108-C 35.02:1 | Any 980E number | FUTURE WORK, no validation | User decision (binding); `sim/physics.py:FUTURE_RATIO_GDY108C` is an unvalidated constant, never consumed |
 | P12 | Warning < 50% (47.5 L), critical < 30% (28.5 L) | Alert thresholds | VERIFIED (project spec, auditable) | `ai/level.py:50-51`, `ai/rul.py:36-37` |
+| P13 | Gear-case oil cavity: horizontal annulus, R_OUT = 0.60 m, R_IN = 0.22 m, L = 0.42 m (411 L full) | Pool geometry h(V) | ASSUMPTION (GE does not publish the cavity; sized so 95 L gives a decimetre head) | `sim/geometry.py:GearCase`, mirrored in `frontend/src/twin/physics.ts`; one edit replaces it when the bench gives h(L) |
+| P14 | Hold-up while the wheel turns: `V_holdup = 6 L · wheel_rpm / 91.97`; drain-back `tau = 0.75 s · viscosity_proxy` | Settling transient (pre-proposal §3.1) | ASSUMPTION (shape + parameters); bench fits them from weighed runs | `sim/generate.py:V_HOLDUP_MAX_L`, `SETTLE_TAU0_S` |
+| P15 | Planetary tooth counts (shared ring Zr = 92; HS 16/38/3 planets, LS 24/34/4 planets) | Two-stage train 32.625:1 | ASSUMPTION (illustrative; GE does not publish tooth counts). Stage ratio `1 + Zr/Zs` is DERIVED | `sim/geartrain.py:GDY106_TRAIN` |
 
-## 2. Hydrostatic correction (why P9 is SYNTHETIC-PROXY)
+## 2. Hydrostatic anchor (geometry-derived, replaces the 28 kPa gain)
 
-Literature hydrostatics with the VERIFIED density prior:
+History (kept as a record, `sim/physics.py:absurdity_check`): the first demo
+pipeline used a linear gain of 28 kPa at 95 L. With the VERIFIED density
+prior that is a 3.2 m oil column inside a wheel motor — physically absurd:
 
 ```text
 p = rho · g · h        rho ≈ 901 kg/m³, g = 9.81 m/s²
-28 kPa @ 95 L  ⇒  h = 28000 / (901 × 9.81) ≈ 3.2 m   — ABSURD inside a wheel motor
-realistic 0.3–0.5 m head  ⇒  ≈ 2.6–4.4 kPa
+28 kPa @ 95 L  ⇒  h = 28000 / (901 × 9.81) ≈ 3.2 m   — ABSURD
 ```
 
-Reproduce: `python3 sim/physics.py` prints `absurdity_check()` (see
-`sim/physics.py:absurdity_check`). A 3.2 m oil head cannot exist in a
-decimetre-scale housing, so 28 kPa cannot be a hydrostatic head — it is a
-pipeline gain kept running for the N1–N4 demo, relabeled
-`SYNTHETIC-PROXY (field-anchor pending h(L) bench)` at every surface:
+The pipeline now derives pressure from the oil volume through the pool
+geometry (P13): the pool is a circular segment of the outer radius minus the
+submerged part of the concentric hub, so level → pressure is **nonlinear**.
+Reproduce with `python3 -m pytest -q tests/test_geometry.py tests/test_hydrostatics.py`
+or the snippet at the end of this section.
 
-- code comments: `sim/generate.py` header, `ai/level.py` header/note;
-- Dashboard: footnote under the level chart (one line);
-- docs: `docs/calibration.md` anchors, `docs/feasibility.md` verdict, this annex.
+| Quantity (defaults P13, rho(T) prior P7) | Value | Status |
+|---|---|---|
+| Head at 95 L | 0.305 m | DERIVED |
+| Head at 47.5 L / 28.5 L (warning / critical) | 0.188 m / 0.132 m | DERIVED |
+| Pressure at 95 L, 40 / 60 / 80 °C | 2.648 / 2.610 / 2.572 kPa | DERIVED |
+| Pressure at 47.5 L and 28.5 L, 60 °C | 1.607 kPa / 1.132 kPa | DERIVED |
+| `dV/dh` at 95 L (free-surface width × L) | 0.439 L/mm | DERIVED |
+| `dp/dV` at 95 L / 47.5 L / 28.5 L, 60 °C | 0.0195 / 0.0234 / 0.0271 kPa/L | DERIVED |
+| Fixed 80 kg of oil, 40 → 100 °C | 2.555 → 2.523 kPa (−1.3 %) | DERIVED |
 
-Gains were deliberately NOT silently rescaled: rescaling without weighed oil
-would trade a labeled proxy for an unlabeled one and break the N1–N4 demo
-evidence (T9/T10/T11). The bench (§4 of `docs/calibration.md` template) must
-measure the true `h(L)` mapping; only then does fusion get a field anchor.
+Resolution is worst at the top of the range: the free surface widens with
+height, so each litre moves the column least where the gear case is full.
+
+Temperature: a fixed **mass** occupies `V(T) = m / rho(T)`. In a
+vertical-walled tank `p = m·g/A` would be temperature-invariant; in the
+annulus it is not (−1.3 % over 40 → 100 °C above), which is the physical
+reason the temperature compensation of the level channel exists
+(`ai/anomaly.py` fits the empirical coefficient; the true `rho(T)` slope is
+≈ −0.002 kPa/°C at 95 L).
+
+Required transducer (DERIVED from `sim/physics.py:sensor_resolution_l`,
+60 °C, uncertainty in litres):
+
+| Cell | 95 L | 47.5 L | 28.5 L |
+|---|---|---|---|
+| 0–10 kPa, ±0.1 %FS | ±0.51 L | ±0.43 L | ±0.37 L |
+| 0–10 kPa, ±0.25 %FS | ±1.28 L | ±1.07 L | ±0.92 L |
+| 0–50 kPa, ±0.25 %FS | ±6.4 L | ±5.4 L | ±4.6 L |
+| 0–1000 kPa, ±1.2 %FS (T2 narrative cell) | ±615 L | ±513 L | ±442 L |
+
+The level channel needs a **0–5 to 0–10 kPa** cell with ≤ ±0.25 %FS to keep
+the §4 gates (bias < 1 L) reachable; the demo pipeline models 0.1 %FS of a
+0–10 kPa cell (white noise 0.01 kPa at rest, 0.04 kPa while moving). A 0–10
+kPa cell also covers the brim (full annulus 10.4 kPa at 40 °C), but nominal
+operation stays below 3 kPa.
+
+Settling model (P14, ASSUMPTION): while the wheel turns, gears and walls lift
+`V_holdup = 6 L · wheel_rpm / 91.97` out of the static pool (≈ 0.11 kPa less
+pressure at full speed, observable as the moving-vs-rest offset); at stop the
+oil drains back as `V_holdup · exp(−t/tau)` with `tau = 0.75 s · viscosity_proxy`
+(nominal proxy 1.0 matches the stub `tau = 0.3·v + 0.45`). `sim/settling.py`
+still recovers a tau that increases monotonically with the proxy
+(`tests/test_generate.py::test_settling_tau_still_increases_with_viscosity_proxy`).
+The rest detector confirms rest 3 s after stopping, so for nominal oil the
+transient has decayed to < 2 % before level scoring starts.
+
+Gear train (P15, ASSUMPTION; Fig. 95 shows one ring gear, item 24, so both
+stages share Zr). Overall ratio `(1 + Zr/Zs_HS) · (1 + Zr/Zs_LS)`:
+
+| Stage | Zs | Zp | Zr | Planets | Stage ratio |
+|---|---|---|---|---|---|
+| HS (shaft → HS carrier) | 16 | 38 | 92 | 3 | 6.750 |
+| LS (LS sun item 33 → LS carrier item 25) | 24 | 34 | 92 | 4 | 4.833 |
+| Total | | | | | 32.625 (error +0.015 % vs 32.62) |
+
+Constraints enforced by `sim/geartrain.py:search_tooth_counts`: `Zr = Zs + 2·Zp`,
+`(Zs + Zr)/N` integer, `Zs ≥ 13`, no planet-to-planet interference, total ratio
+within 0.5 %. Shared-ring solutions exist (32 within 0.5 % for Zr = 40–140, N ∈ {3, 4});
+the table row is the smallest ring with < 0.02 % error. 3000 rpm at the rotor
+gives 91.95 rpm at the wheel (VERIFIED arithmetic 91.97).
+
+```python
+from sim.geometry import head_from_volume, dV_dh
+from sim import physics
+h = head_from_volume(95.0)
+print(h, dV_dh(h), physics.pressure_kpa_from_volume(95.0, 60.0))
+# 0.3049 m, 0.4388 L/mm, 2.610 kPa
+```
 
 ## 3. Sensor-range spec (document-not-built; thesis annex level)
 
 | Channel | Demo assumption | GAP finding | Thesis spec (no purchase) |
 |---------|----------------|-------------|---------------------------|
-| Pressure | 0–1000 kPa FS cell (T2 narrative) | FS dwarfs the §2 signal (2.6–4.4 kPa realistic head): Bosch ±1.2% FS = **±12 kPa error > signal** | Low-range 0–50 or 0–100 kPa cell for the level channel; keep a high-range cell only for abrupt-drop transient capture |
+| Pressure | 0–1000 kPa FS cell (T2 narrative) | FS dwarfs the §2 signal (≈ 1.1–2.7 kPa over 28.5–95 L): ±1.2 %FS = ±12 kPa error > signal (±615 L) | Low-range **0–5 / 0–10 kPa** cell, ≤ ±0.25 %FS (±0.5–1.3 L at 95 L, §2 table) for the level channel; keep a high-range cell only for abrupt-drop transient capture |
 | Temperature | Type-K at magnetic plug | Type-K tolerances (±2.2 °C / ±0.75%) are fine for compensation but must be budgeted in `sigma_L` | Tolerance budget row in bench report; probe calibration certificate cited |
 | Vibration | ADXL345/LIS3DH class MEMS | Bandwidth adequate for RMS/kurtosis features, but **85 °C max < 120 °C environment** | High-temp variant required for field; bench at ≈75 °C stays within rated range |
 | Current | Split-core Hall clamp | Feasible, non-invasive | No change; operational-var context only |

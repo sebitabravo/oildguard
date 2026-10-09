@@ -81,3 +81,16 @@ def test_a_1000_kpa_cell_cannot_resolve_the_level():
 def test_absurdity_check_stays_as_historical_record():
     ac = physics.absurdity_check()
     assert ac["implied_head_m"] > 3.0
+
+
+def test_local_sensitivity_matches_finite_difference():
+    v, t = 95.0, 60.0
+    numeric = (
+        physics.pressure_kpa_from_volume(v + 0.01, t, GC)
+        - physics.pressure_kpa_from_volume(v - 0.01, t, GC)
+    ) / 0.02
+    assert physics.kpa_per_liter(v, t, GC) == pytest.approx(numeric, rel=1e-3)
+
+
+def test_sensitivity_is_worst_where_the_surface_is_widest():
+    assert physics.kpa_per_liter(130.0, 60.0, GC) < physics.kpa_per_liter(10.0, 60.0, GC)

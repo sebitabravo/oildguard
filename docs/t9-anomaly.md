@@ -12,10 +12,11 @@ For each sample inside a T7 `rest` window (`sim/detect.py` output):
 
 - `T_REF` = mean temperature of the baseline window,
   `beta` = least-squares slope of pressure on temperature there
-  (0 when temperature variance is negligible, clipped to ±0.5),
+  (0 when temperature variance is negligible, clipped to ±0.05 kPa/°C),
 - residual `r = p_obs − beta·(T_obs − T_REF)`,
 - score `z = (r − mu) / sigma` (mu/sigma from the baseline window,
-  sigma floored at 0.10 kPa, below the T6 rest noise of 0.15 kPa).
+  sigma floored at 0.005 kPa, half the 0.01 kPa rest noise of a 0–10 kPa class transducer;
+  the figures in the sample outputs below predate the geometry rescale and scale by ≈ 0.093).
 
 Flag when `|z| > 3.0` (configurable `--z-threshold`). Baseline = the
 FIRST rest window in time order (the natural recalibration reference);
