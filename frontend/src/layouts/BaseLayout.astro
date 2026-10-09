@@ -24,9 +24,18 @@ const navigation: Array<{ id: Section; label: DictKey; href: string }> = [
     <title>OilGuard Mining — Digital twin</title>
     <script is:inline>
       document.documentElement.style.visibility = "hidden";
+      const queryLanguage = new URLSearchParams(window.location.search).get("lang")?.trim().toLowerCase();
       try {
-        if (localStorage.getItem("oilguard-lang") === "es") document.documentElement.lang = "es";
-      } catch {}
+        if (queryLanguage === "en" || queryLanguage === "es") {
+          localStorage.setItem("oilguard-lang", queryLanguage);
+        }
+        document.documentElement.lang =
+          queryLanguage === "es" || (queryLanguage !== "en" && localStorage.getItem("oilguard-lang") === "es")
+            ? "es"
+            : "en";
+      } catch {
+        document.documentElement.lang = queryLanguage === "es" ? "es" : "en";
+      }
     </script>
   </head>
   <body>
@@ -75,6 +84,7 @@ const navigation: Array<{ id: Section; label: DictKey; href: string }> = [
     </div>
     <script>
       import { isLegacyHash, pathFromHash } from "../routes";
+      import { languageFromQuery } from "../i18n/queryLanguage";
 
       const languageKey = "oilguard-lang";
       const readLanguage = () => {
@@ -120,7 +130,16 @@ const navigation: Array<{ id: Section; label: DictKey; href: string }> = [
       window.addEventListener("storage", (event) => {
         if (event.key === languageKey) updateLanguage(readLanguage());
       });
-      updateLanguage(readLanguage());
+      const queryLanguage = languageFromQuery(window.location.search);
+      if (queryLanguage) {
+        try {
+          localStorage.setItem(languageKey, queryLanguage);
+        } catch {
+          // El almacenamiento puede no estar disponible en algunos contextos.
+        }
+        window.dispatchEvent(new CustomEvent("oilguard:lang", { detail: queryLanguage }));
+      }
+      updateLanguage(queryLanguage ?? readLanguage());
 
       const redirectLegacyHash = () => {
         if (!isLegacyHash(window.location.hash)) return;
