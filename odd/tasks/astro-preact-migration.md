@@ -36,7 +36,7 @@ static parts ship as HTML and each section only loads the JavaScript it needs.
   hosting the current app as an island. Parity check. Route: delegated (Codex), writer trigger (2+ files).
 - [x] T2 Per-section pages (`/mine`, `/wheel`, `/monitoring`), static shell layout, hash-alias
   redirects, three.js only on 3D pages. Route: delegated (Codex).
-- [ ] T3 Docker, compose, README; bundle size per page measured against baseline. Route: delegated (Codex).
+- [x] T3 Docker, Compose, README; bundle size per page measured against baseline. Route: delegated (Codex).
 
 ## Acceptance criteria
 - `bun test src` green.
@@ -70,6 +70,18 @@ static parts ship as HTML and each section only loads the JavaScript it needs.
   Every route also reaches shared chunks `client.BUfN-eYz.js` (1516), `preact.module.Bl7PEaKa.js` (4413), `hooks.module.Dg9jNwZI.js` (1233), `jsxRuntime.module.Cw4i040A.js` (2755), `signals.module.D9-naAAZ.js` (2964), and `BaseLayout.astro_astro_type_script_index_1_lang.DmkoAs-p.js` (96). `/monitoring`'s complete reachable graph excludes `HonestyBadge.BBURH5b8.js` (the 143370-byte gzip chunk with a WebGL signature), `BenchView`, and `TruckView`; no Three.js/WebGL signatures were found in its reachable files. The BaseLayout module retains the local Impeccable script URL; that pre-existing live script remains unstaged and outside the commit.
 - The cumulative RDD slice assessment from reviewed boundary `206ab2a` is medium risk, 12 changed paths / 349 lines, `review_due: false` (`under_budget`); it remains pending the slice budget. Untracked local files were explicitly excluded from assessment.
 - Manual browser visual parity was not checked in this task; only build/test and emitted bundle graphs were verified.
+- 2026-10-09 — The original migration evidence above used npm/Vite before T2 introduced Astro pages; those historical evidence lines are retained unchanged.
+- 2026-10-09 — The RDD review lineage `review-d3688006b8385c3b` stalled on a malformed collect transition. Independent review findings are captured in `/tmp/oilguard-astro-review.md`; the header text-wipe blocker and first-paint language flash were fixed in `8940166`, and backend public-env handling plus Compose/docs in `f17d7b7`. The monitoring dashboard mounted with no browser console errors; no dashboard code fix was needed. Final browser DOM evidence retains the three navigation links, two EN/ES controls, Spanish labels, and visible dashboard content.
+- Final per-page JavaScript gzip sizes from the built `dist` after these fixes (external reachable module graph plus inline scripts; HTML and CSS excluded):
+
+  | Route | External JS gzip | Inline JS gzip | Total JS gzip | Reachable page-specific chunks |
+  |---|---:|---:|---:|---|
+  | `/wheel` | 166321 B | 2998 B | 169319 B | `BenchView.B4hPiD-y.js` 8706 B; `HonestyBadge.BBURH5b8.js` 144175 B; `demoBus.C863TM-V.js` 454 B |
+  | `/mine` | 179651 B | 2998 B | 182649 B | `TruckView.D_IhOu75.js` 20812 B; `HonestyBadge.BBURH5b8.js` 144175 B; `cycle.D7vnwOAo.js` 1678 B |
+  | `/monitoring` | 20991 B | 2998 B | 23989 B | `Dashboard.BaVMtoaE.js` 5873 B; `cycle.D7vnwOAo.js` 1678 B; `demoBus.C863TM-V.js` 454 B |
+
+  Each external graph also includes `client.BUfN-eYz.js` (1509 B), `preact.module.Bl7PEaKa.js` (4412 B), `hooks.module.Dg9jNwZI.js` (1233 B), `jsxRuntime.module.Cw4i040A.js` (2752 B), `signals.module.D9-naAAZ.js` (2984 B), and `BaseLayout.astro_astro_type_script_index_1_lang.DmkoAs-p.js` (96 B). Inline total comprises the early visibility/language initializer (144 B gzip), post-header text/ARIA/state swap (277 B), Astro island bootstrap (125 B), Astro island runtime (1775 B), and legacy hash/header language module (677 B). `/monitoring` does not load `HonestyBadge`, either 3D view, or Three.js/WebGL modules.
+- Six EN/ES screenshots captured from the built site: `/tmp/og-shots/mine-en.png`, `mine-es.png`, `wheel-en.png`, `wheel-es.png`, `monitoring-en.png`, and `monitoring-es.png`. Browser console error arrays for `/monitoring` EN and ES were empty. Headless WebGL shader errors occurred on the 3D routes only in SwiftShader; this does not affect the dashboard route.
 
 ## Next step
-Proceed to T3 (Docker, Compose, README), with the T2 browser visual check still pending.
+Migration and its requested corrections are complete; T3 is checked with per-page bundle and browser evidence above.

@@ -8,7 +8,7 @@
 - **Status:** in progress
 - **Delivery strategy:** `exception-ok` — user explicitly authorized unlimited changes ("realiza todos los cambios que quieras", goal mode, no pause). No PR is created in this feature; slicing into PRs is decided by the user at push time.
 - **Mirror:** Engram topic `odd/oilguard-pro-twin/tasks`
-- **TDD:** `on` from T2 onward — source: project rule (`rules/common/testing.md`: all production code carries tests; runner must be configured before code). Runners: `pytest` (Python: `sim/`, `ai/`, `backend/`) and `bun test` (frontend pure logic, zero new npm deps). Recorded here; T2 configures both.
+- **TDD:** `on` from T2 onward — source: project rule (`rules/common/testing.md`: all production code carries tests; runner must be configured before code). Runners: `pytest` (Python: `sim/`, `ai/`, `backend/`) and `bun test` (frontend pure logic; zero new frontend dependencies at T2). Recorded here; T2 configures both.
 - **Created:** 2026-10-09
 - **Artifact language:** English
 
@@ -53,13 +53,13 @@ physically consistent digital twin that delivers what the pre-proposal
 ### Non-scope
 
 - No push / PR / deploy / remote ops (user decision).
-- No new npm dependencies without explicit confirmation (use three.js built-ins + `bun test`).
+- No new frontend dependencies without explicit confirmation (use Three.js built-ins + `bun test`).
 - No hardware; no claim of field accuracy; gear tooth counts and cavity dimensions not published by GE are labeled ASSUMPTION.
 - No CAD-exact GE geometry (proprietary); parametric reconstruction from Fig. 95 proportions and manual dimensions.
 
 ## Constraints
 
-- Stack unchanged: React + Vite + Three.js 0.169 + FastAPI + InfluxDB + MQTT + Docker.
+- Stack: Astro 7 + Preact 10 islands + Three.js 0.169 + FastAPI + InfluxDB + MQTT + Docker.
 - Physics anchors from manuals (VERIFIED): 930E-4SE 15.29 × 8.89 × 8.10 m, body-up 14.80 m, tires 53/80R63, body 211 m³ heaped / interior width 8.15 m / depth 3.2 m / loading height 7.06 m / dump angle 45°, turning circle 30.4 m, max speed 64.5 km/h, GDY106 32.62:1, 94–95 L SAE 85W-140 per wheel, rotor ≤ 3000 RPM.
 - Every non-manual number is labeled VERIFIED / DERIVED / ASSUMPTION in `docs/thesis-annex.md`.
 - Honest labeling stays: SYNTHETIC-PROXY until bench data exists.
@@ -76,23 +76,24 @@ physically consistent digital twin that delivers what the pre-proposal
 - [ ] T6 — GDY106 cutaway twin (route: delegated writer; trigger: new large 3D module + physics coupling).
 - [ ] T7 — Fleet dashboard + combined risk (route: delegated writer; trigger: dashboard + ai ladder files).
 - [ ] T8 — Signed measurements (route: delegated writer; trigger: sim + backend + tests).
-- [ ] T9 — Docs, CI, screenshots, demo script (route: delegated writer; trigger: many doc files).
+- [ ] T9 — Docs, CI, screenshots of `/mine`, `/wheel`, and `/monitoring`, demo script (CI uses `oven-sh/setup-bun`, frozen Bun install, frontend tests/build, and pytest; route: delegated writer; trigger: many doc files).
 - [ ] T10 — Rotating-sensor physics: three regimes (static pool / slosh / centrifugal rimming), per-revolution submerged-fraction feature, research cavity geometry (route: delegated writer; trigger: sim + ai + TS mirror + tests). Added 2026-10-09 after T1 finding: drain plug 56, magnetic plugs 41 and sun cover 39 are on the rotating output (LS carrier 25 → torque tube 29 → hub 14); pre-proposal claim "fixed points, no moving parts" is contradicted.
 
 ## Acceptance criteria
 
 1. `pytest` and `bun test` pass locally; commands recorded with observed output.
-2. `npx tsc --noEmit -p tsconfig.json` (frontend/) and `npx vite build` pass.
+2. `bun run build` (frontend/, `astro check && astro build`) passes.
 3. Truck scene shows a recognizable 930E (front stairs, upper deck, cab left, canopy, dual rear tires 53/80R63, hoist cylinders) at manual scale, inside a benched pit with a graded ramp, shovel and crusher; ≥ 3 trucks cycle.
 4. Bench scene shows a GDY106 section with two planetary stages animating at 32.62:1 overall, amber oil pool whose depth comes from the shared h(V) function, sensors at items 56/41/39 and the traction cable.
 5. Pipeline pressure at 95 L equals ρ·g·h(95 L) from the shared geometry (no 28 kPa anchor); N1–N4 + RUL demo still walks end-to-end.
-6. Dashboard: fleet grid with per-wheel traffic light → wheel detail in ≤ 2 clicks; temp/vib/current series; combined-risk alert rule tested.
+6. Dashboard: from the `/monitoring` fleet grid, wheel detail is reachable in ≤ 2 clicks via in-island state or navigation to `/wheel?...` with query state; temp/vib/current series; combined-risk alert rule tested. The Dashboard Preact island owns monitoring; shared navigation is in `BaseLayout.astro`, and language changes synchronize through the `oilguard:lang` event.
 7. Backend rejects tampered/unsigned rows when signing is enforced; tests prove it.
-8. Screenshots in `docs/screenshots/` re-captured from the running app.
+8. Screenshots in `docs/screenshots/` re-captured from the running `/mine`, `/wheel`, and `/monitoring` pages.
+9. CI uses `oven-sh/setup-bun`, `bun install --frozen-lockfile`, `bun test src`, `bun run build`, and pytest.
 
 ## Applicable checks
 
-- `pytest -q` (repo root), `bun test` (frontend/), `npx tsc --noEmit -p tsconfig.json`, `npx vite build` (frontend/), `docker compose config --quiet`, headless Chrome screenshots of each tab.
+- `pytest -q` (repo root), `bun test src` (frontend/), `bun run build` (frontend/; includes `astro check` and `astro build`), `docker compose config --quiet`, and headless Chrome screenshots of `/mine`, `/wheel`, and `/monitoring`.
 
 ## Progress / Evidence
 
@@ -109,7 +110,7 @@ Screenshot procedure (all visual tasks): headless Chrome
 
 `--headless=new --use-angle=swiftshader --enable-unsafe-swiftshader --window-size=1600,1000 --timeout=12000 (virtual-time-budget hangs since live.js; run in background, one instance at a time) --screenshot=<png> <url>`
 
-against the Vite dev server on :5173.
+against the Astro dev server on :5173, using `/mine`, `/wheel`, and `/monitoring` URLs.
 
 RDD outcomes: T2 slice c4a9ba6 declined; T2+T3 range lens_context_budget_exceeded; T4 declined.
 
