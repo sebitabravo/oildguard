@@ -2,21 +2,54 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { BENCH_SENSORS } from "./sensors";
+import {
+  formatOilText,
+  oilColorFor,
+  oilCssFor,
+  oilStateFor,
+  oilStateLabel,
+} from "./oil";
+import { wobbleAt } from "./settling";
 
-// T2 bench-rig scene (Sim A, part 1 of 2).
+// T2 bench-rig scene (Sim A, part 1 of 2) + T3 cutaway internals (part 2).
 // Steel test-rig frame + simplified GDY106 wheel/motor housing with four
 // no-drill sensor markers. Physically-plausible proportions, NOT CAD-exact.
-// Oil volume + settling-transient animation land in T3; this scene is the
-// static rig + markers + labels.
+// T3 adds: sun gear + planetary pinions + rotor barrel (low-poly, same
+// low-metalness PBR rule as T2), 95 L oil fill with threshold colors, and a
+// damped-sine settling wobble on move->rest driven by `viscosityProxy`.
+
+export type BenchMode = "move" | "rest";
 
 interface BenchSceneProps {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  /** Driven oil fill, 0..1 (slider in BenchView; fused value in S6). */
+  oilLevel: number;
+  /** Settling shape proxy: 0.5 dilute/fast … 2.0 degraded/slow. */
+  viscosityProxy: number;
+  /** Move churns the oil + spins the gear set; rest lets it settle. */
+  mode: BenchMode;
+  /** Semi-transparent housing shell revealing internals + oil. */
+  cutaway: boolean;
 }
+
+/** Oil fill slab geometry inside the barrel (scene units). */
+const OIL_BOTTOM = 1.6;
+const OIL_MIN_H = 0.04;
+const OIL_MAX_H = 0.94;
+
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 const HOUSING_Y = 2.09; // motor axis height above ground
 
-export default function BenchScene({ selectedId, onSelect }: BenchSceneProps) {
+export default function BenchScene({
+  selectedId,
+  onSelect,
+  oilLevel,
+  viscosityProxy,
+  mode,
+  cutaway,
+}: BenchSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const labelRefs = useRef(new Map<string, HTMLDivElement>());
   // Refs mirror props for use inside the three.js effect (no re-subscribe).
@@ -24,6 +57,14 @@ export default function BenchScene({ selectedId, onSelect }: BenchSceneProps) {
   selectedRef.current = selectedId;
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const oilLevelRef = useRef(oilLevel);
+  oilLevelRef.current = oilLevel;
+  const viscosityRef = useRef(viscosityProxy);
+  viscosityRef.current = viscosityProxy;
+  const modeRef = useRef<BenchMode>(mode);
+  modeRef.current = mode;
+  const cutawayRef = useRef(cutaway);
+  cutawayRef.current = cutaway;
 
   useEffect(() => {
     const host = hostRef.current;
@@ -77,11 +118,13 @@ export default function BenchScene({ selectedId, onSelect }: BenchSceneProps) {
       color: 0x5b7ba6,
       metalness: 0.25,
       roughness: 0.55,
+      transparent: true,
     });
     const gearboxMat = new THREE.MeshStandardMaterial({
       color: 0x6b80a0,
       metalness: 0.25,
       roughness: 0.55,
+      transparent: true,
     });
     const brass = new THREE.MeshStandardMaterial({
       color: 0xd9b13b,
@@ -157,6 +200,7 @@ export default function BenchScene({ selectedId, onSelect }: BenchSceneProps) {
     // ---- Simplified GDY106 wheel/motor housing (NOT CAD-exact) ----
     // Motor barrel along X with cooling ribs, gearbox + cover plate on the
     // left (-X), output flange + shaft stub on the right (+X).
+    // barrelMesh/gearboxMesh opacity is driven per-frame by `cutaway`.
     cylX(0.55, 1.7, housingMat, 0, HOUSING_Y, 0); // barrel
     for (const rx of [-0.5, 0, 0.5]) {
       const rib = new THREE.Mesh(
@@ -209,6 +253,135 @@ export default function BenchScene({ selectedId, onSelect }: BenchSceneProps) {
     disposables.push(cable.geometry);
     box(0.2, 0.14, 0.14, darkSteel, 0.25, 2.6, 0); // junction box
     box(0.16, 0.12, 0.12, darkSteel, 1.0, 2.2, 0.45); // Hall clamp body
+
+    // ---- T3 cutaway internals (simplified GDY106, NOT CAD-exact) ----
+    // Sun gear on the motor axis inside the gearbox, three planetary
+    // pinions around it, ring-gear hint, and the rotor barrel volume in the
+    // motor housing. Low-poly cylinders + box teeth, same low-metalness
+    // PBR rule as T2 (no environment map in this scene).
+    const gearMat = new THREE.MeshStandardMaterial({
+      color: 0x8f9db5,
+      metalness: 0.3,
+      roughness: 0.5,
+    });
+    const rotorMat = new THREE.MeshStandardMaterial({
+      color: 0x7a6a4f,
+      metalness: 0.3,
+      roughness: 0.5,
+    });
+    const oilMat = new THREE.MeshStandardMaterial({
+      color: oilColorFor(oilStateFor(clamp01(oilLevelRef.current))),
+      emissive: oilColorFor(oilStateFor(clamp01(oilLevelRef.current))),
+      emissiveIntensity: 0.25,
+      metalness: 0.1,
+      roughness: 0.15,
+      transparent: true,
+      opacity: 0.85,
+    });
+    disposables.push(gearMat, rotorMat, oilMat);
+
+    const spinGroup = (rate: number) => {
+      const group = new THREE.Group();
+      scene.add(group);
+      return { group, rate };
+    };
+    const spinners = [
+      spinGroup(3), // sun shaft + sun gear
+      spinGroup(6), // rotor barrel (illustrative speed; real 3000 RPM aliases)
+    ];
+    const pinionSpinners = [spinGroup(-6), spinGroup(-6), spinGroup(-6)];
+    const gearAt = (
+      parent: THREE.Group,
+      x: number,
+      y: number,
+      z: number,
+      discR: number,
+      thick: number,
+      teeth: number
+    ) => {
+      const disc = new THREE.Mesh(
+        new THREE.CylinderGeometry(discR, discR, thick, 16),
+        gearMat
+      );
+      disc.rotation.z = Math.PI / 2;
+      disc.position.set(x, y, z);
+      parent.add(disc);
+      disposables.push(disc.geometry);
+      for (let i = 0; i < teeth; i++) {
+        const a = (i / teeth) * Math.PI * 2;
+        const tooth = new THREE.Mesh(
+          new THREE.BoxGeometry(thick * 0.9, 0.07, 0.09),
+          gearMat
+        );
+        tooth.position.set(x, y + Math.cos(a) * (discR + 0.03), z + Math.sin(a) * (discR + 0.03));
+        tooth.rotation.x = -a;
+        parent.add(tooth);
+        disposables.push(tooth.geometry);
+      }
+    };
+
+    // Sun shaft along the motor axis + sun gear disc inside the gearbox.
+    const sunShaft = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.1, 2.6, 12),
+      gearMat
+    );
+    sunShaft.rotation.z = Math.PI / 2;
+    sunShaft.position.set(-0.3, HOUSING_Y, 0);
+    spinners[0].group.add(sunShaft);
+    disposables.push(sunShaft.geometry);
+    gearAt(spinners[0].group, -1.4, HOUSING_Y, 0, 0.2, 0.14, 10);
+    // Three planetary pinions at 120° around the sun (carrier fixed).
+    for (let k = 0; k < 3; k++) {
+      const a = (k / 3) * Math.PI * 2;
+      gearAt(
+        pinionSpinners[k].group,
+        -1.4,
+        HOUSING_Y + Math.cos(a) * 0.34,
+        Math.sin(a) * 0.34,
+        0.11,
+        0.3,
+        8
+      );
+    }
+    // Ring-gear hint (static torus around the pinion set).
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.47, 0.05, 10, 24),
+      darkSteel
+    );
+    ring.rotation.y = Math.PI / 2;
+    ring.position.set(-1.4, HOUSING_Y, 0);
+    scene.add(ring);
+    disposables.push(ring.geometry);
+    // Rotor barrel volume inside the motor housing + end rings.
+    const rotor = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.36, 0.36, 1.2, 20),
+      rotorMat
+    );
+    rotor.rotation.z = Math.PI / 2;
+    rotor.position.set(0, HOUSING_Y, 0);
+    spinners[1].group.add(rotor);
+    disposables.push(rotor.geometry);
+    for (const rx of [-0.6, 0.6]) {
+      const endRing = new THREE.Mesh(
+        new THREE.TorusGeometry(0.37, 0.03, 10, 24),
+        gearMat
+      );
+      endRing.rotation.y = Math.PI / 2;
+      endRing.position.set(rx, HOUSING_Y, 0);
+      spinners[1].group.add(endRing);
+      disposables.push(endRing.geometry);
+    }
+
+    // ---- T3 oil volume: fill slab inside the barrel ----
+    // Height tracks the driven fill fraction; color follows the
+    // <50% warning / <30% critical bands (oil.ts). The slab tilts with
+    // the settling wobble driven in the animation loop below.
+    const oilMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1.5, 1, 0.9),
+      oilMat
+    );
+    scene.add(oilMesh);
+    disposables.push(oilMesh.geometry);
 
     // ---- Sensor markers: small emissive spheres (clickable) ----
     const markerMeshes: THREE.Mesh[] = [];
@@ -273,8 +446,56 @@ export default function BenchScene({ selectedId, onSelect }: BenchSceneProps) {
       }
     };
 
+    // T3 motion state: spin + slosh while moving; damped-sine wobble
+    // after a move->rest transition, then still oil (recalibration window).
+    const clock = new THREE.Clock();
+    let elapsed = 0;
+    let prevMode: BenchMode = modeRef.current;
+    let restStart = -10;
+    let lastFrac = -1;
+
     let frameId = 0;
     const animate = () => {
+      const dt = Math.min(clock.getDelta(), 0.05);
+      elapsed += dt;
+      const benchMode = modeRef.current;
+      if (prevMode === "move" && benchMode === "rest") {
+        restStart = elapsed;
+      }
+      prevMode = benchMode;
+
+      let tilt: number;
+      if (benchMode === "move") {
+        // Churn: gear set spins, oil surface sloshes continuously.
+        for (const s of spinners) s.group.rotation.x += dt * s.rate;
+        for (const p of pinionSpinners) p.group.rotation.x += dt * p.rate;
+        tilt =
+          0.08 * Math.sin(elapsed * 7) + 0.03 * Math.sin(elapsed * 11.3);
+      } else {
+        // Rest: still gear set; wobble decays as a damped sine shaped by
+        // the viscosity proxy (settling.ts), then the surface goes flat.
+        const tRest = elapsed - restStart;
+        tilt = tRest < 8 ? wobbleAt(tRest, viscosityRef.current) : 0;
+      }
+      oilMesh.rotation.z = tilt;
+
+      // Oil fill height + threshold color follow the driven fraction.
+      const frac = clamp01(oilLevelRef.current);
+      if (frac !== lastFrac) {
+        lastFrac = frac;
+        const hex = oilColorFor(oilStateFor(frac));
+        oilMat.color.setHex(hex);
+        oilMat.emissive.setHex(hex);
+      }
+      const h = OIL_MIN_H + frac * (OIL_MAX_H - OIL_MIN_H);
+      oilMesh.scale.y = h;
+      oilMesh.position.set(0, OIL_BOTTOM + h / 2, 0);
+
+      // Cutaway fades the housing shell so internals + oil stay visible.
+      const shellTarget = cutawayRef.current ? 0.22 : 1;
+      housingMat.opacity += (shellTarget - housingMat.opacity) * 0.15;
+      gearboxMat.opacity += (shellTarget - gearboxMat.opacity) * 0.15;
+
       controls.update();
       for (const marker of markerMeshes) {
         const active = marker.userData.sensorId === selectedRef.current;
@@ -308,6 +529,10 @@ export default function BenchScene({ selectedId, onSelect }: BenchSceneProps) {
     };
   }, []);
 
+  const oilState = oilStateFor(clamp01(oilLevel));
+  const oilCss = oilCssFor(oilState);
+  const resting = mode === "rest";
+
   return (
     <div style={{ position: "relative", width: "100%", height: 480 }}>
       <div ref={hostRef} style={{ position: "absolute", inset: 0 }} />
@@ -319,6 +544,51 @@ export default function BenchScene({ selectedId, onSelect }: BenchSceneProps) {
           overflow: "hidden",
         }}
       >
+        <div
+          style={{
+            position: "absolute",
+            left: 12,
+            top: 12,
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#e8edf5",
+            background: "rgba(10, 16, 28, 0.82)",
+            border: `1px solid ${oilCss}`,
+            borderRadius: 4,
+            padding: "4px 10px",
+          }}
+        >
+          <span
+            style={{
+              display: "inline-block",
+              width: 9,
+              height: 9,
+              borderRadius: "50%",
+              background: oilCss,
+              marginRight: 8,
+            }}
+          />
+          Oil {formatOilText(clamp01(oilLevel))} · {oilStateLabel(oilState)}
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            right: 12,
+            top: 12,
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: 0.4,
+            color: resting ? "#0e1420" : "#8b98ad",
+            background: resting ? "#2fbf71" : "rgba(10, 16, 28, 0.82)",
+            border: `1px solid ${resting ? "#2fbf71" : "#3a4a63"}`,
+            borderRadius: 4,
+            padding: "4px 10px",
+          }}
+        >
+          {resting
+            ? "RECALIBRATING (stopped+leveled+engine-on)"
+            : "STANDBY · recalibration gated (moving)"}
+        </div>
         {BENCH_SENSORS.map((sensor) => (
           <div
             key={sensor.id}
