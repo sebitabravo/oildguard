@@ -6,7 +6,7 @@ export const PALETTE = {
   paintedSteelDark: 0x2a313c,
   machinedSteel: 0xbcc2cc,
   castIron: 0x3a3e45,
-  rubberTire: 0x141414,
+  rubberTire: 0x1b1b1b,
   glassTinted: 0x1c3a4a,
   oilAmber: 0xc9822a,
   oilAttenuation: 0x7a3d06,

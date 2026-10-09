@@ -58,17 +58,41 @@ export const pick = (lang: Lang, en: string, es: string): string =>
   lang === "es" ? es : en;
 
 const dict = {
-  "tab.bench": { en: "Bench (S1/T2)", es: "Banco (S1/T2)" },
-  "tab.truck": { en: "Truck (S2/T4)", es: "Camion (S2/T4)" },
-  "tab.dash": { en: "Dash (S6/T11)", es: "Tablero (S6/T11)" },
-  "tab.stub": { en: "Stub (S0)", es: "Base (S0)" },
-  "app.title": { en: "OilGuard Mining Sim", es: "OilGuard Mining Sim" },
-  "app.subtitle": {
+  "nav.label": { en: "Primary navigation", es: "Navegación principal" },
+  "nav.mine": { en: "Mine & Fleet", es: "Mina y flota" },
+  "nav.wheel": { en: "GDY106 Wheel", es: "Rueda GDY106" },
+  "nav.monitoring": { en: "Monitoring", es: "Monitoreo" },
+  "app.brand": { en: "OilGuard Mining", es: "OilGuard Mining" },
+  "app.tagline": {
+    en: "Digital twin · Komatsu 930E-4SE · GDY106",
+    es: "Gemelo digital · Komatsu 930E-4SE · GDY106",
+  },
+  "app.scope": {
     en: "930E / GDY106 32.62:1 ONLY — 980E-5 (GDY108-C) is future work without validation.",
     es: "Solo 930E / GDY106 32.62:1 — 980E-5 (GDY108-C) es trabajo futuro sin validar.",
   },
-  "lang.toggle": { en: "ES", es: "EN" },
   "lang.label": { en: "Language / Idioma", es: "Idioma / Language" },
+  "drawer.label": { en: "Details panel", es: "Panel de detalle" },
+  "drawer.status": { en: "Status", es: "Estado" },
+  "drawer.sheet": { en: "Technical sheet", es: "Ficha técnica" },
+  "drawer.notes": { en: "Notes", es: "Notas" },
+  "drawer.collapse": { en: "Hide panel", es: "Ocultar panel" },
+  "drawer.expand": { en: "Show panel", es: "Mostrar panel" },
+  "badge.placeholder": { en: "Placeholder model", es: "Modelo provisional" },
+  "badge.proxy": { en: "Synthetic proxy", es: "Sustituto sintético" },
+  "badge.close": { en: "Close note", es: "Cerrar nota" },
+  "truck.honesty": {
+    en: "Visual note: the 3D body is a procedural placeholder with 930E-class proportions, not a manual-faithful model. Every figure in this view (15.29×8.89×8.10 m, body-up 14.80 m, GDY106, 32.62:1, weights and fluids) is 930E-4SE. Provenance: docs/models.md.",
+    es: "Nota visual: la carrocería 3D es un modelo procedural provisional con proporciones de clase 930E, no un modelo fiel al manual. Todas las cifras de esta vista (15.29×8.89×8.10 m, tolva arriba 14.80 m, GDY106, 32.62:1, pesos y fluidos) son 930E-4SE. Procedencia: docs/models.md.",
+  },
+  "bench.honesty": {
+    en: "The cutaway is a simplified reconstruction (not CAD-exact). Oil level, pressure and the viscosity/settling shape are SYNTHETIC-PROXY until the bench drain-and-weigh calibration (docs/calibration.md).",
+    es: "El corte es una reconstrucción simplificada (no exacta en CAD). El nivel de aceite, la presión y la forma de viscosidad/asentamiento son SUSTITUTO SINTÉTICO hasta la calibración de drenaje y pesaje en banco (docs/calibration.md).",
+  },
+  "dash.honesty": {
+    en: "UNPROVEN until the bench drain-and-weigh calibration. If the backend is down, a local DEMO set is used and always labeled.",
+    es: "NO PROBADO hasta la calibración de drenaje y pesaje en banco. Si el backend cae se usa un set DEMO local, siempre rotulado.",
+  },
   "hud.oil": { en: "Oil", es: "Aceite" },
   "hud.recal": {
     en: "RECALIBRATING (stopped+leveled+engine-on)",
@@ -80,7 +104,7 @@ const dict = {
   },
   "hud.moving": { en: "MOVING", es: "EN MOVIMIENTO" },
   "hud.rest": { en: "REST", es: "DETENIDO" },
-  "hud.camera": { en: "Camera:", es: "Camara:" },
+  "hud.camera": { en: "Camera", es: "Cámara" },
   "oil.normal": { en: "NORMAL (≥50%)", es: "NORMAL (≥50%)" },
   "oil.warning": { en: "WARNING (30–50%)", es: "ADVERTENCIA (30–50%)" },
   "oil.critical": { en: "CRITICAL (<30%)", es: "CRITICO (<30%)" },
@@ -92,12 +116,17 @@ const dict = {
   },
   "demo.reset": { en: "Reset demo", es: "Reiniciar demo" },
   "dash.footnote": {
-    en: "28 kPa @ 95 L anchor: SYNTHETIC-PROXY (field-anchor pending h(L) bench) · priors in sim/physics.py · see docs/thesis-annex.md",
-    es: "Referencia 28 kPa @ 95 L: SUSTITUTO SINTETICO (anclaje de campo pendiente del banco h(L)) · priors en sim/physics.py · ver docs/thesis-annex.md",
+    en: "Pressure is derived from the gear-case geometry (sim/geometry.py): ≈2.6 kPa at 95 L · geometry is an ASSUMPTION until the bench h(V) test · SYNTHETIC-PROXY · priors in sim/physics.py · see docs/thesis-annex.md",
+    es: "La presión se deriva de la geometría de la caja de engranajes (sim/geometry.py): ≈2.6 kPa a 95 L · la geometría es un SUPUESTO hasta el ensayo h(V) en banco · SUSTITUTO SINTÉTICO · priors en sim/physics.py · ver docs/thesis-annex.md",
   },
 } as const;
 
 export type DictKey = keyof typeof dict;
+
+/** Todas las claves del diccionario (para verificar cobertura EN/ES en tests). */
+export function dictKeys(): DictKey[] {
+  return Object.keys(dict) as DictKey[];
+}
 
 /** Dictionary lookup with EN fallback. */
 export function t(key: DictKey, lang: Lang): string {

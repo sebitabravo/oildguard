@@ -55,7 +55,7 @@ export const PRESET_DEFAULTS: Record<StagePreset, PresetDefaults> = {
     hemisphereIntensity: 0.25,
   },
   outdoor: {
-    exposure: 0.55,
+    exposure: 0.72,
     sunIntensity: 3.2,
     sunElevationDeg: 34,
     sunAzimuthDeg: 135,

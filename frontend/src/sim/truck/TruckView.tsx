@@ -1,5 +1,5 @@
 import { useState } from "react";
-import TruckScene from "./TruckScene";
+import TruckScene, { STATE_ES } from "./TruckScene";
 import {
   HAUL_DURATIONS,
   HAUL_ORDER,
@@ -13,11 +13,14 @@ import {
   isRecalState,
   type HaulState,
 } from "./cycle";
-import { useLang } from "../../i18n";
+import { t, useLang } from "../../i18n";
+import Drawer from "../../ui/Drawer";
+import HonestyBadge from "../../ui/HonestyBadge";
 
-// Truck view: 930E-4SE fidelity panels (manual-faithful, display only).
-// Dimensions 15.29 x 8.89 x 8.10 m, body-up 14.80 m; weights; fluids footnote;
-// powertrain; brakes; cab; STOP/caution matrix; callouts 1-22 EN/ES.
+// Vista Mina y flota: el visor 3D ocupa todo el alto y el detalle (ciclo,
+// ficha técnica 930E-4SE, notas) vive en el panel lateral con pestañas.
+// Dimensiones 15.29 x 8.89 x 8.10 m, tolva arriba 14.80 m; pesos; fluidos;
+// tren de potencia; frenos; cabina; matriz STOP/precaución; llamadas 1-22 EN/ES.
 
 export default function TruckView() {
   const [current, setCurrent] = useState<HaulState>("LOAD");
@@ -25,228 +28,155 @@ export default function TruckView() {
   const [stepTick, setStepTick] = useState(0);
   const [runId, setRunId] = useState(0);
   const [lang] = useLang();
+  const es = lang === "es";
+
+  const loop = HAUL_ORDER.map((s) => `${es ? STATE_ES[s] : s} ${HAUL_DURATIONS[s]} s`).join(" → ");
+
+  const dock = (
+    <div className="og-hud" style={{ position: "static", display: "flex", gap: 8 }}>
+      <button
+        type="button"
+        className={`og-btn ${paused ? "og-btn--ok" : "og-btn--primary"}`}
+        onClick={() => setPaused((p) => !p)}
+      >
+        {paused ? (es ? "Reanudar ciclo" : "Resume cycle") : es ? "Pausar ciclo" : "Pause cycle"}
+      </button>
+      <button
+        type="button"
+        className="og-btn"
+        disabled={!paused}
+        title={
+          paused
+            ? es ? "Avanzar 1 s" : "Advance the FSM clock 1 s"
+            : es ? "Pausa primero" : "Pause the cycle first, then step"
+        }
+        onClick={() => setStepTick((n) => n + 1)}
+      >
+        {es ? "Paso +1 s" : "Step +1 s"}
+      </button>
+      <button type="button" className="og-btn" onClick={() => setRunId((n) => n + 1)}>
+        {es ? "Reiniciar (CARGA)" : "Restart (LOAD)"}
+      </button>
+    </div>
+  );
+
+  const status = (
+    <>
+      <h2 className="og-h2">{es ? "Ciclo de acarreo" : "Haul cycle"}</h2>
+      <ul className="og-plain">
+        {HAUL_ORDER.map((s) => {
+          const active = s === current;
+          const css = HAUL_STATE_CSS[s];
+          return (
+            <li
+              key={s}
+              className={`og-card og-card--tone${active ? " og-card--active" : ""}`}
+              style={{ ["--tone" as string]: css }}
+            >
+              <span className="og-dot" style={{ marginRight: 8 }} />
+              <strong className="og-num">
+                {es ? STATE_ES[s] : s} · {HAUL_DURATIONS[s]} s ·{" "}
+                {isMovingState(s) ? (es ? "en movimiento" : "moving") : es ? "detenido" : "stopped"}
+              </strong>
+              <br />
+              <span className="og-muted" style={{ fontSize: 13 }}>
+                {es ? HAUL_STATE_BLURB_ES[s] : HAUL_STATE_BLURB[s]}
+              </span>
+              <br />
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: isRecalState(s) ? "var(--og-green)" : "var(--og-muted)",
+                }}
+              >
+                {isRecalState(s)
+                  ? es ? "Ventana RECAL" : "RECAL window"
+                  : es ? "recal bloqueado" : "recal gated"}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      <h2 className="og-h2">{es ? "Matriz rojo-STOP vs ambar" : "Red-STOP vs amber-caution matrix"}</h2>
+      <p className="og-body">
+        <span style={{ color: "var(--og-red)", fontWeight: 700 }}>STOP </span>
+        {es
+          ? "rojo = detener de inmediato (falla critica, N4). Ambar = precaucion, planificar ventana (N1-N3). RUL suprimido = solo anomalias."
+          : "red = stop now (critical fault, N4). Amber = caution, plan a window (N1-N3). Suppressed RUL = anomaly-only."}
+      </p>
+    </>
+  );
+
+  const sheet = (
+    <>
+      <h2 className="og-h2">{es ? "930E-4SE dimensiones y pesos" : "930E-4SE dimensions & weights"}</h2>
+      <p className="og-body og-num">
+        {es
+          ? `Dimensiones ${TRUCK_DIMS_M.L} × ${TRUCK_DIMS_M.W} × ${TRUCK_DIMS_M.H} m; tolva arriba ${TRUCK_DIMS_M.bodyUp} m. Vacio ${TRUCK_WEIGHTS_KG.empty} kg (del ${TRUCK_WEIGHTS_KG.emptyF} / tras ${TRUCK_WEIGHTS_KG.emptyR}); cargado ${TRUCK_WEIGHTS_KG.loaded} kg (del ${TRUCK_WEIGHTS_KG.loadedF} / tras ${TRUCK_WEIGHTS_KG.loadedR}); util ${TRUCK_WEIGHTS_KG.payload} kg, ${TRUCK_WEIGHTS_KG.volumeM3} m3. Max ${TRUCK_WEIGHTS_KG.maxT} T (10% ${TRUCK_WEIGHTS_KG.maxT}-${TRUCK_WEIGHTS_KG.overloadT} T permitido, nunca sobre ${TRUCK_WEIGHTS_KG.overloadT} T).`
+          : `Envelope ${TRUCK_DIMS_M.L} × ${TRUCK_DIMS_M.W} × ${TRUCK_DIMS_M.H} m; body-up ${TRUCK_DIMS_M.bodyUp} m. Empty ${TRUCK_WEIGHTS_KG.empty} kg (F ${TRUCK_WEIGHTS_KG.emptyF} / R ${TRUCK_WEIGHTS_KG.emptyR}); loaded ${TRUCK_WEIGHTS_KG.loaded} kg (F ${TRUCK_WEIGHTS_KG.loadedF} / R ${TRUCK_WEIGHTS_KG.loadedR}); payload ${TRUCK_WEIGHTS_KG.payload} kg, ${TRUCK_WEIGHTS_KG.volumeM3} m3. Max ${TRUCK_WEIGHTS_KG.maxT} T (10% ${TRUCK_WEIGHTS_KG.maxT}-${TRUCK_WEIGHTS_KG.overloadT} T allowed, never above ${TRUCK_WEIGHTS_KG.overloadT} T).`}
+      </p>
+      <h2 className="og-h2">{es ? "Fluidos (nota de conciliacion)" : "Fluids (reconciliation footnote)"}</h2>
+      <p className="og-body">
+        {es
+          ? "Combustible 5299 L (INCAEX) vs 4542 L utilizable (OM); hidraulico 1324/1325 L; carter QSK78 340 L vs SSDA16V160 280 L; engranajes de propulsion 94 L c/u vs 76 L caja de rueda OM (definicion de compartimiento; se adopta 94 con nota OM). Las variantes difieren por definicion de compartimiento y utilizable vs nominal — ver thesis-annex."
+          : "Fuel 5299 L (INCAEX) vs 4542 L usable (OM); hydraulic 1324/1325 L; sump QSK78 340 L vs SSDA16V160 280 L; propulsion gears 94 L each vs OM wheel gearbox 76 L (compartment definition; adopt 94 with OM note). Variants differ by compartment definition and usable vs nominal — see thesis-annex."}
+      </p>
+      <h2 className="og-h2">{es ? "Tren de potencia" : "Powertrain"}</h2>
+      <p className="og-body">
+        {es
+          ? "QSK78 3500 HP @1900 (3429 volante; nota variante SSDA). GTA-39 AC→DC→AC por inversores/condensadores; soplador 453 m3/min; gabinete PCS/PLM/AID/VHMS/IM; motores MT de induccion AC; rejillas 5400 corto/3300 cont hp 0.7 s; caja del eje + Hydrair II del 12.92/tras 9.40 ±6.5°."
+          : "QSK78 3500 HP @1900 (3429 flywheel; SSDA variant note). GTA-39 AC→DC→AC via inverters/condensers; blower 453 m3/min; cabinet PCS/PLM/AID/VHMS/IM; MT AC induction motors; retard grids 5400 short/3300 cont hp 0.7 s; axle box + Hydrair II F12.92/R9.40 ±6.5deg."}
+      </p>
+      <h2 className="og-h2">{es ? "Frenos y cabina" : "Brakes & cab"}</h2>
+      <p className="og-body">
+        {es
+          ? "Servicio <8 km/h todas las ruedas; bloqueo trasero a baja presion; estacionamiento por resorte/hidraulico trasero solo detenido; emergencia automatica. Cabina: RSC tortuga/liebre + interruptor amarillo, override, parada de emergencia, levante HOLD/FLOAT, VHMS captura+azul, enlace rojo, servicio motor azul, campos PLM. VHMS es solo lectura."
+          : "Service <8 km/h all wheels; rear lock at low pressure; spring/hydraulic parking rear stopped-only; emergency auto. Cab: RSC turtle/rabbit + yellow switch, override, e-stop, hoist HOLD/FLOAT, VHMS snapshot+blue, red link, blue engine service, PLM fields. VHMS is read-only."}
+      </p>
+    </>
+  );
+
+  const notes = (
+    <>
+      <h2 className="og-h2">{es ? "Sobre esta vista" : "About this view"}</h2>
+      <p className="og-body">
+        {es
+          ? `930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, tolva arriba ${TRUCK_DIMS_M.bodyUp} m; ciclo ${loop}. Arrastra para orbitar o elige un preajuste de camara (Foso/Cabina/Lateral/Rueda). Azul = EN MOVIMIENTO, verde = DETENIDO; RECAL solo detenido+nivelado+motor encendido.`
+          : `930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, body-up ${TRUCK_DIMS_M.bodyUp} m; loop ${loop}. Drag to orbit or pick a camera preset (Pit/Cab/Side/Wheel). Blue = MOVING, green = REST; RECAL only stopped+leveled+engine-on.`}
+      </p>
+      <p className="og-body">{t("app.scope", lang)}</p>
+      <p className="og-body">{t("truck.honesty", lang)}</p>
+      <h2 className="og-h2">{es ? "Vista superior 1-22" : "Top-view callouts 1-22"}</h2>
+      <ol className="og-list">
+        {TRUCK_CALLOUTS.map((c) => (
+          <li key={c.n}>
+            <strong>{c.n}.</strong> {es ? c.es : c.en}
+          </li>
+        ))}
+      </ol>
+    </>
+  );
 
   return (
-    <div>
-      <p style={{ margin: "0 0 16px", color: "#9fb0c9" }}>
-        {lang === "es"
-          ? `Sim camion S2 (T4+T5): 930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, tolva arriba ${TRUCK_DIMS_M.bodyUp} m; ciclo CARGA 6 s → ACARREO 12 s → DESCARGA 6 s → ESPERA 5 s. 980E-5 (GDY108-C) es futuro sin validar. Arrastra para orbitar o elige preajuste (Foso/Cabina/Lateral/Rueda). Azul = EN MOVIMIENTO, verde = DETENIDO; RECAL solo detenido+nivelado+motor encendido.`
-           : `S2 truck sim (T4+T5): 930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, body-up ${TRUCK_DIMS_M.bodyUp} m; loop LOAD 6 s → HAUL 12 s → DUMP 6 s → WAIT 5 s. 980E-5 (GDY108-C) is future work without validation. Drag to orbit or pick a preset (Pit/Cab/Side/Wheel). Blue = MOVING, green = REST; RECAL only stopped+leveled+engine-on.`}
-      </p>
-      {/* S2-GLB proxy footnote (bilingual, thesis-grade honesty): the 3D
-          mesh is an HD465 visual stand-in scaled to the 930E envelope; all
-          spec numbers on this page are 930E-4SE. Never the reverse. */}
-      <p
-        style={{
-          margin: "0 0 16px",
-          color: "#c7d3e8",
-          fontSize: 13,
-          border: "1px dashed #f5a623",
-          borderRadius: 6,
-          padding: "8px 12px",
-          background: "#141b2d",
-        }}
-      >
-        {lang === "es"
-          ? "Nota de honestidad visual: la malla 3D es un Komatsu HD465 (~55 t) usado como proxy visual adaptado en escala; NO es un 930E. Todas las cifras de esta vista (15.29×8.89×8.10 m, tolva arriba 14.80 m, GDY106, 32.62:1, pesos y fluidos) son 930E-4SE. Procedencia: docs/models.md."
-          : "Visual honesty note: the 3D mesh is a Komatsu HD465 (~55 t) used as a scale-adapted visual proxy; it is NOT a 930E. Every figure in this view (15.29×8.89×8.10 m, body-up 14.80 m, GDY106, 32.62:1, weights and fluids) is 930E-4SE. Provenance: docs/models.md."}
-      </p>
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <div
-          style={{
-            flex: "1 1 520px",
-            minWidth: 320,
-            border: "1px solid #2a3a55",
-          }}
-        >
-          <TruckScene
-            key={runId}
-            paused={paused}
-            stepTick={stepTick}
-            onPhase={setCurrent}
-          />
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              padding: "12px 16px",
-              borderTop: "1px solid #2a3a55",
-              background: "#111a2c",
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setPaused((p) => !p)}
-              style={{
-                cursor: "pointer",
-                color: paused ? "#0e1420" : "#e8edf5",
-                background: paused ? "#2fbf71" : "#f5a623",
-                border: "1px solid transparent",
-                borderRadius: 6,
-                padding: "8px 16px",
-                fontWeight: 700,
-              }}
-            >
-              {paused
-                ? lang === "es" ? "Reanudar ciclo" : "Resume cycle"
-                : lang === "es" ? "Pausar ciclo" : "Pause cycle"}
-            </button>
-            <button
-              type="button"
-              disabled={!paused}
-              title={
-                paused
-                  ? lang === "es" ? "Avanzar 1 s" : "Advance the FSM clock 1 s"
-                  : lang === "es" ? "Pausa primero" : "Pause the cycle first, then step"
-              }
-              onClick={() => setStepTick((n) => n + 1)}
-              style={{
-                cursor: paused ? "pointer" : "not-allowed",
-                color: "#e8edf5",
-                background: "transparent",
-                border: `1px solid ${paused ? "#f5a623" : "#3a4a63"}`,
-                borderRadius: 6,
-                padding: "8px 16px",
-                fontWeight: 600,
-                opacity: paused ? 1 : 0.5,
-              }}
-            >
-              Step +1s
-            </button>
-            <button
-              type="button"
-              onClick={() => setRunId((n) => n + 1)}
-              style={{
-                cursor: "pointer",
-                color: "#e8edf5",
-                background: "transparent",
-                border: "1px solid #f5a623",
-                borderRadius: 6,
-                padding: "8px 16px",
-                fontWeight: 600,
-              }}
-            >
-              {lang === "es" ? "Reiniciar (CARGA)" : "Restart (LOAD)"}
-            </button>
-          </div>
-        </div>
-        <aside
-          style={{
-            flex: "1 1 280px",
-            minWidth: 260,
-            maxWidth: 420,
-            border: "1px solid #2a3a55",
-            padding: 16,
-            background: "#111a2c",
-          }}
-        >
-          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
-            {lang === "es" ? "Ciclo de acarreo" : "Haul cycle"}
-          </h2>
-          <ul style={{ listStyle: "none", margin: "0 0 12px", padding: 0 }}>
-            {HAUL_ORDER.map((s) => {
-              const active = s === current;
-              const css = HAUL_STATE_CSS[s];
-              return (
-                <li
-                  key={s}
-                  style={{
-                    marginBottom: 8,
-                    border: `1px solid ${active ? css : "#2a3a55"}`,
-                    borderRadius: 6,
-                    padding: "8px 10px",
-                    background: active ? "#1b2946" : "transparent",
-                  }}
-                >
-                  <span
-                    style={{
-                      display: "inline-block",
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
-                      background: css,
-                      marginRight: 8,
-                    }}
-                  />
-                  <strong>
-                    {s} · {HAUL_DURATIONS[s]} s ·{" "}
-                    {isMovingState(s)
-                      ? lang === "es" ? "en movimiento" : "moving"
-                      : lang === "es" ? "detenido" : "stopped"}
-                  </strong>
-                  <br />
-                  <span style={{ color: "#9fb0c9", fontSize: 13 }}>
-                    {lang === "es" ? HAUL_STATE_BLURB_ES[s] : HAUL_STATE_BLURB[s]}
-                  </span>
-                  <br />
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: isRecalState(s) ? "#2fbf71" : "#8b98ad",
-                    }}
-                  >
-                    {isRecalState(s)
-                      ? lang === "es" ? "Ventana RECAL" : "RECAL window"
-                      : lang === "es" ? "recal bloqueado" : "recal gated"}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
-            {lang === "es" ? "930E-4SE dimensiones y pesos" : "930E-4SE dimensions & weights"}
-          </h2>
-          <p style={{ margin: "0 0 12px", color: "#c7d3e8", fontSize: 13 }}>
-            {lang === "es"
-              ? `Dimensiones ${TRUCK_DIMS_M.L} × ${TRUCK_DIMS_M.W} × ${TRUCK_DIMS_M.H} m; tolva arriba ${TRUCK_DIMS_M.bodyUp} m. Vacio ${TRUCK_WEIGHTS_KG.empty} kg (del ${TRUCK_WEIGHTS_KG.emptyF} / tras ${TRUCK_WEIGHTS_KG.emptyR}); cargado ${TRUCK_WEIGHTS_KG.loaded} kg (del ${TRUCK_WEIGHTS_KG.loadedF} / tras ${TRUCK_WEIGHTS_KG.loadedR}); util ${TRUCK_WEIGHTS_KG.payload} kg, ${TRUCK_WEIGHTS_KG.volumeM3} m3. Max ${TRUCK_WEIGHTS_KG.maxT} T (10% ${TRUCK_WEIGHTS_KG.maxT}-${TRUCK_WEIGHTS_KG.overloadT} T permitido, nunca sobre ${TRUCK_WEIGHTS_KG.overloadT} T).`
-              : `Envelope ${TRUCK_DIMS_M.L} × ${TRUCK_DIMS_M.W} × ${TRUCK_DIMS_M.H} m; body-up ${TRUCK_DIMS_M.bodyUp} m. Empty ${TRUCK_WEIGHTS_KG.empty} kg (F ${TRUCK_WEIGHTS_KG.emptyF} / R ${TRUCK_WEIGHTS_KG.emptyR}); loaded ${TRUCK_WEIGHTS_KG.loaded} kg (F ${TRUCK_WEIGHTS_KG.loadedF} / R ${TRUCK_WEIGHTS_KG.loadedR}); payload ${TRUCK_WEIGHTS_KG.payload} kg, ${TRUCK_WEIGHTS_KG.volumeM3} m3. Max ${TRUCK_WEIGHTS_KG.maxT} T (10% ${TRUCK_WEIGHTS_KG.maxT}-${TRUCK_WEIGHTS_KG.overloadT} T allowed, never above ${TRUCK_WEIGHTS_KG.overloadT} T).`}
-          </p>
-          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
-            {lang === "es" ? "Fluidos (nota de conciliacion)" : "Fluids (reconciliation footnote)"}
-          </h2>
-          <p style={{ margin: "0 0 12px", color: "#9fb0c9", fontSize: 13 }}>
-            {lang === "es"
-              ? "Combustible 5299 L (INCAEX) vs 4542 L utilizable (OM); hidraulico 1324/1325 L; carter QSK78 340 L vs SSDA16V160 280 L; engranajes de propulsion 94 L c/u vs 76 L caja de rueda OM (definicion de compartimiento; se adopta 94 con nota OM). Las variantes difieren por definicion de compartimiento y utilizable vs nominal — ver thesis-annex."
-              : "Fuel 5299 L (INCAEX) vs 4542 L usable (OM); hydraulic 1324/1325 L; sump QSK78 340 L vs SSDA16V160 280 L; propulsion gears 94 L each vs OM wheel gearbox 76 L (compartment definition; adopt 94 with OM note). Variants differ by compartment definition and usable vs nominal — see thesis-annex."}
-          </p>
-          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
-            {lang === "es" ? "Tren de potencia" : "Powertrain"}
-          </h2>
-          <p style={{ margin: "0 0 12px", color: "#c7d3e8", fontSize: 13 }}>
-            {lang === "es"
-              ? "QSK78 3500 HP @1900 (3429 volante; nota variante SSDA). GTA-39 AC→DC→AC por inversores/condensadores; soplador 453 m3/min; gabinete PCS/PLM/AID/VHMS/IM; motores MT de induccion AC; rejillas 5400 corto/3300 cont hp 0.7 s; caja del eje + Hydrair II del 12.92/tras 9.40 ±6.5°."
-              : "QSK78 3500 HP @1900 (3429 flywheel; SSDA variant note). GTA-39 AC→DC→AC via inverters/condensers; blower 453 m3/min; cabinet PCS/PLM/AID/VHMS/IM; MT AC induction motors; retard grids 5400 short/3300 cont hp 0.7 s; axle box + Hydrair II F12.92/R9.40 ±6.5deg."}
-          </p>
-          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
-            {lang === "es" ? "Frenos y cabina" : "Brakes & cab"}
-          </h2>
-          <p style={{ margin: "0 0 12px", color: "#c7d3e8", fontSize: 13 }}>
-            {lang === "es"
-              ? "Servicio <8 km/h todas las ruedas; bloqueo trasero a baja presion; estacionamiento por resorte/hidraulico trasero solo detenido; emergencia automatica. Cabina: RSC tortuga/liebre + interruptor amarillo, override, parada de emergencia, levante HOLD/FLOAT, VHMS captura+azul, enlace rojo, servicio motor azul, campos PLM. VHMS es solo lectura."
-              : "Service <8 km/h all wheels; rear lock at low pressure; spring/hydraulic parking rear stopped-only; emergency auto. Cab: RSC turtle/rabbit + yellow switch, override, e-stop, hoist HOLD/FLOAT, VHMS snapshot+blue, red link, blue engine service, PLM fields. VHMS is read-only."}
-          </p>
-          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
-            {lang === "es" ? "Matriz rojo-STOP vs ambar" : "Red-STOP vs amber-caution matrix"}
-          </h2>
-          <p style={{ margin: "0 0 12px", color: "#c7d3e8", fontSize: 13 }}>
-            <span style={{ color: "#ff3b30", fontWeight: 700 }}>STOP </span>
-            {lang === "es"
-              ? "rojo = detener de inmediato (falla critica, N4). Ambar = precaucion, planificar ventana (N1-N3). RUL suprimido = solo anomalias."
-              : "red = stop now (critical fault, N4). Amber = caution, plan a window (N1-N3). Suppressed RUL = anomaly-only."}
-          </p>
-          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
-            {lang === "es" ? "Vista superior 1-22" : "Top-view callouts 1-22"}
-          </h2>
-          <ol style={{ margin: "0 0 12px", paddingLeft: 20, color: "#c7d3e8", fontSize: 13 }}>
-            {TRUCK_CALLOUTS.map((c) => (
-              <li key={c.n} style={{ marginBottom: 2 }}>
-                <strong>{c.n}.</strong> {lang === "es" ? c.es : c.en}
-              </li>
-            ))}
-          </ol>
-        </aside>
+    <div className="og-view">
+      <div className="og-viewport">
+        <TruckScene
+          key={runId}
+          paused={paused}
+          stepTick={stepTick}
+          onPhase={setCurrent}
+          dock={dock}
+          badge={<HonestyBadge label={t("badge.placeholder", lang)} text={t("truck.honesty", lang)} />}
+        />
       </div>
+      <Drawer
+        tabs={[
+          { id: "status", label: t("drawer.status", lang), content: status },
+          { id: "sheet", label: t("drawer.sheet", lang), content: sheet },
+          { id: "notes", label: t("drawer.notes", lang), content: notes },
+        ]}
+      />
     </div>
   );
 }

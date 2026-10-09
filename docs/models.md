@@ -1,5 +1,24 @@
 # 3D model provenance — HD465 visual proxy (S2-GLB)
 
+> **2026-10-09 — withdrawn from runtime (EN).** The HD465-7EO mesh was moved
+> from `frontend/public/models/` to `docs/reference-models/` and is no longer
+> shipped in the app bundle. Reason: credibility. The HD465 is a ~55 t
+> mechanical-drive truck, while the thesis subject is the 930E-4SE (~290 t,
+> AC electric drive with the GDY106 motorized wheel); any mining reviewer
+> would see the mismatch. The truck scene renders its procedural body until
+> the parametric 930E-4SE model replaces it. The record below is kept as
+> provenance of the reference file (paths below refer to its former location).
+>
+> **2026-10-09 — retirado del runtime (ES).** La malla HD465-7EO se movió de
+> `frontend/public/models/` a `docs/reference-models/` y ya no se incluye en
+> el paquete de la aplicación. Motivo: credibilidad. El HD465 es un camión de
+> ~55 t con transmisión mecánica, mientras que el sujeto de la tesis es el
+> 930E-4SE (~290 t, accionamiento eléctrico AC con la rueda motorizada
+> GDY106); cualquier revisor de minería vería la discrepancia. La escena del
+> camión muestra su carrocería procedural hasta que el modelo paramétrico
+> 930E-4SE la reemplace. El registro siguiente se conserva como procedencia
+> del archivo de referencia (las rutas indicadas son su ubicación anterior).
+
 Bilingual record: EN below, ES después. Neutral/professional Spanish.
 
 ## EN — provenance + honesty statement

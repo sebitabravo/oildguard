@@ -38,7 +38,7 @@ export default function RulPanel({ rul }: { rul: RulData | null }) {
           {rul.note}
         </p>
         <p style={{ margin: 0, color: "#9fb0c9", fontSize: 12 }}>
-          model={rul.model} ({es ? "NO PROBADO hasta banco S7" : "UNPROVEN until S7 bench"}) ·{" "}
+          model={rul.model} ({es ? "NO PROBADO hasta el banco" : "UNPROVEN until the bench"}) ·{" "}
           {es ? "mostrar alertas N1/N2/N4 en vez de cuenta regresiva." : "surface N1/N2/N4 anomaly alerts instead of a countdown."}
         </p>
       </div>
@@ -81,7 +81,7 @@ export default function RulPanel({ rul }: { rul: RulData | null }) {
       </div>
       <p style={{ margin: "8px 0 0", color: "#9fb0c9", fontSize: 12 }}>
         slope {rul.slope_L_per_h} L/h · R² {rul.r2} · level {rul.current_level_L} L ·
-        model={rul.model} ({es ? "sustituto sintetico, NO PROBADO hasta banco S7" : "synthetic-proxy, UNPROVEN until S7 bench"})
+        model={rul.model} ({es ? "sustituto sintetico, NO PROBADO hasta el banco" : "synthetic-proxy, UNPROVEN until the bench"})
       </p>
     </div>
   );

@@ -121,7 +121,7 @@ export const NO_DRILL_NARRATIVE =
   "transducer rides a T-adapter that preserves the drain plug, the thermocouple replaces " +
   "the magnetic plug in its own thread, the vibration MEMS sits on an epoxy base on the " +
   "sun-pinion cover, and the Hall clamp is non-invasive on the cable. The bench rig " +
-  "reproduces these exact mount points so calibration (T3/S7 drain-and-weigh) transfers " +
+  "reproduces these exact mount points so calibration (bench drain-and-weigh) transfers " +
   "to the field without housing modifications.";
 
 export const NO_DRILL_NARRATIVE_ES =
@@ -129,7 +129,7 @@ export const NO_DRILL_NARRATIVE_ES =
   "un adaptador en T que conserva el tapon de drenaje, el termopar reemplaza el tapon " +
   "magnetico en su propia rosca, el MEMS de vibracion va en base epoxi sobre la tapa del " +
   "sol, y la pinza Hall es no invasiva en el cable. El banco reproduce estos puntos exactos " +
-  "para que la calibracion (T3/S7 drenaje y pesaje) transfiera a campo sin modificar la carcasa.";
+  "para que la calibracion (drenaje y pesaje en banco) transfiera a campo sin modificar la carcasa.";
 
 /** Environment note: documented in T2, engineered later (field pilot / T13). */
 export const ENV_NOTE =

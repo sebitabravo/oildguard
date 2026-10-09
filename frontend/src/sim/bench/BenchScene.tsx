@@ -1,24 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import {
-  BENCH_SENSORS,
-  GDY106_CHAIN_EN,
-  GDY106_CHAIN_ES,
-  OIL_DUCT_NARRATIVE,
-  OIL_DUCT_NARRATIVE_ES,
-} from "./sensors";
-import { useLang } from "../../i18n";
-import {
-  formatOilText,
-  oilColorFor,
-  oilCssFor,
-  oilStateFor,
-  oilStateLabel,
-} from "./oil";
+import { BENCH_SENSORS } from "./sensors";
+import { t, useLang } from "../../i18n";
+import { formatOilText, oilCssFor, oilStateFor, oilStateLabel } from "./oil";
 import { wobbleAt } from "./settling";
+import { createStage } from "../../twin/render/stage";
+import { createMaterials } from "../../twin/render/materials";
+import { createLabel, setLabelActive, setLabelText } from "../../twin/render/labels";
 
-// T2 bench-rig scene (Sim A, part 1 of 2) + T3 cutaway internals (part 2).
+// Escena del banco GDY106 (Sim A): bastidor, carcasa con corte e internos.
+// El render (tone mapping, IBL, sombras) viene de twin/render/stage.ts.
 // Steel test-rig frame + GDY106 wheel/motor housing with four
 // no-drill sensor markers. Physically-plausible proportions, NOT CAD-exact.
 // Manual-faithful chain per GDY106 Fig.95 GEK-91680A longitudinal section:
@@ -42,6 +33,10 @@ interface BenchSceneProps {
   mode: BenchMode;
   /** Semi-transparent housing shell revealing internals + oil. */
   cutaway: boolean;
+  /** Controles inferiores (sliders, marcha/reposo, corte) que dibuja la vista. */
+  dock?: ReactNode;
+  /** Insignias de honestidad visual, bajo la insignia RECAL. */
+  badge?: ReactNode;
 }
 
 /** Oil fill slab geometry inside the barrel (scene units). */
@@ -60,9 +55,13 @@ export default function BenchScene({
   viscosityProxy,
   mode,
   cutaway,
+  dock,
+  badge,
 }: BenchSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const labelRefs = useRef(new Map<string, HTMLDivElement>());
+  const [lang] = useLang();
+  const langRef = useRef(lang);
+  langRef.current = lang;
   // Refs mirror props for use inside the three.js effect (no re-subscribe).
   const selectedRef = useRef<string | null>(selectedId);
   selectedRef.current = selectedId;
@@ -81,66 +80,52 @@ export default function BenchScene({
     const host = hostRef.current;
     if (!host) return;
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0e1420);
+    const stage = createStage(host, {
+      preset: "studio",
+      cameraPosition: [4.4, 3.4, 5.4],
+      cameraTarget: [0, 1.6, 0],
+      sun: { shadowBox: 5, target: [0, 1, 0] },
+      minDistance: 1.5,
+      maxDistance: 16,
+      maxPolarAngle: Math.PI * 0.495,
+    });
+    const { scene, camera, renderer, controls } = stage;
+    const mats = createMaterials();
 
-    const camera = new THREE.PerspectiveCamera(
-      45,
-      host.clientWidth / host.clientHeight,
-      0.1,
-      100
-    );
-    camera.position.set(4.4, 3.4, 5.4);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(host.clientWidth, host.clientHeight);
-    host.appendChild(renderer.domElement);
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 1.6, 0);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.update();
-
-    // Lights (T2 done criteria: ambient + directional).
-    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-    const directional = new THREE.DirectionalLight(0xffffff, 1.6);
-    directional.position.set(4, 6, 3);
-    scene.add(directional);
-
-    // Ground grid.
+    // Studio floor + faint technical grid (receives the rig shadows).
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(9, 64), mats.get("studioFloor"));
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
     const grid = new THREE.GridHelper(10, 10, 0x3a4a63, 0x223048);
+    grid.position.y = 0.003;
+    (grid.material as THREE.Material).transparent = true;
+    (grid.material as THREE.Material).opacity = 0.35;
     scene.add(grid);
 
-    // Shared materials. NOTE: metalness kept low on purpose — high-metal
-    // PBR surfaces render near-black without an environment map, and T2
-    // uses only ambient + directional lights (done criteria).
+    // Shared PBR materials (IBL lights them now, so real metalness is fine).
     const steel = new THREE.MeshStandardMaterial({
-      color: 0x9aa6bb,
-      metalness: 0.45,
+      color: 0x6f7886,
+      metalness: 0.85,
       roughness: 0.4,
     });
-    const darkSteel = new THREE.MeshStandardMaterial({
-      color: 0x46566e,
-      metalness: 0.3,
-      roughness: 0.55,
-    });
+    const darkSteel = mats.get("paintedSteelDark");
     const housingMat = new THREE.MeshStandardMaterial({
       color: 0x5b7ba6,
-      metalness: 0.25,
-      roughness: 0.55,
+      metalness: 0.55,
+      roughness: 0.42,
       transparent: true,
     });
     const gearboxMat = new THREE.MeshStandardMaterial({
       color: 0x6b80a0,
-      metalness: 0.25,
-      roughness: 0.55,
+      metalness: 0.55,
+      roughness: 0.42,
       transparent: true,
     });
     const brass = new THREE.MeshStandardMaterial({
       color: 0xd9b13b,
-      metalness: 0.6,
-      roughness: 0.35,
+      metalness: 0.9,
+      roughness: 0.3,
     });
     const cableMat = new THREE.MeshStandardMaterial({
       color: 0x1c2433,
@@ -148,16 +133,6 @@ export default function BenchScene({
       roughness: 0.7,
     });
 
-    const disposables: Array<{ dispose: () => void }> = [
-      steel,
-      darkSteel,
-      housingMat,
-      gearboxMat,
-      brass,
-      cableMat,
-      grid.geometry,
-      (grid as THREE.GridHelper).material as THREE.Material,
-    ];
     const box = (
       w: number,
       h: number,
@@ -170,7 +145,6 @@ export default function BenchScene({
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
       mesh.position.set(x, y, z);
       scene.add(mesh);
-      disposables.push(mesh.geometry);
       return mesh;
     };
     const cylX = (
@@ -190,7 +164,6 @@ export default function BenchScene({
       mesh.rotation.z = Math.PI / 2;
       mesh.position.set(x, y, z);
       scene.add(mesh);
-      disposables.push(mesh.geometry);
       return mesh;
     };
 
@@ -221,7 +194,6 @@ export default function BenchScene({
       rib.rotation.y = Math.PI / 2;
       rib.position.set(rx, HOUSING_Y, 0);
       scene.add(rib);
-      disposables.push(rib.geometry);
     }
     box(1.1, 1.15, 1.15, gearboxMat, -1.4, HOUSING_Y, 0); // gearbox
     box(0.08, 0.95, 0.95, darkSteel, -1.99, HOUSING_Y, 0); // sun-pinion cover
@@ -236,7 +208,6 @@ export default function BenchScene({
     );
     tAdapter.position.set(-1.4, 1.42, 0.35);
     scene.add(tAdapter);
-    disposables.push(tAdapter.geometry);
     box(0.14, 0.1, 0.12, darkSteel, -1.4, 1.42, 0.47); // transducer body
     // Temperature probe where the magnetic plug was.
     const probe = new THREE.Mesh(
@@ -245,7 +216,6 @@ export default function BenchScene({
     );
     probe.position.set(0.45, 1.56, 0.3);
     scene.add(probe);
-    disposables.push(probe.geometry);
     // Vibration MEMS puck on epoxy base, on the sun-pinion cover.
     box(0.04, 0.16, 0.16, cableMat, -2.045, 2.25, 0.3); // epoxy base
     cylX(0.09, 0.05, darkSteel, -2.08, 2.25, 0.3, 20); // MEMS puck
@@ -261,35 +231,26 @@ export default function BenchScene({
       cableMat
     );
     scene.add(cable);
-    disposables.push(cable.geometry);
     box(0.2, 0.14, 0.14, darkSteel, 0.25, 2.6, 0); // junction box
     box(0.16, 0.12, 0.12, darkSteel, 1.0, 2.2, 0.45); // Hall clamp body
 
-    // ---- T3 cutaway internals (simplified GDY106, NOT CAD-exact) ----
+    // ---- Cutaway internals (simplified GDY106, NOT CAD-exact) ----
     // Sun gear on the motor axis inside the gearbox, three planetary
     // pinions around it, ring-gear hint, and the rotor barrel volume in the
-    // motor housing. Low-poly cylinders + box teeth, same low-metalness
-    // PBR rule as T2 (no environment map in this scene).
+    // motor housing. Low-poly cylinders + box teeth.
     const gearMat = new THREE.MeshStandardMaterial({
-      color: 0x8f9db5,
-      metalness: 0.3,
-      roughness: 0.5,
+      color: 0x9aa7bd,
+      metalness: 0.9,
+      roughness: 0.35,
     });
     const rotorMat = new THREE.MeshStandardMaterial({
-      color: 0x7a6a4f,
-      metalness: 0.3,
-      roughness: 0.5,
+      color: 0xa0622d,
+      metalness: 0.8,
+      roughness: 0.4,
     });
-    const oilMat = new THREE.MeshStandardMaterial({
-      color: oilColorFor(oilStateFor(clamp01(oilLevelRef.current))),
-      emissive: oilColorFor(oilStateFor(clamp01(oilLevelRef.current))),
-      emissiveIntensity: 0.25,
-      metalness: 0.1,
-      roughness: 0.15,
-      transparent: true,
-      opacity: 0.85,
-    });
-    disposables.push(gearMat, rotorMat, oilMat);
+    // SAE 85W-140: amber/brown transmissive oil. The fill state (normal /
+    // warning / critical) is conveyed by the HUD, not by tinting the oil.
+    const oilMat = mats.get("oil85W140");
 
     const spinGroup = (rate: number) => {
       const group = new THREE.Group();
@@ -317,7 +278,6 @@ export default function BenchScene({
       disc.rotation.z = Math.PI / 2;
       disc.position.set(x, y, z);
       parent.add(disc);
-      disposables.push(disc.geometry);
       for (let i = 0; i < teeth; i++) {
         const a = (i / teeth) * Math.PI * 2;
         const tooth = new THREE.Mesh(
@@ -327,7 +287,6 @@ export default function BenchScene({
         tooth.position.set(x, y + Math.cos(a) * (discR + 0.03), z + Math.sin(a) * (discR + 0.03));
         tooth.rotation.x = -a;
         parent.add(tooth);
-        disposables.push(tooth.geometry);
       }
     };
 
@@ -339,7 +298,6 @@ export default function BenchScene({
     sunShaft.rotation.z = Math.PI / 2;
     sunShaft.position.set(-0.3, HOUSING_Y, 0);
     spinners[0].group.add(sunShaft);
-    disposables.push(sunShaft.geometry);
     gearAt(spinners[0].group, -1.4, HOUSING_Y, 0, 0.2, 0.14, 10);
     // Three planetary pinions at 120° around the sun (carrier fixed).
     for (let k = 0; k < 3; k++) {
@@ -362,7 +320,6 @@ export default function BenchScene({
     ring.rotation.y = Math.PI / 2;
     ring.position.set(-1.4, HOUSING_Y, 0);
     scene.add(ring);
-    disposables.push(ring.geometry);
     // Rotor barrel volume inside the motor housing + end rings.
     const rotor = new THREE.Mesh(
       new THREE.CylinderGeometry(0.36, 0.36, 1.2, 20),
@@ -371,7 +328,6 @@ export default function BenchScene({
     rotor.rotation.z = Math.PI / 2;
     rotor.position.set(0, HOUSING_Y, 0);
     spinners[1].group.add(rotor);
-    disposables.push(rotor.geometry);
     for (const rx of [-0.6, 0.6]) {
       const endRing = new THREE.Mesh(
         new THREE.TorusGeometry(0.37, 0.03, 10, 24),
@@ -380,7 +336,6 @@ export default function BenchScene({
       endRing.rotation.y = Math.PI / 2;
       endRing.position.set(rx, HOUSING_Y, 0);
       spinners[1].group.add(endRing);
-      disposables.push(endRing.geometry);
     }
     // ---- GDY106 Fig.95 chain extension (manual-faithful order) ----
     // High-speed carrier disc on the drive shaft, sun pinion GE1288 (the
@@ -395,7 +350,6 @@ export default function BenchScene({
     hsCarrier.rotation.z = Math.PI / 2;
     hsCarrier.position.set(-0.85, HOUSING_Y, 0);
     spinners[0].group.add(hsCarrier);
-    disposables.push(hsCarrier.geometry);
     const lsCarrier = new THREE.Mesh(
       new THREE.CylinderGeometry(0.44, 0.44, 0.08, 20),
       gearMat
@@ -403,7 +357,6 @@ export default function BenchScene({
     lsCarrier.rotation.z = Math.PI / 2;
     lsCarrier.position.set(-1.15, HOUSING_Y, 0);
     scene.add(lsCarrier);
-    disposables.push(lsCarrier.geometry);
     const torqueTube = new THREE.Mesh(
       new THREE.CylinderGeometry(0.16, 0.16, 1.1, 14),
       gearMat
@@ -411,7 +364,6 @@ export default function BenchScene({
     torqueTube.rotation.z = Math.PI / 2;
     torqueTube.position.set(0.75, HOUSING_Y, 0);
     scene.add(torqueTube);
-    disposables.push(torqueTube.geometry);
     // Wheel hub + inboard/outboard tapered roller bearing cones.
     for (const [bx, br] of [[0.45, 0.26], [1.05, 0.3]] as Array<[number, number]>) {
       const cone = new THREE.Mesh(
@@ -421,7 +373,6 @@ export default function BenchScene({
       cone.rotation.z = Math.PI / 2;
       cone.position.set(bx, HOUSING_Y, 0);
       scene.add(cone);
-      disposables.push(cone.geometry);
     }
     const hub = new THREE.Mesh(
       new THREE.CylinderGeometry(0.34, 0.34, 0.7, 18),
@@ -430,7 +381,6 @@ export default function BenchScene({
     hub.rotation.z = Math.PI / 2;
     hub.position.set(0.75, HOUSING_Y, 0);
     scene.add(hub);
-    disposables.push(hub.geometry);
     // Tire torus outboard + wet brake discs + spring parking-brake can.
     const tire = new THREE.Mesh(
       new THREE.TorusGeometry(0.62, 0.2, 12, 28),
@@ -439,7 +389,6 @@ export default function BenchScene({
     tire.rotation.y = Math.PI / 2;
     tire.position.set(1.35, HOUSING_Y, 0);
     scene.add(tire);
-    disposables.push(tire.geometry);
     for (const bx of [1.18, 1.28]) {
       const disc = new THREE.Mesh(
         new THREE.CylinderGeometry(0.4, 0.4, 0.05, 20),
@@ -448,7 +397,6 @@ export default function BenchScene({
       disc.rotation.z = Math.PI / 2;
       disc.position.set(bx, HOUSING_Y, 0);
       scene.add(disc);
-      disposables.push(disc.geometry);
     }
     const springCan = new THREE.Mesh(
       new THREE.CylinderGeometry(0.1, 0.1, 0.22, 12),
@@ -456,7 +404,6 @@ export default function BenchScene({
     );
     springCan.position.set(1.0, HOUSING_Y + 0.55, 0);
     scene.add(springCan);
-    disposables.push(springCan.geometry);
     // Modified-cover oil transfer duct: thin tube from the outer cavity into
     // the sun inspection cover (items 39/36), through the sun pinion interior.
     const ductCurve = new THREE.CatmullRomCurve3([
@@ -470,18 +417,16 @@ export default function BenchScene({
       brass
     );
     scene.add(duct);
-    disposables.push(duct.geometry);
 
-    // ---- T3 oil volume: fill slab inside the barrel ----
-    // Height tracks the driven fill fraction; color follows the
-    // <50% warning / <30% critical bands (oil.ts). The slab tilts with
+    // ---- Oil volume: fill slab inside the barrel ----
+    // Height tracks the driven fill fraction (the <50% warning / <30%
+    // critical bands of oil.ts are shown in the HUD). The slab tilts with
     // the settling wobble driven in the animation loop below.
     const oilMesh = new THREE.Mesh(
       new THREE.BoxGeometry(1.5, 1, 0.9),
       oilMat
     );
     scene.add(oilMesh);
-    disposables.push(oilMesh.geometry);
 
     // ---- Sensor markers: small emissive spheres (clickable) ----
     const markerMeshes: THREE.Mesh[] = [];
@@ -501,7 +446,6 @@ export default function BenchScene({
       marker.userData.sensorId = sensor.id;
       scene.add(marker);
       markerMeshes.push(marker);
-      disposables.push(marker.geometry, mat);
     }
 
     // Click (with drag guard so orbiting never selects).
@@ -529,41 +473,44 @@ export default function BenchScene({
     renderer.domElement.addEventListener("pointerup", onPointerUp);
     renderer.domElement.style.cursor = "grab";
 
-    // HTML overlay labels, positioned imperatively each frame (no re-render).
-    // T5 fix: pressure + temperature markers sit close together from the
-    // default camera, so their labels overlapped. Each label gets a small
-    // vertical nudge (pressure up, temperature down) to keep both readable.
+    // CSS2D sensor labels. Pressure + temperature markers sit close together
+    // from the default camera, so each label gets a small vertical nudge
+    // (pressure up, temperature down) to keep both readable.
     const LABEL_DY: Record<string, number> = {
       pressure: -14,
       temperature: 16,
     };
-    const proj = new THREE.Vector3();
-    const placeLabels = () => {
-      const w = host.clientWidth;
-      const h = host.clientHeight;
-      for (const sensor of BENCH_SENSORS) {
-        const el = labelRefs.current.get(sensor.id);
-        if (!el) continue;
-        proj.set(...sensor.position).project(camera);
-        const visible = proj.z < 1;
-        const x = (proj.x * 0.5 + 0.5) * w;
-        const y = (-proj.y * 0.5 + 0.5) * h + (LABEL_DY[sensor.id] ?? 0);
-        el.style.display = visible ? "block" : "none";
-        el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(12px, -50%)`;
-      }
-    };
+    const sensorLabels = BENCH_SENSORS.map((sensor) => {
+      const label = createLabel({
+        text: sensor.shortLabel,
+        color: sensor.cssColor,
+      });
+      label.center.set(0, 0.5);
+      label.element.style.marginLeft = "14px";
+      label.element.style.marginTop = `${LABEL_DY[sensor.id] ?? 0}px`;
+      label.position.set(...sensor.position);
+      scene.add(label);
+      return label;
+    });
 
-    // T3 motion state: spin + slosh while moving; damped-sine wobble
-    // after a move->rest transition, then still oil (recalibration window).
-    const clock = new THREE.Clock();
+    // Sombras: todo proyecta y recibe salvo las carcasas translúcidas (si
+    // proyectaran, oscurecerían los engranajes de adentro) y el aceite.
+    scene.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || m === floor || m.material === oilMat) return;
+      if (m.material === housingMat || m.material === gearboxMat) return;
+      if (markerMeshes.includes(m)) return;
+      m.castShadow = true;
+      m.receiveShadow = true;
+    });
+
+    // Motion state: spin + slosh while moving; damped-sine wobble after a
+    // move->rest transition, then still oil (recalibration window).
     let elapsed = 0;
     let prevMode: BenchMode = modeRef.current;
     let restStart = -10;
-    let lastFrac = -1;
 
-    let frameId = 0;
-    const animate = () => {
-      const dt = Math.min(clock.getDelta(), 0.05);
+    const stopFrame = stage.onFrame((dt) => {
       elapsed += dt;
       const benchMode = modeRef.current;
       if (prevMode === "move" && benchMode === "rest") {
@@ -586,14 +533,8 @@ export default function BenchScene({
       }
       oilMesh.rotation.z = tilt;
 
-      // Oil fill height + threshold color follow the driven fraction.
+      // Oil fill height follows the driven fraction.
       const frac = clamp01(oilLevelRef.current);
-      if (frac !== lastFrac) {
-        lastFrac = frac;
-        const hex = oilColorFor(oilStateFor(frac));
-        oilMat.color.setHex(hex);
-        oilMat.emissive.setHex(hex);
-      }
       const h = OIL_MIN_H + frac * (OIL_MAX_H - OIL_MIN_H);
       oilMesh.scale.y = h;
       oilMesh.position.set(0, OIL_BOTTOM + h / 2, 0);
@@ -603,7 +544,6 @@ export default function BenchScene({
       housingMat.opacity += (shellTarget - housingMat.opacity) * 0.15;
       gearboxMat.opacity += (shellTarget - gearboxMat.opacity) * 0.15;
 
-      controls.update();
       for (const marker of markerMeshes) {
         const active = marker.userData.sensorId === selectedRef.current;
         const target = active ? 1.5 : 1.0;
@@ -611,152 +551,57 @@ export default function BenchScene({
           marker.scale.x + (target - marker.scale.x) * 0.2
         );
       }
-      placeLabels();
-      renderer.render(scene, camera);
-      frameId = requestAnimationFrame(animate);
-    };
-    animate();
-
-    const onResize = () => {
-      camera.aspect = host.clientWidth / host.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(host.clientWidth, host.clientHeight);
-    };
-    window.addEventListener("resize", onResize);
+      BENCH_SENSORS.forEach((sensor, i) => {
+        setLabelText(
+          sensorLabels[i],
+          langRef.current === "es" ? sensor.shortLabelEs : sensor.shortLabel
+        );
+        setLabelActive(sensorLabels[i], sensor.id === selectedRef.current);
+      });
+    });
 
     return () => {
-      cancelAnimationFrame(frameId);
-      window.removeEventListener("resize", onResize);
+      stopFrame();
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
       renderer.domElement.removeEventListener("pointerup", onPointerUp);
-      controls.dispose();
-      for (const d of disposables) d.dispose();
-      renderer.dispose();
-      host.removeChild(renderer.domElement);
+      stage.dispose();
+      mats.dispose();
     };
   }, []);
 
   const oilState = oilStateFor(clamp01(oilLevel));
   const oilCss = oilCssFor(oilState);
   const resting = mode === "rest";
-  const [lang] = useLang();
-  const chain = lang === "es" ? GDY106_CHAIN_ES : GDY106_CHAIN_EN;
-  const ductNote = lang === "es" ? OIL_DUCT_NARRATIVE_ES : OIL_DUCT_NARRATIVE;
 
   return (
-    <div style={{ position: "relative", width: "100%", height: 480 }}>
-      <div ref={hostRef} style={{ position: "absolute", inset: 0 }} />
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          overflow: "hidden",
-        }}
-      >
+    <div className="og-scene">
+      <div ref={hostRef} className="og-scene__host" />
+      <div className="og-overlay">
         <div
-          style={{
-            position: "absolute",
-            left: 12,
-            top: 12,
-            fontSize: 13,
-            fontWeight: 600,
-            color: "#e8edf5",
-            background: "rgba(10, 16, 28, 0.82)",
-            border: `1px solid ${oilCss}`,
-            borderRadius: 4,
-            padding: "4px 10px",
-          }}
+          className="og-hud og-hud--tl"
+          style={{ ["--tone" as string]: oilCss }}
         >
-          <span
-            style={{
-              display: "inline-block",
-              width: 9,
-              height: 9,
-              borderRadius: "50%",
-              background: oilCss,
-              marginRight: 8,
-            }}
-          />
-          {lang === "es" ? "Aceite" : "Oil"} {formatOilText(clamp01(oilLevel))} · {oilStateLabel(oilState, lang)}
-        </div>
-        <div
-          style={{
-            position: "absolute",
-            right: 12,
-            top: 12,
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: 0.4,
-            color: resting ? "#0e1420" : "#8b98ad",
-            background: resting ? "#2fbf71" : "rgba(10, 16, 28, 0.82)",
-            border: `1px solid ${resting ? "#2fbf71" : "#3a4a63"}`,
-            borderRadius: 4,
-            padding: "4px 10px",
-          }}
-        >
-          {resting
-            ? lang === "es"
-              ? "RECALIBRANDO (detenido+nivelado+motor encendido)"
-              : "RECALIBRATING (stopped+leveled+engine-on)"
-            : lang === "es"
-              ? "ESPERA · recalibracion bloqueada (en movimiento)"
-              : "STANDBY · recalibration gated (moving)"}
-        </div>
-        <div
-          title={ductNote}
-          style={{
-            position: "absolute",
-            left: 12,
-            bottom: 12,
-            maxWidth: 340,
-            fontSize: 11,
-            color: "#c7d3e8",
-            background: "rgba(10, 16, 28, 0.82)",
-            border: "1px solid #3a4a63",
-            borderRadius: 4,
-            padding: "4px 10px",
-          }}
-        >
-          {lang === "es" ? "Cadena GDY106 Fig.95: " : "GDY106 Fig.95 chain: "}
-          {chain.slice(0, 4).join(" → ")} → …
-        </div>
-        {BENCH_SENSORS.map((sensor) => (
-          <div
-            key={sensor.id}
-            ref={(el) => {
-              if (el) labelRefs.current.set(sensor.id, el);
-              else labelRefs.current.delete(sensor.id);
-            }}
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 0,
-              display: "block",
-              whiteSpace: "nowrap",
-              fontSize: 12,
-              fontWeight:
-                sensor.id === selectedId ? 700 : 500,
-              color: "#e8edf5",
-              background: "rgba(10, 16, 28, 0.78)",
-              border: `1px solid ${sensor.cssColor}`,
-              borderRadius: 4,
-              padding: "2px 8px 2px 6px",
-            }}
-          >
-            <span
-              style={{
-                display: "inline-block",
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: sensor.cssColor,
-                marginRight: 6,
-              }}
-            />
-            {lang === "es" ? sensor.shortLabelEs : sensor.shortLabel}
+          <div className="og-hud__meta">{t("hud.oil", lang)}</div>
+          <div className="og-hud__title">
+            <span className="og-dot" />
+            <span className="og-value og-value--lg" style={{ color: oilCss }}>
+              {formatOilText(clamp01(oilLevel))}
+            </span>
           </div>
-        ))}
+          <div style={{ marginTop: 4, fontSize: 12, color: "var(--og-body)" }}>
+            {oilStateLabel(oilState, lang)}
+          </div>
+        </div>
+        <div className="og-stack og-stack--tr">
+          <div
+            className={`og-badge ${resting ? "og-badge--ok" : "og-badge--ghost"}`}
+            style={{ height: "auto", minHeight: 24, padding: "4px 10px", whiteSpace: "normal" }}
+          >
+            {resting ? t("hud.recal", lang) : t("hud.standby", lang)}
+          </div>
+          {badge}
+        </div>
+        {dock && <div className="og-dock">{dock}</div>}
       </div>
     </div>
   );

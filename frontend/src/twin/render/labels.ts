@@ -10,6 +10,8 @@ export interface LabelOptions {
   /** Línea guía vertical desde la píldora hasta el punto 3D anclado. */
   leader?: boolean;
   interactive?: boolean;
+  /** Color CSS de acento (borde y punto); sobrescribe el tono. */
+  color?: string;
   className?: string;
 }
 
@@ -27,6 +29,7 @@ export function labelClassName(opts: Pick<LabelOptions, "tone" | "leader" | "int
 export function createLabel(opts: LabelOptions): CSS2DObject {
   const el = document.createElement("div");
   el.className = labelClassName(opts);
+  if (opts.color) el.style.setProperty("--tone", opts.color);
   const pill = document.createElement("span");
   pill.className = "og-label__pill";
   pill.textContent = opts.text;
@@ -43,5 +46,9 @@ export function createLabel(opts: LabelOptions): CSS2DObject {
 
 export function setLabelText(label: CSS2DObject, text: string): void {
   const pill = label.element.querySelector(".og-label__pill");
-  if (pill) pill.textContent = text;
+  if (pill && pill.textContent !== text) pill.textContent = text;
+}
+
+export function setLabelActive(label: CSS2DObject, active: boolean): void {
+  label.element.classList.toggle("og-label--active", active);
 }

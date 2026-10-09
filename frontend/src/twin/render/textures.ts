@@ -48,7 +48,7 @@ function surfaceMaps(
       const i = y * size + x;
       // strata: bandas horizontales periódicas (tileables) para los bancos de roca.
       const band = strata > 0 ? 0.5 + 0.5 * Math.sin((y / size) * Math.PI * 2 * strata + coarse[i] * 3) : 0;
-      const m = clamp01(coarse[i] * 0.75 + fine[i] * 0.25 + band * 0.18 * strata);
+      const m = clamp01(coarse[i] * 0.6 + fine[i] * 0.4 + band * 0.1 * strata);
       const k = i * 4;
       albedo[k] = Math.round(dr + (lr - dr) * m);
       albedo[k + 1] = Math.round(dg + (lg - dg) * m);
@@ -66,12 +66,12 @@ function surfaceMaps(
 
 /** Tierra de camino de acarreo. */
 export function dirtMaps(size = 256, seed = 11): PixelMaps {
-  return surfaceMaps(size, seed, 0x9a7a52, 0x4e3a26, 0);
+  return surfaceMaps(size, seed, 0x8f7352, 0x5f4832, 0);
 }
 
 /** Roca de banco con estratos. */
 export function rockMaps(size = 256, seed = 23): PixelMaps {
-  return surfaceMaps(size, seed, 0xa4917c, 0x4a3f35, 3);
+  return surfaceMaps(size, seed, 0xa89a88, 0x5a4e42, 3);
 }
 
 /** Altura (0..1) del dibujo de banda de rodadura: tacos en V que se repiten una vez por tile en u. */

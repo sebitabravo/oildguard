@@ -25,9 +25,12 @@ import {
   viscosityLabel,
 } from "./settling";
 import { DEMO_OIL_EVENT, parseDemoOil } from "../../dash/demoBus";
-import { useLang } from "../../i18n";
+import { t, useLang } from "../../i18n";
+import Drawer from "../../ui/Drawer";
+import HonestyBadge from "../../ui/HonestyBadge";
 
-// Bench view: cutaway GDY106 chain + oil volume + settling + inspection Steps 1-11.
+// Vista Rueda GDY106: corte 3D en el visor; el detalle (lectura de aceite,
+// sensores, cadena, inspección pasos 1-11) vive en el panel lateral.
 // Manual-faithful (user-supplied manuals, authoritative over placeholders).
 // Labels show EN/ES + manual item numbers.
 
@@ -60,6 +63,7 @@ export default function BenchView() {
   const [mode, setMode] = useState<BenchMode>("rest");
   const [cutaway, setCutaway] = useState(true);
   const [lang] = useLang();
+  const es = lang === "es";
 
   useEffect(() => {
     const onDemoOil = (e: Event) => {
@@ -75,247 +79,173 @@ export default function BenchView() {
   const oilCss = oilCssFor(oilState);
   const settlingMs = estimateSettlingMs(viscosity);
   const resting = mode === "rest";
-  const chain = lang === "es" ? GDY106_CHAIN_ES : GDY106_CHAIN_EN;
+  const chain = es ? GDY106_CHAIN_ES : GDY106_CHAIN_EN;
 
-  return (
-    <div>
-      <p style={{ margin: "0 0 16px", color: "#9fb0c9" }}>
-        {lang === "es"
-          ? "Banco S1 (T3): cadena GDY106 Fig.95 GEK-91680A — motor AC → eje → portador alta → pinon solar GE1288 → portador baja/planetarios → tubo torsion → maza en rodillos conicos → neumaticos; frenos humedos + estacionamiento por resorte. Arrastra para orbitar, haz clic en un marcador (items 56/41/39-36/cable). Deten el banco y observa el asentamiento antes de la ventana de recalibracion. Ver docs/inspection.md (pasos 1-11)."
-          : "S1 bench rig (T3): GDY106 Fig.95 GEK-91680A chain — AC motor → shaft → high-speed carrier → sun pinion GE1288 → low-speed carrier/planetaries → torque tube → hub on tapered rollers → tires; wet brakes + spring parking brake. Drag to orbit, click a marker (items 56/41/39-36/cable). Stop the rig and watch settling into the recalibration window. See docs/inspection.md (Steps 1-11)."}
-      </p>
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+  const dock = (
+    <div
+      className="og-hud"
+      style={{ position: "static", display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}
+    >
+      <label className="og-field">
+        <span className="og-field__label">
+          <span>{es ? "Aceite" : "Oil fill"}</span>
+          <span className="og-num" style={{ color: oilCss }}>{formatOilText(frac)}</span>
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={oilPct}
+          aria-label={es ? "Nivel de aceite" : "Oil fill"}
+          onChange={(e) => setOilPct(Number(e.target.value))}
+        />
+      </label>
+      <label className="og-field">
+        <span className="og-field__label">
+          <span>{es ? "Proxy viscosidad" : "Viscosity proxy"}</span>
+          <span className="og-num">{viscosity.toFixed(2)} ({viscosityLabel(viscosity)})</span>
+        </span>
+        <input
+          type="range"
+          min={VISC_MIN}
+          max={VISC_MAX}
+          step={0.05}
+          value={viscosity}
+          aria-label={es ? "Proxy de viscosidad" : "Viscosity proxy"}
+          onChange={(e) => setViscosity(Number(e.target.value))}
+        />
+      </label>
+      <button
+        type="button"
+        className={`og-btn ${resting ? "og-btn--ok" : "og-btn--primary"}`}
+        onClick={() => setMode(resting ? "move" : "rest")}
+      >
+        {resting
+          ? es ? "Detenido — iniciar marcha" : "Resting — start Move"
+          : es ? "En marcha — detener" : "Moving — stop to Rest"}
+      </button>
+      <label className="og-check">
+        <input type="checkbox" checked={cutaway} onChange={(e) => setCutaway(e.target.checked)} />
+        {es ? "Corte" : "Cutaway"}
+      </label>
+    </div>
+  );
+
+  const status = (
+    <>
+      <h2 className="og-h2">{es ? "Lectura de aceite" : "Oil readout"}</h2>
+      <div className="og-card og-card--tone" style={{ ["--tone" as string]: oilCss }}>
+        <div className="og-value og-value--lg" style={{ color: oilCss }}>
+          {formatOilText(frac)}
+        </div>
+        <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
+          {oilStateLabel(oilState, lang)} · 95 L reference
+        </div>
+        <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
+          {es ? "Asentamiento ≈" : "Settling ≈"} {settlingMs} ms · {es ? "proxy" : "viscosity proxy"}{" "}
+          {viscosity.toFixed(2)} ({viscosityLabel(viscosity)})
+        </div>
         <div
           style={{
-            flex: "1 1 520px",
-            minWidth: 320,
-            border: "1px solid #2a3a55",
+            fontSize: 12,
+            fontWeight: 700,
+            marginTop: 6,
+            color: resting ? "var(--og-green)" : "var(--og-muted)",
           }}
         >
-          <BenchScene
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            oilLevel={frac}
-            viscosityProxy={viscosity}
-            mode={mode}
-            cutaway={cutaway}
-          />
-          <div
-            style={{
-              display: "flex",
-              gap: 16,
-              flexWrap: "wrap",
-              padding: "12px 16px",
-              borderTop: "1px solid #2a3a55",
-              background: "#111a2c",
-            }}
-          >
-            <label style={{ flex: "1 1 200px", fontSize: 13, color: "#c7d3e8" }}>
-              {lang === "es" ? "Aceite" : "Oil fill"}: {formatOilText(frac)}
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={1}
-                value={oilPct}
-                aria-label={lang === "es" ? "Nivel de aceite" : "Oil fill"}
-                onChange={(e) => setOilPct(Number(e.target.value))}
-                style={{ width: "100%", accentColor: oilCss }}
-              />
-            </label>
-            <label style={{ flex: "1 1 200px", fontSize: 13, color: "#c7d3e8" }}>
-              {lang === "es" ? "Proxy viscosidad" : "Viscosity proxy"}: {viscosity.toFixed(2)} ({viscosityLabel(viscosity)})
-              <input
-                type="range"
-                min={VISC_MIN}
-                max={VISC_MAX}
-                step={0.05}
-                value={viscosity}
-                aria-label="Viscosity proxy"
-                onChange={(e) => setViscosity(Number(e.target.value))}
-                style={{ width: "100%", accentColor: "#f5a623" }}
-              />
-            </label>
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                alignItems: "flex-end",
-                paddingBottom: 2,
-              }}
-            >
+          {resting
+            ? t("hud.recal", lang)
+            : es ? "En movimiento — recalibracion bloqueada" : "Moving — recalibration gated"}
+        </div>
+      </div>
+      <h2 className="og-h2">{es ? "Sensores (sin perforar + items)" : "Sensor markers (no-drill + items)"}</h2>
+      <ul className="og-plain">
+        {BENCH_SENSORS.map((sensor) => {
+          const active = sensor.id === selectedId;
+          return (
+            <li key={sensor.id} style={{ marginBottom: 8 }}>
               <button
                 type="button"
-                onClick={() => setMode(resting ? "move" : "rest")}
-                style={{
-                  cursor: "pointer",
-                  color: resting ? "#0e1420" : "#e8edf5",
-                  background: resting ? "#2fbf71" : "#f5a623",
-                  border: "1px solid transparent",
-                  borderRadius: 6,
-                  padding: "8px 16px",
-                  fontWeight: 700,
-                }}
+                className={`og-card og-card--tone${active ? " og-card--active" : ""}`}
+                style={{ ["--tone" as string]: active ? sensor.cssColor : undefined }}
+                aria-pressed={active}
+                onClick={() => setSelectedId(active ? null : sensor.id)}
               >
-                {resting
-                  ? lang === "es" ? "Detenido — iniciar marcha" : "Resting — start Move"
-                  : lang === "es" ? "En marcha — detener" : "Moving — stop to Rest"}
+                <span className="og-dot" style={{ ["--tone" as string]: sensor.cssColor, marginRight: 8 }} />
+                <strong>{es ? sensor.labelEs : sensor.label}</strong>
+                <br />
+                <span className="og-muted" style={{ fontSize: 13 }}>
+                  {es ? sensor.signalEs : sensor.signal}
+                </span>
+                <br />
+                <span style={{ color: "var(--og-body)", fontSize: 13 }}>
+                  {es ? sensor.mountEs : sensor.mount}
+                </span>
               </button>
-              <label
-                style={{
-                  fontSize: 13,
-                  color: "#c7d3e8",
-                  display: "flex",
-                  gap: 6,
-                  alignItems: "center",
-                  paddingBottom: 8,
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={cutaway}
-                  onChange={(e) => setCutaway(e.target.checked)}
-                />
-                {lang === "es" ? "Corte" : "Cutaway"}
-              </label>
-            </div>
-          </div>
-        </div>
-        <aside
-          style={{
-            flex: "1 1 280px",
-            minWidth: 260,
-            maxWidth: 420,
-            border: "1px solid #2a3a55",
-            padding: 16,
-            background: "#111a2c",
-          }}
-        >
-          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
-            {lang === "es" ? "Lectura de aceite" : "Oil readout"}
-          </h2>
-          <div
-            style={{
-              border: `1px solid ${oilCss}`,
-              borderRadius: 6,
-              padding: "10px 12px",
-              marginBottom: 12,
-            }}
-          >
-            <div style={{ fontSize: 18, fontWeight: 700, color: oilCss }}>
-              {formatOilText(frac)}
-            </div>
-            <div style={{ fontSize: 13, color: "#c7d3e8", marginTop: 4 }}>
-              {oilStateLabel(oilState, lang)} · 95 L reference
-            </div>
-            <div style={{ fontSize: 13, color: "#c7d3e8", marginTop: 4 }}>
-              {lang === "es" ? "Asentamiento ≈" : "Settling ≈"} {settlingMs} ms · {lang === "es" ? "proxy" : "viscosity proxy"}{" "}
-              {viscosity.toFixed(2)} ({viscosityLabel(viscosity)})
-            </div>
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                marginTop: 4,
-                color: resting ? "#2fbf71" : "#8b98ad",
-              }}
-            >
-              {resting
-                ? lang === "es"
-                  ? "RECALIBRANDO (detenido+nivelado+motor encendido)"
-                  : "RECALIBRATING (stopped+leveled+engine-on)"
-                : lang === "es"
-                  ? "En movimiento — recalibracion bloqueada"
-                  : "Moving — recalibration gated"}
-            </div>
-          </div>
-          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
-            {lang === "es" ? "Cadena GDY106 Fig.95 (GEK-91680A)" : "GDY106 Fig.95 chain (GEK-91680A)"}
-          </h2>
-          <ol style={{ margin: "0 0 12px", paddingLeft: 20, color: "#c7d3e8", fontSize: 13 }}>
-            {chain.map((c, i) => (
-              <li key={i}>{c}</li>
-            ))}
-          </ol>
-          <p style={{ margin: "0 0 12px", color: "#9fb0c9", fontSize: 13 }}>
-            {lang === "es" ? OIL_DUCT_NARRATIVE_ES : OIL_DUCT_NARRATIVE}
-          </p>
-          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
-            {lang === "es" ? "Sensores (sin perforar + items)" : "Sensor markers (no-drill + items)"}
-          </h2>
-          <ul style={{ listStyle: "none", margin: "0 0 12px", padding: 0 }}>
-            {BENCH_SENSORS.map((sensor) => {
-              const active = sensor.id === selectedId;
-              return (
-                <li key={sensor.id} style={{ marginBottom: 10 }}>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSelectedId(active ? null : sensor.id)
-                    }
-                    style={{
-                      width: "100%",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      color: "#e8edf5",
-                      background: active ? "#1b2946" : "transparent",
-                      border: `1px solid ${
-                        active ? sensor.cssColor : "#2a3a55"
-                      }`,
-                      borderRadius: 6,
-                      padding: "8px 10px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        display: "inline-block",
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: sensor.cssColor,
-                        marginRight: 8,
-                      }}
-                    />
-                    <strong>{lang === "es" ? sensor.labelEs : sensor.label}</strong>
-                    <br />
-                    <span style={{ color: "#9fb0c9", fontSize: 13 }}>
-                      {lang === "es" ? sensor.signalEs : sensor.signal}
-                    </span>
-                    <br />
-                    <span style={{ color: "#c7d3e8", fontSize: 13 }}>
-                      {lang === "es" ? sensor.mountEs : sensor.mount}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
-            {lang === "es" ? "Inspeccion pasos 1-11" : "Inspection Steps 1-11"}
-          </h2>
-          <ol style={{ margin: "0 0 12px", paddingLeft: 20, color: "#c7d3e8", fontSize: 13 }}>
-            {INSPECTION_STEPS.map((s) => (
-              <li key={s.n} style={{ marginBottom: 6 }}>
-                <strong>Step {s.n} / Paso {s.n}:</strong> {lang === "es" ? s.es : s.en}
-              </li>
-            ))}
-          </ol>
-          <p style={{ margin: "0 0 12px", color: "#c7d3e8", fontSize: 13 }}>
-            {lang === "es" ? NO_DRILL_NARRATIVE_ES : NO_DRILL_NARRATIVE}
-          </p>
-          <p
-            style={{
-              margin: 0,
-              color: "#9fb0c9",
-              fontSize: 13,
-              borderTop: "1px solid #2a3a55",
-              paddingTop: 12,
-            }}
-          >
-            {lang === "es" ? ENV_NOTE_ES : ENV_NOTE}
-          </p>
-        </aside>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+
+  const sheet = (
+    <>
+      <h2 className="og-h2">{es ? "Cadena GDY106 Fig.95 (GEK-91680A)" : "GDY106 Fig.95 chain (GEK-91680A)"}</h2>
+      <ol className="og-list">
+        {chain.map((c, i) => (
+          <li key={i}>{c}</li>
+        ))}
+      </ol>
+      <p className="og-body og-muted">{es ? OIL_DUCT_NARRATIVE_ES : OIL_DUCT_NARRATIVE}</p>
+      <p className="og-body">{es ? NO_DRILL_NARRATIVE_ES : NO_DRILL_NARRATIVE}</p>
+    </>
+  );
+
+  const notes = (
+    <>
+      <h2 className="og-h2">{es ? "Sobre esta vista" : "About this view"}</h2>
+      <p className="og-body">
+        {es
+          ? "Cadena GDY106 Fig.95 GEK-91680A — motor AC → eje → portador alta → pinon solar GE1288 → portador baja/planetarios → tubo torsion → maza en rodillos conicos → neumaticos; frenos humedos + estacionamiento por resorte. Arrastra para orbitar, haz clic en un marcador (items 56/41/39-36/cable). Deten el banco y observa el asentamiento antes de la ventana de recalibracion. Ver docs/inspection.md (pasos 1-11)."
+          : "GDY106 Fig.95 GEK-91680A chain — AC motor → shaft → high-speed carrier → sun pinion GE1288 → low-speed carrier/planetaries → torque tube → hub on tapered rollers → tires; wet brakes + spring parking brake. Drag to orbit, click a marker (items 56/41/39-36/cable). Stop the rig and watch settling into the recalibration window. See docs/inspection.md (Steps 1-11)."}
+      </p>
+      <p className="og-body">{t("app.scope", lang)}</p>
+      <p className="og-body">{t("bench.honesty", lang)}</p>
+      <h2 className="og-h2">{es ? "Inspeccion pasos 1-11" : "Inspection Steps 1-11"}</h2>
+      <ol className="og-list">
+        {INSPECTION_STEPS.map((s) => (
+          <li key={s.n}>
+            <strong>Step {s.n} / Paso {s.n}:</strong> {es ? s.es : s.en}
+          </li>
+        ))}
+      </ol>
+      <p className="og-note">{es ? ENV_NOTE_ES : ENV_NOTE}</p>
+    </>
+  );
+
+  return (
+    <div className="og-view">
+      <div className="og-viewport">
+        <BenchScene
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          oilLevel={frac}
+          viscosityProxy={viscosity}
+          mode={mode}
+          cutaway={cutaway}
+          dock={dock}
+          badge={<HonestyBadge label={t("badge.proxy", lang)} text={t("bench.honesty", lang)} />}
+        />
       </div>
+      <Drawer
+        tabs={[
+          { id: "status", label: t("drawer.status", lang), content: status },
+          { id: "sheet", label: t("drawer.sheet", lang), content: sheet },
+          { id: "notes", label: t("drawer.notes", lang), content: notes },
+        ]}
+      />
     </div>
   );
 }

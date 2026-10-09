@@ -36,7 +36,7 @@ import {
   demoFracFor,
 } from "./demoData";
 import { emitDemoOil, type DemoStageId } from "./demoBus";
-import { useLang } from "../i18n";
+import { t, useLang } from "../i18n";
 
 type Source = "loading" | "live" | "demo";
 
@@ -115,7 +115,7 @@ export default function Dashboard() {
   useEffect(() => {
     void fetchAll();
     // Screenshot/judge helper: #dash-demo opens with the demo running.
-    if (window.location.hash.startsWith("#dash-demo")) {
+    if (/^#(dash|monitoring)-demo/.test(window.location.hash)) {
       setDemoTick(0);
       setDemoStage("clean");
     }
@@ -200,11 +200,13 @@ export default function Dashboard() {
   const demoOilCss = oilCssFor(demoOilState);
 
   return (
-    <div>
+    <div className="og-page">
+    <div className="og-page__inner">
       <p style={{ margin: "0 0 12px", color: "#9fb0c9" }}>
         {es
-          ? <>Tablero S6 (T11): nivel fusionado + confianza, ventanas de reposo, escalera N1–N4, RUL e indicador de modo. Modelo <code>{DEMO_MODEL}</code> — sustituto sintetico, NO PROBADO hasta el banco S7.</>
-          : <>S6 pro dashboard (T11): fused level + confidence, rest windows, N1–N4 ladder, RUL, and the sim-linked mode indicator. Model <code>{DEMO_MODEL}</code> — synthetic-proxy, UNPROVEN until the S7 bench drain-and-weigh.</>}
+          ? <>Nivel fusionado + confianza, ventanas de reposo, escalera N1–N4, RUL e indicador de modo. Modelo <code>{DEMO_MODEL}</code>.</>
+          : <>Fused level + confidence, rest windows, N1–N4 ladder, RUL, and the sim-linked mode indicator. Model <code>{DEMO_MODEL}</code>.</>}{" "}
+        {t("dash.honesty", lang)}
       </p>
 
       {/* source + backend row */}
@@ -322,9 +324,7 @@ export default function Dashboard() {
           </h2>
           <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} />
           <p style={{ margin: "8px 0 0", fontSize: 12, color: "#9fb0c9" }}>
-            {es
-              ? "Referencia 28 kPa @ 95 L: SUSTITUTO SINTETICO (anclaje de campo pendiente del banco h(L)) · priors en sim/physics.py · ver docs/thesis-annex.md"
-              : "28 kPa @ 95 L anchor: SYNTHETIC-PROXY (field-anchor pending h(L) bench) · priors in sim/physics.py · see docs/thesis-annex.md"}
+            {t("dash.footnote", lang)}
           </p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8, fontSize: 13 }}>
             <span style={{ color: demoOilCss, fontWeight: 700 }}>
@@ -397,6 +397,7 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    </div>
   );
 }
 
@@ -428,7 +429,7 @@ function demoRulFor(stage: DemoStageId) {
       r2: 0.822,
       current_level_L: 90.67,
       model: DEMO_MODEL,
-      note: `model=${DEMO_MODEL} (UNPROVEN until S7). ${DEMO_LAB_NOTE}.`,
+      note: `model=${DEMO_MODEL} (UNPROVEN until the bench). ${DEMO_LAB_NOTE}.`,
       fallback: "local DEMO fallback (backend down or demo override)",
     };
   }
@@ -445,7 +446,7 @@ function demoRulFor(stage: DemoStageId) {
     r2: 0.713,
     current_level_L: 79.97,
     model: DEMO_MODEL,
-    note: `model=${DEMO_MODEL} (UNPROVEN until S7). Abrupt step: linear RUL invalid, N4 fires instead.`,
+    note: `model=${DEMO_MODEL} (UNPROVEN until the bench). Abrupt step: linear RUL invalid, N4 fires instead.`,
     fallback: "local DEMO fallback (backend down or demo override)",
   };
 }
