@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import BenchView from "./sim/bench/BenchView";
 import TruckView from "./sim/truck/TruckView";
+import { Dashboard } from "./dash";
 
 // S0 placeholder scene, kept intact for the Stub tab. A rotating box proves
 // the Vite + React + Three.js pipeline works. Sim A (bench rig + GDY106
@@ -95,10 +96,11 @@ function StubScene() {
   );
 }
 
-type Mode = "bench" | "stub" | "truck";
+type Mode = "bench" | "stub" | "truck" | "dash";
 
 function initialMode(): Mode {
   const hash = window.location.hash;
+  if (hash.startsWith("#dash")) return "dash";
   if (hash === "#truck") return "truck";
   if (hash === "#stub") return "stub";
   return "bench";
@@ -151,6 +153,13 @@ export default function App() {
         </button>
         <button
           type="button"
+          style={tabStyle(mode === "dash")}
+          onClick={() => select("dash")}
+        >
+          Dash (S6/T11)
+        </button>
+        <button
+          type="button"
           style={tabStyle(mode === "stub")}
           onClick={() => select("stub")}
         >
@@ -161,6 +170,8 @@ export default function App() {
         <BenchView />
       ) : mode === "truck" ? (
         <TruckView />
+      ) : mode === "dash" ? (
+        <Dashboard />
       ) : (
         <StubScene />
       )}

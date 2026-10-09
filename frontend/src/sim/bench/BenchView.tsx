@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import BenchScene, { type BenchMode } from "./BenchScene";
 import { BENCH_SENSORS, ENV_NOTE, NO_DRILL_NARRATIVE } from "./sensors";
 import {
@@ -14,6 +14,7 @@ import {
   estimateSettlingMs,
   viscosityLabel,
 } from "./settling";
+import { DEMO_OIL_EVENT, parseDemoOil } from "../../dash/demoBus";
 
 // T3 bench view (Sim A, part 2 of 2): cutaway internals + oil volume +
 // settling transient, driven by Oil + Viscosity sliders and a Move/Rest
@@ -27,6 +28,16 @@ export default function BenchView() {
   const [viscosity, setViscosity] = useState(VISC_NOMINAL);
   const [mode, setMode] = useState<BenchMode>("rest");
   const [cutaway, setCutaway] = useState(true);
+
+  // T11 demo link: the dashboard leak scenario drives the 3D oil fill.
+  useEffect(() => {
+    const onDemoOil = (e: Event) => {
+      const detail = parseDemoOil(e);
+      if (detail) setOilPct(Math.round(detail.frac * 100));
+    };
+    window.addEventListener(DEMO_OIL_EVENT, onDemoOil);
+    return () => window.removeEventListener(DEMO_OIL_EVENT, onDemoOil);
+  }, []);
 
   const frac = clamp01(oilPct / 100);
   const oilState = oilStateFor(frac);

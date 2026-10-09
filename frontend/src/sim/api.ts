@@ -57,11 +57,84 @@ export interface WindowsResponse {
   note: string;
 }
 
-export interface NotImplementedYet {
-  status: "NOT_IMPLEMENTED_YET";
-  kind: string;
+export interface DashAlert {
+  alert_id: string;
+  level: string;
+  severity: string;
+  t_s: number;
+  window_id: number;
+  zone: string;
+  reason: string;
+  model: string;
+  inputs: Record<string, number | string | null>;
+  thresholds: Record<string, number>;
+  channels: Record<string, boolean> | null;
+  baseline?: string | null;
+}
+
+export interface AlertsLevelSummary {
+  confidence: number;
+  sigma_liters: number | null;
+  n_rest: number;
+  n_scored: number;
+}
+
+export interface AlertsData {
+  alerts: DashAlert[];
+  escalation: string[];
+  ladder: string[];
+  level?: AlertsLevelSummary;
+  rul_status?: string;
+  model: string;
+  note: string;
+  fallback: string;
+}
+
+export interface AlertsResponse {
+  status: "ok";
+  kind: "alerts";
   as_of: string;
-  data: Record<string, unknown>;
+  data: AlertsData;
+}
+
+export interface RulDataOk {
+  hours: number;
+  hours_to_warning: number;
+  hours_to_critical: number;
+  haul_cycles: number;
+  shifts: number;
+  confidence: number;
+  status: "ok";
+  anomaly_only: false;
+  slope_L_per_h: number;
+  r2: number;
+  current_level_L: number;
+  model: string;
+  note: string;
+  fallback: string;
+}
+
+export interface RulDataSuppressed {
+  hours: null;
+  haul_cycles: null;
+  shifts: null;
+  confidence: number;
+  status: "suppressed";
+  anomaly_only: true;
+  model: string;
+  note: string;
+  fallback: string;
+  hours_to_warning?: number | null;
+  reason?: string;
+}
+
+export type RulData = RulDataOk | RulDataSuppressed;
+
+export interface RulResponse {
+  status: "ok";
+  kind: "rul";
+  as_of: string;
+  data: RulData;
 }
 
 async function getJson<T>(path: string): Promise<T> {
@@ -85,5 +158,7 @@ export const getHealth = (): Promise<HealthResponse> => getJson("/health");
 export const getLevel = (): Promise<LevelResponse> => getJson("/level");
 export const getWindows = (limit = 50): Promise<WindowsResponse> =>
   getJson(`/windows?limit=${limit}`);
-export const getAlerts = (): Promise<NotImplementedYet> => getJson("/alerts");
-export const getRul = (): Promise<NotImplementedYet> => getJson("/rul");
+/** T10 N1–N4 ladder over the memory store (honest fallback when empty). */
+export const getAlerts = (): Promise<AlertsResponse> => getJson("/alerts");
+/** T10 trend-extrapolated RUL (suppressed + anomaly-only when gated). */
+export const getRul = (): Promise<RulResponse> => getJson("/rul");
