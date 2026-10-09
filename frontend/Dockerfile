@@ -1,8 +1,11 @@
-# S0 stub — see App.tsx header comment for Sim A/B future.
-FROM node:20.18.0-alpine
+FROM oven/bun:1.4.2-alpine
+
 WORKDIR /app
-COPY package.json ./
-RUN npm install
-COPY . ./
+
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
+
+COPY . .
+
 EXPOSE 5173
-CMD ["npm", "run", "dev"]
+CMD ["bun", "run", "dev"]
