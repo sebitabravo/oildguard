@@ -341,7 +341,7 @@ export default function BenchScene({
     sunShaft.position.set(-0.3, HOUSING_Y, 0);
     spinners[0].group.add(sunShaft);
     gearAt(spinners[0].group, -1.4, HOUSING_Y, 0, 0.2, 0.14, 10);
-    // Three high-speed planetary pinions at 120° around the sun.
+    // Tres engranajes planetarios de alta velocidad, separados 120° alrededor del sol.
     for (let k = 0; k < 3; k++) {
       const a = (k / 3) * Math.PI * 2;
       gearAt(
