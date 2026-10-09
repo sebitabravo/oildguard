@@ -1,8 +1,12 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { t } from "../i18n";
 import TruckView from "../sim/truck/TruckView";
 ---
 
 <BaseLayout section="mine">
+  <h1 class="og-visually-hidden" data-i18n-en={t("nav.mine", "en")} data-i18n-es={t("nav.mine", "es")}>
+    {t("nav.mine", "en")}
+  </h1>
   <TruckView client:only="preact" />
 </BaseLayout>

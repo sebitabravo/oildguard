@@ -136,6 +136,7 @@ export const dict = {
   "dash.fleet.vibration": { en: "Vibration · mm/s (recent series)", es: "Vibración · mm/s (serie reciente)" },
   "dash.fleet.current": { en: "Current · A (recent series)", es: "Corriente · A (serie reciente)" },
   "dash.fleet.risk": { en: "Combined demo risk", es: "Riesgo combinado de demostración" },
+  "dash.fleet.detailColumn": { en: "Detail", es: "Detalle" },
   "dash.fleet.alert": { en: "DEMO ALERT", es: "ALERTA DEMO" },
   "dash.fleet.normal": { en: "No demo alert", es: "Sin alerta demo" },
   "dash.fleet.detail": { en: "Open wheel detail", es: "Abrir detalle de rueda" },

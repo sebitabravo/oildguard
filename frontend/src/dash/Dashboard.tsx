@@ -248,7 +248,7 @@ export default function Dashboard() {
                 <th>{t("dash.fleet.vibration", lang)}</th>
                 <th>{t("dash.fleet.current", lang)}</th>
                 <th>{t("dash.fleet.risk", lang)}</th>
-                <th></th>
+                <th>{t("dash.fleet.detailColumn", lang)}</th>
               </tr>
             </thead>
             <tbody>
