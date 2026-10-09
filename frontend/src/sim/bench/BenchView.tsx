@@ -98,7 +98,7 @@ export default function BenchView() {
           step={1}
           value={oilPct}
           aria-label={es ? "Nivel de aceite" : "Oil fill"}
-          onChange={(e) => setOilPct(Number(e.currentTarget.value))}
+          onInput={(e) => setOilPct(Number(e.currentTarget.value))}
         />
       </label>
       <label className="og-field">
@@ -113,7 +113,7 @@ export default function BenchView() {
           step={0.05}
           value={viscosity}
           aria-label={es ? "Proxy de viscosidad" : "Viscosity proxy"}
-          onChange={(e) => setViscosity(Number(e.currentTarget.value))}
+          onInput={(e) => setViscosity(Number(e.currentTarget.value))}
         />
       </label>
       <button
