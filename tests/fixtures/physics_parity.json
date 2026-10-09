@@ -1,0 +1,448 @@
+{
+ "gear_case": {
+  "length": 0.42,
+  "r_in": 0.22,
+  "r_out": 0.6
+ },
+ "heads": [
+  {
+   "head_m": 0.0,
+   "volume_l": 0.0
+  },
+  {
+   "head_m": 0.013883201871067282,
+   "volume_l": 1.0
+  },
+  {
+   "head_m": 0.06500378111377358,
+   "volume_l": 10.0
+  },
+  {
+   "head_m": 0.13222503131255503,
+   "volume_l": 28.5
+  },
+  {
+   "head_m": 0.18776829885318874,
+   "volume_l": 47.5
+  },
+  {
+   "head_m": 0.24584890259429804,
+   "volume_l": 70.0
+  },
+  {
+   "head_m": 0.30487888539209956,
+   "volume_l": 95.0
+  },
+  {
+   "head_m": 0.3818497222848237,
+   "volume_l": 130.0
+  },
+  {
+   "head_m": 0.7357078936882318,
+   "volume_l": 250.0
+  },
+  {
+   "head_m": 1.1300583587028086,
+   "volume_l": 400.0
+  }
+ ],
+ "mass_pressures": [
+  {
+   "mass_kg": 60.0,
+   "pressure_kpa": 2.087373096406951,
+   "temp_c": 40.0
+  },
+  {
+   "mass_kg": 60.0,
+   "pressure_kpa": 2.0783799140298562,
+   "temp_c": 60.0
+  },
+  {
+   "mass_kg": 60.0,
+   "pressure_kpa": 2.069307466067187,
+   "temp_c": 80.0
+  },
+  {
+   "mass_kg": 60.0,
+   "pressure_kpa": 2.060154020394515,
+   "temp_c": 100.0
+  },
+  {
+   "mass_kg": 80.0,
+   "pressure_kpa": 2.5554786145748527,
+   "temp_c": 40.0
+  },
+  {
+   "mass_kg": 80.0,
+   "pressure_kpa": 2.544807586667112,
+   "temp_c": 60.0
+  },
+  {
+   "mass_kg": 80.0,
+   "pressure_kpa": 2.5340469893601103,
+   "temp_c": 80.0
+  },
+  {
+   "mass_kg": 80.0,
+   "pressure_kpa": 2.523195045929614,
+   "temp_c": 100.0
+  },
+  {
+   "mass_kg": 90.0,
+   "pressure_kpa": 2.7785274143893317,
+   "temp_c": 40.0
+  },
+  {
+   "mass_kg": 90.0,
+   "pressure_kpa": 2.767114074882177,
+   "temp_c": 60.0
+  },
+  {
+   "mass_kg": 90.0,
+   "pressure_kpa": 2.7556078154391095,
+   "temp_c": 80.0
+  },
+  {
+   "mass_kg": 90.0,
+   "pressure_kpa": 2.7440069179527757,
+   "temp_c": 100.0
+  }
+ ],
+ "pressures": [
+  {
+   "pressure_kpa": 0.0,
+   "temp_c": 40.0,
+   "volume_back_l": 0.0,
+   "volume_l": 0.0
+  },
+  {
+   "pressure_kpa": 0.0,
+   "temp_c": 60.0,
+   "volume_back_l": 0.0,
+   "volume_l": 0.0
+  },
+  {
+   "pressure_kpa": 0.0,
+   "temp_c": 80.0,
+   "volume_back_l": 0.0,
+   "volume_l": 0.0
+  },
+  {
+   "pressure_kpa": 0.0,
+   "temp_c": 100.0,
+   "volume_back_l": 0.0,
+   "volume_l": 0.0
+  },
+  {
+   "pressure_kpa": 0.12056354131823309,
+   "temp_c": 40.0,
+   "volume_back_l": 0.9999999941512866,
+   "volume_l": 1.0
+  },
+  {
+   "pressure_kpa": 0.11884558754881296,
+   "temp_c": 60.0,
+   "volume_back_l": 0.9999999941512866,
+   "volume_l": 1.0
+  },
+  {
+   "pressure_kpa": 0.11712763377939284,
+   "temp_c": 80.0,
+   "volume_back_l": 0.9999999941512866,
+   "volume_l": 1.0
+  },
+  {
+   "pressure_kpa": 0.1154096800099727,
+   "temp_c": 100.0,
+   "volume_back_l": 0.9999999941512866,
+   "volume_l": 1.0
+  },
+  {
+   "pressure_kpa": 0.5645013393116742,
+   "temp_c": 40.0,
+   "volume_back_l": 9.999999981955693,
+   "volume_l": 10.0
+  },
+  {
+   "pressure_kpa": 0.5564575543240268,
+   "temp_c": 60.0,
+   "volume_back_l": 9.999999981955693,
+   "volume_l": 10.0
+  },
+  {
+   "pressure_kpa": 0.5484137693363794,
+   "temp_c": 80.0,
+   "volume_back_l": 9.999999981955693,
+   "volume_l": 10.0
+  },
+  {
+   "pressure_kpa": 0.5403699843487322,
+   "temp_c": 100.0,
+   "volume_back_l": 9.999999981955693,
+   "volume_l": 10.0
+  },
+  {
+   "pressure_kpa": 1.1482594702579496,
+   "temp_c": 40.0,
+   "volume_back_l": 28.50000006756579,
+   "volume_l": 28.5
+  },
+  {
+   "pressure_kpa": 1.1318975032517293,
+   "temp_c": 60.0,
+   "volume_back_l": 28.50000006756579,
+   "volume_l": 28.5
+  },
+  {
+   "pressure_kpa": 1.115535536245509,
+   "temp_c": 80.0,
+   "volume_back_l": 28.50000006756579,
+   "volume_l": 28.5
+  },
+  {
+   "pressure_kpa": 1.0991735692392888,
+   "temp_c": 100.0,
+   "volume_back_l": 28.50000006756579,
+   "volume_l": 28.5
+  },
+  {
+   "pressure_kpa": 1.6306044720287889,
+   "temp_c": 40.0,
+   "volume_back_l": 47.50000001341955,
+   "volume_l": 47.5
+  },
+  {
+   "pressure_kpa": 1.607369395582577,
+   "temp_c": 60.0,
+   "volume_back_l": 47.50000001341955,
+   "volume_l": 47.5
+  },
+  {
+   "pressure_kpa": 1.584134319136365,
+   "temp_c": 80.0,
+   "volume_back_l": 47.50000001341955,
+   "volume_l": 47.5
+  },
+  {
+   "pressure_kpa": 1.5608992426901531,
+   "temp_c": 100.0,
+   "volume_back_l": 47.50000001341955,
+   "volume_l": 47.5
+  },
+  {
+   "pressure_kpa": 2.1349840333115666,
+   "temp_c": 40.0,
+   "volume_back_l": 69.99999996224307,
+   "volume_l": 70.0
+  },
+  {
+   "pressure_kpa": 2.1045618689692134,
+   "temp_c": 60.0,
+   "volume_back_l": 69.99999996224307,
+   "volume_l": 70.0
+  },
+  {
+   "pressure_kpa": 2.0741397046268597,
+   "temp_c": 80.0,
+   "volume_back_l": 69.99999996224307,
+   "volume_l": 70.0
+  },
+  {
+   "pressure_kpa": 2.0437175402845065,
+   "temp_c": 100.0,
+   "volume_back_l": 69.99999996224307,
+   "volume_l": 70.0
+  },
+  {
+   "pressure_kpa": 2.6476081265251747,
+   "temp_c": 40.0,
+   "volume_back_l": 95.00000001086818,
+   "volume_l": 95.0
+  },
+  {
+   "pressure_kpa": 2.609881394951279,
+   "temp_c": 60.0,
+   "volume_back_l": 95.00000001086818,
+   "volume_l": 95.0
+  },
+  {
+   "pressure_kpa": 2.5721546633773826,
+   "temp_c": 80.0,
+   "volume_back_l": 95.00000001086818,
+   "volume_l": 95.0
+  },
+  {
+   "pressure_kpa": 2.534427931803487,
+   "temp_c": 100.0,
+   "volume_back_l": 95.00000001086818,
+   "volume_l": 95.0
+  },
+  {
+   "pressure_kpa": 3.316032943811328,
+   "temp_c": 40.0,
+   "volume_back_l": 130.0000000247747,
+   "volume_l": 130.0
+  },
+  {
+   "pressure_kpa": 3.2687815837977308,
+   "temp_c": 60.0,
+   "volume_back_l": 130.0000000247747,
+   "volume_l": 130.0
+  },
+  {
+   "pressure_kpa": 3.2215302237841343,
+   "temp_c": 80.0,
+   "volume_back_l": 130.0000000247747,
+   "volume_l": 130.0
+  },
+  {
+   "pressure_kpa": 3.174278863770537,
+   "temp_c": 100.0,
+   "volume_back_l": 130.0000000247747,
+   "volume_l": 130.0
+  },
+  {
+   "pressure_kpa": 6.388983597773797,
+   "temp_c": 40.0,
+   "volume_back_l": 249.99999992775673,
+   "volume_l": 250.0
+  },
+  {
+   "pressure_kpa": 6.29794464574445,
+   "temp_c": 60.0,
+   "volume_back_l": 249.99999992775673,
+   "volume_l": 250.0
+  },
+  {
+   "pressure_kpa": 6.206905693715103,
+   "temp_c": 80.0,
+   "volume_back_l": 249.99999992775673,
+   "volume_l": 250.0
+  },
+  {
+   "pressure_kpa": 6.115866741685755,
+   "temp_c": 100.0,
+   "volume_back_l": 249.99999992775673,
+   "volume_l": 250.0
+  },
+  {
+   "pressure_kpa": 9.81357462685997,
+   "temp_c": 40.0,
+   "volume_back_l": 399.999999985332,
+   "volume_l": 400.0
+  },
+  {
+   "pressure_kpa": 9.673737431159164,
+   "temp_c": 60.0,
+   "volume_back_l": 399.999999985332,
+   "volume_l": 400.0
+  },
+  {
+   "pressure_kpa": 9.533900235458361,
+   "temp_c": 80.0,
+   "volume_back_l": 399.999999985332,
+   "volume_l": 400.0
+  },
+  {
+   "pressure_kpa": 9.394063039757555,
+   "temp_c": 100.0,
+   "volume_back_l": 399.999999985332,
+   "volume_l": 400.0
+  }
+ ],
+ "speeds": [
+  {
+   "hs_carrier_rpm": 0.0,
+   "hs_planet_rel_rpm": -0.0,
+   "ls_planet_rel_rpm": -0.0,
+   "ls_sun_rpm": 0.0,
+   "rotor_rpm": 0.0,
+   "shaft_rpm": 0.0,
+   "wheel_rpm": 0.0
+  },
+  {
+   "hs_carrier_rpm": 17.77777777777778,
+   "hs_planet_rel_rpm": -43.04093567251462,
+   "ls_planet_rel_rpm": -9.952670723461798,
+   "ls_sun_rpm": 17.77777777777778,
+   "rotor_rpm": 120.0,
+   "shaft_rpm": 120.0,
+   "wheel_rpm": 3.6781609195402294
+  },
+  {
+   "hs_carrier_rpm": 222.22222222222223,
+   "hs_planet_rel_rpm": -538.0116959064328,
+   "ls_planet_rel_rpm": -124.40838404327248,
+   "ls_sun_rpm": 222.22222222222223,
+   "rotor_rpm": 1500.0,
+   "shaft_rpm": 1500.0,
+   "wheel_rpm": 45.97701149425287
+  },
+  {
+   "hs_carrier_rpm": 444.44444444444446,
+   "hs_planet_rel_rpm": -1076.0233918128656,
+   "ls_planet_rel_rpm": -248.81676808654495,
+   "ls_sun_rpm": 444.44444444444446,
+   "rotor_rpm": 3000.0,
+   "shaft_rpm": 3000.0,
+   "wheel_rpm": 91.95402298850574
+  }
+ ],
+ "train": {
+  "hs": {
+   "planets": 3,
+   "zp": 38,
+   "zr": 92,
+   "zs": 16
+  },
+  "ls": {
+   "planets": 4,
+   "zp": 34,
+   "zr": 92,
+   "zs": 24
+  },
+  "ratio": 32.62500000000001
+ },
+ "volumes": [
+  {
+   "dv_dh_l_per_mm": 0.0,
+   "head_m": 0.0,
+   "volume_l": 0.0
+  },
+  {
+   "dv_dh_l_per_mm": 0.2014249239791342,
+   "head_m": 0.05,
+   "volume_l": 6.772190688877089
+  },
+  {
+   "dv_dh_l_per_mm": 0.3756594202199646,
+   "head_m": 0.2,
+   "volume_l": 52.037698945878134
+  },
+  {
+   "dv_dh_l_per_mm": 0.4364768035073571,
+   "head_m": 0.3,
+   "volume_l": 92.864749214822
+  },
+  {
+   "dv_dh_l_per_mm": 0.4688976007616162,
+   "head_m": 0.38,
+   "volume_l": 129.16161900087744
+  },
+  {
+   "dv_dh_l_per_mm": 0.3323449910653381,
+   "head_m": 0.5,
+   "volume_l": 173.2298651772383
+  },
+  {
+   "dv_dh_l_per_mm": 0.4364768035073571,
+   "head_m": 0.9,
+   "volume_l": 318.2817645457814
+  },
+  {
+   "dv_dh_l_per_mm": 0.0,
+   "head_m": 1.2,
+   "volume_l": 411.1465137606034
+  }
+ ]
+}

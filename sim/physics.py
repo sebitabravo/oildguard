@@ -6,25 +6,24 @@ validation — no 980E claim in this file is validated.
 
 STATUS — READ FIRST
 -------------------
-The running demo pipeline (``sim/generate.py`` anchor ``28 kPa at 95 L``,
-``ai/level.py`` ``KPA_PER_L = 28/95``) is a SYNTHETIC-PROXY (field-anchor
-pending h(L) bench). It is KEPT RUNNING unchanged so the N1–N4 demo keeps
-working; it is NOT rescaled here. The functions below are the bench-ready
-literature anchor referenced by ``docs/calibration.md`` and
-``docs/thesis-annex.md``: real physics with VERIFIED constants and explicit
-ASSUMPTION/GAP marks. No bench data is invented in this file.
+The pipeline (``sim/generate.py``, ``ai/level.py``) derives pressure from the
+oil volume through the gear-case geometry in ``sim/geometry.py`` and the
+hydrostatics below: ``p = rho(T) * g * h(V)``. The former linear anchor
+``28 kPa at 95 L`` implied a 3.2 m oil column inside a wheel motor (ABSURD);
+it survives only as the historical record in :func:`absurdity_check`.
 
-Hydrostatic correction (why the proxy is flagged)
+The cavity dimensions are an ASSUMPTION (GE does not publish them) and the
+whole chain stays labeled SYNTHETIC-PROXY until the bench measures the true
+``h(L)`` mapping (``docs/calibration.md``). Constants of the oil and the
+drive are VERIFIED (see ``docs/thesis-annex.md``).
+
+Why temperature compensation is physically needed
 -------------------------------------------------
-``p = rho * g * h`` with SAE 85W-140 ``rho ≈ 890–912 kg/m³`` (VERIFIED PDS
-set, see thesis annex) gives for the synthetic 28 kPa anchor at 95 L::
-
-    h = 28000 / (901 * 9.81) ≈ 3.2 m
-
-A 3.2 m oil head inside a wheel-motor housing is ABSURD (housing scale is
-decimetres). A realistic 0.3–0.5 m head gives only ≈ 2.6–4.4 kPa. The bench
-must therefore measure the true ``h(L)`` mapping (head vs weighed litres)
-before any field-accuracy claim; see ``absurdity_check()`` smoke below.
+A fixed MASS of oil occupies ``V(T) = m / rho(T)``. In a vertical-walled tank
+``p = rho*g*V/A = m*g/A`` is temperature invariant. In a horizontal annular
+case the free surface widens with height, so the head grows less than
+proportionally with the thermal expansion and ``p`` is NOT exactly invariant:
+the residual is the signal the temperature compensation has to remove.
 
 Stdlib only (no extra deps).
 """
@@ -32,6 +31,12 @@ Stdlib only (no extra deps).
 from __future__ import annotations
 
 import math
+from typing import Callable
+
+try:  # ejecución como paquete (pytest, backend) o como script (python3 sim/physics.py)
+    from sim.geometry import DEFAULT_GEAR_CASE, GearCase, dV_dh, head_from_volume, volume_from_head
+except ImportError:  # pragma: no cover
+    from geometry import DEFAULT_GEAR_CASE, GearCase, dV_dh, head_from_volume, volume_from_head  # type: ignore
 
 # --- Validated scope constants (VERIFIED: Komatsu spec PDFs, see annex) ---
 CAPACITY_L = 95.0            # GDY106 oil capacity per wheel motor
@@ -57,8 +62,8 @@ VISC_VI = (95, 103)              # VERIFIED viscosity-index range
 
 G = 9.81  # m/s²
 
-# Synthetic-proxy anchor kept by the demo pipeline (NOT physics):
-SYNTHETIC_PROXY_KPA_AT_FULL = 28.0  # field-anchor pending h(L) bench
+# Ancla lineal histórica (NO física); solo la usa absurdity_check().
+SYNTHETIC_PROXY_KPA_AT_FULL = 28.0
 
 
 def oil_density_kg_m3(temp_c: float, rho_ref: float = RHO_REF,
@@ -96,6 +101,57 @@ def absurdity_check() -> dict:
         "realistic_head_kpa": realistic,        # ≈ 2.65 / 3.54 / 4.42 kPa
         "verdict": "SYNTHETIC-PROXY (field-anchor pending h(L) bench)",
     }
+
+
+def pressure_kpa_from_volume(volume_l: float, temp_c: float,
+                             gc: GearCase = DEFAULT_GEAR_CASE) -> float:
+    """Presión hidrostática en el fondo ``rho(T) * g * h(V)`` en kPa.
+
+    ``volume_l`` es el volumen real de aceite a la temperatura ``temp_c``.
+    """
+    return hydrostatic_kpa(oil_density_kg_m3(temp_c), head_from_volume(volume_l, gc))
+
+
+def _pressure_kpa_from_mass(mass_kg: float, temp_c: float,
+                            head_fn: Callable[[float], float]) -> float:
+    rho = oil_density_kg_m3(temp_c)
+    volume_l = mass_kg / rho * 1000.0
+    return hydrostatic_kpa(rho, head_fn(volume_l))
+
+
+def pressure_kpa_from_mass(mass_kg: float, temp_c: float,
+                           gc: GearCase = DEFAULT_GEAR_CASE) -> float:
+    """Presión para una MASA fija de aceite: el volumen es ``m / rho(T)``.
+
+    En un estanque de paredes verticales el resultado no depende de la
+    temperatura; en la caja anular sí (poco pero no cero). Esa diferencia es
+    la razón física de la compensación térmica del nivel.
+    """
+    return _pressure_kpa_from_mass(mass_kg, temp_c, lambda v: head_from_volume(v, gc))
+
+
+def volume_from_pressure_kpa(pressure_kpa: float, temp_c: float,
+                             gc: GearCase = DEFAULT_GEAR_CASE) -> float:
+    """Inversa de :func:`pressure_kpa_from_volume`: litros para una presión."""
+    head = head_for_pressure_m(pressure_kpa, oil_density_kg_m3(temp_c))
+    return volume_from_head(head, gc)
+
+
+def sensor_resolution_l(fs_kpa: float, accuracy_pct_fs: float, volume_l: float,
+                        temp_c: float, gc: GearCase = DEFAULT_GEAR_CASE) -> float:
+    """Incertidumbre de nivel en litros de un transductor ``fs_kpa`` con ``accuracy_pct_fs``.
+
+    ``error_kpa / (dp/dV)`` evaluado en el nivel ``volume_l``; dp/dV sale de la
+    sensibilidad de la geometría, así que depende del nivel (peor donde la
+    superficie libre es más ancha).
+    """
+    err_kpa = fs_kpa * accuracy_pct_fs / 100.0
+    h = head_from_volume(volume_l, gc)
+    dv_dh_l_per_m = dV_dh(h, gc) * 1000.0
+    if dv_dh_l_per_m <= 0.0:
+        return float("inf")
+    dp_dv = oil_density_kg_m3(temp_c) * G / 1000.0 / dv_dh_l_per_m  # kPa por litro
+    return err_kpa / dp_dv
 
 
 def wheel_rpm(rotor_rpm: float, ratio: float = GEAR_RATIO) -> float:
