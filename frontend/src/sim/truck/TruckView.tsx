@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState } from "preact/hooks";
 import TruckScene, { STATE_ES } from "./TruckScene";
 import {
   HAUL_DURATIONS,

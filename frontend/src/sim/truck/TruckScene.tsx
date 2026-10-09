@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "preact/hooks";
+import type { ComponentChildren } from "preact";
 import * as THREE from "three";
 import {
   DUMP_POS,
@@ -45,9 +46,9 @@ interface TruckSceneProps {
   stepTick: number;
   onPhase: (state: HaulState) => void;
   /** Controles inferiores (pausa, paso, reinicio) que dibuja la vista. */
-  dock?: ReactNode;
+  dock?: ComponentChildren;
   /** Insignias de honestidad visual, bajo la insignia RECAL. */
-  badge?: ReactNode;
+  badge?: ComponentChildren;
 }
 
 type CamPreset = "pit" | "hero" | "cab" | "side" | "wheel" | "free" | "custom";

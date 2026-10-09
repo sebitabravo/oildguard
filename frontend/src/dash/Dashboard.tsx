@@ -7,7 +7,7 @@
 // the DEMO badge is never silent. Model label everywhere:
 // `synthetic-proxy` (UNPROVEN until S7 bench drain-and-weigh).
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import {
   BACKEND_URL,
   getAlerts,

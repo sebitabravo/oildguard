@@ -4,10 +4,11 @@
 // the honest suppressed note (anomaly-only) otherwise — never a silent
 // zero. Matches ai/rul.py gating + GET /rul shapes. Bilingual EN/ES.
 
+import type { CSSProperties } from "preact";
 import type { RulData } from "../sim/api";
 import { useLang } from "../i18n";
 
-const panel: React.CSSProperties = {
+const panel: CSSProperties = {
   border: "1px solid #2a3a55",
   borderRadius: 6,
   padding: "10px 12px",

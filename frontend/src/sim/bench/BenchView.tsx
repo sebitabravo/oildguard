@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "preact/hooks";
 import BenchScene, { type BenchMode } from "./BenchScene";
 import {
   BENCH_SENSORS,
@@ -98,7 +98,7 @@ export default function BenchView() {
           step={1}
           value={oilPct}
           aria-label={es ? "Nivel de aceite" : "Oil fill"}
-          onChange={(e) => setOilPct(Number(e.target.value))}
+          onChange={(e) => setOilPct(Number(e.currentTarget.value))}
         />
       </label>
       <label className="og-field">
@@ -113,7 +113,7 @@ export default function BenchView() {
           step={0.05}
           value={viscosity}
           aria-label={es ? "Proxy de viscosidad" : "Viscosity proxy"}
-          onChange={(e) => setViscosity(Number(e.target.value))}
+          onChange={(e) => setViscosity(Number(e.currentTarget.value))}
         />
       </label>
       <button
@@ -126,7 +126,11 @@ export default function BenchView() {
           : es ? "En marcha — detener" : "Moving — stop to Rest"}
       </button>
       <label className="og-check">
-        <input type="checkbox" checked={cutaway} onChange={(e) => setCutaway(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={cutaway}
+          onChange={(e) => setCutaway(e.currentTarget.checked)}
+        />
         {es ? "Corte" : "Cutaway"}
       </label>
     </div>

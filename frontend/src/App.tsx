@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "preact/hooks";
 import BenchView from "./sim/bench/BenchView";
 import TruckView from "./sim/truck/TruckView";
 import { Dashboard } from "./dash";

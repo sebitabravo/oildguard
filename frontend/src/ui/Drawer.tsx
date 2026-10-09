@@ -1,4 +1,5 @@
-import { useId, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useId, useState } from "preact/hooks";
+import type { ComponentChildren, JSX } from "preact";
 import { t, useLang } from "../i18n";
 
 // Panel lateral con pestañas y colapso. Las vistas le pasan el contenido
@@ -7,7 +8,7 @@ import { t, useLang } from "../i18n";
 export interface DrawerTab {
   id: string;
   label: string;
-  content: ReactNode;
+  content: ComponentChildren;
 }
 
 interface DrawerProps {
@@ -31,7 +32,7 @@ export default function Drawer({ tabs, defaultOpen = true, requestedTab }: Drawe
   const uid = useId();
   const current = tabs.find((tab) => tab.id === active) ?? tabs[0];
 
-  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
+  const onKey = (e: JSX.TargetedEvent<HTMLDivElement, KeyboardEvent>) => {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
     const idx = tabs.findIndex((tab) => tab.id === active);
     const next = (idx + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;

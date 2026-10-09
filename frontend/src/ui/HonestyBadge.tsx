@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useState } from "preact/hooks";
 import { t, useLang } from "../i18n";
 
 // Insignia compacta de honestidad visual (SYNTHETIC-PROXY, modelo provisional):

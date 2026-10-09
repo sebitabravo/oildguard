@@ -25,7 +25,7 @@ export function persistLang(lang: Lang): void {
   window.dispatchEvent(new CustomEvent("oilguard:lang", { detail: lang }));
 }
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "preact/hooks";
 
 export function useLang(): [Lang, (l: Lang) => void] {
   const [lang, setLangState] = useState<Lang>(() => getInitialLang());

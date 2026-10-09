@@ -1,4 +1,5 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef } from "preact/hooks";
+import type { ComponentChildren } from "preact";
 import * as THREE from "three";
 import { BENCH_SENSORS } from "./sensors";
 import { t, useLang } from "../../i18n";
@@ -34,9 +35,9 @@ interface BenchSceneProps {
   /** Semi-transparent housing shell revealing internals + oil. */
   cutaway: boolean;
   /** Controles inferiores (sliders, marcha/reposo, corte) que dibuja la vista. */
-  dock?: ReactNode;
+  dock?: ComponentChildren;
   /** Insignias de honestidad visual, bajo la insignia RECAL. */
-  badge?: ReactNode;
+  badge?: ComponentChildren;
 }
 
 /** Oil fill slab geometry inside the barrel (scene units). */
