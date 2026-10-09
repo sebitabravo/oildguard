@@ -159,3 +159,24 @@ def test_permissive_mode_accepts_unsigned_rows_as_unverified(client, monkeypatch
     assert response.json()["rejected"] == 0
     with backend_main._store_lock:
         assert backend_main._store_rows[0]["sig_verified"] is False
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"sig": ""},
+        {"sig_v": ""},
+        {"sig_v": "", "sig": ""},
+    ],
+)
+def test_permissive_mode_rejects_empty_signature_metadata(client, monkeypatch, metadata):
+    monkeypatch.setattr(backend_main, "_REQUIRE_SIGNATURE", False)
+    row = {**generated_row(), **metadata}
+
+    response = client.post("/ingest", json={"rows": [row]})
+
+    assert response.status_code == 200
+    assert response.json()["ingested"] == 0
+    assert response.json()["rejected_reasons"] == {"bad_signature": 1}
+    with backend_main._store_lock:
+        assert backend_main._store_rows == []

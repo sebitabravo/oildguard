@@ -181,7 +181,7 @@ def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     with _store_lock:
         for original in rows:
             row = dict(original)
-            has_signature = bool(row.get("sig") or row.get("sig_v"))
+            has_signature = row.get("sig") is not None or row.get("sig_v") is not None
             reason: str | None = None
             if has_signature:
                 device_id = str(row.get("device_id", ""))
