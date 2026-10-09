@@ -21,6 +21,10 @@ export interface MineUrl {
 
 const CAMS: MineCam[] = ["pit", "hero", "cab", "side", "wheel", "chase", "shovel", "crusher", "ramp", "free", "custom"];
 
+export function normalizeMineCam(raw: string | null): MineCam | null {
+  return raw && (CAMS as string[]).includes(raw) ? (raw as MineCam) : null;
+}
+
 export function readMineUrl(search: string = window.location.search): MineUrl {
   const q = new URLSearchParams(search);
   const cam = q.get("cam");
@@ -28,7 +32,7 @@ export function readMineUrl(search: string = window.location.search): MineUrl {
   const time = Number(q.get("t"));
   const seed = Number(q.get("seed"));
   return {
-    cam: cam && (CAMS as string[]).includes(cam) ? (cam as MineCam) : null,
+    cam: normalizeMineCam(cam),
     t: Number.isFinite(time) && time > 0 ? time : 0,
     pause: q.get("pause") === "1",
     scale: Number.isFinite(scale) && scale > 0 ? scale : null,

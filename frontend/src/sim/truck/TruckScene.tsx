@@ -10,7 +10,7 @@ import { wheelOmega } from "../../twin/truck930e/spec";
 import { buildPit, type PitBuild } from "../../twin/pit/buildPit";
 import { buildShovel } from "../../twin/pit/shovel";
 import { createDust } from "../../twin/pit/dust";
-import { getFleetStore, getPitWorld, readMineUrl } from "./mineWorld";
+import { getFleetStore, getPitWorld, normalizeMineCam, readMineUrl } from "./mineWorld";
 import { HAUL_STATE_CSS, type HaulState } from "./cycle";
 import type { PlmState, TruckTick } from "../../twin/fleet/fleetSim";
 
@@ -51,7 +51,8 @@ function selectedTick(trucks: TruckTick[], selectedId: string | null): TruckTick
 }
 
 function selectedCam(raw: string | null): CamPreset {
-  return raw && CAM_PRESETS.includes(raw as CamPreset) ? (raw as CamPreset) : "pit";
+  const camera = normalizeMineCam(raw);
+  return camera && camera !== "custom" ? camera : "pit";
 }
 
 export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: TruckSceneProps) {

@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { readMineUrl } from "./mineWorld";
+import { normalizeMineCam, readMineUrl } from "./mineWorld";
 
 describe("mine URL controls", () => {
+  test("normalizes the shared camera preset set, including free camera", () => {
+    expect(normalizeMineCam("free")).toBe("free");
+    expect(normalizeMineCam("shovel")).toBe("shovel");
+    expect(normalizeMineCam("unlisted")).toBe(null);
+  });
+
   test("preserves an explicit zero seed for deterministic scene fixtures", () => {
     expect(readMineUrl("?seed=0").seed).toBe(0);
   });
