@@ -1,11 +1,11 @@
 import * as THREE from "three";
 import type { MaterialLibrary } from "../render/materials";
-import { buildBodyParts } from "./body";
+import { buildBodyParts, type BodyParts } from "./body";
 import { buildChassis } from "./chassis";
 import { ackermann, clampTiltDeg, hoistPose, hoistStageLength, payloadSag } from "./kinematics";
 import { plateTexture } from "./plate";
 import { S } from "./spec";
-import { buildWheelGeometries } from "./tire";
+import { buildWheelGeometries, type WheelGeometries } from "./tire";
 
 // Ensamble del 930E-4SE: grupos `axle` (queda en el suelo) y `chassis` (se hunde
 // con la carga) y, colgando del chasis, la tolva sobre su bisagra. El origen
@@ -47,8 +47,58 @@ export const MODE_COLORS: Record<TruckMode, number> = {
 const RAD = Math.PI / 180;
 const AX = S.tire.axleHeight;
 
+// Geometría compartida entre camiones: una flota de N instancias reutiliza los
+// mismos buffers (chasis, tolva, neumáticos) y solo duplica mallas y materiales.
+// Cuenta de referencias por cantidad de segmentos de neumático; se libera al soltar el último.
+interface SharedGeometry {
+  chassis: ReturnType<typeof buildChassis>;
+  body: BodyParts;
+  wheels: WheelGeometries;
+  hoist: THREE.BufferGeometry[];
+  refs: number;
+}
+const sharedCache = new Map<number, SharedGeometry>();
+
+function acquireShared(tireSegments: number): SharedGeometry {
+  const hit = sharedCache.get(tireSegments);
+  if (hit) {
+    hit.refs += 1;
+    return hit;
+  }
+  const hoist = [S.hoist.stageRadius1, S.hoist.stageRadius2, S.hoist.stageRadius3].map((r) => {
+    const geo = new THREE.CylinderGeometry(r, r, 1, 16, 1);
+    geo.rotateZ(-Math.PI / 2);
+    return geo;
+  });
+  const created: SharedGeometry = {
+    chassis: buildChassis(),
+    body: buildBodyParts(),
+    wheels: buildWheelGeometries(tireSegments),
+    hoist,
+    refs: 1,
+  };
+  sharedCache.set(tireSegments, created);
+  return created;
+}
+
+function releaseShared(tireSegments: number): void {
+  const entry = sharedCache.get(tireSegments);
+  if (!entry) return;
+  entry.refs -= 1;
+  if (entry.refs > 0) return;
+  for (const g of entry.chassis.chassis.values()) g.dispose();
+  for (const g of entry.chassis.axle.values()) g.dispose();
+  const bp = entry.body;
+  for (const g of [bp.yellow, bp.liner, bp.dark, bp.machined, bp.plate, bp.heap]) g.dispose();
+  const w = entry.wheels;
+  for (const g of [w.tireFront, w.tireRear, w.lug, w.rim, w.hub, w.gdyCast, w.gdyBolts]) g.dispose();
+  for (const g of entry.hoist) g.dispose();
+  sharedCache.delete(tireSegments);
+}
+
 export function build930E(materials: MaterialLibrary, opts: Truck930EOptions = {}): Truck930E {
-  const geoms = new Set<THREE.BufferGeometry>();
+  const tireSegments = opts.tireSegments ?? 96;
+  const shared = acquireShared(tireSegments);
   const ownedMats: THREE.Material[] = [];
   const textures: THREE.Texture[] = [];
 
@@ -101,7 +151,6 @@ export function build930E(materials: MaterialLibrary, opts: Truck930EOptions = {
     parent: THREE.Object3D,
     shadow: { cast?: boolean; receive?: boolean } = {},
   ) => {
-    geoms.add(g);
     const mesh = new THREE.Mesh(g, m);
     mesh.castShadow = shadow.cast ?? true;
     mesh.receiveShadow = shadow.receive ?? true;
@@ -110,13 +159,12 @@ export function build930E(materials: MaterialLibrary, opts: Truck930EOptions = {
   };
 
   // ---- Chasis y eje (geometría fusionada por material) ----
-  const parts = buildChassis();
+  const parts = shared.chassis;
   for (const [key, g] of parts.chassis) mk(g, mat[key], chassisGroup, { cast: key !== "accent" });
   for (const [key, g] of parts.axle) mk(g, mat[key], axleGroup);
 
   // ---- Ruedas ----
-  const wg = buildWheelGeometries(opts.tireSegments ?? 96);
-  for (const g of [wg.tireFront, wg.tireRear, wg.lug, wg.rim, wg.hub, wg.gdyCast, wg.gdyBolts]) geoms.add(g);
+  const wg = shared.wheels;
   const spinNodes: Array<{ node: THREE.Object3D; side: number }> = [];
 
   const makeWheel = (parent: THREE.Object3D, kind: "front" | "rear", side: number, withCap: boolean) => {
@@ -169,7 +217,7 @@ export function build930E(materials: MaterialLibrary, opts: Truck930EOptions = {
   bodyGroup.name = "body";
   bodyGroup.position.set(S.body.hingeX, S.body.hingeY, 0);
   chassisGroup.add(bodyGroup);
-  const bp = buildBodyParts();
+  const bp = shared.body;
   mk(bp.yellow, mat.yellow, bodyGroup);
   mk(bp.liner, mat.liner, bodyGroup);
   mk(bp.dark, mat.dark, bodyGroup);
@@ -179,17 +227,12 @@ export function build930E(materials: MaterialLibrary, opts: Truck930EOptions = {
   heap.visible = false;
 
   // ---- Cilindros de levante de tres etapas (uno por lado) ----
-  const stageRadii = [S.hoist.stageRadius1, S.hoist.stageRadius2, S.hoist.stageRadius3];
   const stageMats = [mat.yellow, mat.machined, mat.machined];
   const hoists = [-1, 1].map((side) => {
     const g = new THREE.Group();
     g.position.set(S.hoist.baseX, S.hoist.baseY, side * S.hoist.zOffset);
     chassisGroup.add(g);
-    const stages = stageRadii.map((r, i) => {
-      const geo = new THREE.CylinderGeometry(r, r, 1, 16, 1);
-      geo.rotateZ(-Math.PI / 2);
-      return mk(geo, stageMats[i], g);
-    });
+    const stages = shared.hoist.map((geo, i) => mk(geo, stageMats[i], g));
     return { group: g, stages };
   });
 
@@ -230,6 +273,7 @@ export function build930E(materials: MaterialLibrary, opts: Truck930EOptions = {
   let wheelAngle = 0;
   let wheelOmega = 0;
   let mode: TruckMode = "rest";
+  let disposed = false;
 
   const applySpin = () => {
     for (const { node, side } of spinNodes) node.rotation.z = side > 0 ? -wheelAngle : wheelAngle;
@@ -270,8 +314,9 @@ export function build930E(materials: MaterialLibrary, opts: Truck930EOptions = {
     getAnchors: () => anchors,
     state: () => ({ tiltDeg, steer, payload, wheelAngle, mode }),
     dispose() {
-      for (const g of geoms) g.dispose();
-      geoms.clear();
+      if (disposed) return;
+      disposed = true;
+      releaseShared(tireSegments);
       for (const m of ownedMats) m.dispose();
       for (const t of textures) t.dispose();
       root.removeFromParent();

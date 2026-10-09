@@ -1,22 +1,12 @@
 import { useState } from "preact/hooks";
-import TruckScene, { STATE_ES } from "./TruckScene";
-import {
-  HAUL_DURATIONS,
-  HAUL_ORDER,
-  HAUL_STATE_BLURB,
-  HAUL_STATE_BLURB_ES,
-  HAUL_STATE_CSS,
-  TRUCK_CALLOUTS,
-  TRUCK_DIMS_M,
-  TRUCK_WEIGHTS_KG,
-  isMovingState,
-  isRecalState,
-  type HaulState,
-} from "./cycle";
+import TruckScene from "./TruckScene";
+import { HAUL_STATE_CSS, TRUCK_CALLOUTS, TRUCK_DIMS_M, TRUCK_WEIGHTS_KG } from "./cycle";
+import { PLM_ORDER, type PlmState } from "../../twin/fleet/fleetSim";
 import { t, useLang } from "../../i18n";
 import Drawer from "../../ui/Drawer";
 import HonestyBadge from "../../ui/HonestyBadge";
 import ProvenanceTable from "./ProvenanceTable";
+import { resetFleetStore } from "./mineWorld";
 
 // Vista Mina y flota: el visor 3D ocupa todo el alto y el detalle (ciclo,
 // ficha técnica 930E-4SE, notas) vive en el panel lateral con pestañas.
@@ -26,7 +16,7 @@ import ProvenanceTable from "./ProvenanceTable";
 // procedencia de cada cota del modelo paramétrico.
 
 export default function TruckView() {
-  const [current, setCurrent] = useState<HaulState>("LOAD");
+  const [current, setCurrent] = useState<PlmState>("empty");
   // ?pause=1 congela el ciclo (capturas reproducibles junto con ?t= y ?cam=).
   const [paused, setPaused] = useState(() => new URLSearchParams(window.location.search).get("pause") === "1");
   const [stepTick, setStepTick] = useState(0);
@@ -35,7 +25,9 @@ export default function TruckView() {
   const [lang] = useLang();
   const es = lang === "es";
 
-  const loop = HAUL_ORDER.map((s) => `${es ? STATE_ES[s] : s} ${HAUL_DURATIONS[s]} s`).join(" → ");
+  const plmLabels: Record<PlmState, string> = es
+    ? { tare_zone: "Zona de tara", empty: "Vacío", loading: "Cargando", maneuvering: "Maniobrando", final_zone: "Zona final", hauling: "Acarreando", dumping: "Vaciando", after_dump: "Post-vaciado" }
+    : { tare_zone: "Tare zone", empty: "Empty", loading: "Loading", maneuvering: "Maneuvering", final_zone: "Final zone", hauling: "Hauling", dumping: "Dumping", after_dump: "After dump" };
 
   const dock = (
     <div className="og-hud" style={{ position: "static", display: "flex", gap: 8 }}>
@@ -59,7 +51,7 @@ export default function TruckView() {
       >
         {es ? "Paso +1 s" : "Step +1 s"}
       </button>
-      <button type="button" className="og-btn" onClick={() => setRunId((n) => n + 1)}>
+      <button type="button" className="og-btn" onClick={() => { resetFleetStore(); setRunId((n) => n + 1); }}>
         {es ? "Reiniciar (CARGA)" : "Restart (LOAD)"}
       </button>
     </div>
@@ -67,11 +59,11 @@ export default function TruckView() {
 
   const status = (
     <>
-      <h2 className="og-h2">{es ? "Ciclo de acarreo" : "Haul cycle"}</h2>
+      <h2 className="og-h2">{es ? "Payload Meter III" : "Payload Meter III"}</h2>
       <ul className="og-plain">
-        {HAUL_ORDER.map((s) => {
+        {PLM_ORDER.map((s) => {
           const active = s === current;
-          const css = HAUL_STATE_CSS[s];
+          const css = HAUL_STATE_CSS[s === "loading" ? "LOAD" : s === "dumping" ? "DUMP" : s === "hauling" || s === "maneuvering" || s === "final_zone" ? "HAUL" : "WAIT"];
           return (
             <li
               key={s}
@@ -80,24 +72,11 @@ export default function TruckView() {
             >
               <span className="og-dot" style={{ marginRight: 8 }} />
               <strong className="og-num">
-                {es ? STATE_ES[s] : s} · {HAUL_DURATIONS[s]} s ·{" "}
-                {isMovingState(s) ? (es ? "en movimiento" : "moving") : es ? "detenido" : "stopped"}
+                {plmLabels[s]} · {s}
               </strong>
               <br />
               <span className="og-muted" style={{ fontSize: 13 }}>
-                {es ? HAUL_STATE_BLURB_ES[s] : HAUL_STATE_BLURB[s]}
-              </span>
-              <br />
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: isRecalState(s) ? "var(--og-green)" : "var(--og-muted)",
-                }}
-              >
-                {isRecalState(s)
-                  ? es ? "Ventana RECAL" : "RECAL window"
-                  : es ? "recal bloqueado" : "recal gated"}
+                {es ? "Estado estimado por la FSM PLM III del modelo sintético." : "State estimated by the synthetic PLM III state machine."}
               </span>
             </li>
           );
@@ -148,8 +127,8 @@ export default function TruckView() {
       <h2 className="og-h2">{es ? "Sobre esta vista" : "About this view"}</h2>
       <p className="og-body">
         {es
-          ? `930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, tolva arriba ${TRUCK_DIMS_M.bodyUp} m; ciclo ${loop}. Arrastra para orbitar o elige un preajuste de camara (Foso/3/4/Cabina/Lateral/Rueda). Azul = EN MOVIMIENTO, verde = DETENIDO; RECAL solo detenido+nivelado+motor encendido.`
-          : `930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, body-up ${TRUCK_DIMS_M.bodyUp} m; loop ${loop}. Drag to orbit or pick a camera preset (Pit/3/4/Cab/Side/Wheel). Blue = MOVING, green = REST; RECAL only stopped+leveled+engine-on.`}
+          ? `930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, tolva arriba ${TRUCK_DIMS_M.bodyUp} m; FSM PLM III de ocho estados. Arrastra para orbitar o elige un preajuste (Foso/3/4/Cabina/Lateral/Rueda/Pala/Chancadora/Rampa). RECAL solo detenido+nivelado+motor encendido.`
+          : `930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, body-up ${TRUCK_DIMS_M.bodyUp} m; eight-state PLM III FSM. Drag to orbit or use Pit/3/4/Cab/Side/Wheel/Shovel/Crusher/Ramp. RECAL requires stopped+level+engine-on.`}
       </p>
       <p className="og-body">{t("app.scope", lang)}</p>
       <p className="og-body">{t("truck.honesty", lang)}</p>

@@ -1,59 +1,31 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import * as THREE from "three";
-import {
-  DUMP_POS,
-  HAUL_DURATIONS,
-  HAUL_STATE_CSS,
-  HAUL_STATE_HEX,
-  LOAD_POS,
-  WAIT_PATH,
-  isMovingState,
-  isRecalState,
-  stateAt,
-  type HaulState,
-} from "./cycle";
-import { MAX_STEER, dumpTiltDeg, payloadFor, smooth01, steerFor } from "./motion";
-import { t, useLang } from "../../i18n";
+import { useLang } from "../../i18n";
 import { createStage } from "../../twin/render/stage";
 import { createMaterials } from "../../twin/render/materials";
 import { createLabel, setLabelActive, setLabelText } from "../../twin/render/labels";
-import { build930E, type AnchorName } from "../../twin/truck930e/build930E";
-import { S, wheelOmega } from "../../twin/truck930e/spec";
-
-// Escena camión + foso (Sim B). Camión 930E-4SE paramétrico (twin/truck930e)
-// a escala real en metros, sobre un circuito de acarreo con pads CARGA / ACARREO /
-// DESCARGA / ESPERA. El FSM del ciclo recorre waypoints; la insignia RECAL
-// sigue la quietud medida (detenido + nivelado + motor encendido). La tolva
-// sube 0→45°→0 durante DUMP, la carga va llena en HAUL, las ruedas giran a la
-// velocidad real (v / radio de rodadura) y la dirección sigue la guiñada.
-//
-// WAIT es el retorno vacío (estado en movimiento): RECAL queda bloqueado en
-// WAIT y solo se enciende en CARGA / DESCARGA. Ver docs/t5-modes-cameras.md.
-//
-// Modo (azul movimiento / verde reposo): anillo en el suelo, barra de acento del
-// camión y tinte del sol. Cámaras: Foso / 3/4 / Cabina / Lateral / Rueda con lerp
-// sobre las anclas del modelo; si el usuario orbita, vuelve a modo libre.
-// El circuito sigue siendo el ilustrativo de antes, escalado WORLD veces para
-// que el camión tenga metros reales; el foso real llega con la escena de mina.
-//
-// Parámetros de URL para capturas reproducibles: ?cam=pit|hero|cab|side|wheel,
-// ?t=<s> (reloj del ciclo), ?pause=1 y ?debug=1|truck (llamadas de dibujo).
+import { build930E, type AnchorName, type Truck930E } from "../../twin/truck930e/build930E";
+import { wheelOmega } from "../../twin/truck930e/spec";
+import { buildPit, type PitBuild } from "../../twin/pit/buildPit";
+import { buildShovel } from "../../twin/pit/shovel";
+import { createDust } from "../../twin/pit/dust";
+import { getFleetStore, getPitWorld, readMineUrl } from "./mineWorld";
+import { HAUL_STATE_CSS, type HaulState } from "./cycle";
+import type { PlmState, TruckTick } from "../../twin/fleet/fleetSim";
 
 interface TruckSceneProps {
   paused: boolean;
-  /** Increment to advance the FSM clock 1 s (only meaningful while paused). */
   stepTick: number;
-  onPhase: (state: HaulState) => void;
-  /** Controles inferiores (pausa, paso, reinicio) que dibuja la vista. */
+  onPhase: (state: PlmState) => void;
   dock?: ComponentChildren;
-  /** Insignias de honestidad visual, bajo la insignia RECAL. */
   badge?: ComponentChildren;
 }
 
-type CamPreset = "pit" | "hero" | "cab" | "side" | "wheel" | "free" | "custom";
+type CamPreset = "pit" | "hero" | "cab" | "side" | "wheel" | "chase" | "shovel" | "crusher" | "ramp" | "free";
+type Vec3 = [number, number, number];
+type FleetTruckModel = { id: string; model: Truck930E; ring: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial> };
 
-/** Nombre en español de cada fase del ciclo (el id del FSM sigue en inglés). */
 export const STATE_ES: Record<HaulState, string> = {
   LOAD: "CARGA",
   HAUL: "ACARREO",
@@ -61,143 +33,32 @@ export const STATE_ES: Record<HaulState, string> = {
   WAIT: "ESPERA",
 };
 
-const CAM_PRESETS: Array<Exclude<CamPreset, "free" | "custom">> = ["pit", "hero", "cab", "side", "wheel"];
-
-/** Factor del circuito ilustrativo (cycle.ts) a metros reales del camión. */
-const WORLD = 8;
-
-interface ZoneDef {
-  id: HaulState;
-  label: string;
-  labelEs: string;
-  cx: number;
-  cz: number;
-  w: number;
-  d: number;
-}
-
-const ZONES: ZoneDef[] = [
-  { id: "LOAD", label: "LOAD · loader", labelEs: "CARGA · cargador", cx: -8, cz: -3, w: 4.6, d: 4.4 },
-  { id: "HAUL", label: "HAUL · loaded lane", labelEs: "ACARREO · pista cargada", cx: 0, cz: -3, w: 11.4, d: 3.0 },
-  { id: "DUMP", label: "DUMP · crusher", labelEs: "DESCARGA · chancadora", cx: 8, cz: -3, w: 4.6, d: 4.4 },
-  { id: "WAIT", label: "WAIT · return queue", labelEs: "ESPERA · retorno", cx: 0, cz: 3.2, w: 15.5, d: 3.0 },
-];
-
-type Vec3 = [number, number, number];
-
-interface PresetDef {
-  /** Ancla del modelo que se mira; sin ancla se usa `target` en el marco del camión. */
-  anchor?: AnchorName;
-  /** Offset de la cámara respecto del ancla (o punto absoluto si no hay ancla), marco del camión. */
-  cam: Vec3;
-  target?: Vec3;
-}
-
-const PRESET_DEFS: Record<Exclude<CamPreset, "pit" | "free">, PresetDef> = {
-  custom: { cam: [20, 5.8, -17], target: [3.5, 3.6, 0] },
-  hero: { cam: [20, 5.8, -17], target: [3.5, 3.6, 0] },
-  cab: { anchor: "cab", cam: [10.5, 2.8, -8.5] },
-  side: { cam: [1.5, 4.2, -27], target: [1, 3.6, 0] },
-  wheel: { anchor: "rearRightWheelMotor", cam: [-7.5, 1.4, 8.2] },
+const CAM_PRESETS: CamPreset[] = ["pit", "hero", "cab", "side", "wheel", "chase", "shovel", "crusher", "ramp"];
+const CAM_LABELS: Record<"en" | "es", Record<CamPreset, string>> = {
+  en: { pit: "Pit", hero: "3/4", cab: "Cab", side: "Side", wheel: "Wheel", chase: "Chase", shovel: "Shovel", crusher: "Crusher", ramp: "Ramp", free: "Free" },
+  es: { pit: "Foso", hero: "3/4", cab: "Cabina", side: "Lateral", wheel: "Rueda", chase: "Seguimiento", shovel: "Pala", crusher: "Chancadora", ramp: "Rampa", free: "Libre" },
 };
 
-interface UrlParams {
-  cam: CamPreset | null;
-  t: number;
-  debug: "scene" | "truck" | null;
+function haulState(state: PlmState): HaulState {
+  if (state === "loading") return "LOAD";
+  if (state === "hauling" || state === "maneuvering" || state === "final_zone") return "HAUL";
+  if (state === "dumping") return "DUMP";
+  return "WAIT";
 }
 
-const parseVec = (raw: string | null): Vec3 | null => {
-  const v = raw?.split(",").map(Number);
-  return v && v.length === 3 && v.every(Number.isFinite) ? (v as Vec3) : null;
-};
-
-function readUrlParams(): UrlParams {
-  const q = new URLSearchParams(window.location.search);
-  const cam = q.get("cam");
-  const valid = cam && ["pit", "hero", "cab", "side", "wheel", "free", "custom"].includes(cam);
-  // ?cam=custom&cp=x,y,z&ct=x,y,z: cámara y blanco en el marco del camión (depuración).
-  const cp = parseVec(q.get("cp"));
-  const ct = parseVec(q.get("ct"));
-  if (cp) PRESET_DEFS.custom.cam = cp;
-  if (ct) PRESET_DEFS.custom.target = ct;
-  const debug = q.get("debug");
-  return {
-    cam: valid ? (cam as CamPreset) : null,
-    t: Number(q.get("t")) || 0,
-    debug: debug === "truck" ? "truck" : debug ? "scene" : null,
-  };
+function selectedTick(trucks: TruckTick[], selectedId: string | null): TruckTick | undefined {
+  return trucks.find((truck) => truck.id === selectedId) ?? trucks[0];
 }
 
-const shortestAngle = (a: number) => {
-  while (a > Math.PI) a -= Math.PI * 2;
-  while (a < -Math.PI) a += Math.PI * 2;
-  return a;
-};
-
-/** Truck slot [x, z] (metros) for a phase at tInState seconds. */
-function pathPos(state: HaulState, tInState: number): [number, number] {
-  const [x, z] = pathPosUnits(state, tInState);
-  return [x * WORLD, z * WORLD];
-}
-
-function pathPosUnits(state: HaulState, tInState: number): [number, number] {
-  if (state === "HAUL") {
-    const t = smooth01(tInState / HAUL_DURATIONS.HAUL);
-    return [LOAD_POS[0] + (DUMP_POS[0] - LOAD_POS[0]) * t, LOAD_POS[1]];
-  }
-  if (state === "WAIT") {
-    const pts = WAIT_PATH;
-    const segs: number[] = [];
-    let total = 0;
-    for (let i = 1; i < pts.length; i++) {
-      const len = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-      segs.push(len);
-      total += len;
-    }
-    const target = smooth01(tInState / HAUL_DURATIONS.WAIT) * total;
-    let acc = 0;
-    for (let i = 1; i < pts.length; i++) {
-      const seg = segs[i - 1];
-      if (target <= acc + seg || i === pts.length - 1) {
-        const f = seg < 1e-6 ? 0 : Math.min(1, (target - acc) / seg);
-        return [
-          pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f,
-          pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f,
-        ];
-      }
-      acc += seg;
-    }
-    return pts[pts.length - 1];
-  }
-  if (state === "DUMP") return [DUMP_POS[0], DUMP_POS[1]];
-  return [LOAD_POS[0], LOAD_POS[1]];
-}
-
-/** Domo de cielo en degradé que sigue a la cámara (el Sky del stage queda fuera del far plane). */
-function createSkyDome(): THREE.Mesh {
-  const mat = new THREE.ShaderMaterial({
-    side: THREE.BackSide,
-    depthWrite: false,
-    fog: false,
-    uniforms: {
-      top: { value: new THREE.Color(0x4a7fc0) },
-      horizon: { value: new THREE.Color(0xd8c8aa) },
-    },
-    vertexShader: "varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-    fragmentShader:
-      "uniform vec3 top; uniform vec3 horizon; varying vec3 vDir; void main(){ float h = clamp(vDir.y, 0.0, 1.0); gl_FragColor = vec4(mix(horizon, top, pow(h, 0.5)), 1.0); #include <tonemapping_fragment>\n#include <colorspace_fragment>\n}",
-  });
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(900, 24, 12), mat);
-  dome.frustumCulled = false;
-  dome.renderOrder = -1;
-  return dome;
+function selectedCam(raw: string | null): CamPreset {
+  return raw && CAM_PRESETS.includes(raw as CamPreset) ? (raw as CamPreset) : "pit";
 }
 
 export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: TruckSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const debugRef = useRef<HTMLDivElement>(null);
+  const pendingStepRef = useRef(0);
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
   const onPhaseRef = useRef(onPhase);
@@ -205,394 +66,269 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
   const [lang] = useLang();
   const langRef = useRef(lang);
   langRef.current = lang;
-  const urlRef = useRef<UrlParams | null>(null);
-  if (!urlRef.current) urlRef.current = readUrlParams();
+  const urlRef = useRef<ReturnType<typeof readMineUrl> | null>(null);
+  if (!urlRef.current) urlRef.current = readMineUrl();
   const url = urlRef.current;
-  // Camera preset is mirrored in a ref: the mount effect runs once, so the
-  // animation loop reads presetRef (live) while buttons render presetUi.
-  const [presetUi, setPresetUi] = useState<CamPreset>(url.cam ?? "pit");
-  const presetRef = useRef<CamPreset>(url.cam ?? "pit");
-  const setPreset = (p: CamPreset) => {
-    presetRef.current = p;
-    setPresetUi(p);
+  const [presetUi, setPresetUi] = useState<CamPreset>(() => selectedCam(url.cam));
+  const presetRef = useRef<CamPreset>(selectedCam(url.cam));
+  const setPreset = (preset: CamPreset) => {
+    presetRef.current = preset;
+    setPresetUi(preset);
   };
-  // Step requests accumulate here; the loop consumes them as +1 s jumps.
-  const pendingStepRef = useRef(0);
+  const [hud, setHud] = useState({ state: "empty" as PlmState, selected: "OG-03", trucks: 5, queued: 0, recal: false, onGrade: false, cycle: 0 });
+
   useEffect(() => {
     if (stepTick > 0) pendingStepRef.current += 1;
   }, [stepTick]);
-  const [hud, setHud] = useState<{ state: HaulState; cycle: number }>({
-    state: "LOAD",
-    cycle: 1,
-  });
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
 
+    const fleet = getFleetStore();
+    fleet.setPaused(pausedRef.current);
+    const world = getPitWorld(url.seed);
     const stage = createStage(host, {
       preset: "outdoor",
-      cameraPosition: [0, 95, 120],
-      cameraTarget: [0, 0, 0],
+      cameraPosition: [80, 305, 515],
+      cameraTarget: [80, -35, 15],
       near: 0.5,
-      far: 1400,
-      sun: { shadowBox: 28, target: [0, 0, 0] },
-      fog: { density: 0.0035, color: 0xcdbb9c },
-      minDistance: 3,
-      maxDistance: 320,
+      far: 7000,
+      sun: { shadowBox: 700, target: [0, 0, 0] },
+      fog: { density: 0.00032, color: 0xcdbb9c },
+      minDistance: 12,
+      maxDistance: 1600,
       maxPolarAngle: Math.PI * 0.49,
     });
     const { scene, camera, controls, sun, renderer } = stage;
     scene.environmentIntensity = 0.42;
     const mats = createMaterials();
-    // Any manual orbit drops the camera back to free (presets re-engage
-    // from the buttons; no fight between follow-lerp and the user).
-    controls.addEventListener("start", () => {
-      if (presetRef.current !== "free") {
-        presetRef.current = "free";
-        setPresetUi("free");
+    const pit: PitBuild = buildPit(mats, world);
+    scene.add(pit.group);
+    const shovel = buildShovel(mats);
+    shovel.group.position.set(world.shovel.pos[0], -45, world.shovel.pos[1]);
+    scene.add(shovel.group);
+    const dust = createDust(700, 0xb9a785);
+    scene.add(dust.points);
+
+    let freeCamera = false;
+    const onControlStart = () => {
+      if (!freeCamera) {
+        freeCamera = true;
+        setPreset("free");
       }
-    });
-
-    const darkSteel = mats.get("paintedSteelDark");
-    const cabMat = mats.get("komatsuYellow");
-    const bedMat = new THREE.MeshStandardMaterial({
-      color: 0x8d97a6,
-      metalness: 0.55,
-      roughness: 0.5,
-    });
-    // Mode ring: flat glow under the truck, blue while moving, green at
-    // rest. Follows the truck automatically (child of the truck group).
-    const modeRingMat = new THREE.MeshBasicMaterial({
-      color: 0x2fbf71,
-      transparent: true,
-      opacity: 0.55,
-      side: THREE.DoubleSide,
-    });
-
-    const sky = createSkyDome();
-    scene.add(sky);
-
-    // Everything that is not the truck lives in `env` so ?debug=truck can hide it.
-    const env = new THREE.Group();
-    scene.add(env);
-
-    // Ground: large textured plane (fog hides the far edge).
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(1600, 1600),
-      mats.ground("dirt", [400, 400])
-    );
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    env.add(ground);
-
-    // Zone pads (colored; the active one glows per-frame).
-    const padMats: THREE.MeshStandardMaterial[] = [];
-    for (const zone of ZONES) {
-      const hex = HAUL_STATE_HEX[zone.id];
-      const mat = new THREE.MeshStandardMaterial({
-        color: hex,
-        emissive: hex,
-        emissiveIntensity: 0.18,
-        metalness: 0.1,
-        roughness: 0.8,
-        transparent: true,
-        opacity: 0.55,
-      });
-      const pad = new THREE.Mesh(new THREE.BoxGeometry(zone.w * WORLD, 0.1, zone.d * WORLD), mat);
-      pad.position.set(zone.cx * WORLD, 0.05, zone.cz * WORLD);
-      pad.receiveShadow = true;
-      env.add(pad);
-      padMats.push(mat);
-    }
-    // End crossovers (plain road paint, static).
-    const laneMat = new THREE.MeshStandardMaterial({
-      color: 0x3a4356,
-      metalness: 0.1,
-      roughness: 0.9,
-    });
-    for (const cx of [-10.4, 10.4]) {
-      const link = new THREE.Mesh(new THREE.BoxGeometry(1.6 * WORLD, 0.08, 9.4 * WORLD), laneMat);
-      link.position.set(cx * WORLD, 0.04, 0.1 * WORLD);
-      link.receiveShadow = true;
-      env.add(link);
-    }
-
-    // Open-pit terraces (north wall) + loader / crusher props.
-    const terraceA = mats.ground("rock", [32, 1]);
-    const terraceB = terraceA.clone();
-    terraceB.color.setHex(0xc9b8a6);
-    for (let i = 0; i < 3; i++) {
-      const terrace = new THREE.Mesh(
-        new THREE.BoxGeometry(48 * WORLD, 1.4 * WORLD, 3.4 * WORLD),
-        i % 2 === 0 ? terraceA : terraceB
-      );
-      terrace.position.set(0, (0.7 + i * 1.4) * WORLD, (-11.5 - i * 3.4) * WORLD);
-      terrace.castShadow = true;
-      terrace.receiveShadow = true;
-      env.add(terrace);
-    }
-    const prop = (
-      w: number,
-      h: number,
-      d: number,
-      mat: THREE.Material,
-      x: number,
-      y: number,
-      z: number
-    ) => {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(w * WORLD, h * WORLD, d * WORLD), mat);
-      m.position.set(x * WORLD, y * WORLD, z * WORLD);
-      m.castShadow = true;
-      m.receiveShadow = true;
-      env.add(m);
-      return m;
     };
-    prop(1.8, 1.0, 1.8, darkSteel, -8, 0.5, -8.2); // loader base
-    prop(0.5, 0.5, 2.6, cabMat, -8, 1.2, -7.0); // loader arm
-    prop(2.2, 2.4, 2.2, darkSteel, 8, 1.2, -8.3); // crusher block
-    prop(1.4, 0.8, 1.4, bedMat, 8, 2.8, -8.3); // crusher hopper
+    controls.addEventListener("start", onControlStart);
 
-    // ---- Truck: parametric 930E-4SE (forward = +X, origin = rear-axle centre) ----
-    const truck = build930E(mats);
-    const rig = truck.group;
-    scene.add(rig);
-    const anchors = truck.getAnchors();
-    const modeRing = new THREE.Mesh(new THREE.RingGeometry(9.2, 9.9, 72), modeRingMat);
-    modeRing.rotation.x = -Math.PI / 2;
-    modeRing.position.set(3.2, 0.12, 0);
-    rig.add(modeRing);
+    const trucks: FleetTruckModel[] = [];
+    for (let i = 0; i < 5; i++) {
+      const id = `OG-${String(i + 1).padStart(2, "0")}`;
+      const model = build930E(mats);
+      model.group.name = `FleetTruck-${id}`;
+      scene.add(model.group);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x2fbf71, transparent: true, opacity: 0.44, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(new THREE.RingGeometry(9.2, 9.9, 48), ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(3.2, 0.12, 0);
+      model.group.add(ring);
+      trucks.push({ id, model, ring });
+    }
 
-    // ---- CSS2D labels: one per zone + a leader tag above the truck ----
-    const zoneLabels = ZONES.map((zone) => {
-      const label = createLabel({
-        text: zone.label,
-        color: HAUL_STATE_CSS[zone.id],
-      });
-      label.position.set(zone.cx * WORLD, 3, zone.cz * WORLD);
-      env.add(label);
-      return label;
+    const interestLabels = [
+      { id: "shovel", text: langRef.current === "es" ? "PALA · 4100XPC" : "SHOVEL · 4100XPC", pos: pit.anchors.shovel.clone().add(new THREE.Vector3(0, 20, 0)) },
+      { id: "crusher", text: langRef.current === "es" ? "CHANCADORA · PRIMARIA" : "PRIMARY CRUSHER", pos: pit.anchors.crusher.clone().add(new THREE.Vector3(0, 20, 0)) },
+      { id: "ramp", text: langRef.current === "es" ? "RAMPA · 10 % ASSUMPTION" : "RAMP · 10% ASSUMPTION", pos: pit.anchors.rampMid.clone().add(new THREE.Vector3(0, 9, 0)) },
+    ].map((item) => {
+      const label = createLabel({ text: item.text, tone: "accent" });
+      label.name = item.id;
+      label.position.copy(item.pos);
+      scene.add(label);
+      return { ...item, label };
     });
-    const truckLabel = createLabel({ text: "930E · GDY106", tone: "accent", leader: true });
-    truckLabel.position.set(3.5, S.chassis.overallHeight + 1.4, 0);
-    rig.add(truckLabel);
 
-    // FSM clock + animation.
-    let elapsed = url.t;
-    let yaw = 0;
-    let lastX = LOAD_POS[0] * WORLD;
-    let lastZ = LOAD_POS[1] * WORLD;
-    let lastElapsed = elapsed;
-    let steerSmooth = 0;
-    let cur: HaulState = stateAt(elapsed).state;
-    let cycle = 1 + Math.floor(elapsed / (HAUL_DURATIONS.LOAD + HAUL_DURATIONS.HAUL + HAUL_DURATIONS.DUMP + HAUL_DURATIONS.WAIT));
-    rig.position.set(LOAD_POS[0] * WORLD, 0, LOAD_POS[1] * WORLD);
-    onPhaseRef.current(cur);
-    setHud({ state: cur, cycle });
-
+    let lastPlm: PlmState | null = null;
+    let lastSelected = "";
+    let lastState = "";
+    let frameCount = 0;
     const camGoal = new THREE.Vector3();
-    const tgtGoal = new THREE.Vector3();
-    const tmp = new THREE.Vector3();
-    const sunWarm = new THREE.Color(0xfff1dc);
-    const sunTint = new THREE.Color();
-    const sunOffset = sun.position.clone().sub(sun.target.position);
-    // Con ?cam= la primera vista se fija sin interpolar (capturas reproducibles).
-    let snap = url.cam !== null && url.cam !== "free";
-    let frames = 0;
-    let casters = 0;
-    rig.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh && o.castShadow) casters += 1;
-    });
+    const targetGoal = new THREE.Vector3();
+    const scratch = new THREE.Vector3();
+    const focusAnchor: AnchorName = "cab";
+    const liveInitial = fleet.live();
+    const initialSelected = selectedTick(liveInitial.trucks, fleet.getSnapshot().selectedId);
+    if (initialSelected) onPhaseRef.current(initialSelected.plm);
 
     const stopFrame = stage.onFrame((dt) => {
-      if (!pausedRef.current) elapsed += dt;
-      // Step: each button press jumps the FSM clock +1 s (pause first).
+      if (pausedRef.current !== fleet.getSnapshot().paused) fleet.setPaused(pausedRef.current);
       if (pendingStepRef.current > 0) {
-        elapsed += pendingStepRef.current * 1;
+        fleet.step(pendingStepRef.current);
         pendingStepRef.current = 0;
+      } else {
+        fleet.tick(dt);
       }
-      const info = stateAt(elapsed);
-      if (info.state !== cur) {
-        if (cur === "WAIT" && info.state === "LOAD") cycle += 1;
-        cur = info.state;
-        onPhaseRef.current(cur);
-        setHud({ state: cur, cycle });
-      }
-
-      const [px, pz] = pathPos(cur, info.tInState);
-      rig.position.set(px, 0, pz);
-      // Face travel direction while moving; hold heading when stopped.
-      const dx = px - lastX;
-      const dz = pz - lastZ;
-      lastX = px;
-      lastZ = pz;
-      const dElapsed = elapsed - lastElapsed;
-      lastElapsed = elapsed;
-      const speed = dElapsed > 1e-6 ? Math.hypot(dx, dz) / dElapsed : 0;
-      let yawRate = 0;
-      if (speed > 0.05) {
-        const target = Math.atan2(-dz, dx);
-        const dYaw = shortestAngle(target - yaw) * Math.min(1, dt * 4);
-        yaw += dYaw;
-        yawRate = dt > 0 ? dYaw / dt : 0;
-      }
-      rig.rotation.y = yaw;
-      rig.updateMatrixWorld(true);
-
-      // Mode tint: blue while moving (HAUL + WAIT return drive), green at
-      // rest (LOAD / DUMP). Same stillness signal as the RECAL badge.
-      const movingLive = isMovingState(cur);
-      truck.setModeTint(movingLive ? "moving" : "rest");
-      sun.color.copy(sunWarm).lerp(sunTint.setHex(movingLive ? 0xd8e6ff : 0xd9f2e3), 0.3);
-      modeRingMat.color.setHex(movingLive ? 0x3a7bd5 : 0x2fbf71);
-
-      // Dump bed tilts 0 -> 45 -> 0 over DUMP; payload follows the phase.
-      truck.setBodyTilt(cur === "DUMP" ? dumpTiltDeg(info.tInState, HAUL_DURATIONS.DUMP) : 0);
-      truck.setPayload(payloadFor(cur, info.tInState, HAUL_DURATIONS[cur]));
-
-      // Wheels roll at the true speed; steering follows the yaw rate (Ackermann).
-      steerSmooth += (steerFor(yawRate, speed) - steerSmooth) * Math.min(1, dt * 6);
-      truck.setSteer(Math.max(-MAX_STEER, Math.min(MAX_STEER, steerSmooth)));
-      truck.setWheelSpin(wheelOmega(speed));
-      truck.advance(dt);
-
-      // Zone highlight follows the FSM state.
-      for (let i = 0; i < ZONES.length; i++) {
-        const active = ZONES[i].id === cur;
-        const m = padMats[i];
-        m.emissiveIntensity += ((active ? 0.85 : 0.18) - m.emissiveIntensity) * 0.15;
-        setLabelText(zoneLabels[i], langRef.current === "es" ? ZONES[i].labelEs : ZONES[i].label);
-        setLabelActive(zoneLabels[i], active);
-      }
-      const modeText = movingLive ? t("hud.moving", langRef.current) : t("hud.rest", langRef.current);
-      setLabelText(truckLabel, `930E · GDY106 · ${modeText}`);
-      truckLabel.element.style.setProperty("--tone", movingLive ? "#4a8ef0" : "#2fbf71");
-
-      // Phase progress bar (imperative, no re-render).
-      if (barRef.current) {
-        const frac = info.tInState / HAUL_DURATIONS[cur];
-        barRef.current.style.width = `${Math.round(frac * 100)}%`;
+      const snapshot = fleet.live();
+      const selectedId = fleet.getSnapshot().selectedId;
+      const selected = selectedTick(snapshot.trucks, selectedId);
+      if (selected) {
+        const selectionChanged = selected.id !== lastSelected;
+        const stateChanged = selected.plm !== lastPlm;
+        if (stateChanged || selectionChanged) {
+          lastPlm = selected.plm;
+          lastSelected = selected.id;
+          onPhaseRef.current(selected.plm);
+        }
+        if (stateChanged || selectionChanged || selected.plm !== lastState) {
+          lastState = selected.plm;
+          setHud({ state: selected.plm, selected: selected.id, trucks: snapshot.trucks.length, queued: snapshot.queued, recal: selected.recal, onGrade: selected.onGrade, cycle: selected.cycles });
+        } else {
+          setHud((previous) => {
+            if (previous.recal === selected.recal && previous.onGrade === selected.onGrade && previous.queued === snapshot.queued && previous.cycle === selected.cycles) return previous;
+            return { ...previous, recal: selected.recal, onGrade: selected.onGrade, queued: snapshot.queued, cycle: selected.cycles };
+          });
+        }
       }
 
-      // La sombra del sol sigue al camión: mapa denso donde importa.
-      sun.target.position.set(px, 0, pz);
-      sun.position.copy(sun.target.position).add(sunOffset);
-      sun.target.updateMatrixWorld();
-      sky.position.copy(camera.position);
+      const liveIds = new Set(snapshot.trucks.map((truck) => truck.id));
+      for (const truck of trucks) {
+        const tick = snapshot.trucks.find((item) => item.id === truck.id);
+        if (!tick || !liveIds.has(truck.id)) continue;
+        const rig = truck.model.group;
+        rig.position.set(tick.x, tick.y, tick.z);
+        rig.rotation.order = "YXZ";
+        rig.rotation.set((tick.pitchDeg * Math.PI) / 180, tick.heading, 0, "YXZ");
+        rig.updateMatrixWorld(true);
+        truck.model.setBodyTilt(tick.tiltDeg);
+        truck.model.setPayload(tick.payloadFrac);
+        truck.model.setSteer(tick.steer);
+        truck.model.setWheelSpin(wheelOmega(tick.speedMps));
+        truck.model.setModeTint(tick.recal ? "rest" : "moving");
+        truck.model.advance(dt);
+        truck.ring.material.color.setHex(tick.recal ? 0x2fbf71 : tick.onGrade ? 0xf5a623 : 0x3a7bd5);
+        const headingX = Math.cos(tick.heading);
+        const headingZ = -Math.sin(tick.heading);
+        if (tick.speedMps > 2) {
+          scratch.set(tick.x - headingX * 3.4, tick.y + 0.1, tick.z - headingZ * 3.4);
+          dust.emit(scratch, new THREE.Vector3(-headingX * 1.3, 0, -headingZ * 1.3), Math.max(1, Math.floor(dt * 7)), Math.min(0.25, tick.speedMps / 55));
+        }
+      }
+      dust.update(dt);
+      if (snapshot.shovel.truckId) {
+        const phase = snapshot.shovel.swing;
+        shovel.setCycle(phase, world.shovel.yawPile, world.shovel.yawTruck);
+      } else {
+        shovel.setCycle((snapshot.clockS % 18) / 18, world.shovel.yawPile, world.shovel.yawTruck);
+      }
 
-      // Camera presets: exponential lerp of position + target. Pit is a
-      // static overview; the others track the truck through the model anchors
-      // (offsets in the truck frame, so they rotate with the heading). dt keeps
-      // flowing while paused so presets + step stay usable with the FSM frozen.
+      if (barRef.current && selected) {
+        const progress = selected.plm === "loading" ? snapshot.shovel.swing : selected.plm === "dumping" ? Math.min(1, selected.tiltDeg / 45) : 0;
+        barRef.current.style.width = `${Math.round(progress * 100)}%`;
+      }
+      for (const item of interestLabels) {
+        const text = langRef.current === "es"
+          ? item.id === "shovel" ? "PALA · 4100XPC" : item.id === "crusher" ? "CHANCADORA · PRIMARIA" : "RAMPA · 10 % ASSUMPTION"
+          : item.id === "shovel" ? "SHOVEL · 4100XPC" : item.id === "crusher" ? "PRIMARY CRUSHER" : "RAMP · 10% ASSUMPTION";
+        setLabelText(item.label, text);
+        setLabelActive(item.label, item.id === "shovel" ? snapshot.shovel.truckId !== null : item.id === "crusher" ? snapshot.crusherTruckId !== null : false);
+      }
+
       const preset = presetRef.current;
       if (preset !== "free") {
-        if (preset === "pit") {
-          camGoal.set(0, 95, 120);
-          tgtGoal.set(0, 0, -6);
+        targetGoal.set(0, -45, 0);
+        let cameraOffset: Vec3 = [0, 330, 480];
+        if (preset === "hero" || preset === "chase" || preset === "cab" || preset === "side" || preset === "wheel") {
+          const model = trucks.find((entry) => entry.id === (selected?.id ?? "OG-03")) ?? trucks[2];
+          if (preset === "cab") model.model.getAnchors()[focusAnchor].getWorldPosition(targetGoal);
+          else if (preset === "wheel") model.model.getAnchors().rearRightWheelMotor.getWorldPosition(targetGoal);
+          else targetGoal.copy(model.model.group.position).add(new THREE.Vector3(4, 4, 0));
+          cameraOffset = preset === "side" ? [5, 24, -46] : preset === "wheel" ? [-12, 7, 14] : preset === "cab" ? [13, 7, -11] : [27, 22, -30];
+          scratch.set(...cameraOffset).applyAxisAngle(new THREE.Vector3(0, 1, 0), selected?.heading ?? 0);
+          camGoal.copy(targetGoal).add(scratch);
+        } else if (preset === "shovel") {
+          targetGoal.copy(pit.anchors.shovel);
+          camGoal.copy(targetGoal).add(new THREE.Vector3(70, 54, 85));
+        } else if (preset === "crusher") {
+          targetGoal.copy(pit.anchors.crusher);
+          camGoal.copy(targetGoal).add(new THREE.Vector3(70, 68, 80));
+        } else if (preset === "ramp") {
+          targetGoal.copy(pit.anchors.rampMid);
+          camGoal.copy(targetGoal).add(new THREE.Vector3(230, 160, 245));
         } else {
-          const def = PRESET_DEFS[preset];
-          if (def.anchor) {
-            anchors[def.anchor].getWorldPosition(tgtGoal);
-            rig.worldToLocal(tmp.copy(tgtGoal));
-            camGoal.set(tmp.x + def.cam[0], tmp.y + def.cam[1], tmp.z + def.cam[2]);
-            rig.localToWorld(camGoal);
-          } else {
-            camGoal.set(...def.cam);
-            rig.localToWorld(camGoal);
-            tgtGoal.set(...(def.target as Vec3));
-            rig.localToWorld(tgtGoal);
-          }
+          targetGoal.copy(pit.anchors.pitCenter).add(new THREE.Vector3(80, 10, 15));
+          camGoal.copy(targetGoal).add(new THREE.Vector3(0, 330, 500));
         }
-        const k = snap ? 1 : 1 - Math.exp(-3.2 * dt);
-        snap = false;
-        camera.position.lerp(camGoal, k);
-        controls.target.lerp(tgtGoal, k);
+        const blend = 1 - Math.exp(-3.2 * dt);
+        camera.position.lerp(camGoal, blend);
+        controls.target.lerp(targetGoal, blend);
       }
 
-      frames += 1;
-      if (url.debug && frames > 2) {
-        const stats = renderer.info.render;
-        // info.render cuenta solo el pase principal; el pase de sombras suma una llamada por emisor.
-        const text = `calls ${stats.calls} + ${casters} shadow · triangles ${stats.triangles}`;
-        if (debugRef.current && debugRef.current.textContent !== text) {
-          debugRef.current.textContent = text;
-          console.log(`[og-debug] ${text}`);
-        }
+      sun.target.position.copy(selected ? new THREE.Vector3(selected.x, 0, selected.z) : pit.anchors.pitCenter);
+      sun.position.set(sun.target.position.x + 260, 420, sun.target.position.z + 190);
+      sun.target.updateMatrixWorld();
+      frameCount += 1;
+      if (url.debug && frameCount > 2 && debugRef.current) {
+        const info = renderer.info.render;
+        const text = `trucks ${snapshot.trucks.length} · calls ${info.calls} · triangles ${info.triangles} · terrain ${pit.stats.terrainTriangles}`;
+        if (debugRef.current.textContent !== text) debugRef.current.textContent = text;
       }
     });
 
-    if (url.debug === "truck") env.visible = false;
+    const unsubscribe = fleet.subscribe(() => {
+      const snap = fleet.getSnapshot();
+      const focus = selectedTick(snap.fleet.trucks, snap.selectedId);
+      if (!focus) return;
+      setHud({ state: focus.plm, selected: focus.id, trucks: snap.fleet.trucks.length, queued: snap.fleet.queued, recal: focus.recal, onGrade: focus.onGrade, cycle: focus.cycles });
+    });
 
     return () => {
       stopFrame();
-      truck.dispose();
+      unsubscribe();
+      controls.removeEventListener("start", onControlStart);
+      for (const truck of trucks) {
+        truck.model.dispose();
+        truck.ring.material.dispose();
+      }
+      for (const item of interestLabels) item.label.removeFromParent();
+      shovel.dispose();
+      dust.dispose();
+      pit.dispose();
       stage.dispose();
       mats.dispose();
-      terraceB.dispose();
-      sky.geometry.dispose();
-      (sky.material as THREE.Material).dispose();
     };
   }, []);
 
-  const css = HAUL_STATE_CSS[hud.state];
-  const recal = isRecalState(hud.state);
-  const moving = isMovingState(hud.state);
+  useEffect(() => {
+    const fleet = getFleetStore();
+    fleet.setPaused(paused);
+  }, [paused]);
+
+  const css = HAUL_STATE_CSS[haulState(hud.state)];
+  const moving = !hud.recal;
+  const stateLabel = String(hud.state).replace(/_/g, " ").toUpperCase();
 
   return (
     <div className="og-scene">
       <div ref={hostRef} className="og-scene__host" />
       <div className="og-overlay">
-        <div className="og-hud og-hud--tl" style={{ width: 340, ["--tone" as string]: css }}>
+        <div className="og-hud og-hud--tl" style={{ width: 390, ["--tone" as string]: css }}>
           <div className="og-hud__title">
             <span className="og-dot" />
-            <span className="og-num">
-              {lang === "es" ? STATE_ES[hud.state] : hud.state} · {lang === "es" ? "ciclo" : "cycle"} {hud.cycle}
-            </span>
-            <span className={`og-badge ${moving ? "og-badge--move" : "og-badge--ok"}`}>
-              {moving ? t("hud.moving", lang) : t("hud.rest", lang)}
-            </span>
+            <span className="og-num">{hud.selected} · {stateLabel} · cycle {hud.cycle}</span>
+            <span className={`og-badge ${hud.recal ? "og-badge--ok" : "og-badge--ghost"}`}>{hud.recal ? "RECAL" : moving ? "IN MOTION" : "STANDBY"}</span>
           </div>
-          <div className="og-progress">
-            <div ref={barRef} className="og-progress__bar" />
-          </div>
-          <div className="og-hud__row">
-            <span className="og-hud__meta">{t("hud.camera", lang)}</span>
-            <div className="og-seg og-seg--sm">
-              {CAM_PRESETS.map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  className="og-seg__btn"
-                  aria-pressed={presetUi === id}
-                  onClick={() => setPreset(id)}
-                >
-                  {CAM_LABELS[lang][id]}
-                </button>
-              ))}
-            </div>
-          </div>
+          <div className="og-progress"><div ref={barRef} className="og-progress__bar" /></div>
+          <div className="og-hud__row"><span className="og-hud__meta">{lang === "es" ? "Cámara" : "Camera"}</span><div className="og-seg og-seg--sm">
+            {CAM_PRESETS.map((id) => <button key={id} type="button" className="og-seg__btn" aria-pressed={presetUi === id} onClick={() => setPreset(id)}>{CAM_LABELS[lang][id]}</button>)}
+          </div></div>
         </div>
         <div className="og-stack og-stack--tr">
-          <div
-            className={`og-badge ${recal ? "og-badge--ok" : "og-badge--ghost"}`}
-            style={{ height: "auto", minHeight: 24, padding: "4px 10px", whiteSpace: "normal" }}
-          >
-            {recal ? t("hud.recal", lang) : t("hud.standby", lang)}
+          <div className={`og-badge ${hud.recal ? "og-badge--ok" : "og-badge--ghost"}`} style={{ height: "auto", minHeight: 24, padding: "4px 10px", whiteSpace: "normal" }}>
+            {hud.recal ? (lang === "es" ? "RECAL · detenido + nivelado + motor encendido" : "RECAL · stopped + level + engine on") : hud.onGrade ? (lang === "es" ? "RECAL bloqueado · pendiente" : "RECAL gated · on grade") : (lang === "es" ? "RECAL en espera" : "RECAL standby")}
           </div>
           {badge}
         </div>
         <div className="og-stack og-stack--bl">
-          <div className="og-hud og-hud--caption og-num">
-            {lang === "es"
-              ? "Rotor ≈3000 RPM · rueda ≈92 RPM (32.62:1) · giro de rueda según velocidad real · 15.60×8.69×7.37 m (folleto)"
-              : "Rotor ≈3000 RPM · wheel ≈92 RPM (32.62:1) · wheel spin follows true speed · 15.60×8.69×7.37 m (brochure)"}
-          </div>
-          <div className="og-hud og-hud--caption">
-            <span className="og-dot" style={{ ["--tone" as string]: "#f5a623", marginRight: 6 }} />
-            {lang === "es"
-              ? "Eje trasero motorizado (GDY106) · motor ENCENDIDO · chasis nivelado · tolva arriba 14.02 m (folleto)"
-              : "Rear axle motorized (GDY106) · engine ON · chassis leveled · body-up 14.02 m (brochure)"}
-          </div>
+          <div className="og-hud og-hud--caption og-num">{lang === "es" ? `${hud.trucks} camiones · ${hud.queued} en cola · PLM III · pendiente de datos de campo` : `${hud.trucks} trucks · ${hud.queued} queued · PLM III · synthetic proxy, field data pending`}</div>
+          <div className="og-hud og-hud--caption">{lang === "es" ? "Foso sintético · rampa 10 % ASSUMPTION · geometría y flota reproducibles por ?seed=" : "Synthetic open pit · 10% ramp ASSUMPTION · seeded reproducible geometry and fleet"}</div>
           {url.debug && <div ref={debugRef} className="og-hud og-hud--caption og-num" />}
         </div>
         {dock && <div className="og-dock og-dock--right">{dock}</div>}
@@ -600,8 +336,3 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
     </div>
   );
 }
-
-const CAM_LABELS: Record<"en" | "es", Record<Exclude<CamPreset, "free" | "custom">, string>> = {
-  en: { pit: "Pit", hero: "3/4", cab: "Cab", side: "Side", wheel: "Wheel" },
-  es: { pit: "Foso", hero: "3/4", cab: "Cabina", side: "Lateral", wheel: "Rueda" },
-};
