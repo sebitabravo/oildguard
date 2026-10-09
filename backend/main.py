@@ -30,7 +30,10 @@ from typing import Any, Literal
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+
+from shared.signing import parse_device_keys, verify_row
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("oilguard-backend")
@@ -46,6 +49,8 @@ INFLUXDB_TOKEN = os.getenv("INFLUXDB_TOKEN", "oilguard-local-admin-token")
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "oilguard/signals")
+_DEVICE_KEYS = parse_device_keys(os.getenv("OILGUARD_DEVICE_KEYS", ""))
+_REQUIRE_SIGNATURE = os.getenv("OILGUARD_REQUIRE_SIGNATURE", "0") == "1"
 
 CAPACITY_L = 95.0  # GDY106 nominal, SAE 85W-140 (physics anchor)
 
@@ -100,6 +105,8 @@ class SignalRow(BaseModel):
     label: Literal[
         "normal", "slow-leak", "abrupt-drop", "sensor-drift", "link-outage-buffered"
     ]
+    sig_v: str | None = None
+    sig: str | None = None
 
 
 class IngestBatch(BaseModel):
@@ -112,6 +119,10 @@ class IngestBatch(BaseModel):
 
 _store_lock = threading.Lock()
 _store_rows: list[dict[str, Any]] = []
+_seen_signed_rows: set[tuple[str, int, str]] = set()
+_verified_total = 0
+_rejected_total = 0
+_rejected_reasons: Counter[str] = Counter()
 _influx_status = "unknown (no ingest yet)"
 
 
@@ -144,6 +155,7 @@ def _write_to_influx(rows: list[dict[str, Any]]) -> str:
                 .tag("device_id", str(r.get("device_id", "unknown")))
                 .tag("fsm_state", str(r.get("fsm_state", "?")))
                 .tag("label", str(r.get("label", "?")))
+                .tag("sig_verified", str(bool(r.get("sig_verified", False))).lower())
                 .field("pressure_kpa", float(r.get("pressure_kpa", 0.0)))
                 .field("temperature_c", float(r.get("temperature_c", 0.0)))
                 .field("vib_rms_g", float(r.get("vib_rms_g", 0.0)))
@@ -163,25 +175,68 @@ def _write_to_influx(rows: list[dict[str, Any]]) -> str:
 
 def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Core ingestion used by POST /ingest and the MQTT bridge thread."""
-    global _influx_status
-    influx = _write_to_influx(rows)
+    global _influx_status, _verified_total, _rejected_total
+    accepted: list[dict[str, Any]] = []
+    rejected_reasons: Counter[str] = Counter()
+    with _store_lock:
+        for original in rows:
+            row = dict(original)
+            has_signature = bool(row.get("sig") or row.get("sig_v"))
+            reason: str | None = None
+            if has_signature:
+                device_id = str(row.get("device_id", ""))
+                key = _DEVICE_KEYS.get(device_id)
+                if key is None:
+                    reason = "unknown_device"
+                else:
+                    try:
+                        valid = verify_row(row, key)
+                    except (KeyError, TypeError, ValueError, OverflowError):
+                        valid = False
+                    if not valid:
+                        reason = "bad_signature"
+                    else:
+                        identity = (device_id, int(row["seq"]), str(row["t_iso"]))
+                        if identity in _seen_signed_rows:
+                            reason = "replay"
+                        else:
+                            _seen_signed_rows.add(identity)
+                            row["sig_verified"] = True
+                            accepted.append(row)
+                            _verified_total += 1
+            elif _REQUIRE_SIGNATURE:
+                reason = "unsigned"
+            else:
+                row["sig_verified"] = False
+                accepted.append(row)
+
+            if reason is not None:
+                rejected_reasons[reason] += 1
+        _rejected_total += sum(rejected_reasons.values())
+        _rejected_reasons.update(rejected_reasons)
+
+    influx = _write_to_influx(accepted) if accepted else _influx_status
     _influx_status = influx
     with _store_lock:
-        _store_rows.extend(rows)
+        _store_rows.extend(accepted)
         total = len(_store_rows)
-    latest_seq = max(int(r.get("seq", 0)) for r in rows)
+    latest_seq = max((int(r.get("seq", 0)) for r in accepted), default=0)
     log.info(
-        "ingest rows=%d latest_seq=%d store_rows=%d influx=%s",
-        len(rows),
+        "ingest accepted=%d rejected=%d reasons=%s latest_seq=%d store_rows=%d influx=%s",
+        len(accepted),
+        sum(rejected_reasons.values()),
+        dict(rejected_reasons),
         latest_seq,
         total,
         influx,
     )
     return {
-        "ingested": len(rows),
+        "ingested": len(accepted),
         "latest_seq": latest_seq,
         "store_rows": total,
         "influx": influx,
+        "rejected": sum(rejected_reasons.values()),
+        "rejected_reasons": dict(rejected_reasons),
     }
 
 
@@ -248,6 +303,13 @@ def _t10_bundle() -> tuple[dict[str, Any] | None, str]:
 def health() -> dict:
     with _store_lock:
         n = len(_store_rows)
+        signing = {
+            "enforced": _REQUIRE_SIGNATURE,
+            "devices": len(_DEVICE_KEYS),
+            "verified_total": _verified_total,
+            "rejected_total": _rejected_total,
+            "rejected_reasons": dict(_rejected_reasons),
+        }
     return {
         "status": "ok",
         "service": "oilguard-backend",
@@ -255,6 +317,7 @@ def health() -> dict:
         "store_rows": n,
         "influx": _influx_status,
         "mqtt": {"host": MQTT_HOST, "port": MQTT_PORT, "topic": MQTT_TOPIC},
+        "signing": signing,
     }
 
 
@@ -267,6 +330,11 @@ def ingest(batch: IngestBatch) -> dict:
     """
     rows = [r.model_dump() for r in batch.rows]
     result = ingest_rows(rows)
+    if result["ingested"] == 0 and result["rejected"] and _REQUIRE_SIGNATURE:
+        return JSONResponse(
+            status_code=401,
+            content={"status": "error", "kind": "ingest-ack", **result},
+        )
     return {
         "status": "ok",
         "kind": "ingest-ack",
