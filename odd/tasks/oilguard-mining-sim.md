@@ -5,7 +5,7 @@
 - **Project:** oilguard
 - **Feature:** oilguard-mining-sim (OilGuard Mining — Hack the Challenge 2026)
 - **Branch:** `feature/oilguard-sim`
-- **Status:** planning / bootstrap (no implementation yet)
+- **Status:** done (S0–S7 complete, T1–T13 landed; closeout commit `c836741` — final amended id, see `git log`)
 - **Delivery strategy:** `ask-on-risk` (default)
 - **Mirror:** pending (Engram tool unavailable, local file is source of truth)
 - **Skill resolution:** `none` (no skill registry found in empty repo; only unrelated opencode-config skill. Proceed without project-specific standards.)
@@ -82,6 +82,13 @@ Success = a reviewer can run the stack locally, drive both 3D sims, see fused le
 ## Key Assumption Under Test (must be recorded and resolved in S7)
 
 > **Level-from-pressure-fusion with confidence band is UNPROVEN until bench drain-and-weigh calibration.**
+>
+> **Outcome (S7 closeout, recorded): PARTIAL.** Rest-gating → residual →
+> level → RUL → N1–N4 logic proven on synthetic-proxy data with labeled
+> accelerated rates (T7/T9/T10); field accuracy (0.5 %/h rate, 28 kPa at
+> 95 L anchor, bench correlation) PENDING — no physical bench ran. Pivot
+> ADOPTED and implemented: anomaly-only + precise rest readings now, fusion
+> promoted only on bench RMSE (`docs/calibration.md` verdict, `docs/feasibility.md`).
 
 - Bench must demonstrate repeatable correlation between fused signal (pressure + temp + vibration + operational vars, rest-window gated) and weighed oil volume, with quantified error/confidence.
 - **Consequence if false:** pivot to anomaly-only (trend/deviation alarming) + precise rest-window readings. Record pivot explicitly in feasibility report; do not silently keep fusion claims.
@@ -331,8 +338,21 @@ Each task declares `route: inline | delegated` plus trigger evidence:
 | T9 | `dd255e0c518f69596c66fcd14efd8908def4436e` (pre-id-record; final amended id — see `git log`) | Done: `ai/anomaly.py` z-score on rest-gated temp-compensated pressure residual (\|z\|>3.0, baseline=first rest window, sigma floor 0.10) + opt-in `--iforest` (sklearn-missing fallback logged, never silent) → auditable `ai/flags.jsonl` (135-line abrupt-drop TP example: ts/score/threshold/inputs/window_id/scenario); `ai/run_demo.py` full demo PASS (clean 1/228 FP = expected Gaussian tail, documented; LAB-ACCELERATED slow-leak 30 %/h x60 262/620 TP from t=51 s; abrupt-drop 135/228 TP, z≈−31) + single-file `--in/--windows` mode; `ai/requirements.txt` separate (backend light, `backend/` untouched, /alerts stays NOT_IMPLEMENTED_YET until T10); `docs/t9-anomaly.md` with spec-true 300 s invisibility proof (4 mixed-sign noise flags, truth z≈0.08) + FP note + T10 contract. Route: delegated (ML/stats domain, threshold + evaluation judgment). Checks: C1/C2 pass, C5 real demo excerpts, `py_compile` pass, `docker compose config` pass. Running: 3450 (forecast; actual ~703 authored lines Δ, flags.jsonl data excluded — overrun why: scorer + demo runner + full anomaly doc with real-run excerpts kept as one coherent ML work-unit; heuristic advisory only). |
 | T10 | `d852919` (pre-id-record; final amended id — see `git log`) | Done: `ai/level.py` rest-gated temp-compensated pressure→level regression (self-recalibrating baseline anchor, confidence from baseline precision, every output labeled `synthetic-proxy` — NOT proven until S7 bench) + `ai/rul.py` least-squares trend → hours/cycles/shifts with lubrication/precision gate (n≥10, σ_L≤2 L, slope<0, R²≥0.3, else suppressed anomaly-only, never silent) + `ai/ladder.py` N1 trend/N2 2-of-3 {pressure,level,vib} with temp-drift exclusion veto/N3 RUL<8 h shift/N4 abrupt-drop or <30%, all alerts auditable (thresholds+inputs+window+baseline) + `ai/demo_leak.py` clean→LAB-ACCELERATED slow-leak (auto ~4 L/run, rate+factor labeled)→abrupt-drop→N4 walk + `docs/t10-rul-ladder.md` with real excerpts; backend GET /alerts + /rul wired off stubs (status ok, fallback notes kept: empty store / suppressed RUL / missing-ai never 500), image ships `ai/` (compose backend context=root + `COPY ai ./ai`), `GET /level` echo untouched for T11; TestClient smoke POST 1800-row stitched timeline → escalation N1→N2→N3→N4 + RUL served. Route: delegated (AI/RUL domain, same trigger as T9; ladder-consistency specialist logic). Checks: C1/C2 pass, C5 demo PASS + smoke PASS + fallbacks verified (empty/clean/suppressed), `py_compile` pass, `docker compose config` pass. Running: 3850 (forecast; actual ~1110 authored lines Δ — overrun why: regression + RUL + ladder + demo + doc + backend wiring kept as one coherent AI work-unit for T11 dashboard reviewability; heuristic advisory only). |
 | T11 | `2e0a4918e13db3c7b37b2722a0fd4aa1c4200231` (pre-id-record; final amended id — see `git log`) | Done: `frontend/src/dash/` Dashboard (SVG level + ±σ band, rest-window shading, ladder-offset N1–N4 dots, RUL ok/suppressed panel, FSM-clock mode indicator + backend window count, LIVE/DEMO badge), S4 API via api.ts (new T10 Alerts/Rul types; CORS already open, no backend change), one-click clean → LAB-ACCELERATED slow-leak → abrupt-drop → N4 demo driving Bench 3D fill via demoBus event + `#dash-demo` autostart, `docs/demo-script.md` <5-min judge path, real headless-Chrome screenshot `docs/screenshots/t11-dashboard.png` (dev-server, slow-leak N1/N2/N3 + LAB label). App Dash tab (Stub/Bench/Truck/Dash). Route: delegated (UX/dashboard + demo-choreography domain, fresh reviewer eyes per feature doc). Checks: C1/C2 pass, C4 `npx tsc --noEmit -p tsconfig.json` (frontend/) pass, C3 `docker compose config` pass, C5 screenshot real. Running: 4250 (forecast; actual ~1014 authored lines Δ, png excluded — overrun why: chart + RUL + demo runner + link bus + judge script kept as one coherent S6 work-unit; heuristic advisory only). |
-| T12 | TBD-T12 | — |
-| T13 | TBD-T13 | — |
+| T12 | `c836741` (final amended id — see `git log`) | Done: `docs/calibration.md` bench drain-and-weigh procedure (95 L SAE 85W-140 steps 95→90→80→70→47.5→28.5, 20 min stabilization, rest-gate stopped+leveled+engine-on 3 s, 3 repeats) + correlation template (weighed vs fused, err/RMSE/conf) + honest PARTIAL verdict (synthetic-proxy logic proven, field-rate + bench correlation PENDING, anomaly-only viable NOW — no field-accuracy claim). Route: inline (docs + analysis). Checks: C1/C2 pass, C3 `docker compose config` pass. Running: 4550 (forecast; actual ~200 authored lines Δ — docs-only work-unit; heuristic advisory only). |
+| T13 | `c836741` (final amended id — see `git log`) | Done: `docs/feasibility.md` one-page verdict YES winnable as staged bet (anomaly+rest NOW, fusion AFTER bench; links T7/T9/T10) + pivot decision recorded (fusion-as-day-one-claim REJECTED, anomaly-only ADOPTED) + pilot needs (120 °C, EMI, T-adapter, epoxy MEMS, Hall clamp, LoRaWAN future, 250 h blind-spot ≈ USD 150k ref) + `docs/demo-script.md` polish (Stub→Bench→Truck→Dash tab tour, judge path ~4 min) + this closeout (status done, assumption PARTIAL recorded). Route: inline (synthesis). Checks: C1/C2 pass. Running: 4750 forecast final (actual ~150 authored lines Δ — docs-only; heuristic advisory only). |
+
+## Closeout (T12+T13, final)
+
+- Closeout commit: `c836741` (`docs(s7): calibration feasibility closeout`; final amended id — see `git log`).
+- Final running: 4750 forecast (T1–T13); this work-unit actual 172 insertions / 6 deletions across 4 files (docs-only: 2 new docs + demo-script polish + this doc update).
+- `git log --oneline -15` and `git diff --stat` at closeout: see commit body
+  (recorded post-commit; `git log` is source of truth).
+- Verification at closeout: branch `feature/oilguard-sim`;
+  `docker compose config --quiet && echo COMPOSE_OK` → COMPOSE_OK;
+  `ls docs/*.md` → calibration.md, demo-script.md, feasibility.md,
+  t3/t4/t5/t7/t9/t10 notes.
+- Assumption outcome: fusion PARTIAL (see Key Assumption Under Test);
+  no push/PR/remote (local only). Plan closed.
 
 ## Risks / Watchlist
 

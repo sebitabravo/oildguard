@@ -70,9 +70,21 @@ curl -s localhost:8000/alerts | python3 -c "import json,sys; d=json.load(sys.std
 curl -s localhost:8000/rul | head -c 400
 ```
 
-## 3. Dashboard (60 s)
+## 3. Tab tour: Stub → Bench → Truck → Dash (60 s)
 
-Open http://localhost:5173 → **Dash (S6/T11)** tab (`#dash`).
+Open http://localhost:5173. Tabs in order (deep-links `#stub`, `#bench`,
+`#truck`, `#dash`):
+
+- **Stub (10 s):** S0 skeleton intact — backend health + API contract pointer.
+  Proves the slice grew without breaking the scaffold.
+- **Bench (15 s):** rig + GDY106 cutaway, 95 L slab (green ≥50% / amber /
+  red), Move/Rest toggle → settling wobble + RECAL badge; 4 sensor markers
+  (pressure T-adapter, temp mag-plug, vibration pinion-cover, Hall clamp).
+- **Truck (15 s):** 930E loop LOAD 6 s → HAUL 12 s → DUMP 6 s → WAIT 5 s;
+  MOVING (blue, HAUL/WAIT) vs REST (green, LOAD/DUMP) + RECAL badge;
+  camera presets Pit/Cab/Side/Wheel, Pause + Step.
+- **Dash (20 s):** continue below (LIVE backend if §2 ingested, else DEMO
+  badge — still demoable, badge says so honestly). In the Dash tab:
 
 - Badge reads **LIVE · backend** (else DEMO fallback — still demoable,
   badge says so honestly).
@@ -97,7 +109,7 @@ The Bench tab oil fill follows the same stages (demo bus event
 `oilguard:demo-oil`): switch to Bench mid-demo to see the slab drain
 green → amber and the RECAL badge. T3 sliders still work standalone.
 
-Total judge path: ~4 min (up 90 s + ingest 30 s + dash 60 s + demo 30 s).
+Total judge path: ~4 min (up 90 s + ingest 30 s + tab tour 60 s + demo 30 s).
 
 ## 5. What to screenshot
 
