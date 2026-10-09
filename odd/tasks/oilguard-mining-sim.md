@@ -177,8 +177,8 @@ Each task declares `route: inline | delegated` plus trigger evidence:
   - `docker compose config` passes.
   - README documents local run (no remote steps).
 - **Checks:** C1, C2, C3.
-- **Evidence:** commit id `TBD-T1`.
-- **Route:** `inline` (scaffolding; delegate only if Three.js/FastAPI stub exceeds coherent single-author slice — trigger: >2 new domains in one diff).
+- **Evidence:** commit id `bb9e594d8b00785c5bee3e924cf19ac35a2a0262` (recorded post-commit; final id after id-record amend — see `git log` as source of truth).
+- **Route:** `delegated` (writer trigger: 4+ files across frontend/backend/docker/docs domains).
 
 ## Sprint S1 — 3D Bench / Wheel Sim (Sim A)
 
@@ -320,7 +320,7 @@ Each task declares `route: inline | delegated` plus trigger evidence:
 | Task | Commit | Notes (incl. size-heuristic overrun why, if any) |
 |------|--------|--------------------------------------------------|
 | Bootstrap (this doc) | `f5edeb1f2ee7d7189d387f1a4197bacb50d010b4` (pre-id-record; final amended id — see `git log`) | Initial ODD doc + .gitignore only. Running: 0 authored impl lines. |
-| T1 | TBD-T1 | — |
+| T1 | `bb9e594d8b00785c5bee3e924cf19ac35a2a0262` (pre-id-record; final amended id — see `git log`) | Done: frontend Vite+React+Three.js stub, FastAPI stub (/health, POST /ingest, GET /level, /alerts, /rul STUB payloads), pinned compose (influxdb 2.7.6, mosquitto 2.0.18), README local run. Route: delegated (writer trigger: 4+ files across frontend/backend/docker/docs domains). Checks: C1/C2 pass, C3 `docker compose config` pass, `python3 -m py_compile backend/main.py` pass, FastAPI TestClient smoke pass (all stub routes + /openapi.json 200). Running: 350 (forecast; actual ~420 new lines — overrun why: 15-file multi-domain S0 scaffold kept as one coherent work-unit; heuristic advisory only). `.gitignore` preserved as-is (node/python/dist/influx already covered). |
 | T2 | TBD-T2 | — |
 | T3 | TBD-T3 | — |
 | T4 | TBD-T4 | — |
