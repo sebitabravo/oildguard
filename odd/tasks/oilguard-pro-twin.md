@@ -146,7 +146,7 @@ RDD outcomes: T2 slice c4a9ba6 declined; T2+T3 range lens_context_budget_exceede
 
 ## Next step
 
-Continue with Q3–Q8; T1–T10 and Q1–Q2 remain complete. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
+Continue with Q4–Q8; T1–T10 and Q1–Q3 remain complete. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
 
 ## QA follow-up (2026-10-09)
 
@@ -160,7 +160,7 @@ This follow-up addresses the Playwright QA findings in `/tmp/oilguard-qa/report.
 
 - [x] **Q1 — D-02 SVG presentation attributes:** Scan every `frontend/src/**/*.tsx` for camelCase SVG presentation JSX attributes and guard with a Bun test; convert actual SVG attributes to dashed names. Verify `/monitoring` chart labels, threshold dashes, and right-axis anchoring in EN/ES against `DESIGN.md` typography intent. Verified below.
 - [x] **Q2 — D-04, D-01, D-05 i18n migration:** Move inline language-copy ternaries into the dictionary; preserve honesty markers and accents, interpolate or remove the ES seed placeholder; test copy-marker parity and forbid copy ternaries in TSX. Completed with formatter parity/render coverage and the reviewed suppression-reason correction.
-- [ ] **Q3 — C-01, C-02 mine scene language:** Localize all in-scene labels, honesty tags, PLM III state and cycle text; verify language changes re-render labels without reload.
+- [x] **Q3 — C-01, C-02 mine scene language:** Localize all in-scene labels, honesty tags, PLM III state and cycle text; verify language changes re-render labels without reload. Verified with pure EN/ES copy builders and a same-document browser language switch.
 - [ ] **Q4 — D-03 responsive shell and pages:** At 390×844 and 1024×768 prevent page overflow/collisions and keep controls reachable; use compact horizontally scrollable nav, contained mine presets/dock, stacked wheel/monitor panels, and a horizontally scrolling fleet table with sticky first column. Capture EN/ES at 390×844, 1024×768, 1366×768, and 1600×1000.
 - [ ] **Q5 — A-01, A-05 accessible 3D regions:** Give mine and wheel scenes localized named image regions and visually hidden synthetic-proxy captions; update state labels at most once per second; test pure label builders.
 - [ ] **Q6 — A-02 page headings and table header:** Add one localized first `<h1>` to each page and label the fleet table's eighth column.
@@ -174,7 +174,9 @@ This follow-up addresses the Playwright QA findings in `/tmp/oilguard-qa/report.
 | Q1 | c86b695 | RED: `cd frontend && bun test src/dash/svgPresentationAttributes.test.ts` failed at `expect(findCamelCaseSvgAttributes()).toEqual([])` with 18 violations: `LevelChart.tsx:103 strokeDasharray -> stroke-dasharray`; `:103 strokeWidth -> stroke-width`; `:104 strokeDasharray -> stroke-dasharray`; `:104 strokeWidth -> stroke-width`; `:105 fontSize -> font-size`; `:108 fontSize -> font-size`; `:114 strokeWidth -> stroke-width`; `:129 strokeWidth -> stroke-width`; `:135 fontSize -> font-size`; `:136 fontWeight -> font-weight`; `:137 textAnchor -> text-anchor`; `:147 fontSize -> font-size`; `:147 textAnchor -> text-anchor`; `:150 fontSize -> font-size`; `:150 textAnchor -> text-anchor`; `:153 fontSize -> font-size`; `:156 fontSize -> font-size`; `:156 textAnchor -> text-anchor`. Layout-helper RED: `cd frontend && bun test src/dash/chartLayout.test.ts` failed with `Cannot find module './chartLayout'` (0 pass, 1 fail/error). GREEN: focused scanner/layout tests → 2 pass, 0 fail, 9 expectations; `cd frontend && bun test src` → 170 pass, 0 fail, 113,226 expectations across 27 files; `cd frontend && bun run build` → pass, 0 errors, 4 existing hints, 4 routes; existing large-chunk warning. An initial scanner build attempt exposed that Astro's TS config lacks Node built-in types; switched to Bun.Glob/Bun.file without adding dependencies. Runtime EN/ES CDP checks on 1600×1400: SVG viewBox `0 0 990 340.3125`, rendered 990×340.3125; threshold labels computed 11px (EN warn/critical, ES advertencia/crítico), both threshold lines have `stroke-dasharray="7.734375 6.1875"`; right `0 s` label has `text-anchor="end"` and its text-right equals transformed anchor x (765.25px; 0px error). Screenshots `/tmp/og-shots/q1-monitoring-en.png` and `q1-monitoring-es.png` were inspected. |
 | Q2 copy migration | `62a17d1` | `refactor(frontend): move ui copy into i18n dictionary`; RED→GREEN evidence below. Reviewed as `review-405509a2ea839a26`: approved and acknowledged, with advisory finding `R3-suppression-reason`; the finding was corrected separately in `b33e7c9`. |
 | R3-suppression-reason | `b33e7c9` | The migration at `62a17d1` selected a generic note from `rul.model` and discarded `rul.note`, so the clean baseline showed an unrelated lubrication/precision-gate explanation instead of its no-leak-trend reason. RED: `cd frontend && bun test src/dash/RulPanel.test.tsx` → 0 pass, 2 fail, 2 expectations. The clean-baseline assertion expected `RUL suppressed: no leak trend` but rendered `RUL suppressed (lubrication/precision gate); surface anomaly-only alerts instead. See reason.`; the unknown-backend assertion expected `RUL unavailable: unknown calibration reason; inspect backend evidence.` but received model copy. The panel now renders its supplied note (falling back only when blank), preserving the localized clean-baseline note and unknown backend text; the obsolete generic synthetic note was removed. Focused GREEN: `cd frontend && bun test src/dash/RulPanel.test.tsx src/dash/backendNotes.test.ts src/i18n/copyMigration.test.ts` → 8 pass, 0 fail, 15 expectations. Full GREEN: `cd frontend && bun test src` → 177 pass, 0 fail, 113,946 expectations across 31 files; `cd frontend && bun run build` → pass, 0 errors, 0 warnings, 4 hints, 4 static routes; existing large-chunk warning. `b33e7c9` assessment: medium, under-budget (no review due). |
-| Q3–Q8 | pending | Separate work-unit commits and finding-specific verification pending. |
+| Q2 formatter contract | `5a81ada` | `test(frontend): guard i18n and honesty markers`; tests EN/ES placeholder-set parity and complete rendering with example parameters. |
+| Q3 scene labels and PLM HUD | `fix(frontend): localize mine scene labels and hud` (this work unit) | Builds on Q1 `c86b695`, Q2 migration `62a17d1`, suppression-reason correction `b33e7c9`, and Q2 formatter guard `5a81ada`. RED→GREEN and runtime language-switch evidence below. |
+| Q4–Q8 | pending | Separate work-unit commits and finding-specific verification pending. |
 
 ### Q2 interim evidence — first copy migration work unit
 
@@ -190,5 +192,15 @@ This follow-up addresses the Playwright QA findings in `/tmp/oilguard-qa/report.
 - Full GREEN: `cd frontend && bun test src` → 179 pass, 0 fail, 113,948 expectations across 32 files.
 - Build GREEN: `cd frontend && bun run build` → pass, 0 errors, 0 warnings, 4 hints, 4 static routes; existing large-chunk warning.
 - **Commit:** `test(frontend): guard i18n and honesty markers` (this work unit; exact hash recorded in its commit and completion handoff).
+
+### Q3 mine scene copy and runtime evidence
+
+- **RED:** `cd frontend && bun test src/sim/truck/mineSceneCopy.test.ts` failed at `expect(copy).not.toBeNull()` with `Received: null` because the pure scene-copy builders did not exist yet (0 pass, 1 fail, 1 expectation).
+- **GREEN, focused:** `cd frontend && bun test src/sim/truck/mineSceneCopy.test.ts` → 4 pass, 0 fail, 30 expectations. Exact EN/ES coverage includes all three in-scene labels (`SHOVEL · 4100XPC` / `PALA · 4100XPC`, `PRIMARY CRUSHER` / `CHANCADORA · PRIMARIA`, `RAMP · 10% ASSUMPTION` / `RAMPA · 10 % SUPUESTO`), all eight PLM III state names, the cycle word, and movement-status copy.
+- **GREEN, full:** `cd frontend && bun test src` → 183 pass, 0 fail, 113,994 expectations across 33 files.
+- **GREEN, build:** `cd frontend && bun run build` → pass; 0 errors, 0 warnings, 4 hints, 4 static routes; existing chunk-size warning.
+- **Runtime:** Chromium 154 headless opened `/mine?lang=en&pause=1`, clicked ES and then EN without navigating. The page kept the same `performance.timeOrigin` (`1791586408878.3`), URL, and window marker; the single WebGL canvas remained mounted. Three CSS2D labels changed EN→ES (`SHOVEL · 4100XPC` → `PALA · 4100XPC`; `PRIMARY CRUSHER` → `CHANCADORA · PRIMARIA`; `RAMP · 10% ASSUMPTION` → `RAMPA · 10 % SUPUESTO`). The PLM HUD changed `OG-03 · Hauling · cycle 0` → `OG-03 · Acarreando · ciclo 0`; switching back restored the EN text.
+- **Captures inspected:** `/tmp/og-shots/q3-mine-en.png` and `/tmp/og-shots/q3-mine-es.png`.
+- **Commit:** `fix(frontend): localize mine scene labels and hud` (this work unit; exact hash recorded in its commit and completion handoff).
 
 Engram mirror for this follow-up remains pending because memory tools and an authoritative session identity are unavailable.

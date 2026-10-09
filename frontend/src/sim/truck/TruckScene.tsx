@@ -13,6 +13,7 @@ import { createDust } from "../../twin/pit/dust";
 import { getFleetStore, getPitWorld, normalizeMineCam, readMineUrl } from "./mineWorld";
 import { HAUL_STATE_CSS, type HaulState } from "./cycle";
 import type { PlmState, TruckTick } from "../../twin/fleet/fleetSim";
+import { buildMineHudStatus, buildMineHudTitle, buildMineSceneLabelText, type MineSceneLabelId } from "./mineSceneCopy";
 
 interface TruckSceneProps {
   paused: boolean;
@@ -137,12 +138,12 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
     }
 
     const interestLabels = [
-      { id: "shovel", key: "mine.scene.shovel", pos: pit.anchors.shovel.clone().add(new THREE.Vector3(0, 20, 0)) },
-      { id: "crusher", key: "mine.scene.crusher", pos: pit.anchors.crusher.clone().add(new THREE.Vector3(0, 20, 0)) },
-      { id: "ramp", key: "mine.scene.ramp", pos: pit.anchors.rampMid.clone().add(new THREE.Vector3(0, 9, 0)) },
-    ] satisfies { id: string; key: DictKey; pos: THREE.Vector3 }[];
+      { id: "shovel", pos: pit.anchors.shovel.clone().add(new THREE.Vector3(0, 20, 0)) },
+      { id: "crusher", pos: pit.anchors.crusher.clone().add(new THREE.Vector3(0, 20, 0)) },
+      { id: "ramp", pos: pit.anchors.rampMid.clone().add(new THREE.Vector3(0, 9, 0)) },
+    ] satisfies { id: MineSceneLabelId; pos: THREE.Vector3 }[];
     const labelledInterest = interestLabels.map((item) => {
-      const label = createLabel({ text: t(item.key, langRef.current), tone: "accent" });
+      const label = createLabel({ text: buildMineSceneLabelText(item.id, langRef.current), tone: "accent" });
       label.name = item.id;
       label.position.copy(item.pos);
       scene.add(label);
@@ -227,7 +228,7 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
         barRef.current.style.width = `${Math.round(progress * 100)}%`;
       }
       for (const item of labelledInterest) {
-        setLabelText(item.label, t(item.key, langRef.current));
+        setLabelText(item.label, buildMineSceneLabelText(item.id, langRef.current));
         setLabelActive(item.label, item.id === "shovel" ? snapshot.shovel.truckId !== null : item.id === "crusher" ? snapshot.crusherTruckId !== null : false);
       }
 
@@ -303,7 +304,7 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
 
   const css = HAUL_STATE_CSS[haulState(hud.state)];
   const moving = !hud.recal;
-  const stateLabel = String(hud.state).replace(/_/g, " ").toUpperCase();
+  const statusLabel = buildMineHudStatus(hud.recal, moving, lang);
   const recalLabelKey = hud.recal
     ? "mine.hud.recalReady"
     : hud.onGrade
@@ -317,8 +318,8 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
         <div className="og-hud og-hud--tl" style={{ width: 390, ["--tone" as string]: css }}>
           <div className="og-hud__title">
             <span className="og-dot" />
-            <span className="og-num">{hud.selected} · {stateLabel} · cycle {hud.cycle}</span>
-            <span className={`og-badge ${hud.recal ? "og-badge--ok" : "og-badge--ghost"}`}>{hud.recal ? "RECAL" : moving ? "IN MOTION" : "STANDBY"}</span>
+            <span className="og-num">{buildMineHudTitle(hud.selected, hud.state, hud.cycle, lang)}</span>
+            <span className={`og-badge ${hud.recal ? "og-badge--ok" : "og-badge--ghost"}`}>{statusLabel}</span>
           </div>
           <div className="og-progress"><div ref={barRef} className="og-progress__bar" /></div>
           <div className="og-hud__row"><span className="og-hud__meta">{t("hud.camera", lang)}</span><div className="og-seg og-seg--sm">

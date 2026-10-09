@@ -185,6 +185,10 @@ export const dict = {
     en: "Synthetic open pit · 10% ramp ASSUMPTION · reproducible geometry and fleet (seed {seed})",
     es: "Foso sintético · rampa 10 % SUPUESTO · geometría y flota reproducibles (semilla {seed})",
   },
+  "mine.hud.cycle": { en: "cycle", es: "ciclo" },
+  "mine.hud.status.recal": { en: "RECAL", es: "RECAL" },
+  "mine.hud.status.moving": { en: "IN MOTION", es: "EN MOVIMIENTO" },
+  "mine.hud.status.standby": { en: "STANDBY", es: "EN ESPERA" },
   "mine.hud.recalReady": {
     en: "RECAL · stopped + level + engine on",
     es: "RECAL · detenido + nivelado + motor encendido",

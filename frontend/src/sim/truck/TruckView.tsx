@@ -7,17 +7,7 @@ import Drawer from "../../ui/Drawer";
 import HonestyBadge from "../../ui/HonestyBadge";
 import ProvenanceTable from "./ProvenanceTable";
 import { resetFleetStore } from "./mineWorld";
-
-const PLM_LABEL_KEYS: Record<PlmState, DictKey> = {
-  tare_zone: "truck.state.tareZone",
-  empty: "truck.state.empty",
-  loading: "truck.state.loading",
-  maneuvering: "truck.state.maneuvering",
-  final_zone: "truck.state.finalZone",
-  hauling: "truck.state.hauling",
-  dumping: "truck.state.dumping",
-  after_dump: "truck.state.afterDump",
-};
+import { buildPlmStateLabel } from "./mineSceneCopy";
 
 // Vista Mina y flota: el visor 3D ocupa todo el alto y el detalle (ciclo,
 // ficha técnica 930E-4SE, notas) vive en el panel lateral con pestañas.
@@ -80,7 +70,7 @@ export default function TruckView() {
             >
               <span className="og-dot" style={{ marginRight: 8 }} />
               <strong className="og-num">
-                {t(PLM_LABEL_KEYS[s], lang)} · {s}
+                {buildPlmStateLabel(s, lang)} · {s}
               </strong>
               <br />
               <span className="og-muted" style={{ fontSize: 13 }}>
