@@ -130,6 +130,10 @@ def estimate(samples: list[dict]) -> dict:
             "zone": s.get("zone", s.get("fsm_state", "")),
             "pressure_kpa": _f(s.get("pressure_kpa")),
             "temperature_c": _f(s.get("temperature_c")),
+            "rotating_sensor_regime": s.get("rotating_sensor_regime"),
+            "submerged_fraction_per_revolution": _f(
+                s.get("submerged_fraction_per_revolution")
+            ),
             "vib_rms_g": _f(s.get("vib_rms_g")),
             "vib_kurtosis": _f(s.get("vib_kurtosis")),
             "label": s.get("label", ""),
@@ -197,6 +201,11 @@ def estimate(samples: list[dict]) -> dict:
                 "vib_rms_g": None if s["vib_rms_g"] != s["vib_rms_g"] else s["vib_rms_g"],
                 "vib_kurtosis": None if s["vib_kurtosis"] != s["vib_kurtosis"] else s["vib_kurtosis"],
                 "temperature_c": None if s["temperature_c"] != s["temperature_c"] else s["temperature_c"],
+                "rotating_sensor_regime": s["rotating_sensor_regime"],
+                "submerged_fraction_per_revolution": (
+                    None if s["submerged_fraction_per_revolution"] != s["submerged_fraction_per_revolution"]
+                    else s["submerged_fraction_per_revolution"]
+                ),
             })
             continue
         res = residual(s["pressure_kpa"], s["temperature_c"], beta, t_ref)
@@ -215,6 +224,11 @@ def estimate(samples: list[dict]) -> dict:
             "vib_rms_g": None if s["vib_rms_g"] != s["vib_rms_g"] else s["vib_rms_g"],
             "vib_kurtosis": None if s["vib_kurtosis"] != s["vib_kurtosis"] else s["vib_kurtosis"],
             "temperature_c": s["temperature_c"],
+            "rotating_sensor_regime": s["rotating_sensor_regime"],
+            "submerged_fraction_per_revolution": (
+                None if s["submerged_fraction_per_revolution"] != s["submerged_fraction_per_revolution"]
+                else s["submerged_fraction_per_revolution"]
+            ),
         })
     estimates.sort(key=lambda e: e["seq"])
     out["estimates"] = estimates

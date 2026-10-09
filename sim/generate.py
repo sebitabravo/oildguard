@@ -41,10 +41,20 @@ from typing import Iterator
 
 try:  # ejecución como paquete o como script (python3 sim/generate.py)
     from sim.geometry import DEFAULT_GEAR_CASE
-    from sim.physics import pressure_kpa_from_volume
+    from sim.physics import (
+        RESEARCH_ROTATING_CAVITY,
+        pressure_kpa_from_volume,
+        submerged_fraction_per_revolution,
+        rotating_sensor_regime,
+    )
 except ImportError:  # pragma: no cover
     from geometry import DEFAULT_GEAR_CASE  # type: ignore
-    from physics import pressure_kpa_from_volume  # type: ignore
+    from physics import (  # type: ignore
+        RESEARCH_ROTATING_CAVITY,
+        pressure_kpa_from_volume,
+        submerged_fraction_per_revolution,
+        rotating_sensor_regime,
+    )
 
 SAMPLE_RATE_HZ = 10
 DT_S = 1.0 / SAMPLE_RATE_HZ
@@ -56,6 +66,8 @@ TEMP_NOMINAL_C = 75.0
 GEAR_RATIO = 32.62  # rotor 3000 RPM -> wheel ~92 RPM
 ROTOR_MAX_RPM = 3000.0
 WHEEL_RPM_MAX = ROTOR_MAX_RPM / GEAR_RATIO
+# ASSUMPTION: sensor face sits 10 mm inboard of the research cavity outer wall.
+ROTATING_SENSOR_RADIUS_M = RESEARCH_ROTATING_CAVITY.r_out - 0.01
 
 # ASSUMPTION: aceite elevado hacia engranajes y paredes a velocidad máxima de la rueda.
 V_HOLDUP_MAX_L = 6.0
@@ -89,6 +101,8 @@ HEADER = [
     "slope_deg",
     "rotor_rpm",
     "wheel_rpm",
+    "rotating_sensor_regime",
+    "submerged_fraction_per_revolution",
     "pressure_kpa",
     "temperature_c",
     "vib_rms_g",
@@ -222,6 +236,18 @@ def iter_rows(
             holdup_l = drained_holdup_l(holdup_at_stop, t_s - t_stop, tau_s)
         was_moving = moving
 
+        # Rotating-output sensor metadata is an ASSUMPTION-based synthetic
+        # feature. Use pool volume after modeled hold-up; static level scoring
+        # remains rest-gated downstream.
+        pool_volume_l = max(0.0, level - holdup_l)
+        sensor_regime = rotating_sensor_regime(wheel)
+        submerged_fraction = submerged_fraction_per_revolution(
+            pool_volume_l,
+            ROTATING_SENSOR_RADIUS_M,
+            wheel,
+            RESEARCH_ROTATING_CAVITY,
+        )
+
         # --- pressure / temperature (observed) ---
         p_noise = rng.gauss(0.0, PRESSURE_NOISE_MOVING_KPA if moving else PRESSURE_NOISE_REST_KPA)
         temp = TEMP_NOMINAL_C + (0.8 if moving else 0.0) + rng.gauss(0.0, 0.2)
@@ -254,6 +280,8 @@ def iter_rows(
             "slope_deg": f"{slope:.2f}",
             "rotor_rpm": f"{rotor:.1f}",
             "wheel_rpm": f"{wheel:.2f}",
+            "rotating_sensor_regime": sensor_regime,
+            "submerged_fraction_per_revolution": f"{submerged_fraction:.4f}",
             "pressure_kpa": f"{p_obs:.3f}",
             "temperature_c": f"{t_obs:.2f}",
             "vib_rms_g": f"{vib_rms:.3f}",

@@ -44,6 +44,10 @@ export interface SignalRow {
   slope_deg: number;
   rotor_rpm: number;
   wheel_rpm: number;
+  /** ASSUMPTION-based rotating output regime, not a calibrated measurement. */
+  rotating_sensor_regime: "static_pool" | "slosh" | "centrifugal_rimming";
+  /** Estimated wet fraction across one output revolution (0..1). */
+  submerged_fraction_per_revolution: number;
   pressure_kpa: number;
   temperature_c: number;
   /** Decimated 1 kHz RMS per 100 ms window (raw stream never transported). */
@@ -71,6 +75,8 @@ export const SIGNAL_CSV_HEADER: readonly string[] = [
   "slope_deg",
   "rotor_rpm",
   "wheel_rpm",
+  "rotating_sensor_regime",
+  "submerged_fraction_per_revolution",
   "pressure_kpa",
   "temperature_c",
   "vib_rms_g",

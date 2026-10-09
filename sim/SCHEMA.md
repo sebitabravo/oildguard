@@ -38,6 +38,8 @@ in the demo loop. WAIT is the empty return drive (moving, recal gated).
 | `slope_deg` | deg | stopped ≈ 0 ± 0.3; moving synthetic grade |
 | `rotor_rpm` | rpm | moving ≈ 2850 ± 80 (max 3000); stopped idle ≈ 120 |
 | `wheel_rpm` | rpm | rotor / 32.62 (≈ 92 at full speed) |
+| `rotating_sensor_regime` | — | `static_pool`, `slosh`, or `centrifugal_rimming`, classified by assumed Froude cutoffs; synthetic research feature, not calibrated sensor dynamics |
+| `submerged_fraction_per_revolution` | fraction [0, 1] | Estimated wet fraction for an output-mounted sensor over one revolution, using the assumed research cavity and sensor radius; not a field measurement |
 | `pressure_kpa` | kPa | observed bottom pressure `rho(T)·g·h(V)` from the gear-case geometry (`sim/geometry.py`): ≈ 2.6 at 95 L, nonlinear in level; range 0–5 kPa (0–10 kPa class transducer, noise 0.01 kPa at rest / 0.04 moving); moving rows read ≈ 0.11 kPa lower (hold-up) and recover after a stop with tau = 0.75 s · viscosity proxy |
 | `temperature_c` | °C | observed; operating ≈ 75 + 0.8 moving |
 | `vib_rms_g` | g | rest ≈ 0.35, moving ≈ 1.2 + impact transients |
@@ -79,9 +81,7 @@ python3 sim/store_forward.py --in clean.csv --out flushed.csv --outage-from 2 --
 ## Example rows (`clean`, 5 s, seed 7)
 
 ```csv
-t_iso,t_s,seq,device_id,fsm_state,moving,recal_window,engine_on,slope_deg,rotor_rpm,wheel_rpm,pressure_kpa,temperature_c,vib_rms_g,vib_kurtosis,level_liters,level_pct,link_down,label
-2026-10-09T06:11:21.221315+00:00,0.0,0,wheel-RH-01,LOAD,0,1,1,0.13,113.6,3.48,27.966,74.94,0.324,2.415,95.0000,100.000,0,normal
-2026-10-09T06:11:21.321315+00:00,0.1,1,wheel-RH-01,LOAD,0,1,1,-0.10,103.5,3.17,28.156,75.01,0.344,3.276,95.0000,100.000,0,normal
+t_iso,t_s,seq,device_id,fsm_state,moving,recal_window,engine_on,slope_deg,rotor_rpm,wheel_rpm,rotating_sensor_regime,submerged_fraction_per_revolution,pressure_kpa,temperature_c,vib_rms_g,vib_kurtosis,level_liters,level_pct,link_down,label
 ```
 
 (`t_iso` base varies per run; all other values pin to `--seed 7`.)

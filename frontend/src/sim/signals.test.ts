@@ -25,6 +25,8 @@ describe("signals contract", () => {
   test("csv header keeps the pressure and ground-truth level columns", () => {
     expect(SIGNAL_CSV_HEADER).toContain("pressure_kpa");
     expect(SIGNAL_CSV_HEADER).toContain("level_liters");
+    expect(SIGNAL_CSV_HEADER).toContain("rotating_sensor_regime");
+    expect(SIGNAL_CSV_HEADER).toContain("submerged_fraction_per_revolution");
   });
 
   test("isRestWindow is true only for rest windows", () => {

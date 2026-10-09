@@ -50,6 +50,25 @@ def test_moving_pool_pressure_is_lower_than_at_rest_due_to_holdup():
     assert rest - moving > 0.05
 
 
+def test_moving_rows_emit_repeatable_rotating_sensor_metadata():
+    a = rows_for(seconds=35.0, seed=23)
+    b = rows_for(seconds=35.0, seed=23)
+    moving = [row for row in a if row["moving"] == 1]
+    assert moving
+    assert all(row["rotating_sensor_regime"] in {
+        "static_pool", "slosh", "centrifugal_rimming"
+    } for row in moving)
+    assert all(0.0 <= float(row["submerged_fraction_per_revolution"]) <= 1.0
+               for row in moving)
+    assert [(r["rotating_sensor_regime"], r["submerged_fraction_per_revolution"])
+            for r in a] == [
+        (r["rotating_sensor_regime"], r["submerged_fraction_per_revolution"])
+        for r in b
+    ]
+    assert "rotating_sensor_regime" in generate.HEADER
+    assert "submerged_fraction_per_revolution" in generate.HEADER
+
+
 def test_holdup_scales_with_wheel_speed_and_drains_exponentially():
     assert generate.holdup_volume_l(0.0) == 0.0
     assert generate.holdup_volume_l(generate.WHEEL_RPM_MAX) == pytest.approx(generate.V_HOLDUP_MAX_L)

@@ -56,6 +56,25 @@ def test_level_estimate_at_rest_tracks_ground_truth_on_clean_data():
     assert est["model"] == "synthetic-proxy"
 
 
+def test_level_surfaces_rotating_metadata_without_scoring_moving_samples():
+    rows, samples = stage("clean")
+    out = level.estimate(samples)
+    estimates = {e["seq"]: e for e in out["estimates"]}
+    moving = next(r for r in rows if r["moving"] == 1)
+    result = estimates[moving["seq"]]
+    assert result["gated"] is True
+    assert result["level_liters"] is None
+    assert result["rotating_sensor_regime"] == moving["rotating_sensor_regime"]
+    assert result["submerged_fraction_per_revolution"] == pytest.approx(
+        float(moving["submerged_fraction_per_revolution"])
+    )
+
+    rest = next(r for r, sample in zip(rows, samples) if sample["rest"])
+    rest_result = estimates[rest["seq"]]
+    assert rest_result["gated"] is False
+    assert rest_result["level_liters"] == pytest.approx(95.0, abs=3.0)
+
+
 def test_level_estimate_follows_the_nonlinear_geometry_after_a_drop():
     rows, samples = stage("abrupt-drop", drop_liters=15.0)
     est = level.estimate(samples)
