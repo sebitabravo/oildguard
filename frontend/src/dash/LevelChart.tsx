@@ -7,6 +7,8 @@
 import type { DashAlert } from "../sim/api";
 import type { RestWindow } from "../sim/signals";
 import { useLang } from "../i18n";
+import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import { BASE_WIDTH, chartLayoutForWidth } from "./chartLayout";
 
 export interface ChartPoint {
   t_s: number;
@@ -19,13 +21,6 @@ interface LevelChartProps {
   windows: RestWindow[];
   alerts: DashAlert[];
 }
-
-const W = 640;
-const H = 220;
-const PAD_L = 44;
-const PAD_R = 208;
-const PAD_T = 34;
-const PAD_B = 26;
 
 const WARN_L = 47.5;
 const CRIT_L = 28.5;
@@ -45,6 +40,25 @@ export default function LevelChart({
   alerts,
 }: LevelChartProps) {
   const [lang] = useLang();
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [measuredWidth, setMeasuredWidth] = useState(BASE_WIDTH);
+  useLayoutEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const measure = () => {
+      const width = svg.getBoundingClientRect().width;
+      if (width > 0) {
+        setMeasuredWidth((current) => Math.abs(current - width) < 0.5 ? current : width);
+      }
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, [points.length === 0]);
+
+  const { width: W, height: H, scale, padding } = chartLayoutForWidth(measuredWidth);
+  const { left: PAD_L, right: PAD_R, top: PAD_T, bottom: PAD_B } = padding;
   const es = lang === "es";
   if (points.length === 0) {
     return (
@@ -74,6 +88,7 @@ export default function LevelChart({
 
   return (
     <svg
+      ref={svgRef}
       viewBox={`0 0 ${W} ${H}`}
       width="100%"
       role="img"
@@ -100,18 +115,18 @@ export default function LevelChart({
           );
         })}
       {/* threshold lines */}
-      <line x1={PAD_L} x2={W - PAD_R} y1={y(WARN_L)} y2={y(WARN_L)} stroke="var(--og-amber)" strokeDasharray="5 4" strokeWidth={1} />
-      <line x1={PAD_L} x2={W - PAD_R} y1={y(CRIT_L)} y2={y(CRIT_L)} stroke="var(--og-red)" strokeDasharray="5 4" strokeWidth={1} />
-      <text x={W - PAD_R + 10} y={y(WARN_L) - 4} fill="var(--og-amber)" fontSize={10}>
+      <line x1={PAD_L} x2={W - PAD_R} y1={y(WARN_L)} y2={y(WARN_L)} stroke="var(--og-amber)" stroke-dasharray={`${5 * scale} ${4 * scale}`} stroke-width={scale} />
+      <line x1={PAD_L} x2={W - PAD_R} y1={y(CRIT_L)} y2={y(CRIT_L)} stroke="var(--og-red)" stroke-dasharray={`${5 * scale} ${4 * scale}`} stroke-width={scale} />
+      <text x={W - PAD_R + 10 * scale} y={y(WARN_L) - 4 * scale} fill="var(--og-amber)" font-size={11}>
         {es ? "advertencia 50% (47.5 L)" : "warn 50% (47.5 L)"}
       </text>
-      <text x={W - PAD_R + 10} y={y(CRIT_L) - 4} fill="var(--og-red)" fontSize={10}>
+      <text x={W - PAD_R + 10 * scale} y={y(CRIT_L) - 4 * scale} fill="var(--og-red)" font-size={11}>
         {es ? "crítico 30% (28.5 L)" : "critical 30% (28.5 L)"}
       </text>
       {/* confidence band */}
       <polygon points={`${bandTop} ${bandBottom}`} fill="var(--og-blue)" opacity={0.22} />
       {/* level line */}
-      <polyline points={line} fill="none" stroke="var(--og-text)" strokeWidth={1.6} />
+      <polyline points={line} fill="none" stroke="var(--og-text)" stroke-width={1.6 * scale} />
       {/* alert dots (ladder-offset so same-window N1/N2/N3 all stay visible) */}
       {alerts.map((a) => {
         const lvl = Number(a.inputs.level_med_L ?? 80);
@@ -123,18 +138,18 @@ export default function LevelChart({
             <circle
               cx={x(a.t_s)}
               cy={cy}
-              r={6}
+              r={6 * scale}
               fill={ALERT_CSS[a.level] ?? "var(--og-text)"}
               stroke="var(--og-panel-inset)"
-              strokeWidth={1.5}
+              stroke-width={1.5 * scale}
             />
             <text
               x={x(a.t_s)}
               y={cy - 9}
               fill={ALERT_CSS[a.level] ?? "var(--og-text)"}
-              fontSize={10}
-              fontWeight={700}
-              textAnchor="middle"
+              font-size={11}
+              font-weight={700}
+              text-anchor="middle"
             >
               {a.level}
             </text>
@@ -144,16 +159,16 @@ export default function LevelChart({
       {/* axes */}
       <line x1={PAD_L} x2={PAD_L} y1={PAD_T} y2={H - PAD_B} stroke="var(--og-line-soft)" />
       <line x1={PAD_L} x2={W - PAD_R} y1={H - PAD_B} y2={H - PAD_B} stroke="var(--og-line-soft)" />
-      <text x={PAD_L - 6} y={y(CAP_L)} fill="var(--og-muted)" fontSize={10} textAnchor="end">
+      <text x={PAD_L - 6 * scale} y={y(CAP_L)} fill="var(--og-muted)" font-size={11} text-anchor="end">
         95
       </text>
-      <text x={PAD_L - 6} y={y(60)} fill="var(--og-muted)" fontSize={10} textAnchor="end">
+      <text x={PAD_L - 6 * scale} y={y(60)} fill="var(--og-muted)" font-size={11} text-anchor="end">
         60
       </text>
-      <text x={PAD_L} y={H - 8} fill="var(--og-muted)" fontSize={10}>
+      <text x={PAD_L} y={H - 8 * scale} fill="var(--og-muted)" font-size={11}>
         t {tMin.toFixed(0)} s
       </text>
-      <text x={W - PAD_R} y={H - 8} fill="var(--og-muted)" fontSize={10} textAnchor="end">
+      <text x={W - PAD_R} y={H - 8 * scale} fill="var(--og-muted)" font-size={11} text-anchor="end">
         {tMax.toFixed(0)} s
       </text>
     </svg>
