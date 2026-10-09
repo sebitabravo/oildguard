@@ -13,12 +13,21 @@ export interface DrawerTab {
 interface DrawerProps {
   tabs: DrawerTab[];
   defaultOpen?: boolean;
+  /** Pestaña pedida desde afuera (p. ej. una insignia que enlaza a la ficha técnica). */
+  requestedTab?: { id: string; nonce: number };
 }
 
-export default function Drawer({ tabs, defaultOpen = true }: DrawerProps) {
+export default function Drawer({ tabs, defaultOpen = true, requestedTab }: DrawerProps) {
   const [lang] = useLang();
   const [open, setOpen] = useState(defaultOpen);
   const [active, setActive] = useState(tabs[0]?.id ?? "");
+  const [seenNonce, setSeenNonce] = useState(0);
+  if (requestedTab && requestedTab.nonce !== seenNonce) {
+    // Ajuste de estado durante el render: se consume una vez por solicitud.
+    setSeenNonce(requestedTab.nonce);
+    setActive(requestedTab.id);
+    setOpen(true);
+  }
   const uid = useId();
   const current = tabs.find((tab) => tab.id === active) ?? tabs[0];
 

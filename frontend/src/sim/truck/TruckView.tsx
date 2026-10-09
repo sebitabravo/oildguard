@@ -16,16 +16,21 @@ import {
 import { t, useLang } from "../../i18n";
 import Drawer from "../../ui/Drawer";
 import HonestyBadge from "../../ui/HonestyBadge";
+import ProvenanceTable from "./ProvenanceTable";
 
 // Vista Mina y flota: el visor 3D ocupa todo el alto y el detalle (ciclo,
 // ficha técnica 930E-4SE, notas) vive en el panel lateral con pestañas.
-// Dimensiones 15.29 x 8.89 x 8.10 m, tolva arriba 14.80 m; pesos; fluidos;
-// tren de potencia; frenos; cabina; matriz STOP/precaución; llamadas 1-22 EN/ES.
+// Envolvente del curso 15.29 x 8.89 x 8.10 m (tolva arriba 14.80 m) junto a las
+// cotas del folleto con las que se construye el modelo; pesos; fluidos; tren de
+// potencia; frenos; cabina; matriz STOP/precaución; llamadas 1-22 EN/ES; tabla de
+// procedencia de cada cota del modelo paramétrico.
 
 export default function TruckView() {
   const [current, setCurrent] = useState<HaulState>("LOAD");
-  const [paused, setPaused] = useState(false);
+  // ?pause=1 congela el ciclo (capturas reproducibles junto con ?t= y ?cam=).
+  const [paused, setPaused] = useState(() => new URLSearchParams(window.location.search).get("pause") === "1");
   const [stepTick, setStepTick] = useState(0);
+  const [requestedTab, setRequestedTab] = useState<{ id: string; nonce: number }>({ id: "status", nonce: 0 });
   const [runId, setRunId] = useState(0);
   const [lang] = useLang();
   const es = lang === "es";
@@ -113,8 +118,8 @@ export default function TruckView() {
       <h2 className="og-h2">{es ? "930E-4SE dimensiones y pesos" : "930E-4SE dimensions & weights"}</h2>
       <p className="og-body og-num">
         {es
-          ? `Dimensiones ${TRUCK_DIMS_M.L} × ${TRUCK_DIMS_M.W} × ${TRUCK_DIMS_M.H} m; tolva arriba ${TRUCK_DIMS_M.bodyUp} m. Vacio ${TRUCK_WEIGHTS_KG.empty} kg (del ${TRUCK_WEIGHTS_KG.emptyF} / tras ${TRUCK_WEIGHTS_KG.emptyR}); cargado ${TRUCK_WEIGHTS_KG.loaded} kg (del ${TRUCK_WEIGHTS_KG.loadedF} / tras ${TRUCK_WEIGHTS_KG.loadedR}); util ${TRUCK_WEIGHTS_KG.payload} kg, ${TRUCK_WEIGHTS_KG.volumeM3} m3. Max ${TRUCK_WEIGHTS_KG.maxT} T (10% ${TRUCK_WEIGHTS_KG.maxT}-${TRUCK_WEIGHTS_KG.overloadT} T permitido, nunca sobre ${TRUCK_WEIGHTS_KG.overloadT} T).`
-          : `Envelope ${TRUCK_DIMS_M.L} × ${TRUCK_DIMS_M.W} × ${TRUCK_DIMS_M.H} m; body-up ${TRUCK_DIMS_M.bodyUp} m. Empty ${TRUCK_WEIGHTS_KG.empty} kg (F ${TRUCK_WEIGHTS_KG.emptyF} / R ${TRUCK_WEIGHTS_KG.emptyR}); loaded ${TRUCK_WEIGHTS_KG.loaded} kg (F ${TRUCK_WEIGHTS_KG.loadedF} / R ${TRUCK_WEIGHTS_KG.loadedR}); payload ${TRUCK_WEIGHTS_KG.payload} kg, ${TRUCK_WEIGHTS_KG.volumeM3} m3. Max ${TRUCK_WEIGHTS_KG.maxT} T (10% ${TRUCK_WEIGHTS_KG.maxT}-${TRUCK_WEIGHTS_KG.overloadT} T allowed, never above ${TRUCK_WEIGHTS_KG.overloadT} T).`}
+          ? `Envolvente del curso ${TRUCK_DIMS_M.L} × ${TRUCK_DIMS_M.W} × ${TRUCK_DIMS_M.H} m; tolva arriba ${TRUCK_DIMS_M.bodyUp} m (el modelo 3D usa el folleto: 15.60 × 8.69 × 7.37 m, tolva arriba 14.02 m). Vacio ${TRUCK_WEIGHTS_KG.empty} kg (del ${TRUCK_WEIGHTS_KG.emptyF} / tras ${TRUCK_WEIGHTS_KG.emptyR}); cargado ${TRUCK_WEIGHTS_KG.loaded} kg (del ${TRUCK_WEIGHTS_KG.loadedF} / tras ${TRUCK_WEIGHTS_KG.loadedR}); util ${TRUCK_WEIGHTS_KG.payload} kg, ${TRUCK_WEIGHTS_KG.volumeM3} m3. Max ${TRUCK_WEIGHTS_KG.maxT} T (10% ${TRUCK_WEIGHTS_KG.maxT}-${TRUCK_WEIGHTS_KG.overloadT} T permitido, nunca sobre ${TRUCK_WEIGHTS_KG.overloadT} T).`
+          : `Course envelope ${TRUCK_DIMS_M.L} × ${TRUCK_DIMS_M.W} × ${TRUCK_DIMS_M.H} m; body-up ${TRUCK_DIMS_M.bodyUp} m (the 3D model uses the brochure: 15.60 × 8.69 × 7.37 m, body-up 14.02 m). Empty ${TRUCK_WEIGHTS_KG.empty} kg (F ${TRUCK_WEIGHTS_KG.emptyF} / R ${TRUCK_WEIGHTS_KG.emptyR}); loaded ${TRUCK_WEIGHTS_KG.loaded} kg (F ${TRUCK_WEIGHTS_KG.loadedF} / R ${TRUCK_WEIGHTS_KG.loadedR}); payload ${TRUCK_WEIGHTS_KG.payload} kg, ${TRUCK_WEIGHTS_KG.volumeM3} m3. Max ${TRUCK_WEIGHTS_KG.maxT} T (10% ${TRUCK_WEIGHTS_KG.maxT}-${TRUCK_WEIGHTS_KG.overloadT} T allowed, never above ${TRUCK_WEIGHTS_KG.overloadT} T).`}
       </p>
       <h2 className="og-h2">{es ? "Fluidos (nota de conciliacion)" : "Fluids (reconciliation footnote)"}</h2>
       <p className="og-body">
@@ -134,6 +139,7 @@ export default function TruckView() {
           ? "Servicio <8 km/h todas las ruedas; bloqueo trasero a baja presion; estacionamiento por resorte/hidraulico trasero solo detenido; emergencia automatica. Cabina: RSC tortuga/liebre + interruptor amarillo, override, parada de emergencia, levante HOLD/FLOAT, VHMS captura+azul, enlace rojo, servicio motor azul, campos PLM. VHMS es solo lectura."
           : "Service <8 km/h all wheels; rear lock at low pressure; spring/hydraulic parking rear stopped-only; emergency auto. Cab: RSC turtle/rabbit + yellow switch, override, e-stop, hoist HOLD/FLOAT, VHMS snapshot+blue, red link, blue engine service, PLM fields. VHMS is read-only."}
       </p>
+      <ProvenanceTable lang={lang} />
     </>
   );
 
@@ -142,8 +148,8 @@ export default function TruckView() {
       <h2 className="og-h2">{es ? "Sobre esta vista" : "About this view"}</h2>
       <p className="og-body">
         {es
-          ? `930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, tolva arriba ${TRUCK_DIMS_M.bodyUp} m; ciclo ${loop}. Arrastra para orbitar o elige un preajuste de camara (Foso/Cabina/Lateral/Rueda). Azul = EN MOVIMIENTO, verde = DETENIDO; RECAL solo detenido+nivelado+motor encendido.`
-          : `930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, body-up ${TRUCK_DIMS_M.bodyUp} m; loop ${loop}. Drag to orbit or pick a camera preset (Pit/Cab/Side/Wheel). Blue = MOVING, green = REST; RECAL only stopped+leveled+engine-on.`}
+          ? `930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, tolva arriba ${TRUCK_DIMS_M.bodyUp} m; ciclo ${loop}. Arrastra para orbitar o elige un preajuste de camara (Foso/3/4/Cabina/Lateral/Rueda). Azul = EN MOVIMIENTO, verde = DETENIDO; RECAL solo detenido+nivelado+motor encendido.`
+          : `930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, body-up ${TRUCK_DIMS_M.bodyUp} m; loop ${loop}. Drag to orbit or pick a camera preset (Pit/3/4/Cab/Side/Wheel). Blue = MOVING, green = REST; RECAL only stopped+leveled+engine-on.`}
       </p>
       <p className="og-body">{t("app.scope", lang)}</p>
       <p className="og-body">{t("truck.honesty", lang)}</p>
@@ -167,10 +173,18 @@ export default function TruckView() {
           stepTick={stepTick}
           onPhase={setCurrent}
           dock={dock}
-          badge={<HonestyBadge label={t("badge.placeholder", lang)} text={t("truck.honesty", lang)} />}
+          badge={
+            <HonestyBadge
+              label={t("badge.model", lang)}
+              text={t("truck.model", lang)}
+              actionLabel={t("badge.model.open", lang)}
+              onAction={() => setRequestedTab((r) => ({ id: "sheet", nonce: r.nonce + 1 }))}
+            />
+          }
         />
       </div>
       <Drawer
+        requestedTab={requestedTab}
         tabs={[
           { id: "status", label: t("drawer.status", lang), content: status },
           { id: "sheet", label: t("drawer.sheet", lang), content: sheet },

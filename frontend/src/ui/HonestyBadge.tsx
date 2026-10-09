@@ -7,9 +7,12 @@ import { t, useLang } from "../i18n";
 interface HonestyBadgeProps {
   label: string;
   text: string;
+  /** Acción opcional dentro de la nota (p. ej. abrir la ficha técnica). */
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
-export default function HonestyBadge({ label, text }: HonestyBadgeProps) {
+export default function HonestyBadge({ label, text, actionLabel, onAction }: HonestyBadgeProps) {
   const [open, setOpen] = useState(false);
   const [lang] = useLang();
   const id = useId();
@@ -28,9 +31,23 @@ export default function HonestyBadge({ label, text }: HonestyBadgeProps) {
       {open && (
         <div id={id} role="note" className="og-honesty__pop">
           <p>{text}</p>
-          <button type="button" className="og-btn og-btn--sm" onClick={() => setOpen(false)}>
-            {t("badge.close", lang)}
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            {actionLabel && onAction && (
+              <button
+                type="button"
+                className="og-btn og-btn--sm og-btn--primary"
+                onClick={() => {
+                  onAction();
+                  setOpen(false);
+                }}
+              >
+                {actionLabel}
+              </button>
+            )}
+            <button type="button" className="og-btn og-btn--sm" onClick={() => setOpen(false)}>
+              {t("badge.close", lang)}
+            </button>
+          </div>
         </div>
       )}
     </div>

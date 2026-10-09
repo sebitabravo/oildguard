@@ -448,3 +448,17 @@ button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* Tabla de procedencia del modelo (ficha técnica) */
+.og-prov { margin-top: 8px; }
+.og-prov__summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--og-text); margin-bottom: 8px; }
+.og-table { width: 100%; border-collapse: collapse; font-size: 11.5px; color: var(--og-body); }
+.og-table th, .og-table td { padding: 4px 6px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--og-line); }
+.og-table thead th { position: sticky; top: 0; background: rgba(9, 13, 21, 0.96); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--og-muted); }
+.og-table__num { text-align: right; white-space: nowrap; }
+.og-table__src { color: var(--og-muted); font-size: 10.5px; line-height: 1.35; }
+.og-table__group th { padding-top: 10px; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--og-yellow); border-bottom: 1px solid var(--og-line-strong); }
+.og-tag { display: inline-block; padding: 1px 6px; border-radius: 999px; font-size: 10.5px; font-weight: 700; border: 1px solid currentColor; }
+.og-tag--verified { color: var(--og-green); }
+.og-tag--derived { color: var(--og-blue); }
+.og-tag--assumption { color: var(--og-yellow); }
