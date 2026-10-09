@@ -161,10 +161,6 @@ export const dict = {
   "rul.title": { en: "RUL", es: "Vida útil remanente (RUL)" },
   "rul.suppressed": { en: "RUL suppressed · anomaly-only", es: "RUL suprimido · solo anomalías" },
   "rul.unavailable": { en: "No RUL payload yet.", es: "Aún no hay datos de vida útil remanente (RUL)." },
-  "rul.syntheticNote": {
-    en: "RUL suppressed (lubrication/precision gate); surface anomaly-only alerts instead. See reason.",
-    es: "El sustituto sintético: NO PROBADO hasta completar la calibración en banco; las alertas de anomalía siguen siendo el resultado disponible.",
-  },
   "rul.suppressedNote": {
     en: "RUL is suppressed; anomaly alerts are the supported output.",
     es: "El RUL está suprimido; las alertas de anomalía son el resultado disponible.",

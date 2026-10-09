@@ -1,0 +1,45 @@
+import { describe, expect, test } from "bun:test";
+import { h } from "preact";
+import renderToString from "preact-render-to-string";
+import type { RulDataSuppressed } from "../sim/api";
+import { t, type Lang } from "../i18n";
+import RulPanel from "./RulPanel";
+
+function renderSuppressedNote(lang: Lang, note: string): string {
+  const defaultStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: { getItem: () => lang },
+  });
+  const rul: RulDataSuppressed = {
+    hours: null,
+    haul_cycles: null,
+    shifts: null,
+    confidence: 0,
+    status: "suppressed",
+    anomaly_only: true,
+    model: "synthetic-proxy",
+    note,
+    fallback: "local DEMO fallback (backend down or demo override)",
+  };
+  try {
+    return renderToString(h(RulPanel, { rul }));
+  } finally {
+    if (defaultStorage) Object.defineProperty(globalThis, "localStorage", defaultStorage);
+    else Reflect.deleteProperty(globalThis, "localStorage");
+  }
+}
+
+describe("RUL suppression explanation", () => {
+  test("renders the clean-baseline reason in English and Spanish", () => {
+    expect(renderSuppressedNote("en", t("dash.demo.rul.cleanNote", "en")))
+      .toContain("RUL suppressed: no leak trend");
+    expect(renderSuppressedNote("es", t("dash.demo.rul.cleanNote", "es")))
+      .toContain("RUL suprimido: no hay tendencia de fuga");
+  });
+
+  test("keeps an unknown backend suppression reason verbatim", () => {
+    const reason = "RUL unavailable: unknown calibration reason; inspect backend evidence.";
+    expect(renderSuppressedNote("es", reason)).toContain(reason);
+  });
+});

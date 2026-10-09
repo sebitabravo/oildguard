@@ -34,7 +34,7 @@ export default function RulPanel({ rul }: { rul: RulData | null }) {
           {t("rul.suppressed", lang)}
         </div>
         <p style={{ margin: "6px 0", color: "var(--og-body)", fontSize: 13 }}>
-          {t(rul.model === "synthetic-proxy" ? "rul.syntheticNote" : "rul.suppressedNote", lang)}
+          {rul.note.trim() ? rul.note : t("rul.suppressedNote", lang)}
         </p>
         <p style={{ margin: 0, color: "var(--og-muted)", fontSize: 12 }}>
           {t("rul.panel.suppressedDetail", lang, {
