@@ -7,7 +7,7 @@
 - **Branch:** `feature/oilguard-sim` (continues; previous feature `oilguard-mining-sim` closed)
 - **Status:** in progress
 - **Delivery strategy:** `exception-ok` — user explicitly authorized unlimited changes ("realiza todos los cambios que quieras", goal mode, no pause). No PR is created in this feature; slicing into PRs is decided by the user at push time.
-- **Mirror:** Engram topic `odd/oilguard-pro-twin/tasks`
+- **Mirror:** Engram topic `odd/oilguard-pro-twin/tasks` (pending sync; Engram memory tools are unavailable in this runtime)
 - **TDD:** `on` from T2 onward — source: project rule (`rules/common/testing.md`: all production code carries tests; runner must be configured before code). Runners: `pytest` (Python: `sim/`, `ai/`, `backend/`) and `bun test` (frontend pure logic; zero new frontend dependencies at T2). Recorded here; T2 configures both.
 - **Created:** 2026-10-09
 - **Artifact language:** English
@@ -72,7 +72,7 @@ physically consistent digital twin that delivers what the pre-proposal
 - [x] T2 — Test runners + physics core + anchor replacement (route: delegated writer; trigger: 2+ non-trivial files across sim/ai/frontend).
 - [x] T3 — Rendering foundation + app shell (route: delegated writer; trigger: 2+ non-trivial frontend files).
 - [x] T4 — Parametric 930E-4SE model (route: delegated writer; trigger: new large 3D module).
-- [ ] T5 — Open-pit mine + fleet + PLM-III FSM (route: delegated writer; trigger: new 3D env + FSM across files).
+- [x] T5 — Open-pit mine + fleet + PLM-III FSM (route: delegated writer; trigger: new 3D env + FSM across files).
 - [ ] T6 — GDY106 cutaway twin (route: delegated writer; trigger: new large 3D module + physics coupling).
 - [ ] T7 — Fleet dashboard + combined risk (route: delegated writer; trigger: dashboard + ai ladder files).
 - [ ] T8 — Signed measurements (route: delegated writer; trigger: sim + backend + tests).
@@ -103,6 +103,7 @@ physically consistent digital twin that delivers what the pre-proposal
 | T2 | `c4a9ba6` `58ba2e1` `2b9603d` | delegated (writer trigger: sim/ai/frontend multi-file) | `./test.sh` → pytest 61 passed, bun 16 pass (parent re-ran bun: 16 pass); `tsc --noEmit` exit 0; `ai/demo_leak.py --seconds 120` N1→N2→N3→N4 PASS; `ai/run_demo.py` T9 PASS (clean 1/228 FP unchanged); compose OK. GearCase ASSUMPTION R_OUT 0.60 / R_IN 0.22 / L 0.42 m → head 0.305 m, 2.61 kPa @95 L 60 °C, 0–10 kPa ±0.1 %FS → ±0.51 L. Shared-ring train Zr 92: HS 16/38×3 (6.750), LS 24/34×4 (4.833), 32.625 (+0.015 %). Thresholds re-derived (sigma floor 0.005 kPa, beta clip ±0.05 kPa/°C, noise 0.01/0.04 kPa). RDD: assess high (test.sh shell/exec) → review due; consent pending with user. |
 | T3 | `af17ba4` `2c5405e` | delegated (writer trigger: 2+ frontend files) | `./test.sh` → pytest 61, bun 49 pass; `tsc` clean; `vite build` OK (JS 741 kB, GLB out of dist); CDP tab-switch ×37 no context leak; screenshots `docs/screenshots/t3-shell-*.png` (parent viewed mine + wheel: shell OK, scenes still placeholder → T4–T6). GLB moved to `docs/reference-models/`. Note: :5173 is held by an OrbStack container serving a stale build — use another port for dev screenshots. |
 | T4 | `ce980d1` `3f4deda` | delegated (writer died at API session limit after writing all files; parent verified + committed) | parent: `npx tsc --noEmit` clean; `bun test src` 87 pass / 0 fail; pre-commit gate ran `./test.sh` green on both commits. Screenshots viewed (3/4, side, wheel, dump at t=22): recognizable 930E — stairway, deck, cab, canopy, dual rears 53/80R63, GDY106 hub, hoist cylinders telescoping at 45°. Weak: pixelated "930E" plate, flat ground ring dominates. RDD: medium, slice_budget_reached → user DECLINED this candidate. Docker :5173 now serves live source (other session's bind-mount fix, uncommitted, not ours); headless Chrome needs `--timeout` (virtual-time-budget hangs with live.js). |
+| T5 | `59f97ee` | delegated writer (new 3D environment + fleet/FSM integration) | RED: `readMineUrl("?seed=0")` returned default seed `1`; fixed numeric parsing to preserve explicit zero. GREEN: `bun test src` → 135 pass / 0 fail; `bun run build` → Astro check/build passed (0 errors; existing large-chunk warning). Screenshot `/tmp/og-shots/t5-mine.png` inspected: seeded overview shows benched pit, graded ramp, five 930E trucks, shovel, and crusher. Screenshot deviation: :5173 served stale output, so captured from local Astro :5174. `pytest -q` skipped (no Python touched). RDD: `gentle-ai review assess` → medium, `review_due=true`, `slice_budget_reached`; exact preflight STATUS returned `collect/intended_untracked_selection_required`, asking for intended-untracked selection. Runtime exposed no `external.select_intended_untracked` capture operation; stopped before START and recorded unavailable. Old lineage untouched. |
 
 Housekeeping: `f4aa44c` ignore `.playwright-mcp/` `.atl/`; stale unreferenced screenshots moved to `/tmp/oilguard-old-screens` (not deleted).
 
@@ -116,4 +117,4 @@ RDD outcomes: T2 slice c4a9ba6 declined; T2+T3 range lens_context_budget_exceede
 
 ## Next step
 
-T5 running; then (pit + fleet) → T10 (rotating physics) → T6 (GDY106) → T7 → T8 → T9.
+T5 committed; next T10 (rotating physics), then T6 (GDY106) → T7 → T8 → T9.
