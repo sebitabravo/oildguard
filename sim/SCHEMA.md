@@ -1,14 +1,19 @@
-# T6 Signal Schema (S3 — synthetic signals + store-forward mock)
+# Signal schema — historical oilguard-mining-sim numbering (S3 / T6 / T8)
+
+The S3/T6/T8 labels in this schema are retained from the `oilguard-mining-sim`
+feature. The CSV contract remains the generator's source of truth; these legacy
+slice labels do not describe the current pro-twin UI architecture.
 
 Source of truth for CSV fields, rates, units, and scenario params.
 Generator: `sim/generate.py`. Buffer mock: `sim/store_forward.py`.
-TS mirror for T7/T8: `frontend/src/sim/signals.ts`.
+TS mirror for T7/T8 in the historical feature numbering:
+`frontend/src/sim/signals.ts`.
 
 ## Rates
 
 | Stream | Rate | Transport |
 |---|---|---|
-| Pressure / temperature + operational vars | 10 Hz (1 row / 100 ms) | CSV row, MQTT/InfluxDB in T8 |
+| Pressure / temperature + operational vars | 10 Hz (1 row / 100 ms) | CSV row, MQTT/InfluxDB (T8 in `oilguard-mining-sim`) |
 | Vibration raw (triaxial MEMS, synthetic 1 kHz) | 1000 Hz on edge | NEVER transported |
 | Vibration features (RMS + kurtosis per 100 ms) | 10 Hz (`vib_rms_g`, `vib_kurtosis`) | CSV row, forwarded |
 
@@ -16,12 +21,19 @@ Each 100 ms window synthesizes 100 samples of 1 kHz accel internally,
 computes RMS + Pearson kurtosis (normal ≈ 3), then discards the raw
 samples. Only the two features leave the edge.
 
-## FSM alignment (mirrors `frontend/src/sim/truck/cycle.ts`)
+## Generator loop (separate from the `/mine` visual fleet FSM)
 
-Loop 29 s: LOAD 6 s → HAUL 12 s → DUMP 6 s → WAIT 5 s, then repeat.
-`moving` = HAUL/WAIT (`isMovingState`). `recal_window` = LOAD/DUMP
-stopped + leveled + engine-on (`isRecalState`). `engine_on` is always 1
-in the demo loop. WAIT is the empty return drive (moving, recal gated).
+`sim/generate.py` retains its synthetic 29-second loop: LOAD 6 s → HAUL
+12 s → DUMP 6 s → WAIT 5 s, then repeat. In its generated rows,
+`moving` = HAUL/WAIT and `recal_window` = LOAD/DUMP; `engine_on` is always 1.
+WAIT represents the empty return drive in this generated signal stream.
+
+The `/mine` page instead animates a separate PLM III eight-state fleet FSM
+from `frontend/src/twin/fleet/fleetSim.ts`, instantiated by
+`frontend/src/sim/truck/mineWorld.ts:54-65`. It is a visual fleet simulation,
+not the CSV generator or its backend signal feed. The four generator labels
+and 29-second cycle are retained for synthetic signal/RUL fixtures; they do
+not map one-to-one to the eight PLM III states.
 
 ## Fields
 

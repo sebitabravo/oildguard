@@ -26,6 +26,13 @@ n < 10 scored samples, baseline σ_L > 2.0 L, slope ≥ 0, or R² < 0.30.
 Abrupt steps invalidate linear extrapolation — N4 fires instead of
 rescaling RUL.
 
+The synthetic CSV generator retains its 29-second LOAD/HAUL/DUMP/WAIT loop
+(`sim/generate.py:95-98`); RUL converts hours to haul cycles with the same
+29-second constant (`ai/rul.py:38,136-147`). `/mine` uses a separate eight-state
+PLM III FSM (`frontend/src/twin/fleet/fleetSim.ts:15-35`, instantiated by
+`frontend/src/sim/truck/mineWorld.ts:54-65`) to animate the visual fleet; it is
+not wired to the generator's signal stream.
+
 **Ladder** (`ai/ladder.py`): N1 trend/persistence entry (one window) →
 N2 confirmed (2-of-3 channels {pressure-drop, level-trend, vib-impact},
 same or consecutive windows) → N3 shift-window (RUL-to-warning < 8 h) →

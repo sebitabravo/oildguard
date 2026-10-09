@@ -5,8 +5,9 @@
 > shipped in the app bundle. Reason: credibility. The HD465 is a ~55 t
 > mechanical-drive truck, while the thesis subject is the 930E-4SE (~290 t,
 > AC electric drive with the GDY106 motorized wheel); any mining reviewer
-> would see the mismatch. The truck scene renders its procedural body until
-> the parametric 930E-4SE model replaces it. The record below is kept as
+> would see the mismatch. The current scene now uses the procedural,
+> parametric 930E-4SE model in `frontend/src/twin/truck930e/build930E.ts`,
+> integrated by `frontend/src/sim/truck/TruckScene.tsx`. The record below is kept as
 > provenance of the reference file (paths below refer to its former location).
 >
 > **2026-10-09 — retirado del runtime (ES).** La malla HD465-7EO se movió de
@@ -14,9 +15,10 @@
 > el paquete de la aplicación. Motivo: credibilidad. El HD465 es un camión de
 > ~55 t con transmisión mecánica, mientras que el sujeto de la tesis es el
 > 930E-4SE (~290 t, accionamiento eléctrico AC con la rueda motorizada
-> GDY106); cualquier revisor de minería vería la discrepancia. La escena del
-> camión muestra su carrocería procedural hasta que el modelo paramétrico
-> 930E-4SE la reemplace. El registro siguiente se conserva como procedencia
+> GDY106); cualquier revisor de minería vería la discrepancia. La escena actual
+> usa el modelo paramétrico procedural 930E-4SE en
+> `frontend/src/twin/truck930e/build930E.ts`, integrado por
+> `frontend/src/sim/truck/TruckScene.tsx`. El registro siguiente se conserva como procedencia
 > del archivo de referencia (las rutas indicadas son su ubicación anterior).
 
 Bilingual record: EN below, ES después. Neutral/professional Spanish.
@@ -25,9 +27,9 @@ Bilingual record: EN below, ES después. Neutral/professional Spanish.
 
 ### What it is (and is NOT)
 
-- The file `frontend/public/models/komatsu_hd-465-7eo.glb` (~20 MB,
+- The historical file `frontend/public/models/komatsu_hd-465-7eo.glb` (~20 MB,
   21,350,272 bytes) is a **Komatsu HD465-7EO rigid truck mesh (~55 t
-  class)** used as a **VISUAL PROXY ONLY** in the S2 truck scene
+  class)** formerly used as a **VISUAL PROXY ONLY** in the S2 truck scene
   (`frontend/src/sim/truck/TruckScene.tsx`).
 - It is **NOT a Komatsu 930E** (~290 t payload, 15.29 × 8.89 × 8.10 m).
   The thesis and the UI never claim otherwise: every spec label and number
@@ -107,9 +109,9 @@ Bilingual record: EN below, ES después. Neutral/professional Spanish.
 
 ### Qué es (y qué NO es)
 
-- El archivo `frontend/public/models/komatsu_hd-465-7eo.glb` (~20 MB,
+- El archivo histórico `frontend/public/models/komatsu_hd-465-7eo.glb` (~20 MB,
   21.350.272 bytes) es una **malla de camión rígido Komatsu HD465-7EO
-  (clase ~55 t)** usada como **PROXY VISUAL SOLAMENTE** en la escena del
+  (clase ~55 t)** usada anteriormente como **PROXY VISUAL SOLAMENTE** en la escena del
   camión S2 (`frontend/src/sim/truck/TruckScene.tsx`).
 - **NO es un Komatsu 930E** (~290 t de carga útil, 15,29 × 8,89 × 8,10 m).
   Ni la tesis ni la interfaz afirman lo contrario: todas las etiquetas y

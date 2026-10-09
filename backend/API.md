@@ -1,4 +1,8 @@
-# T8 Backend API Contract (S4 slice)
+# Historical oilguard-mining-sim API guide (T8 / S4 numbering)
+
+This guide retains the `oilguard-mining-sim` feature's T8/S4 sequence labels.
+The endpoint behavior below is checked against the current backend source;
+the old slice numbering is historical, not the current pro-twin task sequence.
 
 FastAPI ingestion + query API. Source: `backend/main.py`.
 Field names match `SignalRow` in `frontend/src/sim/signals.ts` 1:1
@@ -15,7 +19,7 @@ The frontend reads `PUBLIC_BACKEND_URL`; Compose sets it to
 |---|---|---|
 | GET | `/health` | `ok` (store, Influx, MQTT, and aggregate signing diagnostics) |
 | POST | `/ingest` | `ok` — accepted rows stored; per-row signature rejections returned in the ack |
-| GET | `/level` | `ok` — latest row echoed; `confidence` stub `0.0` until T10 |
+| GET | `/level` | `ok` — latest ingested ground-truth row echoed; `confidence` remains the `0.0` placeholder on this endpoint (`backend/main.py:346-377`) |
 | GET | `/windows?limit=50` | `ok` — rest windows grouped from `recal_window` flags |
 | GET | `/alerts` | `ok` — T10 N1–N4 ladder over the memory store (`synthetic-proxy`; honest fallback note when unevaluatable) |
 | GET | `/rul` | `ok` — T10 trend-extrapolated RUL, or `suppressed` + anomaly-only note when precision-gated |
@@ -138,8 +142,8 @@ single 4-field object (`device_id`, `pressure_kpa`, `temperature_c`,
 
 ## GET /level
 
-Latest ingested row by `seq` (echoes ground-truth level; the fused
-estimate + confidence land in S5 T10):
+Latest ingested row by `seq` (echoes ground-truth level; this endpoint still
+returns placeholder `confidence: 0.0`):
 
 ```json
 {
@@ -159,6 +163,11 @@ estimate + confidence land in S5 T10):
   }
 }
 ```
+
+T10 computes fused-level confidence in `ai/level.py:183-188`; the current
+`/level` route does not serve that estimate. The computed level summary is
+available under `/alerts` data, and RUL confidence is returned by `/rul`
+(`backend/main.py:429-487`).
 
 Empty store: returns the 95 L default with
 `"source": "default (no rows ingested yet)"`.
