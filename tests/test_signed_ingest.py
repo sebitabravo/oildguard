@@ -159,4 +159,3 @@ def test_permissive_mode_accepts_unsigned_rows_as_unverified(client, monkeypatch
     assert response.json()["rejected"] == 0
     with backend_main._store_lock:
         assert backend_main._store_rows[0]["sig_verified"] is False
-
