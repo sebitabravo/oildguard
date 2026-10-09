@@ -424,9 +424,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+      <div className="og-dashboard-panels" style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
         {/* level chart */}
-        <div style={{ flex: "2 1 560px", minWidth: 320, border: "1px solid var(--og-line-dashboard)", padding: 16, background: "var(--og-panel-dashboard)" }}>
+        <div className="og-dashboard-chart" style={{ flex: "2 1 560px", minWidth: 320, border: "1px solid var(--og-line-dashboard)", padding: 16, background: "var(--og-panel-dashboard)" }}>
           <h2 style={{ margin: "0 0 4px", fontSize: 16 }}>
             {t("dash.chart.title", lang)}{" "}
             <span style={{ fontSize: 12, fontWeight: 500, color: "var(--og-muted)" }}>
@@ -454,7 +454,7 @@ export default function Dashboard() {
         </div>
 
         {/* side column */}
-        <div style={{ flex: "1 1 280px", minWidth: 260, maxWidth: 400, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className="og-dashboard-side" style={{ flex: "1 1 280px", minWidth: 260, maxWidth: 400, display: "flex", flexDirection: "column", gap: 12 }}>
           {/* mode indicator */}
           <div style={{ border: "1px solid var(--og-line-dashboard)", borderRadius: 6, padding: "10px 12px", background: "var(--og-panel-dashboard)" }}>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>

@@ -312,7 +312,7 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
       : "mine.hud.recalStandby";
 
   return (
-    <div className="og-scene">
+    <div className="og-scene og-scene--mine">
       <div ref={hostRef} className="og-scene__host" />
       <div className="og-overlay">
         <div className="og-hud og-hud--tl" style={{ width: 390, ["--tone" as string]: css }}>

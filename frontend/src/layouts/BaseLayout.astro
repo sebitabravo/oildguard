@@ -44,7 +44,10 @@ const navigation: Array<{ id: Section; label: DictKey; href: string }> = [
         <div class="og-brand">
           <div class="og-brand__mark" aria-hidden="true">OG</div>
           <div>
-            <div class="og-brand__name" data-i18n-en={t("app.brand", "en")} data-i18n-es={t("app.brand", "es")}>{t("app.brand", "en")}</div>
+            <div class="og-brand__name">
+              <span class="og-brand__name--full" data-i18n-en={t("app.brand", "en")} data-i18n-es={t("app.brand", "es")}>{t("app.brand", "en")}</span>
+              <span class="og-brand__name--short">OilGuard</span>
+            </div>
             <div class="og-brand__tag" data-i18n-en={t("app.tagline", "en")} data-i18n-es={t("app.tagline", "es")}>{t("app.tagline", "en")}</div>
           </div>
         </div>
