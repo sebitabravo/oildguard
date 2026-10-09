@@ -76,10 +76,14 @@ bun run dev
 Backend:
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-dev.txt
 cd backend
-pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
+
+`requirements-dev.txt` includes the pinned backend runtime and test dependencies.
 
 ## Judge path (< 5 minutes)
 
