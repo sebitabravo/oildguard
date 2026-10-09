@@ -38,3 +38,7 @@ coverage/
 
 # Test caches
 .pytest_cache/
+
+# Agent tooling scratch
+.playwright-mcp/
+.atl/
