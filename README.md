@@ -1,46 +1,73 @@
 # OilGuard Mining Sim
 
-Local-only prototype for the Komatsu 930E with GDY106 motorized wheels
-(32.62:1). Validated scope is 930E/GDY106 ONLY; the 980E-5 (GDY108-C,
-35.02:1) remains future work without validation. The Astro + Preact frontend
-provides three independent pages for the mining truck, wheel simulation, and
-monitoring dashboard, alongside the FastAPI backend, InfluxDB, and MQTT mock.
+Local prototype of the Komatsu 930E-4SE and GDY106 motorized wheel
+(32.62:1). The validated scope is 930E/GDY106 only; the 980E-5 (GDY108-C,
+35.02:1) remains future work. The app has mine, wheel-detail, and monitoring
+pages, with a FastAPI backend, InfluxDB, and an MQTT mock.
 
-Feature plan: `odd/tasks/oilguard-mining-sim.md`.
+Feature plan: [`odd/tasks/oilguard-pro-twin.md`](odd/tasks/oilguard-pro-twin.md).
 
 ## Prerequisites
 
-- Docker + Docker Compose (Docker Desktop or Engine 24+)
-- Bun 1.4+ (only for running the frontend outside Docker)
-- Python 3.11+ (only for running the backend outside Docker)
+- Docker with Compose (Docker Desktop or Engine 24+)
+- Python 3.11+ and Bun 1.4+ to run checks or services outside Docker
 
-No remote steps. No hardware. No push required.
+Install the Python runtime and test dependencies from the repository root:
+
+```bash
+python3 -m pip install -r requirements-dev.txt
+```
+
+No remote steps, hardware, or push are required.
 
 ## Run with Docker Compose
 
 ```bash
-docker compose up --build
+docker compose config --quiet
+docker compose up -d --build -V
 ```
 
-If you change frontend dependencies, renew the frontend service's anonymous
-`node_modules` volume so it cannot mask the dependencies in the rebuilt image:
-
-```bash
-docker compose up -d --build -V frontend
-```
-
-- Frontend pages: http://localhost:5173/mine, http://localhost:5173/wheel,
-  and http://localhost:5173/monitoring
+- Mine: http://localhost:5173/mine
+- Wheel detail: http://localhost:5173/wheel
+- Monitoring: http://localhost:5173/monitoring
 - Backend health: http://localhost:8000/health
-- Backend docs (OpenAPI): http://localhost:8000/docs
-- InfluxDB: http://localhost:8086 (user `oilguard`, org `oilguard`)
-- MQTT mock: localhost:1883 (anonymous, local demo only)
+- Backend API docs: http://localhost:8000/docs
+- InfluxDB: http://localhost:8086 (user and org `oilguard`)
+- MQTT mock: `localhost:1883` (anonymous, local demo only)
 
-### Optional signed-measurement demo
+The `-V` option renews the frontend's anonymous `node_modules` volume when
+rebuilding, so it does not mask dependencies in the image.
 
-By default, unsigned rows remain accepted for the local demo
-(`OILGUARD_REQUIRE_SIGNATURE=0`). To exercise the per-device HMAC-SHA256
-integrity path, generate a local-only key and use it at both the edge mock and
+## Judge path (< 5 minutes)
+
+1. Run the Compose commands above and confirm `/health` reports `status: ok`.
+2. On `/mine`, inspect the five-truck fleet, PLM III state, and available camera
+   and pause controls. Use **Open GDY106 wheel** to follow the truck-to-wheel
+   handoff.
+3. On `/wheel`, inspect the cutaway and exploded views, planetary ratio, and
+   oil-pool response to the oil control. Values and reconstructed geometry are
+   documented with their evidence labels; this is not a field-validated model.
+4. On `/monitoring`, inspect the fleet table and use **Open wheel detail** to
+   carry a truck/wheel selection into `/wheel`. The dashboard fleet metrics and
+   combined-risk rule are synthetic proxies, not live calibrated wheel data.
+5. Run the checks with `./test.sh`. CI runs the Python and frontend checks plus
+   Compose validation in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+6. Compare the current EN/ES page captures below. The complete walkthrough is
+   in [`docs/demo-script.md`](docs/demo-script.md).
+
+### Current screenshots (1600 × 1000)
+
+| Page | English | Español |
+|------|---------|---------|
+| Mine | [Mine EN](docs/screenshots/pro-twin-mine-en.png) | [Mina ES](docs/screenshots/pro-twin-mine-es.png) |
+| Wheel detail | [Wheel EN](docs/screenshots/pro-twin-wheel-en.png) | [Rueda ES](docs/screenshots/pro-twin-wheel-es.png) |
+| Monitoring | [Monitoring EN](docs/screenshots/pro-twin-monitoring-en.png) | [Monitoreo ES](docs/screenshots/pro-twin-monitoring-es.png) |
+
+## Optional signed-measurement demo
+
+Unsigned rows are accepted by default for the local demo
+(`OILGUARD_REQUIRE_SIGNATURE=0`). To exercise per-device HMAC-SHA256 row
+integrity, create a local-only key and use it at both the edge mock and
 backend. Do not commit or share the key:
 
 ```bash
@@ -55,17 +82,19 @@ unset OILGUARD_DEVICE_KEYS OILGUARD_REQUIRE_SIGNATURE DEVICE_KEY
 docker compose up -d backend
 ```
 
-The backend verifies each row before storage; unsigned rows are rejected while
+The backend verifies rows before storage; unsigned rows are rejected while
 enforcement is enabled, and signed rows that fail verification are rejected
-even in permissive mode. The signature provides row integrity/shared-key
-origin verification only. It does not provide confidentiality, MQTT/TLS,
-device provisioning or key rotation, HTTP caller authentication, or IEC 62443
-compliance. See [`backend/API.md`](backend/API.md) and
-[`sim/SCHEMA.md`](sim/SCHEMA.md) for the contract and canonicalization limits.
+even in permissive mode. Signing verifies row integrity/shared-key origin only.
+It does not provide confidentiality, MQTT/TLS, device provisioning or key
+rotation, HTTP caller authentication, or IEC 62443 compliance. See
+[`backend/API.md`](backend/API.md) and [`sim/SCHEMA.md`](sim/SCHEMA.md) for
+the contract and canonicalization limits.
 
 ## Run without Docker (optional)
 
-Frontend:
+Install the Python runtime and test dependencies at the repository root with
+`python3 -m pip install -r requirements-dev.txt`. Then start the frontend and
+backend in separate terminals:
 
 ```bash
 cd frontend
@@ -73,25 +102,9 @@ bun install
 bun run dev
 ```
 
-Backend:
-
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements-dev.txt
 cd backend
 uvicorn main:app --reload --port 8000
 ```
 
-`requirements-dev.txt` includes the pinned backend runtime and test dependencies.
-
-## Judge path (< 5 minutes)
-
-1. Start the services with `docker compose up --build`.
-2. Open `/mine`, `/wheel`, and `/monitoring` at `http://localhost:5173`.
-3. Open http://localhost:8000/health and confirm `{"status": "ok", ...}`.
-4. Open http://localhost:8000/docs and inspect `POST /ingest`, `GET /level`,
-   `GET /alerts`, and `GET /rul`.
-5. Run `docker compose config` as a static configuration check.
-
-See `docs/demo-script.md` for the complete dashboard scenario.
+Run all configured local checks from the repository root with `./test.sh`.
