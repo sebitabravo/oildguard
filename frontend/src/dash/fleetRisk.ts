@@ -30,6 +30,7 @@ export function evaluateCombinedRisk(metrics: WheelProxyMetrics): CombinedRisk {
 export interface FleetWheelProxy {
   truckId: string;
   wheelId: string;
+  instrumented?: boolean;
   oilLitres: number;
   temperatureC: number[];
   vibrationMmS: number[];
@@ -44,7 +45,7 @@ export const DEMO_FLEET_WHEELS: FleetWheelProxy[] = [
   { truckId: "OG-03", wheelId: "FL", oilLitres: 68.4, temperatureC: [71, 72, 73, 74], vibrationMmS: [3.4, 3.5, 3.6, 3.7], currentA: [412, 416, 420, 424] },
   { truckId: "OG-03", wheelId: "FR", oilLitres: 68.1, temperatureC: [72, 73, 74, 75], vibrationMmS: [3.3, 3.5, 3.6, 3.8], currentA: [414, 419, 423, 428] },
   { truckId: "OG-03", wheelId: "RL", oilLitres: 67.8, temperatureC: [73, 74, 75, 76], vibrationMmS: [3.7, 3.8, 4.0, 4.1], currentA: [418, 423, 426, 431] },
-  { truckId: "OG-03", wheelId: "RH", oilLitres: 46.8, temperatureC: [84, 86, 89, 91], vibrationMmS: [4.1, 4.3, 4.5, 4.7], currentA: [425, 432, 438, 443] },
+  { truckId: "OG-03", wheelId: "RR", instrumented: true, oilLitres: 46.8, temperatureC: [84, 86, 89, 91], vibrationMmS: [4.1, 4.3, 4.5, 4.7], currentA: [425, 432, 438, 443] },
   { truckId: "OG-05", wheelId: "FL", oilLitres: 69.5, temperatureC: [70, 71, 72, 73], vibrationMmS: [3.1, 3.2, 3.3, 3.4], currentA: [401, 408, 413, 419] },
   { truckId: "OG-05", wheelId: "FR", oilLitres: 69.1, temperatureC: [71, 72, 73, 74], vibrationMmS: [3.3, 3.4, 3.5, 3.7], currentA: [407, 412, 416, 422] },
   { truckId: "OG-05", wheelId: "RL", oilLitres: 68.7, temperatureC: [82, 85, 89, 93], vibrationMmS: [4.0, 4.8, 6.2, 7.2], currentA: [422, 430, 440, 451] },

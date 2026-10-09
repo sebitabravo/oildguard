@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { evaluateCombinedRisk, latestWheelMetrics, type WheelProxyMetrics } from "./fleetRisk";
+import { DEMO_FLEET_WHEELS, evaluateCombinedRisk, latestWheelMetrics, type WheelProxyMetrics } from "./fleetRisk";
 
 const baseline: WheelProxyMetrics = {
   oilLitres: 70,
@@ -40,5 +40,19 @@ describe("fleet demo combined-risk rule", () => {
       vibrationMmS: [4.1, 4.7],
       currentA: [425, 443],
     })).toEqual({ oilLitres: 46.8, temperatureC: 91, vibrationMmS: 4.7, currentA: 443 });
+  });
+});
+
+describe("fleet demo wheel positions", () => {
+  test("lists the same four positions for every truck and marks the GDY106 wheel separately", () => {
+    const wheelsByTruck = new Map<string, typeof DEMO_FLEET_WHEELS>();
+    for (const wheel of DEMO_FLEET_WHEELS) {
+      wheelsByTruck.set(wheel.truckId, [...(wheelsByTruck.get(wheel.truckId) ?? []), wheel]);
+    }
+
+    for (const wheels of wheelsByTruck.values()) {
+      expect(wheels.map((wheel) => wheel.wheelId).sort()).toEqual(["FL", "FR", "RL", "RR"]);
+    }
+    expect(DEMO_FLEET_WHEELS.find((wheel) => wheel.truckId === "OG-03" && wheel.wheelId === "RR")?.instrumented).toBe(true);
   });
 });

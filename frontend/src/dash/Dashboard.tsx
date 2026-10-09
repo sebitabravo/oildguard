@@ -253,7 +253,10 @@ export default function Dashboard() {
                 return (
                   <tr key={`${wheel.truckId}-${wheel.wheelId}`}>
                     <td className="og-num">{wheel.truckId}</td>
-                    <td className="og-num">{wheel.wheelId}</td>
+                    <td className="og-num">
+                      {wheel.wheelId}
+                      {wheel.instrumented && <span className="og-fleet-instrumented">{t("dash.fleet.instrumented", lang)}</span>}
+                    </td>
                     <td className="og-num">{wheel.oilLitres.toFixed(1)}</td>
                     <td className="og-num">{wheel.temperatureC.join(" · ")}</td>
                     <td className="og-num">{wheel.vibrationMmS.map((value) => value.toFixed(1)).join(" · ")}</td>

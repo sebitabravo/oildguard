@@ -450,11 +450,11 @@ button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og
 .og-fleet-panel__risk-title { color: var(--og-muted); font-size: 12px; }
 .og-fleet-panel__assumption { max-width: 100ch; margin: 10px 0 12px; color: var(--og-body); font-size: 12px; line-height: 1.5; }
 .og-fleet-wrap { overflow-x: auto; border-top: 1px solid var(--og-line); }
-.og-fleet-table { width: 100%; min-width: 1060px; table-layout: fixed; border-collapse: collapse; font-size: 11px; color: var(--og-body); }
+.og-fleet-table { width: 100%; min-width: 1126px; table-layout: fixed; border-collapse: collapse; font-size: 11px; color: var(--og-body); }
 .og-fleet-table th, .og-fleet-table td { padding: 7px 8px; border-bottom: 1px solid var(--og-line); text-align: left; vertical-align: middle; white-space: nowrap; }
 .og-fleet-table th { color: var(--og-muted); font-size: 10px; font-weight: 700; letter-spacing: 0.035em; text-transform: uppercase; white-space: normal; }
 .og-fleet-table th:nth-child(1), .og-fleet-table td:nth-child(1) { width: 74px; }
-.og-fleet-table th:nth-child(2), .og-fleet-table td:nth-child(2) { width: 64px; }
+.og-fleet-table th:nth-child(2), .og-fleet-table td:nth-child(2) { width: 130px; }
 .og-fleet-table th:nth-child(3), .og-fleet-table td:nth-child(3) { width: 74px; }
 .og-fleet-table th:nth-child(4), .og-fleet-table td:nth-child(4) { width: 180px; }
 .og-fleet-table th:nth-child(5), .og-fleet-table td:nth-child(5) { width: 185px; }
@@ -464,6 +464,7 @@ button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og
 .og-fleet-table tbody tr:hover { background: rgba(255, 255, 255, 0.035); }
 .og-fleet-risk { display: inline-block; color: var(--og-green); font-weight: 700; }
 .og-fleet-risk--alert { color: var(--og-red); }
+.og-fleet-instrumented { display: inline-block; margin-left: 6px; color: var(--og-blue); font-size: 9px; font-weight: 700; }
 .og-fleet-channels { display: block; max-width: 160px; margin-top: 3px; color: var(--og-amber); white-space: normal; }
 .og-fleet-link { color: var(--og-yellow); font-weight: 700; text-underline-offset: 3px; }
 .og-fleet-link:hover { color: var(--og-text); }

@@ -131,6 +131,7 @@ export const dict = {
   },
   "dash.fleet.truck": { en: "Truck", es: "Camión" },
   "dash.fleet.wheel": { en: "Wheel", es: "Rueda" },
+  "dash.fleet.instrumented": { en: "Instrumented", es: "Instrumentada" },
   "dash.fleet.oil": { en: "Oil · L", es: "Aceite · L" },
   "dash.fleet.temp": { en: "Temperature · °C (recent series)", es: "Temperatura · °C (serie reciente)" },
   "dash.fleet.vibration": { en: "Vibration · mm/s (recent series)", es: "Vibración · mm/s (serie reciente)" },
