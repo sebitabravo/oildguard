@@ -92,3 +92,36 @@ export const GEAR_RATIO = 32.62;
 export const ROTOR_MAX_RPM = 3000;
 export const LEAK_PCT_PER_H = 0.5;
 export const PRESSURE_AT_FULL_KPA = 28;
+
+// T7 move/rest detector contract (S3 slice).
+//
+// Mirrors sim/detect.py thresholds (do not let these drift). The detector
+// consumes live stillness ONLY (speed + slope + engine flag), never the
+// zone name: WAIT is the empty return drive (moving) per the T4/T5
+// decision, so rest is a stillness predicate, not a zone lookup. The T11
+// dashboard HUD consumes RestWindow rows via isRestWindow.
+
+/** Rest = speed below this (m/s), leveled, engine-on for 3 s. */
+export const DETECTOR_SPEED_MAX_MPS = 0.5;
+/** Leveled gate (deg): |slope| below this. */
+export const DETECTOR_SLOPE_MAX_DEG = 2.0;
+/** Stillness confirmation hold (s) before a rest window opens. */
+export const DETECTOR_REST_CONFIRM_S = 3.0;
+
+/** One row of the sim/detect.py windows CSV (zone = audit label only). */
+export interface RestWindow {
+  window_id: number;
+  state: "rest" | "moving";
+  start_t_s: number;
+  end_t_s: number;
+  start_iso: string;
+  end_iso: string;
+  duration_s: number;
+  zone: FsmState;
+  reason: string;
+}
+
+/** Rest predicate for the Truck HUD (T11): true for rest windows only. */
+export function isRestWindow(w: RestWindow): boolean {
+  return w.state === "rest";
+}
