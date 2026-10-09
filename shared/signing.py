@@ -78,7 +78,11 @@ def verify_row(row: Mapping[str, object], key: bytes) -> bool:
     signature = row.get("sig")
     if not isinstance(signature, str):
         return False
-    expected = hmac.new(key, canonical_bytes(row), hashlib.sha256).hexdigest()
+    try:
+        payload = canonical_bytes(row)
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return False
+    expected = hmac.new(key, payload, hashlib.sha256).hexdigest()
     try:
         return hmac.compare_digest(signature, expected)
     except TypeError:

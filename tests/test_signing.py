@@ -92,6 +92,22 @@ def test_missing_signed_field_raises_key_error():
         canonical_bytes(row)
 
 
+def test_verification_returns_false_when_signed_field_is_missing():
+    key = secrets.token_bytes(32)
+    signed = sign_row(typed_row(generated_row()), key)
+    del signed["submerged_fraction_per_revolution"]
+
+    assert not verify_row(signed, key)
+
+
+def test_verification_returns_false_when_signed_numeric_value_is_invalid():
+    key = secrets.token_bytes(32)
+    signed = sign_row(typed_row(generated_row()), key)
+    signed["pressure_kpa"] = "not-a-number"
+
+    assert not verify_row(signed, key)
+
+
 def test_device_key_parser_accepts_empty_and_valid_specs():
     first_key = secrets.token_bytes(32)
     second_key = secrets.token_bytes(32)
