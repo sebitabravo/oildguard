@@ -1,6 +1,7 @@
 import { useId, useState } from "preact/hooks";
 import type { ComponentChildren, JSX } from "preact";
 import { t, useLang } from "../i18n";
+import { drawerTabIndexForKey } from "./drawerTabNavigation";
 
 // Panel lateral con pestañas y colapso. Las vistas le pasan el contenido
 // ya ordenado en pestañas (Estado / Ficha técnica / Notas).
@@ -33,10 +34,11 @@ export default function Drawer({ tabs, defaultOpen = true, requestedTab }: Drawe
   const current = tabs.find((tab) => tab.id === active) ?? tabs[0];
 
   const onKey = (e: JSX.TargetedEvent<HTMLDivElement, KeyboardEvent>) => {
-    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
     const idx = tabs.findIndex((tab) => tab.id === active);
-    const next = (idx + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;
+    const next = drawerTabIndexForKey(e.key, idx, tabs.length);
+    if (next === null || !tabs[next]) return;
     setActive(tabs[next].id);
+    e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
     e.preventDefault();
   };
 

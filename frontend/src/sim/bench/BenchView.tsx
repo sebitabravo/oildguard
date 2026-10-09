@@ -58,6 +58,27 @@ export default function BenchView() {
   const frac = clamp01(oilPct / 100);
   const oilState = oilStateFor(frac);
   const oilCss = oilCssFor(oilState);
+  const oilLitresText = new Intl.NumberFormat(lang, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(frac * CAPACITY_L);
+  const oilValueText = t("bench.field.oilValueText", lang, {
+    litres: oilLitresText,
+    percent: oilPct,
+  });
+  const viscosityValue = new Intl.NumberFormat(lang, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(viscosity);
+  const viscosityStateKey = viscosity < 0.8
+    ? "bench.viscosity.state.dilute"
+    : viscosity < 1.5
+      ? "bench.viscosity.state.nominal"
+      : "bench.viscosity.state.degraded";
+  const viscosityValueText = t("bench.field.viscosityValueText", lang, {
+    value: viscosityValue,
+    state: t(viscosityStateKey, lang),
+  });
   const settlingMs = estimateSettlingMs(viscosity);
   const resting = mode === "rest";
   const dock = (
@@ -76,7 +97,8 @@ export default function BenchView() {
           max={100}
           step={1}
           value={oilPct}
-          aria-label={t("bench.field.oil", lang)}
+          aria-label={t("bench.field.oilAccessible", lang)}
+          aria-valuetext={oilValueText}
           onInput={(e) => setOilPct(Number(e.currentTarget.value))}
         />
       </label>
@@ -92,6 +114,7 @@ export default function BenchView() {
           step={0.05}
           value={viscosity}
           aria-label={t("bench.field.viscosity", lang)}
+          aria-valuetext={viscosityValueText}
           onInput={(e) => setViscosity(Number(e.currentTarget.value))}
         />
       </label>

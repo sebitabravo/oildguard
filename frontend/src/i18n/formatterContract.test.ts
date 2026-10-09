@@ -26,6 +26,8 @@ const exampleValues: Readonly<Record<string, string | number>> = {
   overload: 1.2,
   milliseconds: 3000,
   value: "1.80",
+  litres: "66.5",
+  percent: 70,
   label: "degraded",
   highSpeed: 1.2,
   lowSpeed: 1.3,

@@ -146,7 +146,7 @@ RDD outcomes: T2 slice c4a9ba6 declined; T2+T3 range lens_context_budget_exceede
 
 ## Next step
 
-Continue with Q7–Q8; T1–T10 and Q1–Q6 remain complete. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
+Continue with Q8; T1–T10 and Q1–Q7 remain complete. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
 
 ## QA follow-up (2026-10-09)
 
@@ -164,7 +164,7 @@ This follow-up addresses the Playwright QA findings in `/tmp/oilguard-qa/report.
 - [x] **Q4 — D-03 responsive shell and pages:** At 390×844 and 1024×768 prevent page overflow/collisions and keep controls reachable; use compact horizontally scrollable nav, contained mine presets/dock, stacked wheel/monitor panels, and a horizontally scrolling fleet table with sticky first column. Capture EN/ES at 390×844, 1024×768, 1366×768, and 1600×1000. Verified below.
 - [x] **Q5 — A-01, A-05 accessible 3D regions:** Give mine and wheel scenes localized named image regions and visually hidden synthetic-proxy captions; update state labels at most once per second; test pure label builders. Verified below.
 - [x] **Q6 — A-02 page headings and table header:** Add one localized first `<h1>` to each page and label the fleet table's eighth column. Verified below.
-- [ ] **Q7 — A-03, A-04 keyboard and slider semantics:** Move focus with drawer tab arrows and support Home/End using tested pure key-to-index logic; provide localized slider value text and an oil-percentage name tied to the 95 L reference.
+- [x] **Q7 — A-03, A-04 keyboard and slider semantics:** Move focus with drawer tab arrows and support Home/End using tested pure key-to-index logic; provide localized slider value text and an oil-percentage name tied to the 95 L reference. Verified below.
 - [ ] **Q8 — D-06, D-07 palette and dashboard scroll:** Use neutral sensor identity cues while reserving status colors for condition; keep dashboard scrolling within `.og-page`; document both decisions in `DESIGN.md`.
 
 ### Evidence
@@ -180,7 +180,8 @@ This follow-up addresses the Playwright QA findings in `/tmp/oilguard-qa/report.
 | Q5 accessible 3D regions | `af3e018` | `feat(frontend): describe 3d scenes for assistive tech`; builds on Q1 `c86b695`, Q2 migration `62a17d1`, Q2 suppression fix `b33e7c9`, Q2 formatter guard `5a81ada`, Q3 scene labels/HUD `b8c1a1b`, and Q4 responsive shell `c97239e`. RED→GREEN and Chromium DOM/state evidence below. |
 | Q5 review correction: R3-pending-throttle-timer | `fix(frontend): cancel stale scene announcement timer` (this work unit) | Finding from acknowledged `review-ffbd0c0c091de94d`, `frontend/src/sim/useThrottledSceneAccessibility.ts:24-28`: a delayed scheduled timer survived an immediate publish and could announce a newer copy less than one second afterward. Fixed by cancelling and clearing the pending timer before immediate publication. |
 | Q6 page headings and fleet table header | `fix(frontend): add page headings and table header` (this work unit) | One localized first `<h1>` is present per `/mine`, `/wheel`, and `/monitoring`; the monitoring table's eighth column is `Detail` / `Detalle`. Chromium DOM evidence and verification below. The preceding timer-fix commit `b65b7bf` was assessed medium/under-budget (no review due). |
-| Q7–Q8 | pending | Separate work-unit commits and finding-specific verification pending. |
+| Q7 drawer tabs and slider semantics | `fix(frontend): improve tabs focus and slider semantics` (this work unit) | TDD RED→GREEN; localized EN/ES accessible slider values and labels; Chromium keyboard/focus evidence below. |
+| Q8 palette and dashboard scroll | pending | Separate work-unit commits and finding-specific verification pending. |
 
 ### Q2 interim evidence — first copy migration work unit
 
@@ -244,5 +245,16 @@ This follow-up addresses the Playwright QA findings in `/tmp/oilguard-qa/report.
 - **GREEN:** `cd frontend && bun test src` → 187 pass, 0 fail, 114,023 expectations across 35 files. No test was added for markup-only changes.
 - **GREEN, build:** `cd frontend && bun run build` → pass; Astro check 0 errors, 0 warnings, 4 existing hints; all 4 static routes built; existing >500 kB chunk warning.
 - **Commit:** `fix(frontend): add page headings and table header` (this work unit; exact hash recorded in the completion handoff).
+
+### Q7 drawer keyboard and slider semantics
+
+- **RED:** `cd frontend && bun test src/ui/drawerTabNavigation.test.ts` initially failed at `expect(drawerTabIndexForKey("ArrowRight", 2, 3)).toBe(0)` with `Expected: 0` / `Received: null`; the not-yet-created pure helper was temporarily represented by a null fallback. Result: 0 pass, 1 fail, 1 expectation.
+- Added and tested `drawerTabIndexForKey` for wraparound arrows, Home/End, unsupported keys, and empty tab lists. The tablist now focuses the same tab whose selection and roving `tabIndex` it updates.
+- Added bilingual dictionary entries for the 95 L percentage label and value text. Slider values use locale-aware formatting; viscosity state labels are short/localized for assistive value text while the existing visual copy remains unchanged.
+- **GREEN, focused:** `cd frontend && bun test src/ui/drawerTabNavigation.test.ts` → 1 pass, 0 fail, 6 expectations.
+- **GREEN, full:** `cd frontend && bun test src` → 188 pass, 0 fail, 114,053 expectations across 36 files.
+- **GREEN, build:** `cd frontend && bun run build` → pass; Astro check 0 errors, 0 warnings, 4 hints; all 4 static routes built. Existing >500 kB chunk warning remains.
+- **Runtime DOM / keyboard:** Headless Chromium 154.0.8037.94 on `/wheel` at 1366×768. In EN, the oil slider exposed `Oil fill percentage of the 95 L reference` and `66.5 L, 70 %`; viscosity exposed `1.80, degraded`. Without navigation, switching to ES updated these to `Porcentaje de llenado de aceite respecto de la referencia de 95 L`, `66,5 L, 70 %`, and `1,80, degradado`. In both languages, ArrowRight, ArrowLeft, wraparound ArrowLeft, Home, End, and wraparound ArrowRight produced matching focused/selected tab indices `[1, 0, 2, 0, 2, 0]`, with exactly one `tabIndex=0` each time. Full DOM evidence: `/tmp/og-shots/q7-dom-evidence.json`.
+- **Commit:** `fix(frontend): improve tabs focus and slider semantics` (this work unit; exact hash recorded in the completion handoff).
 
 Engram mirror for this follow-up remains pending because memory tools and an authoritative session identity are unavailable.

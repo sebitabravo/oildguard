@@ -298,7 +298,13 @@ export const dict = {
   "truck.callout.21": { en: "RSC turtle/rabbit + yellow switch", es: "RSC tortuga/liebre + interruptor amarillo" },
   "truck.callout.22": { en: "E-stop + engine service (blue) + PLM", es: "Parada de emergencia + servicio del motor (azul) + PLM" },
   "bench.field.oil": { en: "Oil fill", es: "Nivel de aceite" },
+  "bench.field.oilAccessible": {
+    en: "Oil fill percentage of the 95 L reference",
+    es: "Porcentaje de llenado de aceite respecto de la referencia de 95 L",
+  },
+  "bench.field.oilValueText": { en: "{litres} L, {percent} %", es: "{litres} L, {percent} %" },
   "bench.field.viscosity": { en: "Viscosity proxy", es: "Sustituto de viscosidad" },
+  "bench.field.viscosityValueText": { en: "{value}, {state}", es: "{value}, {state}" },
   "bench.action.startMove": { en: "Resting — start Move", es: "Detenido — iniciar marcha" },
   "bench.action.stopForRest": { en: "Moving — stop to Rest", es: "En marcha — detener" },
   "bench.action.cutaway": { en: "Cutaway", es: "Corte" },
@@ -361,6 +367,9 @@ export const dict = {
   "bench.viscosity.dilute": { en: "dilute · fast settling", es: "diluido · asentamiento rápido" },
   "bench.viscosity.nominal": { en: "nominal", es: "nominal" },
   "bench.viscosity.degraded": { en: "degraded · slow settling", es: "degradado · asentamiento lento" },
+  "bench.viscosity.state.dilute": { en: "dilute", es: "diluido" },
+  "bench.viscosity.state.nominal": { en: "nominal", es: "nominal" },
+  "bench.viscosity.state.degraded": { en: "degraded", es: "degradado" },
   "dash.demo.labNote": { en: "LAB-ACCELERATED leak ~128.5 %/h x257 vs spec 0.5 %/h (~4.0 L over 120 s)", es: "Fuga LAB-ACELERADA ~128.5 %/h x257 vs espec 0.5 %/h (~4.0 L en 120 s)" },
   "dash.demo.rul.cleanNote": {
     en: "RUL suppressed: no leak trend (slope >= 0); anomaly-only. Clean baseline holds 95 L.",
