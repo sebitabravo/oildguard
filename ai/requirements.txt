@@ -1,0 +1,7 @@
+# T9 AI requirements (kept separate so the backend stays light).
+
+# Optional: enables `--iforest` in ai/anomaly.py / ai/run_demo.py.
+# Without it both scripts run the stdlib z-score baseline and log a
+# clear fallback warning. backend/requirements.txt is intentionally
+# unchanged (no sklearn in the FastAPI image).
+scikit-learn>=1.3
