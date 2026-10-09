@@ -31,7 +31,25 @@ export default function TruckView() {
       <p style={{ margin: "0 0 16px", color: "#9fb0c9" }}>
         {lang === "es"
           ? `Sim camion S2 (T4+T5): 930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, tolva arriba ${TRUCK_DIMS_M.bodyUp} m; ciclo CARGA 6 s → ACARREO 12 s → DESCARGA 6 s → ESPERA 5 s. 980E-5 (GDY108-C) es futuro sin validar. Arrastra para orbitar o elige preajuste (Foso/Cabina/Lateral/Rueda). Azul = EN MOVIMIENTO, verde = DETENIDO; RECAL solo detenido+nivelado+motor encendido.`
-          : `S2 truck sim (T4+T5): 930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, body-up ${TRUCK_DIMS_M.bodyUp} m; loop LOAD 6 s → HAUL 12 s → DUMP 6 s → WAIT 5 s. 980E-5 (GDY108-C) is future work without validation. Drag to orbit or pick a preset (Pit/Cab/Side/Wheel). Blue = MOVING, green = REST; RECAL only stopped+leveled+engine-on.`}
+           : `S2 truck sim (T4+T5): 930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, body-up ${TRUCK_DIMS_M.bodyUp} m; loop LOAD 6 s → HAUL 12 s → DUMP 6 s → WAIT 5 s. 980E-5 (GDY108-C) is future work without validation. Drag to orbit or pick a preset (Pit/Cab/Side/Wheel). Blue = MOVING, green = REST; RECAL only stopped+leveled+engine-on.`}
+      </p>
+      {/* S2-GLB proxy footnote (bilingual, thesis-grade honesty): the 3D
+          mesh is an HD465 visual stand-in scaled to the 930E envelope; all
+          spec numbers on this page are 930E-4SE. Never the reverse. */}
+      <p
+        style={{
+          margin: "0 0 16px",
+          color: "#c7d3e8",
+          fontSize: 13,
+          border: "1px dashed #f5a623",
+          borderRadius: 6,
+          padding: "8px 12px",
+          background: "#141b2d",
+        }}
+      >
+        {lang === "es"
+          ? "Nota de honestidad visual: la malla 3D es un Komatsu HD465 (~55 t) usado como proxy visual adaptado en escala; NO es un 930E. Todas las cifras de esta vista (15.29×8.89×8.10 m, tolva arriba 14.80 m, GDY106, 32.62:1, pesos y fluidos) son 930E-4SE. Procedencia: docs/models.md."
+          : "Visual honesty note: the 3D mesh is a Komatsu HD465 (~55 t) used as a scale-adapted visual proxy; it is NOT a 930E. Every figure in this view (15.29×8.89×8.10 m, body-up 14.80 m, GDY106, 32.62:1, weights and fluids) is 930E-4SE. Provenance: docs/models.md."}
       </p>
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
         <div

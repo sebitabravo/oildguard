@@ -144,3 +144,25 @@ Reconciled fluids (variants differ by compartment definition + usable vs nominal
 Closeout pointer: S7 assumption outcome stays PARTIAL (logic proven on
 synthetic-proxy, field accuracy pending bench); this annex is the bench-ready
 anchor, not bench evidence.
+
+## 7b. S2 truck scene: HD465 visual-proxy mesh (provenance + proxy note)
+
+- The S2 3D truck view renders `frontend/public/models/komatsu_hd-465-7eo.glb`
+  (≈20 MB, glTF 2.0, Sketchfab export by `drcrazzie`, embedded license string
+  CC-BY-4.0 with source URL — reuse outside this repo NOT-CLEARED until the
+  source page/terms are independently verified; full record in
+  `docs/models.md`). The mesh is a **Komatsu HD465-7EO (~55 t class)** used as
+  a **scale-adapted visual proxy**: longest horizontal extent scaled to the
+  6.0-unit scene envelope that stands in for the 930E 15.29 m length
+  (expected factor ≈ 0.64; runtime-measured value wins and is console-logged).
+- **It is not a 930E and is never presented as one.** All spec content shown
+  with the mesh — 15.29 × 8.89 × 8.10 m, body-up 14.80 m, weights, fluids
+  (§7 table above), QSK78/GTA-39 powertrain, GDY106, 32.62:1, rotor ≈3000 RPM
+  / wheel ≈92 RPM — is the 930E-4SE fidelity pack (`cycle.ts`, display-only),
+  restated by the bilingual footnote in `TruckView.tsx` and the in-scene badge.
+- Methodological consequence: the mesh carries **no measurement claim**. Bed
+  articulation, wheel spin, and material tint are disabled/not-applied on the
+  rigid proxy (documented fallbacks: level chassis, static wheels, overlay
+  axle ring + light-shift tint); the FSM, zone highlights, RECAL gating, and
+  camera presets are unchanged. No thesis figure may crop out the proxy
+  footnote when reproducing this view.

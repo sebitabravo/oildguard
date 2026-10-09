@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import {
   DUMP_POS,
   HAUL_DURATIONS,
@@ -29,6 +30,14 @@ import { useLang } from "../../i18n";
 // Honesty note (kept from T4): WAIT is the empty RETURN DRIVE, so it is a
 // moving state — the RECAL badge stays gated during WAIT and lights only at
 // LOAD / DUMP. See docs/t5-modes-cameras.md.
+//
+// S2-GLB visual proxy (thesis-grade honesty, non-negotiable): the rendered
+// mesh is a Komatsu HD465-7EO (~55 t class) GLB scaled to the 930E envelope
+// length — it is NOT a 930E. Every spec label/number in this view (15.29 x
+// 8.89 x 8.10 m, body-up 14.80 m, GDY106, 32.62:1, weights, fluids) is the
+// 930E-4SE fidelity pack from cycle.ts and is display-only. Provenance +
+// scale factor: docs/models.md. If the GLB fails to load, the procedural
+// fallback body renders and the proxy footnote still applies.
 
 interface TruckSceneProps {
   paused: boolean;
@@ -328,12 +337,20 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
     prop(2.2, 2.4, 2.2, darkSteel, 8, 1.2, -6.3); // crusher block
     prop(1.4, 0.8, 1.4, bedMat, 8, 2.8, -6.3); // crusher hopper
 
-    // ---- Simplified 930E truck (forward = +X), proportions toward manual ----
-    // 930E-4SE: 15.29 x 8.89 x 8.10 m (LxWxH), body-up 14.80 m. Scene units are
-    // illustrative (pit loop preserved): chassis 6.0 long x 3.4 wide keeps the
-    // true L/W = 1.72; total height ~3.3 keeps H/L = 0.53. NOT CAD-exact.
+    // ---- Truck (forward = +X) ----
+    // S2-GLB: the HD465 GLB proxy (loaded async below) is the visual body.
+    // The procedural 930E-proportioned body (chassis 6.0 long x 3.4 wide
+    // keeps the true 930E L/W = 1.72; total height ~3.3 keeps H/L = 0.53)
+    // is the load-failure fallback: hidden once the proxy mounts.
+    // TARGET_LENGTH keeps the proxy on the same haul waypoints: 6.0 scene
+    // units stand in for the 930E 15.29 m envelope length (scene units are
+    // illustrative, pit loop preserved — NOT CAD-exact).
+    const MODEL_URL = `${import.meta.env.BASE_URL}models/komatsu_hd-465-7eo.glb`;
+    const TARGET_LENGTH = 6.0;
     const truck = new THREE.Group();
     scene.add(truck);
+    const procedural = new THREE.Group();
+    truck.add(procedural);
     const tbox = (
       parent: THREE.Object3D,
       w: number,
@@ -350,9 +367,9 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
       disposables.push(m.geometry);
       return m;
     };
-    tbox(truck, 6.0, 0.6, 3.4, darkSteel, 0, 1.35, 0); // chassis (15.29 m class)
-    tbox(truck, 1.8, 1.6, 2.8, cabMat, 2.2, 2.45, 0); // cab
-    tbox(truck, 0.5, 0.7, 2.8, darkSteel, 3.2, 1.2, 0); // bumper
+    tbox(procedural, 6.0, 0.6, 3.4, darkSteel, 0, 1.35, 0); // chassis (15.29 m class)
+    tbox(procedural, 1.8, 1.6, 2.8, cabMat, 2.2, 2.45, 0); // cab
+    tbox(procedural, 0.5, 0.7, 2.8, darkSteel, 3.2, 1.2, 0); // bumper
     const modeRing = new THREE.Mesh(
       new THREE.RingGeometry(2.7, 3.1, 40),
       modeRingMat
@@ -361,14 +378,39 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
     modeRing.position.y = 0.06;
     truck.add(modeRing);
     disposables.push(modeRing.geometry);
-    // Dump bed on a rear pivot so the front lifts in DUMP.
+    // GDY106 rear-axle marker: an amber overlay ring at the rear third
+    // (local x = -2.1, same slot as the procedural motorized axle). Choice
+    // rationale: the GLB arrives with baked Sketchfab PBR materials, so no
+    // mesh material is mutated for highlight or mode tint — the marker is
+    // geometry, and the HUD "Rear axle motorized (GDY106)" badge is the
+    // text fallback. Both survive regardless of GLB internals.
+    const axleMarkerMat = new THREE.MeshBasicMaterial({
+      color: 0xf5a623,
+      transparent: true,
+      opacity: 0.6,
+      side: THREE.DoubleSide,
+    });
+    disposables.push(axleMarkerMat);
+    const axleMarker = new THREE.Mesh(
+      new THREE.RingGeometry(0.9, 1.25, 32),
+      axleMarkerMat
+    );
+    axleMarker.rotation.x = -Math.PI / 2;
+    axleMarker.position.set(-2.1, 0.07, 0);
+    truck.add(axleMarker);
+    disposables.push(axleMarker.geometry);
+    // Dump bed on a rear pivot so the front lifts in DUMP (procedural
+    // fallback only — the rigid GLB proxy has no articulated bed, so tilt
+    // is disabled while the proxy is active and the chassis stays level,
+    // consistent with the recal narrative).
     const bedPivot = new THREE.Group();
     bedPivot.position.set(-2.8, 1.95, 0);
-    truck.add(bedPivot);
-    tbox(bedPivot, 5.0, 0.3, 3.4, bedMat, 2.4, 0.18, 0); // bed floor (211 m3 class)
-    tbox(bedPivot, 5.0, 1.0, 0.18, bedMat, 2.4, 0.8, 1.6); // walls
-    tbox(bedPivot, 5.0, 1.0, 0.18, bedMat, 2.4, 0.8, -1.6);
-    tbox(bedPivot, 0.18, 1.6, 3.4, bedMat, 4.85, 0.9, 0); // headboard
+    procedural.add(bedPivot);
+    const bedFloor = tbox(bedPivot, 5.0, 0.3, 3.4, bedMat, 2.4, 0.18, 0); // bed floor (211 m3 class)
+    const bedWallA = tbox(bedPivot, 5.0, 1.0, 0.18, bedMat, 2.4, 0.8, 1.6); // walls
+    const bedWallB = tbox(bedPivot, 5.0, 1.0, 0.18, bedMat, 2.4, 0.8, -1.6);
+    const bedHead = tbox(bedPivot, 0.18, 1.6, 3.4, bedMat, 4.85, 0.9, 0); // headboard
+    const bedParts = [bedFloor, bedWallA, bedWallB, bedHead];
     const ore = tbox(bedPivot, 3.6, 0.9, 2.8, oreMat, 2.2, 0.75, 0); // load
 
     // 6 cylinder wheels (3 axles x 2 sides); rearmost pair = motorized.
@@ -377,7 +419,7 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
       for (const sz of [-1.7, 1.7]) {
         const g = new THREE.Group();
         g.position.set(ax, 0.75, sz);
-        truck.add(g);
+        procedural.add(g);
         const motorized = ax === -2.1;
         const tire = new THREE.Mesh(
           new THREE.CylinderGeometry(0.75, 0.75, 0.55, 20),
@@ -397,6 +439,70 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
       }
     }
 
+    // ---- HD465 visual-proxy GLB (async; fallback stays if this fails) ----
+    // Scale rule: longest horizontal extent -> TARGET_LENGTH (6.0). The
+    // source's longest local span is ~9.40 units, so the expected runtime
+    // scale is ~0.64 (6.0 / 9.40); the measured value is logged + recorded
+    // in docs/models.md and wins over this estimate. Orientation rule: the
+    // long axis is yawed onto +X (truck forward). No GLB material is
+    // touched (see axleMarker rationale above); proxy height drives the
+    // floating truck label via labelH.
+    let proxyActive = false;
+    let labelH = 3.6;
+    let cancelled = false;
+    let proxyGroup: THREE.Group | null = null;
+    new GLTFLoader().loadAsync(MODEL_URL).then(
+      (gltf) => {
+        if (cancelled) return;
+        const group = new THREE.Group();
+        const proxy = gltf.scene;
+        group.add(proxy);
+        const first = new THREE.Box3().setFromObject(group);
+        const firstSize = first.getSize(new THREE.Vector3());
+        const horizontal = Math.max(firstSize.x, firstSize.z);
+        if (!(horizontal > 0)) return;
+        const s = TARGET_LENGTH / horizontal;
+        proxy.scale.setScalar(s);
+        if (firstSize.z > firstSize.x) proxy.rotation.y = Math.PI / 2;
+        group.updateMatrixWorld(true);
+        const grounded = new THREE.Box3().setFromObject(group);
+        const gc = grounded.getCenter(new THREE.Vector3());
+        // Recenter on the wrapper (avoids inverse-rotation math): X/Z to
+        // origin, min.y to 0. The wrapper rides the truck group, so the
+        // FSM waypoint lerp below is untouched.
+        group.position.set(-gc.x, -grounded.min.y, -gc.z);
+        group.userData.scaleFactor = s;
+        truck.add(group);
+        proxyGroup = group;
+        // Swap bodies: hide the procedural shell, keep the shared mode
+        // ring + axle marker. The GLB carries its own wheels (static —
+        // illustrative spin is retired with the proxy; the RPM narrative
+        // text is kept).
+        for (const child of [...procedural.children]) {
+          if (child === bedPivot) continue;
+          child.visible = false;
+        }
+        for (const part of bedParts) part.visible = false;
+        for (const g of wheelGroups) g.visible = false;
+        // The ore heap rides the proxy bed: reparent to the truck and sit
+        // it at ~72% of the grounded proxy height.
+        const proxyH = grounded.max.y - grounded.min.y;
+        truck.attach(ore);
+        ore.position.set(-0.3, Math.max(1.2, proxyH * 0.72), 0);
+        ore.rotation.set(0, 0, 0);
+        labelH = proxyH + 1.0;
+        proxyActive = true;
+        console.info(
+          `[truck] HD465 visual proxy mounted (scale=${s.toFixed(4)}, ` +
+            `height=${proxyH.toFixed(2)}). Specs shown remain 930E-4SE.`
+        );
+      },
+      () => {
+        // Load failure: procedural fallback stays visible; nothing else
+        // changes. The proxy footnote still applies (mesh absent).
+      }
+    );
+
     // HTML overlay labels (zones + truck tag), placed per-frame.
     const proj = new THREE.Vector3();
     const truckLabelPos = new THREE.Vector3();
@@ -414,7 +520,7 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
       }
       const truckEl = labelRefs.current.get("truck");
       if (truckEl) {
-        truckLabelPos.set(truck.position.x, 3.6, truck.position.z).project(camera);
+        truckLabelPos.set(truck.position.x, labelH, truck.position.z).project(camera);
         const x = (truckLabelPos.x * 0.5 + 0.5) * w;
         const y = (-truckLabelPos.y * 0.5 + 0.5) * h;
         truckEl.style.display = truckLabelPos.z < 1 ? "block" : "none";
@@ -468,19 +574,30 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
 
       // T5 mode tint: blue while moving (HAUL + WAIT return drive), green
       // at rest (LOAD / DUMP). Same stillness signal as the RECAL badge.
+      // S2-GLB fallback: the proxy mesh materials are baked/locked, so the
+      // tint is carried by the directional-light shift + ground ring + HUD
+      // badges — never by mutating GLB materials. The procedural cab
+      // emissive below only shows on the load-failure fallback body.
       const movingLive = isMovingState(cur);
       cabMat.emissive.setHex(movingLive ? 0x1a3fa0 : 0x145f3c);
       cabMat.emissiveIntensity = 0.5;
+      directional.color.setHex(movingLive ? 0xd8e6ff : 0xd9f2e3);
       modeRingMat.color.setHex(movingLive ? 0x3a7bd5 : 0x2fbf71);
+      // GDY106 rear-axle overlay pulse (works on proxy + fallback).
+      axleMarkerMat.opacity = 0.45 + 0.25 * Math.sin(elapsed * 4);
 
-      // Dump bed tilts in DUMP only; chassis stays level (recal narrative).
-      const tiltTarget = cur === "DUMP" ? DUMP_TILT : 0;
+      // Dump bed tilts in DUMP only (procedural fallback); the rigid proxy
+      // has no articulated bed, so tilt stays off while proxyActive and the
+      // chassis stays level per the recal narrative.
+      const tiltTarget = cur === "DUMP" && !proxyActive ? DUMP_TILT : 0;
       bedPivot.rotation.z += (tiltTarget - bedPivot.rotation.z) * Math.min(1, dt * 2.5);
 
-      // Illustrative wheel spin while the truck moves.
+      // Illustrative wheel spin while the truck moves (procedural fallback
+      // only — the proxy wheels are static; true rotor/wheel speeds stay
+      // text narrative).
       const rolling = cur === "HAUL" || cur === "WAIT";
       wheelSpin += dt * (rolling && !pausedRef.current ? WHEEL_SPIN : 0);
-      for (const g of wheelGroups) g.rotation.z = -wheelSpin;
+      if (!proxyActive) for (const g of wheelGroups) g.rotation.z = -wheelSpin;
 
       // Ore visible once loaded, riding to the crusher; gone after dumping.
       ore.visible =
@@ -502,7 +619,11 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
       // T5 camera presets: exponential lerp of position + target. Pit is a
       // static overview; Cab / Side / Wheel track the truck (offsets in
       // world space, cab/side rotated by heading). dt keeps flowing while
-      // paused so presets + step stay usable with the FSM frozen.
+      // paused so presets + step stay usable with the FSM frozen. S2-GLB:
+      // the proxy is scaled to the same 6.0-unit envelope as the fallback
+      // body, so offsets are unchanged; the wheel close-up targets the
+      // rear-axle overlay marker (-2.1 local x), which marks the GDY106
+      // slot on both bodies.
       const preset = presetRef.current;
       if (preset !== "free") {
         if (preset === "pit") {
@@ -550,9 +671,22 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
     window.addEventListener("resize", onResize);
 
     return () => {
+      cancelled = true;
       cancelAnimationFrame(frameId);
       window.removeEventListener("resize", onResize);
       controls.dispose();
+      if (proxyGroup) {
+        proxyGroup.traverse((o) => {
+          const mesh = o as THREE.Mesh;
+          if (mesh.geometry) mesh.geometry.dispose();
+          const mat = (mesh as THREE.Mesh).material as
+            | THREE.Material
+            | THREE.Material[]
+            | undefined;
+          if (Array.isArray(mat)) for (const m of mat) m.dispose();
+          else if (mat) mat.dispose();
+        });
+      }
       for (const d of disposables) d.dispose();
       renderer.dispose();
       host.removeChild(renderer.domElement);
@@ -722,8 +856,8 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
           }}
         >
           {lang === "es"
-            ? "Rotor ≈3000 RPM · rueda ≈92 RPM (32.62:1) · giro ilustrativo · 15.29×8.89×8.10 m"
-            : "Rotor ≈3000 RPM · wheel ≈92 RPM (32.62:1) · spin illustrative · 15.29×8.89×8.10 m"}
+            ? "Rotor ≈3000 RPM · rueda ≈92 RPM (32.62:1) · giro ilustrativo · 15.29×8.89×8.10 m · malla: proxy visual HD465 (solo visual, especs 930E)"
+            : "Rotor ≈3000 RPM · wheel ≈92 RPM (32.62:1) · spin illustrative · 15.29×8.89×8.10 m · mesh: HD465 visual proxy (visual only, specs 930E)"}
         </div>
         <div
           style={{
