@@ -35,3 +35,6 @@ mosquitto/log/
 # Misc
 *.log
 coverage/
+
+# Test caches
+.pytest_cache/
