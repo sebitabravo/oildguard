@@ -52,7 +52,7 @@ export default function TruckView() {
         {es ? "Paso +1 s" : "Step +1 s"}
       </button>
       <button type="button" className="og-btn" onClick={() => { resetFleetStore(); setRunId((n) => n + 1); }}>
-        {es ? "Reiniciar (CARGA)" : "Restart (LOAD)"}
+        {t("truck.restart", lang)}
       </button>
     </div>
   );

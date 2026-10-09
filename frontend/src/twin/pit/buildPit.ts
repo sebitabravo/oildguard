@@ -509,6 +509,8 @@ export function buildPit(mats: MaterialLibrary, world: PitWorld = createPitWorld
   const terrain = buildTerrainMesh(world, mats, ownMaterials);
   group.add(terrain.mesh);
   const berms = buildBerms(world, mats, ownMaterials);
+  // The berm's projected edge creates a stray black line across the pit in the overview camera.
+  berms.visible = false;
   group.add(berms);
   group.add(buildCenterDashes(world, ownMaterials));
   const crusher = buildCrusher(world, ownMaterials, ownGeometries);

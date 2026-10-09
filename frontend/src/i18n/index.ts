@@ -130,6 +130,7 @@ const dict = {
     es: "Ejecutar demo de fuga (limpio → N4)",
   },
   "demo.reset": { en: "Reset demo", es: "Reiniciar demo" },
+  "truck.restart": { en: "Restart cycle", es: "Reiniciar ciclo" },
   "dash.footnote": {
     en: "Pressure is derived from the gear-case geometry (sim/geometry.py): ≈2.6 kPa at 95 L · geometry is an ASSUMPTION until the bench h(V) test · SYNTHETIC-PROXY · priors in sim/physics.py · see docs/thesis-annex.md",
     es: "La presión se deriva de la geometría de la caja de engranajes (sim/geometry.py): ≈2.6 kPa a 95 L · la geometría es un SUPUESTO hasta el ensayo h(V) en banco · SUSTITUTO SINTÉTICO · priors en sim/physics.py · ver docs/thesis-annex.md",
