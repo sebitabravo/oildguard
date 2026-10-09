@@ -8,8 +8,13 @@ describe("mine URL controls", () => {
     expect(normalizeMineCam("unlisted")).toBe(null);
   });
 
-  test("preserves an explicit zero seed for deterministic scene fixtures", () => {
+  test("defaults missing and blank seeds while preserving explicit finite values", () => {
+    expect(readMineUrl("").seed).toBe(1);
+    expect(readMineUrl("?seed=").seed).toBe(1);
     expect(readMineUrl("?seed=0").seed).toBe(0);
+    expect(readMineUrl("?seed=42").seed).toBe(42);
+    expect(readMineUrl("?seed=invalid").seed).toBe(1);
+    expect(readMineUrl("?seed=Infinity").seed).toBe(1);
   });
 
   test("accepts only finite positive scale and known camera presets", () => {

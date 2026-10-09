@@ -30,7 +30,8 @@ export function readMineUrl(search: string = window.location.search): MineUrl {
   const cam = q.get("cam");
   const scale = Number(q.get("scale"));
   const time = Number(q.get("t"));
-  const seed = Number(q.get("seed"));
+  const rawSeed = q.get("seed");
+  const seed = rawSeed?.trim() ? Number(rawSeed) : 1;
   return {
     cam: normalizeMineCam(cam),
     t: Number.isFinite(time) && time > 0 ? time : 0,
