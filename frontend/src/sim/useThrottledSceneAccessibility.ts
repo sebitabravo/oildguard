@@ -22,6 +22,10 @@ export function useThrottledSceneAccessibility(copy: SceneAccessibilityCopy): Sc
 
     const now = Date.now();
     if (canPublishSceneAccessibilityUpdate(lastPublishedAtRef.current, now)) {
+      if (timeoutRef.current !== null) {
+        window.clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
       publishedCopyRef.current = copy;
       lastPublishedAtRef.current = now;
       setPublishedCopy(copy);
