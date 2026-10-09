@@ -6,6 +6,14 @@
 
 import type { RestWindow, SignalRow } from "./signals";
 
+export interface SigningStatus {
+  enforced: boolean;
+  devices: number;
+  verified_total: number;
+  rejected_total: number;
+  rejected_reasons: Record<string, number>;
+}
+
 export const BACKEND_URL: string =
   (import.meta.env?.PUBLIC_BACKEND_URL as string | undefined) ??
   "http://localhost:8000";
@@ -17,6 +25,7 @@ export interface HealthResponse {
   store_rows: number;
   influx: string;
   mqtt: { host: string; port: number; topic: string };
+  signing?: SigningStatus;
 }
 
 export interface IngestAck {
@@ -27,6 +36,8 @@ export interface IngestAck {
   latest_seq: number;
   store_rows: number;
   influx: string;
+  rejected?: number;
+  rejected_reasons?: Record<string, number>;
 }
 
 export interface LevelData {

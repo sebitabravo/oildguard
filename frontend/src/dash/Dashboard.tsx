@@ -18,6 +18,7 @@ import {
   type AlertsResponse,
   type LevelResponse,
   type RulResponse,
+  type SigningStatus,
   type WindowsResponse,
 } from "../sim/api";
 import { isMovingState, isRecalState, stateAt } from "../sim/truck/cycle";
@@ -40,6 +41,7 @@ import { t, useLang } from "../i18n";
 import { buildWheelDetailHref } from "../sim/bench/wheelUrl";
 import { DEMO_FLEET_WHEELS, evaluateCombinedRisk, latestWheelMetrics } from "./fleetRisk";
 import { localizeDashboardBackendText } from "./backendNotes";
+import { signingBadgeState } from "./signingBadge";
 
 type Source = "loading" | "live" | "demo";
 
@@ -81,6 +83,7 @@ export default function Dashboard() {
   const es = lang === "es";
   const [source, setSource] = useState<Source>("loading");
   const [backendNote, setBackendNote] = useState("");
+  const [signingStatus, setSigningStatus] = useState<SigningStatus | undefined>();
   const [storeRows, setStoreRows] = useState(0);
   const [level, setLevel] = useState<LevelResponse | null>(null);
   const [alerts, setAlerts] = useState<AlertsResponse | null>(null);
@@ -102,6 +105,7 @@ export default function Dashboard() {
         getWindows(50),
       ]);
       setStoreRows(h.store_rows);
+      setSigningStatus(h.signing);
       setLevel(lv);
       setAlerts(al);
       setRul(ru);
@@ -117,6 +121,7 @@ export default function Dashboard() {
         });
       }
     } catch (e) {
+      setSigningStatus(undefined);
       setBackendNote(
         `backend unreachable (${BACKEND_URL}): ${
           e instanceof Error ? e.message : String(e)
@@ -212,6 +217,7 @@ export default function Dashboard() {
   const demoFrac = demoActive ? demoFracFor(demoStage, demoTick) : 1.0;
   const demoOilState = oilStateFor(demoFrac);
   const demoOilCss = oilCssFor(demoOilState);
+  const signingBadge = signingBadgeState(signingStatus);
 
   return (
     <div className="og-page">
@@ -304,6 +310,14 @@ export default function Dashboard() {
             ? source === "loading" ? t("dash.backend.probing", lang) : source === "live" ? t("dash.backend.connected", lang) : t("dash.backend.offline", lang)
             : backendNote || t("dash.backend.probing", lang)}
         </span>
+        {signingBadge && (
+          <span className={`og-badge og-badge--${signingBadge.tone}`}>
+            {signingBadge.kind === "off"
+              ? t("dash.signing.off", lang)
+              : t("dash.signing.verified", lang)}
+            {" · "}{signingBadge.rejected} {t("dash.signing.rejected", lang)}
+          </span>
+        )}
         <button
           type="button"
           onClick={() => void fetchAll()}
