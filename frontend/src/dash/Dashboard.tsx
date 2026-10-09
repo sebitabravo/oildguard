@@ -27,8 +27,6 @@ import LevelChart, { type ChartPoint } from "./LevelChart";
 import RulPanel from "./RulPanel";
 import {
   DEMO_CONFIDENCE,
-  DEMO_LAB_NOTE,
-  DEMO_LAB_NOTE_ES,
   DEMO_MODEL,
   DEMO_SERIES,
   DEMO_SIGMA_L,
@@ -37,38 +35,43 @@ import {
   demoFracFor,
 } from "./demoData";
 import { emitDemoOil, type DemoStageId } from "./demoBus";
-import { t, useLang } from "../i18n";
+import { t, type DictKey, type Lang, useLang } from "../i18n";
 import { buildWheelDetailHref } from "../sim/bench/wheelUrl";
 import { DEMO_FLEET_WHEELS, evaluateCombinedRisk, latestWheelMetrics } from "./fleetRisk";
 import { localizeDashboardBackendText } from "./backendNotes";
 import { signingBadgeState } from "./signingBadge";
 
 type Source = "loading" | "live" | "demo";
+type BackendNote =
+  | { kind: "live"; rows: number; influx: string }
+  | { kind: "error"; message: string }
+  | null;
 
 const DEMO_STAGES: DemoStageId[] = ["clean", "slow-leak", "abrupt-drop", "done"];
 
-function stageBlurb(stage: string, es: boolean): string {
-  if (es) {
-    if (stage === "clean") return "Base: 95 L, sin alertas. RUL suprimido (sin tendencia).";
-    if (stage === "slow-leak") return `Fuga lenta (${DEMO_LAB_NOTE_ES}). Recorrido N1 → N2 → N3.`;
-    if (stage === "abrupt-drop") return "Caída brusca de 15 L. Se activa N4 crítico; el RUL lineal no es válido.";
-    return "Recorrido completo: N1 → N2 → N3 → N4. Reinicia para repetir.";
-  }
-  if (stage === "clean") return "Baseline: 95 L, no alerts. RUL suppressed (no leak trend).";
-  if (stage === "slow-leak") return `Slow leak (${DEMO_LAB_NOTE}). N1 -> N2 -> N3 walk.`;
-  if (stage === "abrupt-drop") return "Abrupt 15 L step. N4 critical fires; linear RUL invalid.";
-  return "Walk complete: N1 -> N2 -> N3 -> N4. Reset to run again.";
+const DEMO_BLURB_KEYS: Record<DemoStageId, DictKey> = {
+  idle: "dash.demo.blurb.idle",
+  clean: "dash.demo.blurb.clean",
+  "slow-leak": "dash.demo.blurb.slowLeak",
+  "abrupt-drop": "dash.demo.blurb.abruptDrop",
+  done: "dash.demo.blurb.done",
+};
+
+const DEMO_LABEL_KEYS: Record<DemoStageId, DictKey> = {
+  idle: "dash.demo.stage.idle",
+  clean: "dash.demo.stage.clean",
+  "slow-leak": "dash.demo.stage.slowLeak",
+  "abrupt-drop": "dash.demo.stage.abruptDrop",
+  done: "dash.demo.stage.done",
+};
+
+function stageBlurb(stage: DemoStageId, lang: Lang): string {
+  const params = stage === "slow-leak" ? { labNote: t("dash.demo.labNote", lang) } : undefined;
+  return t(DEMO_BLURB_KEYS[stage], lang, params);
 }
 
-function stageLabel(stage: DemoStageId, es: boolean): string {
-  const labels: Record<DemoStageId, { en: string; es: string }> = {
-    idle: { en: "Idle", es: "Inactivo" },
-    clean: { en: "Baseline", es: "Línea base" },
-    "slow-leak": { en: "Slow leak", es: "Fuga lenta" },
-    "abrupt-drop": { en: "Abrupt drop", es: "Caída brusca" },
-    done: { en: "Complete", es: "Completo" },
-  };
-  return labels[stage][es ? "es" : "en"];
+function stageLabel(stage: DemoStageId, lang: Lang): string {
+  return t(DEMO_LABEL_KEYS[stage], lang);
 }
 
 const ALERT_CSS: Record<string, string> = {
@@ -80,9 +83,8 @@ const ALERT_CSS: Record<string, string> = {
 
 export default function Dashboard() {
   const [lang] = useLang();
-  const es = lang === "es";
   const [source, setSource] = useState<Source>("loading");
-  const [backendNote, setBackendNote] = useState("");
+  const [backendNote, setBackendNote] = useState<BackendNote>(null);
   const [signingStatus, setSigningStatus] = useState<SigningStatus | undefined>();
   const [storeRows, setStoreRows] = useState(0);
   const [level, setLevel] = useState<LevelResponse | null>(null);
@@ -110,7 +112,7 @@ export default function Dashboard() {
       setAlerts(al);
       setRul(ru);
       setWindows(wi);
-      setBackendNote(`store_rows=${h.store_rows} · ${h.influx}`);
+      setBackendNote({ kind: "live", rows: h.store_rows, influx: h.influx });
       setSource("live");
       const lit = Number(lv.data.level_liters);
       if (Number.isFinite(lit)) {
@@ -122,11 +124,10 @@ export default function Dashboard() {
       }
     } catch (e) {
       setSigningStatus(undefined);
-      setBackendNote(
-        `backend unreachable (${BACKEND_URL}): ${
-          e instanceof Error ? e.message : String(e)
-        }`
-      );
+      setBackendNote({
+        kind: "error",
+        message: e instanceof Error ? e.message : String(e),
+      });
       setSource("demo");
     }
   }, []);
@@ -223,9 +224,7 @@ export default function Dashboard() {
     <div className="og-page">
     <div className="og-page__inner">
       <p style={{ margin: "0 0 12px", color: "var(--og-muted)" }}>
-        {es
-          ? <>Nivel fusionado + confianza, ventanas de reposo, escalera N1–N4, RUL e indicador de modo. Modelo <code>{DEMO_MODEL}</code>.</>
-          : <>Fused level + confidence, rest windows, N1–N4 ladder, RUL, and the sim-linked mode indicator. Model <code>{DEMO_MODEL}</code>.</>}{" "}
+        {t("dash.intro", lang, { model: t("rul.model.syntheticProxy", lang) })}{" "}
         {t("dash.honesty", lang)}
       </p>
 
@@ -303,12 +302,31 @@ export default function Dashboard() {
             padding: "4px 10px",
           }}
         >
-          {source === "loading" ? (es ? "CONECTANDO…" : "CONNECTING…") : source === "live" ? (es ? "EN VIVO · backend" : "LIVE · backend") : (es ? "DEMO · local" : "DEMO · local fallback")}
+          {t(
+            source === "loading"
+              ? "dash.source.badge.loading"
+              : source === "live"
+                ? "dash.source.badge.live"
+                : "dash.source.badge.demo",
+            lang,
+          )}
         </span>
         <span style={{ fontSize: 12, color: "var(--og-muted)" }}>
-          {es
-            ? source === "loading" ? t("dash.backend.probing", lang) : source === "live" ? t("dash.backend.connected", lang) : t("dash.backend.offline", lang)
-            : backendNote || t("dash.backend.probing", lang)}
+          {source === "live" && backendNote?.kind === "live"
+            ? t("dash.backend.summary", lang, {
+                rows: backendNote.rows,
+                influx: localizeDashboardBackendText(backendNote.influx, lang),
+              })
+            : source === "demo" && backendNote?.kind === "error"
+              ? t("dash.backend.error", lang, { url: BACKEND_URL, message: backendNote.message })
+              : t(
+                  source === "loading"
+                    ? "dash.backend.probing"
+                    : source === "live"
+                      ? "dash.backend.connected"
+                      : "dash.backend.offline",
+                  lang,
+                )}
         </span>
         {signingBadge && (
           <span className={`og-badge og-badge--${signingBadge.tone}`}>
@@ -332,7 +350,7 @@ export default function Dashboard() {
             fontSize: 12,
           }}
         >
-          {es ? "Actualizar desde backend" : "Refresh from backend"}
+          {t("dash.action.refresh", lang)}
         </button>
         {!demoActive ? (
           <button
@@ -349,7 +367,7 @@ export default function Dashboard() {
               fontSize: 12,
             }}
           >
-            {es ? "Ejecutar demo de fuga (limpio → N4)" : "Run leak demo (clean → N4)"}
+            {t("demo.run", lang)}
           </button>
         ) : (
           <button
@@ -366,7 +384,7 @@ export default function Dashboard() {
               fontSize: 12,
             }}
           >
-            {es ? "Reiniciar demo" : "Reset demo"}
+            {t("demo.reset", lang)}
           </button>
         )}
       </div>
@@ -396,11 +414,11 @@ export default function Dashboard() {
                   padding: "3px 10px",
                 }}
               >
-                {stageLabel(s, es)}
+                {stageLabel(s, lang)}
               </span>
             ))}
             <span style={{ fontSize: 13, color: "var(--og-body)" }}>
-              {stageBlurb(demoStage, es)} · {es ? "aceite" : "oil"} {formatOilText(demoFrac)} · {es ? "también mueve el nivel del banco 3D" : "also driving the Bench 3D fill"}
+              {stageBlurb(demoStage, lang)} · {t("dash.demo.oil", lang)} {formatOilText(demoFrac)} · {t("dash.demo.benchLink", lang)}
             </span>
           </div>
         </div>
@@ -410,9 +428,9 @@ export default function Dashboard() {
         {/* level chart */}
         <div style={{ flex: "2 1 560px", minWidth: 320, border: "1px solid var(--og-line-dashboard)", padding: 16, background: "var(--og-panel-dashboard)" }}>
           <h2 style={{ margin: "0 0 4px", fontSize: 16 }}>
-            {es ? "Nivel de aceite + confianza" : "Oil level + confidence"}{" "}
+            {t("dash.chart.title", lang)}{" "}
             <span style={{ fontSize: 12, fontWeight: 500, color: "var(--og-muted)" }}>
-              ±{sigmaL.toFixed(2)} L · conf {Number(confidence).toFixed(3)} · {es ? "bandas verdes = ventanas de reposo" : "green bands = rest windows"}
+              ±{sigmaL.toFixed(2)} L · conf {Number(confidence).toFixed(3)} · {t("dash.chart.restWindows", lang)}
             </span>
           </h2>
           <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} />
@@ -421,12 +439,16 @@ export default function Dashboard() {
           </p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8, fontSize: 13 }}>
             <span style={{ color: demoOilCss, fontWeight: 700 }}>
-              {demoActive ? `${es ? "Demo " : "Demo fill "}${formatOilText(demoFrac)}` : level ? `${Number(level.data.level_liters).toFixed(1)} L · ${Number(level.data.level_pct).toFixed(1)}%` : "—"}
+              {demoActive
+                ? t("dash.demo.fill", lang, { value: formatOilText(demoFrac) })
+                : level
+                  ? `${Number(level.data.level_liters).toFixed(1)} L · ${Number(level.data.level_pct).toFixed(1)}%`
+                  : "—"}
             </span>
             <span style={{ color: "var(--og-muted)" }}>
               {demoActive
-                ? (es ? DEMO_LAB_NOTE_ES : DEMO_LAB_NOTE)
-                : `${es ? "origen" : "source"}: ${localizeDashboardBackendText(level?.data.source ?? (es ? "sin datos del backend" : "no backend payload yet"), lang)}`}
+                ? t("dash.demo.labNote", lang)
+                : `${t("dash.source.label", lang)}: ${localizeDashboardBackendText(level?.data.source ?? t("dash.backend.noPayload", lang), lang)}`}
             </span>
           </div>
         </div>
@@ -436,35 +458,35 @@ export default function Dashboard() {
           {/* mode indicator */}
           <div style={{ border: "1px solid var(--og-line-dashboard)", borderRadius: 6, padding: "10px 12px", background: "var(--og-panel-dashboard)" }}>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>
-              {es ? "Modo · " : "Mode · "}
+              {t("dash.mode.title", lang)}{" "}
               <span style={{ color: moving ? "var(--og-blue)" : "var(--og-green)" }}>
-                {moving ? (es ? "EN MOVIMIENTO" : "MOVING") : (es ? "DETENIDO" : "REST")}
+                {t(moving ? "hud.moving" : "hud.rest", lang)}
               </span>{" "}
               <span style={{ fontSize: 12, color: recal ? "var(--og-green)" : "var(--og-muted)" }}>
-                {recal ? (es ? "· RECALIBRANDO" : "· RECALIBRATING") : (es ? "· recal bloqueado" : "· recal gated")}
+                {t(recal ? "dash.mode.recalibrating" : "dash.mode.recalGated", lang)}
               </span>
             </div>
             <div style={{ fontSize: 13, color: "var(--og-body)" }}>
-              FSM <strong>{fsm.state}</strong> (t+{fsmTick.toFixed(0)} s {es ? "reloj compartido con el camión" : "shared clock with the Truck sim"}) ·{" "}
+              FSM <strong>{fsm.state}</strong> (t+{fsmTick.toFixed(0)} s {t("dash.fsm.sharedClock", lang)}) ·{" "}
               {source === "live"
-                ? `backend windows: ${windows?.count ?? 0} (store_rows=${storeRows})`
-                : (es ? "backend caído — ventanas del conjunto DEMO local" : "backend down — windows from local DEMO set")}
+                ? t("dash.backend.windows", lang, { count: windows?.count ?? 0, rows: storeRows })
+                : t("dash.backend.localWindows", lang)}
             </div>
           </div>
 
-          <RulPanel rul={demoActive ? demoRulFor(demoStage) : (rul?.data ?? null)} />
+          <RulPanel rul={demoActive ? demoRulFor(demoStage, lang) : (rul?.data ?? null)} />
 
           {/* N1–N4 timeline */}
           <div style={{ border: "1px solid var(--og-line-dashboard)", borderRadius: 6, padding: "10px 12px", background: "var(--og-panel-dashboard)" }}>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>
-              {es ? "Alertas N1–N4 " : "Alerts timeline "}
+              {t("dash.alerts.title", lang)}{" "}
               <span style={{ fontSize: 12, fontWeight: 500, color: "var(--og-muted)" }}>
-                {(alerts?.data.escalation ?? shownAlerts.map((a) => a.level)).join(" → ") || (es ? "sin alertas" : "no alerts")}
+                {(alerts?.data.escalation ?? shownAlerts.map((a) => a.level)).join(" → ") || t("dash.alerts.none", lang)}
               </span>
             </div>
             {shownAlerts.length === 0 ? (
               <p style={{ margin: 0, color: "var(--og-muted)", fontSize: 13 }}>
-                {es ? "(sin alertas — línea base limpia; RUL suprimido, solo anomalías)" : "(no alerts — clean baseline; RUL stays suppressed anomaly-only)"}
+                {t("dash.alerts.empty", lang)}
               </p>
             ) : (
               <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
@@ -494,7 +516,7 @@ export default function Dashboard() {
   );
 }
 
-function demoRulFor(stage: DemoStageId) {
+function demoRulFor(stage: DemoStageId, lang: Lang) {
   if (stage === "clean") {
     return {
       hours: null,
@@ -504,7 +526,7 @@ function demoRulFor(stage: DemoStageId) {
       status: "suppressed" as const,
       anomaly_only: true as const,
       model: DEMO_MODEL,
-      note: "RUL suppressed: no leak trend (slope >= 0); anomaly-only. Clean baseline holds 95 L.",
+      note: t("dash.demo.rul.cleanNote", lang),
       fallback: "local DEMO fallback (backend down or demo override)",
     };
   }
@@ -522,7 +544,11 @@ function demoRulFor(stage: DemoStageId) {
       r2: 0.822,
       current_level_L: 90.67,
       model: DEMO_MODEL,
-      note: `model=${DEMO_MODEL} (UNPROVEN until the bench). ${DEMO_LAB_NOTE}.`,
+      note: t("dash.demo.rul.slowNote", lang, {
+        model: t("rul.model.syntheticProxy", lang),
+        qualifier: t("rul.unproven", lang),
+        labNote: t("dash.demo.labNote", lang),
+      }),
       fallback: "local DEMO fallback (backend down or demo override)",
     };
   }
@@ -539,7 +565,10 @@ function demoRulFor(stage: DemoStageId) {
     r2: 0.713,
     current_level_L: 79.97,
     model: DEMO_MODEL,
-    note: `model=${DEMO_MODEL} (UNPROVEN until the bench). Abrupt step: linear RUL invalid, N4 fires instead.`,
+    note: t("dash.demo.rul.abruptNote", lang, {
+      model: t("rul.model.syntheticProxy", lang),
+      qualifier: t("rul.unproven", lang),
+    }),
     fallback: "local DEMO fallback (backend down or demo override)",
   };
 }

@@ -6,7 +6,7 @@
 
 import type { DashAlert } from "../sim/api";
 import type { RestWindow } from "../sim/signals";
-import { useLang } from "../i18n";
+import { t, useLang } from "../i18n";
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { BASE_WIDTH, chartLayoutForWidth } from "./chartLayout";
 
@@ -59,11 +59,10 @@ export default function LevelChart({
 
   const { width: W, height: H, scale, padding } = chartLayoutForWidth(measuredWidth);
   const { left: PAD_L, right: PAD_R, top: PAD_T, bottom: PAD_B } = padding;
-  const es = lang === "es";
   if (points.length === 0) {
     return (
       <p style={{ color: "var(--og-muted)", fontSize: 13 }}>
-        {es ? "Sin muestras de nivel — ingiere filas o ejecuta la demo." : "No level samples yet — ingest rows or run the demo."}
+        {t("dash.chart.empty", lang)}
       </p>
     );
   }
@@ -92,7 +91,7 @@ export default function LevelChart({
       viewBox={`0 0 ${W} ${H}`}
       width="100%"
       role="img"
-      aria-label={es ? "Nivel de aceite con banda de confianza" : "Oil level with confidence band"}
+      aria-label={t("dash.chart.label", lang)}
       style={{ display: "block", background: "var(--og-panel-inset)" }}
     >
       {/* rest-window shading */}
@@ -118,10 +117,10 @@ export default function LevelChart({
       <line x1={PAD_L} x2={W - PAD_R} y1={y(WARN_L)} y2={y(WARN_L)} stroke="var(--og-amber)" stroke-dasharray={`${5 * scale} ${4 * scale}`} stroke-width={scale} />
       <line x1={PAD_L} x2={W - PAD_R} y1={y(CRIT_L)} y2={y(CRIT_L)} stroke="var(--og-red)" stroke-dasharray={`${5 * scale} ${4 * scale}`} stroke-width={scale} />
       <text x={W - PAD_R + 10 * scale} y={y(WARN_L) - 4 * scale} fill="var(--og-amber)" font-size={11}>
-        {es ? "advertencia 50% (47.5 L)" : "warn 50% (47.5 L)"}
+        {t("dash.chart.warning", lang)}
       </text>
       <text x={W - PAD_R + 10 * scale} y={y(CRIT_L) - 4 * scale} fill="var(--og-red)" font-size={11}>
-        {es ? "crítico 30% (28.5 L)" : "critical 30% (28.5 L)"}
+        {t("dash.chart.critical", lang)}
       </text>
       {/* confidence band */}
       <polygon points={`${bandTop} ${bandBottom}`} fill="var(--og-blue)" opacity={0.22} />

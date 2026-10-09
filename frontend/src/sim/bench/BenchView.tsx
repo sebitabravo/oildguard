@@ -1,16 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import BenchScene, { type BenchMode } from "./BenchScene";
-import {
-  BENCH_SENSORS,
-  ENV_NOTE,
-  ENV_NOTE_ES,
-  GDY106_CHAIN_EN,
-  GDY106_CHAIN_ES,
-  NO_DRILL_NARRATIVE,
-  NO_DRILL_NARRATIVE_ES,
-  OIL_DUCT_NARRATIVE,
-  OIL_DUCT_NARRATIVE_ES,
-} from "./sensors";
+import { BENCH_SENSORS } from "./sensors";
 import {
   formatOilText,
   oilCssFor,
@@ -27,7 +17,7 @@ import {
 import { DEMO_OIL_EVENT, parseDemoOil } from "../../dash/demoBus";
 import { CAPACITY_L, GDY106_TRAIN, stageRatio, trainRatio } from "../../twin/physics";
 import { parseWheelUrl } from "./wheelUrl";
-import { t, useLang } from "../../i18n";
+import { t, type DictKey, useLang } from "../../i18n";
 import Drawer from "../../ui/Drawer";
 import HonestyBadge from "../../ui/HonestyBadge";
 
@@ -40,23 +30,11 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 interface InspStep {
   n: number;
-  en: string;
-  es: string;
 }
 
-export const INSPECTION_STEPS: InspStep[] = [
-  { n: 1, en: "Park level, 20 min settle, engine off; confirm OM decal level rule.", es: "Estacionar nivelado, dejar asentar 20 min, motor apagado; confirmar la regla de nivel de la calcomanía OM." },
-  { n: 2, en: "Drain-plug port item 56 at 6 o'clock: fit new 12 in hose each time, sample every 250 h.", es: "Puerto de drenaje, ítem 56, a las 6: usar una manguera nueva de 12 pulg cada vez y tomar una muestra cada 250 h." },
-  { n: 3, en: "Magnetic plug item 41: classify Normal (soft ring paste) / Flaky (bearing-cup laminar) / Pasty (chunk disintegration = last warning).", es: "Tapón magnético, ítem 41: clasificar como normal (pasta anular blanda), escamoso (laminar de taza) o pastoso (desintegración en fragmentos = última advertencia)." },
-  { n: 4, en: "Plug map 1-8 + planetaries 1-4: record position of every chip.", es: "Mapa de tapones 1-8 + planetarios 1-4: registrar la posición de cada partícula." },
-  { n: 5, en: "Washer N/P 1489: nominal 0.869 in, condemn at <= 0.824 in.", es: "Arandela N/P 1489: nominal 0.869 pulg, condenar si <= 0.824 pulg." },
-  { n: 6, en: "Inner washer GE1309: nominal 0.558 in, replace at <= 0.513 in.", es: "Arandela interior GE1309: nominal 0.558 pulg, reemplazar si <= 0.513 pulg." },
-  { n: 7, en: "Final axial play 0.100-0.125 in; grooves-visible rule holds.", es: "Juego axial final 0.100-0.125 pulg; aplica la regla de surcos visibles." },
-  { n: 8, en: "Level correct if oil visible at port + 20 min level-ground rule.", es: "Nivel correcto si hay aceite visible + regla de 20 min en terreno nivelado." },
-  { n: 9, en: "ISO 4406 target 18/13 (>5 um 130k-250k / >15 um 4k-8k per 100 ml); micro-filter oil above 50 C until 18/13.", es: "Meta ISO 4406 18/13 (>5 µm: 130k-250k / >15 µm: 4k-8k por 100 ml); microfiltrar el aceite a más de 50 °C hasta alcanzar 18/13." },
-  { n: 10, en: "Spectrometry limits: Fe 200/233, Cu 24/35, Cr 3/3, Ni 3/3, Ca 30/50+P check, Zn 40/50, P-hyd 200/250; watch rate-of-change. Cu = cage/axial wear, Cr = platinated-flake bearings, Ca+P = hydraulic crossover.", es: "Límites de espectrometría: Fe 200/233, Cu 24/35, Cr 3/3, Ni 3/3, Ca 30/50 + revisión de P, Zn 40/50, P-hid 200/250; vigilar la tasa de cambio. Cu = desgaste de jaula/axial, Cr = rodamientos con escamas platinadas, Ca+P = cruce hidráulico." },
-  { n: 11, en: "Commissioning samples 20/50/100/250/500/750/1000 h; missing windows affects warranty.", es: "Muestras de puesta en marcha a las 20/50/100/250/500/750/1000 h; omitir ventanas afecta la garantía." },
-];
+export const INSPECTION_STEPS: InspStep[] = Array.from({ length: 11 }, (_, index) => ({ n: index + 1 }));
+
+const GDY106_CHAIN_PARTS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 export default function BenchView() {
   const [initial] = useState(() => parseWheelUrl(window.location.search));
@@ -67,7 +45,6 @@ export default function BenchView() {
   const [cutaway, setCutaway] = useState(initial.cutaway);
   const [exploded, setExploded] = useState(initial.exploded);
   const [lang] = useLang();
-  const es = lang === "es";
 
   useEffect(() => {
     const onDemoOil = (e: Event) => {
@@ -83,8 +60,6 @@ export default function BenchView() {
   const oilCss = oilCssFor(oilState);
   const settlingMs = estimateSettlingMs(viscosity);
   const resting = mode === "rest";
-  const chain = es ? GDY106_CHAIN_ES : GDY106_CHAIN_EN;
-
   const dock = (
     <div
       className="og-hud"
@@ -92,7 +67,7 @@ export default function BenchView() {
     >
       <label className="og-field">
         <span className="og-field__label">
-          <span>{es ? "Aceite" : "Oil fill"}</span>
+          <span>{t("bench.field.oil", lang)}</span>
           <span className="og-num" style={{ color: oilCss }}>{formatOilText(frac)}</span>
         </span>
         <input
@@ -101,13 +76,13 @@ export default function BenchView() {
           max={100}
           step={1}
           value={oilPct}
-          aria-label={es ? "Nivel de aceite" : "Oil fill"}
+          aria-label={t("bench.field.oil", lang)}
           onInput={(e) => setOilPct(Number(e.currentTarget.value))}
         />
       </label>
       <label className="og-field">
         <span className="og-field__label">
-          <span>{es ? "Proxy de viscosidad" : "Viscosity proxy"}</span>
+          <span>{t("bench.field.viscosity", lang)}</span>
           <span className="og-num">{viscosity.toFixed(2)} ({viscosityLabel(viscosity, lang)})</span>
         </span>
         <input
@@ -116,7 +91,7 @@ export default function BenchView() {
           max={VISC_MAX}
           step={0.05}
           value={viscosity}
-          aria-label={es ? "Proxy de viscosidad" : "Viscosity proxy"}
+          aria-label={t("bench.field.viscosity", lang)}
           onInput={(e) => setViscosity(Number(e.currentTarget.value))}
         />
       </label>
@@ -125,9 +100,7 @@ export default function BenchView() {
         className={`og-btn ${resting ? "og-btn--ok" : "og-btn--primary"}`}
         onClick={() => setMode(resting ? "move" : "rest")}
       >
-        {resting
-          ? es ? "Detenido — iniciar marcha" : "Resting — start Move"
-          : es ? "En marcha — detener" : "Moving — stop to Rest"}
+        {t(resting ? "bench.action.startMove" : "bench.action.stopForRest", lang)}
       </button>
       <label className="og-check">
         <input
@@ -135,7 +108,7 @@ export default function BenchView() {
           checked={cutaway}
           onChange={(e) => setCutaway(e.currentTarget.checked)}
         />
-        {es ? "Corte" : "Cutaway"}
+        {t("bench.action.cutaway", lang)}
       </label>
       <label className="og-check">
         <input
@@ -143,14 +116,14 @@ export default function BenchView() {
           checked={exploded}
           onChange={(e) => setExploded(e.currentTarget.checked)}
         />
-        {es ? "Vista explotada" : "Exploded view"}
+        {t("bench.action.exploded", lang)}
       </label>
     </div>
   );
 
   const status = (
     <>
-      <h2 className="og-h2">{es ? "Lectura de aceite" : "Oil readout"}</h2>
+      <h2 className="og-h2">{t("bench.readout.title", lang)}</h2>
       {initial.truckId && initial.wheelId && (
         <p className="og-body og-num" aria-live="polite">
           {t("wheel.fleetContext", lang)}: {initial.truckId} · {initial.wheelId}
@@ -164,11 +137,18 @@ export default function BenchView() {
           {oilStateLabel(oilState, lang)} · {t("wheel.reference", lang)}
         </div>
         <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
-          {es ? "Asentamiento ≈" : "Settling ≈"} {settlingMs} ms · {es ? "proxy" : "viscosity proxy"}{" "}
-          {viscosity.toFixed(2)} ({viscosityLabel(viscosity, lang)})
+          {t("bench.readout.settling", lang, {
+            milliseconds: settlingMs,
+            value: viscosity.toFixed(2),
+            label: viscosityLabel(viscosity, lang),
+          })}
         </div>
         <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
-          {es ? "Tren planetario" : "Planetary train"}: {stageRatio(GDY106_TRAIN.hs).toFixed(2)}:1 × {stageRatio(GDY106_TRAIN.ls).toFixed(2)}:1 = {trainRatio().toFixed(2)}:1 · {es ? "velocidades derivadas" : "derived stage speeds"}
+          {t("bench.readout.train", lang, {
+            highSpeed: stageRatio(GDY106_TRAIN.hs).toFixed(2),
+            lowSpeed: stageRatio(GDY106_TRAIN.ls).toFixed(2),
+            overall: trainRatio().toFixed(2),
+          })}
         </div>
         <div
           style={{
@@ -180,10 +160,10 @@ export default function BenchView() {
         >
           {resting
             ? t("hud.recal", lang)
-            : es ? "En movimiento — recalibración bloqueada" : "Moving — recalibration gated"}
+            : t("bench.readout.moving", lang)}
         </div>
       </div>
-      <h2 className="og-h2">{es ? "Sensores (instalación sin perforación · ítems)" : "Sensor markers (no-drill + items)"}</h2>
+      <h2 className="og-h2">{t("bench.sensor.title", lang)}</h2>
       <ul className="og-plain">
         {BENCH_SENSORS.map((sensor) => {
           const active = sensor.id === selectedId;
@@ -197,14 +177,14 @@ export default function BenchView() {
                 onClick={() => setSelectedId(active ? null : sensor.id)}
               >
                 <span className="og-dot" style={{ ["--tone" as string]: sensor.cssColor, marginRight: 8 }} />
-                <strong>{es ? sensor.labelEs : sensor.label}</strong>
+                <strong>{t(`bench.sensor.${sensor.id}.label` as DictKey, lang)}</strong>
                 <br />
                 <span className="og-muted" style={{ fontSize: 13 }}>
-                  {es ? sensor.signalEs : sensor.signal}
+                  {t(`bench.sensor.${sensor.id}.signal` as DictKey, lang)}
                 </span>
                 <br />
                 <span style={{ color: "var(--og-body)", fontSize: 13 }}>
-                  {es ? sensor.mountEs : sensor.mount}
+                  {t(`bench.sensor.${sensor.id}.mount` as DictKey, lang)}
                 </span>
               </button>
             </li>
@@ -216,36 +196,32 @@ export default function BenchView() {
 
   const sheet = (
     <>
-      <h2 className="og-h2">{es ? "Cadena GDY106 Fig.95 (GEK-91680A)" : "GDY106 Fig.95 chain (GEK-91680A)"}</h2>
+      <h2 className="og-h2">{t("bench.chain.title", lang)}</h2>
       <ol className="og-list">
-        {chain.map((c, i) => (
-          <li key={i}>{c}</li>
+        {GDY106_CHAIN_PARTS.map((part) => (
+          <li key={part}>{t(`bench.chain.${part}` as DictKey, lang)}</li>
         ))}
       </ol>
-      <p className="og-body og-muted">{es ? OIL_DUCT_NARRATIVE_ES : OIL_DUCT_NARRATIVE}</p>
-      <p className="og-body">{es ? NO_DRILL_NARRATIVE_ES : NO_DRILL_NARRATIVE}</p>
+      <p className="og-body og-muted">{t("bench.narrative.oilDuct", lang)}</p>
+      <p className="og-body">{t("bench.narrative.noDrill", lang)}</p>
     </>
   );
 
   const notes = (
     <>
-      <h2 className="og-h2">{es ? "Sobre esta vista" : "About this view"}</h2>
-      <p className="og-body">
-        {es
-          ? "Cadena GDY106 Fig.95 GEK-91680A — motor AC → eje → portador de alta → piñón solar GE1288 → portador de baja/planetarios → tubo de torsión → maza sobre rodamientos cónicos → neumáticos; frenos húmedos + estacionamiento por resorte. Arrastra para orbitar y haz clic en un marcador (ítems 56/41/39-36/cable). Detén el banco y observa el asentamiento antes de la ventana de recalibración. Ver docs/inspection.md (pasos 1-11)."
-          : "GDY106 Fig.95 GEK-91680A chain — AC motor → shaft → high-speed carrier → sun pinion GE1288 → low-speed carrier/planetaries → torque tube → hub on tapered rollers → tires; wet brakes + spring parking brake. Drag to orbit, click a marker (items 56/41/39-36/cable). Stop the rig and watch settling into the recalibration window. See docs/inspection.md (Steps 1-11)."}
-      </p>
+      <h2 className="og-h2">{t("bench.notes.title", lang)}</h2>
+      <p className="og-body">{t("bench.notes.about", lang)}</p>
       <p className="og-body">{t("app.scope", lang)}</p>
       <p className="og-body">{t("bench.honesty", lang)}</p>
-      <h2 className="og-h2">{es ? "Inspección: pasos 1-11" : "Inspection Steps 1-11"}</h2>
+      <h2 className="og-h2">{t("bench.inspection.title", lang)}</h2>
       <ol className="og-list">
         {INSPECTION_STEPS.map((s) => (
           <li key={s.n}>
-            <strong>{es ? `Paso ${s.n}:` : `Step ${s.n}:`}</strong> {es ? s.es : s.en}
+            <strong>{t("bench.inspection.stepLabel", lang, { number: s.n })}</strong> {t(`bench.inspection.step.${s.n}` as DictKey, lang)}
           </li>
         ))}
       </ol>
-      <p className="og-note">{es ? ENV_NOTE_ES : ENV_NOTE}</p>
+      <p className="og-note">{t("bench.environment.note", lang)}</p>
     </>
   );
 

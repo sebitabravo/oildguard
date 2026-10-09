@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import * as THREE from "three";
-import { useLang } from "../../i18n";
+import { t, type DictKey, useLang } from "../../i18n";
 import { createStage } from "../../twin/render/stage";
 import { createMaterials } from "../../twin/render/materials";
 import { createLabel, setLabelActive, setLabelText } from "../../twin/render/labels";
@@ -26,17 +26,18 @@ type CamPreset = "pit" | "hero" | "cab" | "side" | "wheel" | "chase" | "shovel" 
 type Vec3 = [number, number, number];
 type FleetTruckModel = { id: string; model: Truck930E; ring: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial> };
 
-export const STATE_ES: Record<HaulState, string> = {
-  LOAD: "CARGA",
-  HAUL: "ACARREO",
-  DUMP: "DESCARGA",
-  WAIT: "ESPERA",
-};
-
 const CAM_PRESETS: CamPreset[] = ["pit", "hero", "cab", "side", "wheel", "chase", "shovel", "crusher", "ramp"];
-const CAM_LABELS: Record<"en" | "es", Record<CamPreset, string>> = {
-  en: { pit: "Pit", hero: "3/4", cab: "Cab", side: "Side", wheel: "Wheel", chase: "Chase", shovel: "Shovel", crusher: "Crusher", ramp: "Ramp", free: "Free" },
-  es: { pit: "Foso", hero: "3/4", cab: "Cabina", side: "Lateral", wheel: "Rueda", chase: "Seguimiento", shovel: "Pala", crusher: "Chancadora", ramp: "Rampa", free: "Libre" },
+const CAM_LABEL_KEYS: Record<CamPreset, DictKey> = {
+  pit: "mine.camera.pit",
+  hero: "mine.camera.hero",
+  cab: "mine.camera.cab",
+  side: "mine.camera.side",
+  wheel: "mine.camera.wheel",
+  chase: "mine.camera.chase",
+  shovel: "mine.camera.shovel",
+  crusher: "mine.camera.crusher",
+  ramp: "mine.camera.ramp",
+  free: "mine.camera.free",
 };
 
 function haulState(state: PlmState): HaulState {
@@ -136,11 +137,12 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
     }
 
     const interestLabels = [
-      { id: "shovel", text: langRef.current === "es" ? "PALA · 4100XPC" : "SHOVEL · 4100XPC", pos: pit.anchors.shovel.clone().add(new THREE.Vector3(0, 20, 0)) },
-      { id: "crusher", text: langRef.current === "es" ? "CHANCADORA · PRIMARIA" : "PRIMARY CRUSHER", pos: pit.anchors.crusher.clone().add(new THREE.Vector3(0, 20, 0)) },
-      { id: "ramp", text: langRef.current === "es" ? "RAMPA · 10 % ASSUMPTION" : "RAMP · 10% ASSUMPTION", pos: pit.anchors.rampMid.clone().add(new THREE.Vector3(0, 9, 0)) },
-    ].map((item) => {
-      const label = createLabel({ text: item.text, tone: "accent" });
+      { id: "shovel", key: "mine.scene.shovel", pos: pit.anchors.shovel.clone().add(new THREE.Vector3(0, 20, 0)) },
+      { id: "crusher", key: "mine.scene.crusher", pos: pit.anchors.crusher.clone().add(new THREE.Vector3(0, 20, 0)) },
+      { id: "ramp", key: "mine.scene.ramp", pos: pit.anchors.rampMid.clone().add(new THREE.Vector3(0, 9, 0)) },
+    ] satisfies { id: string; key: DictKey; pos: THREE.Vector3 }[];
+    const labelledInterest = interestLabels.map((item) => {
+      const label = createLabel({ text: t(item.key, langRef.current), tone: "accent" });
       label.name = item.id;
       label.position.copy(item.pos);
       scene.add(label);
@@ -224,11 +226,8 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
         const progress = selected.plm === "loading" ? snapshot.shovel.swing : selected.plm === "dumping" ? Math.min(1, selected.tiltDeg / 45) : 0;
         barRef.current.style.width = `${Math.round(progress * 100)}%`;
       }
-      for (const item of interestLabels) {
-        const text = langRef.current === "es"
-          ? item.id === "shovel" ? "PALA · 4100XPC" : item.id === "crusher" ? "CHANCADORA · PRIMARIA" : "RAMPA · 10 % ASSUMPTION"
-          : item.id === "shovel" ? "SHOVEL · 4100XPC" : item.id === "crusher" ? "PRIMARY CRUSHER" : "RAMP · 10% ASSUMPTION";
-        setLabelText(item.label, text);
+      for (const item of labelledInterest) {
+        setLabelText(item.label, t(item.key, langRef.current));
         setLabelActive(item.label, item.id === "shovel" ? snapshot.shovel.truckId !== null : item.id === "crusher" ? snapshot.crusherTruckId !== null : false);
       }
 
@@ -288,7 +287,7 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
         truck.model.dispose();
         truck.ring.material.dispose();
       }
-      for (const item of interestLabels) item.label.removeFromParent();
+      for (const item of labelledInterest) item.label.removeFromParent();
       shovel.dispose();
       dust.dispose();
       pit.dispose();
@@ -305,6 +304,11 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
   const css = HAUL_STATE_CSS[haulState(hud.state)];
   const moving = !hud.recal;
   const stateLabel = String(hud.state).replace(/_/g, " ").toUpperCase();
+  const recalLabelKey = hud.recal
+    ? "mine.hud.recalReady"
+    : hud.onGrade
+      ? "mine.hud.recalGated"
+      : "mine.hud.recalStandby";
 
   return (
     <div className="og-scene">
@@ -317,19 +321,19 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
             <span className={`og-badge ${hud.recal ? "og-badge--ok" : "og-badge--ghost"}`}>{hud.recal ? "RECAL" : moving ? "IN MOTION" : "STANDBY"}</span>
           </div>
           <div className="og-progress"><div ref={barRef} className="og-progress__bar" /></div>
-          <div className="og-hud__row"><span className="og-hud__meta">{lang === "es" ? "Cámara" : "Camera"}</span><div className="og-seg og-seg--sm">
-            {CAM_PRESETS.map((id) => <button key={id} type="button" className="og-seg__btn" aria-pressed={presetUi === id} onClick={() => setPreset(id)}>{CAM_LABELS[lang][id]}</button>)}
+          <div className="og-hud__row"><span className="og-hud__meta">{t("hud.camera", lang)}</span><div className="og-seg og-seg--sm">
+            {CAM_PRESETS.map((id) => <button key={id} type="button" className="og-seg__btn" aria-pressed={presetUi === id} onClick={() => setPreset(id)}>{t(CAM_LABEL_KEYS[id], lang)}</button>)}
           </div></div>
         </div>
         <div className="og-stack og-stack--tr">
           <div className={`og-badge ${hud.recal ? "og-badge--ok" : "og-badge--ghost"}`} style={{ height: "auto", minHeight: 24, padding: "4px 10px", whiteSpace: "normal" }}>
-            {hud.recal ? (lang === "es" ? "RECAL · detenido + nivelado + motor encendido" : "RECAL · stopped + level + engine on") : hud.onGrade ? (lang === "es" ? "RECAL bloqueado · pendiente" : "RECAL gated · on grade") : (lang === "es" ? "RECAL en espera" : "RECAL standby")}
+            {t(recalLabelKey, lang)}
           </div>
           {badge}
         </div>
         <div className="og-stack og-stack--bl">
-          <div className="og-hud og-hud--caption og-num">{lang === "es" ? `${hud.trucks} camiones · ${hud.queued} en cola · PLM III · pendiente de datos de campo` : `${hud.trucks} trucks · ${hud.queued} queued · PLM III · synthetic proxy, field data pending`}</div>
-          <div className="og-hud og-hud--caption">{lang === "es" ? "Foso sintético · rampa 10 % SUPUESTO · geometría y flota reproducibles por ?seed=" : "Synthetic open pit · 10% ramp ASSUMPTION · seeded reproducible geometry and fleet"}</div>
+          <div className="og-hud og-hud--caption og-num">{t("mine.hud.fleet", lang, { trucks: hud.trucks, queued: hud.queued })}</div>
+          <div className="og-hud og-hud--caption">{t("mine.hud.seeded", lang, { seed: url.seed })}</div>
           {url.debug && <div ref={debugRef} className="og-hud og-hud--caption og-num" />}
         </div>
         {dock && <div className="og-dock og-dock--right">{dock}</div>}

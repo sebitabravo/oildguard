@@ -2,7 +2,7 @@ import { useEffect, useRef } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import * as THREE from "three";
 import { BENCH_SENSORS } from "./sensors";
-import { t, useLang } from "../../i18n";
+import { t, type DictKey, useLang } from "../../i18n";
 import { formatOilText, oilCssFor, oilStateFor, oilStateLabel } from "./oil";
 import { wobbleAt } from "./settling";
 import { createStage } from "../../twin/render/stage";
@@ -526,7 +526,7 @@ export default function BenchScene({
     };
     const sensorLabels = BENCH_SENSORS.map((sensor) => {
       const label = createLabel({
-        text: sensor.shortLabel,
+        text: t(`bench.sensor.${sensor.id}.short` as DictKey, langRef.current),
         color: sensor.cssColor,
       });
       label.center.set(0, 0.5);
@@ -611,7 +611,7 @@ export default function BenchScene({
       BENCH_SENSORS.forEach((sensor, i) => {
         setLabelText(
           sensorLabels[i],
-          langRef.current === "es" ? sensor.shortLabelEs : sensor.shortLabel
+          t(`bench.sensor.${sensor.id}.short` as DictKey, langRef.current)
         );
         setLabelActive(sensorLabels[i], sensor.id === selectedRef.current);
       });

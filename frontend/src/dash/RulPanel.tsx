@@ -17,7 +17,6 @@ const panel: CSSProperties = {
 
 export default function RulPanel({ rul }: { rul: RulData | null }) {
   const [lang] = useLang();
-  const es = lang === "es";
   if (!rul) {
     return (
       <div style={panel}>
@@ -35,13 +34,13 @@ export default function RulPanel({ rul }: { rul: RulData | null }) {
           {t("rul.suppressed", lang)}
         </div>
         <p style={{ margin: "6px 0", color: "var(--og-body)", fontSize: 13 }}>
-          {es
-            ? t(rul.model === "synthetic-proxy" ? "rul.syntheticNote" : "rul.suppressedNote", lang)
-            : rul.note}
+          {t(rul.model === "synthetic-proxy" ? "rul.syntheticNote" : "rul.suppressedNote", lang)}
         </p>
         <p style={{ margin: 0, color: "var(--og-muted)", fontSize: 12 }}>
-          {es ? "Modelo" : "Model"}={rul.model} ({t("rul.unproven", lang)}) ·{" "}
-          {es ? "mostrar alertas de anomalía N1/N2/N4 en lugar de una cuenta regresiva." : "surface N1/N2/N4 anomaly alerts instead of a countdown."}
+          {t("rul.panel.suppressedDetail", lang, {
+            model: rul.model === "synthetic-proxy" ? t("rul.model.syntheticProxy", lang) : rul.model,
+            qualifier: t("rul.unproven", lang),
+          })}
         </p>
       </div>
     );
@@ -51,7 +50,7 @@ export default function RulPanel({ rul }: { rul: RulData | null }) {
       <div style={{ fontWeight: 700 }}>
         {t("rul.title", lang)} ·{" "}
         <span style={{ color: "var(--og-green)" }}>
-          {rul.hours} h {es ? "hasta crítico" : "to critical"}
+          {t("rul.panel.hoursToCritical", lang, { hours: rul.hours })}
         </span>
       </div>
       <div
@@ -65,25 +64,26 @@ export default function RulPanel({ rul }: { rul: RulData | null }) {
         }}
       >
         <span>
-          {es ? "advertencia en " : "warn in "}
-          <strong style={{ color: "var(--og-text)" }}>{rul.hours_to_warning} h</strong>
+          {t("rul.panel.warningIn", lang, { hours: rul.hours_to_warning })}
         </span>
         <span>
-          <strong style={{ color: "var(--og-text)" }}>{rul.haul_cycles}</strong>{" "}
-          {es ? "ciclos (29 s)" : "haul cycles (29 s)"}
+          {t("rul.panel.haulCycles", lang, { cycles: rul.haul_cycles })}
         </span>
         <span>
-          <strong style={{ color: "var(--og-text)" }}>{rul.shifts}</strong>{" "}
-          {es ? "turnos (8 h)" : "shifts (8 h)"}
+          {t("rul.panel.shifts", lang, { shifts: rul.shifts })}
         </span>
         <span>
-          {es ? "confianza " : "confidence "}
-          <strong style={{ color: "var(--og-text)" }}>{rul.confidence}</strong>
+          {t("rul.panel.confidenceValue", lang, { confidence: rul.confidence })}
         </span>
       </div>
       <p style={{ margin: "8px 0 0", color: "var(--og-muted)", fontSize: 12 }}>
-        {es ? "pendiente" : "slope"} {rul.slope_L_per_h} L/h · R² {rul.r2} · {es ? "nivel" : "level"} {rul.current_level_L} L ·
-        {es ? "modelo" : "model"}={rul.model} ({es ? `${t("badge.proxy", lang)}, ${t("rul.unproven", lang)}` : "synthetic-proxy, UNPROVEN until the bench"})
+        {t("rul.panel.summary", lang, {
+          slope: rul.slope_L_per_h,
+          r2: rul.r2,
+          level: rul.current_level_L,
+          model: rul.model === "synthetic-proxy" ? t("rul.model.syntheticProxy", lang) : rul.model,
+          qualifier: t("rul.unproven", lang),
+        })}
       </p>
     </div>
   );

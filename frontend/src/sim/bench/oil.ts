@@ -1,3 +1,5 @@
+import { t, type DictKey, type Lang } from "../../i18n";
+
 // T3 oil-volume helpers (Sim A, part 2 of 2).
 //
 // Physics anchors (feature doc, do not contradict without evidence):
@@ -52,25 +54,14 @@ export function oilCssFor(state: OilState): string {
 }
 
 /** Human band label for the readout panel. */
-export function oilStateLabel(state: OilState, lang: "en" | "es" = "en"): string {
-  if (lang === "es") {
-    switch (state) {
-      case "critical":
-        return "CRÍTICO (<30%)";
-      case "warning":
-        return "ADVERTENCIA (30–50%)";
-      case "normal":
-        return "NORMAL (≥50%)";
-    }
-  }
-  switch (state) {
-    case "critical":
-      return "CRITICAL (<30%)";
-    case "warning":
-      return "WARNING (30–50%)";
-    case "normal":
-      return "NORMAL (≥50%)";
-  }
+const OIL_STATE_LABEL_KEYS: Record<OilState, DictKey> = {
+  normal: "oil.normal",
+  warning: "oil.warning",
+  critical: "oil.critical",
+};
+
+export function oilStateLabel(state: OilState, lang: Lang = "en"): string {
+  return t(OIL_STATE_LABEL_KEYS[state], lang);
 }
 
 /** "62.7 L · 66%" display text for a 0..1 fill fraction. */

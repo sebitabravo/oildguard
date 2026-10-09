@@ -1,3 +1,5 @@
+import { t, type Lang } from "../../i18n";
+
 // T3 settling-transient stub (Sim A, part 2 of 2).
 //
 // On a move->rest transition the oil surface wobbles, then settles as a
@@ -59,8 +61,8 @@ export function estimateSettlingMs(viscosityProxy: number): number {
 }
 
 /** Honest proxy label for the readout (never called "viscosity"). */
-export function viscosityLabel(viscosityProxy: number, lang: "en" | "es" = "en"): string {
-  if (viscosityProxy < 0.8) return lang === "es" ? "diluido · asentamiento rápido" : "dilute · fast settling";
-  if (viscosityProxy < 1.5) return "nominal";
-  return lang === "es" ? "degradado · asentamiento lento" : "degraded · slow settling";
+export function viscosityLabel(viscosityProxy: number, lang: Lang = "en"): string {
+  if (viscosityProxy < 0.8) return t("bench.viscosity.dilute", lang);
+  if (viscosityProxy < 1.5) return t("bench.viscosity.nominal", lang);
+  return t("bench.viscosity.degraded", lang);
 }

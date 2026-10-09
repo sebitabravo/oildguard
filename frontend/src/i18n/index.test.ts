@@ -30,12 +30,12 @@ describe("i18n dictionary", () => {
   test("Spanish dictionary copy keeps required accents", () => {
     const unaccentedForms = [
       /presion/i,
-      /tapon/i,
+      /\btapon\b/i,
       /traccion/i,
       /inspeccion/i,
       /electrico/i,
       /vibracion/i,
-      /camion/i,
+      /\bcamion\b/i,
       /rotacion/i,
       /calibracion/i,
       /posicion/i,
