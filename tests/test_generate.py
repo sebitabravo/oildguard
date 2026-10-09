@@ -1,5 +1,7 @@
 """Generador de señales: presión geométrica, ruido de transductor 0-10 kPa y hold-up en movimiento."""
 
+import csv
+import secrets
 import statistics
 from datetime import datetime, timezone
 
@@ -7,6 +9,7 @@ import pytest
 
 from sim import generate, physics, settling
 from sim.geometry import DEFAULT_GEAR_CASE
+from shared.signing import verify_row
 
 T0 = datetime(2026, 1, 1, tzinfo=timezone.utc)
 
@@ -41,6 +44,53 @@ def test_rest_noise_matches_a_0_10_kpa_class_transducer():
 
 def test_schema_is_unchanged():
     assert list(rows_for(seconds=1.0)[0].keys()) == generate.HEADER
+
+
+def test_signed_csv_appends_signatures_without_changing_iter_rows(monkeypatch, tmp_path):
+    key = secrets.token_bytes(32)
+    monkeypatch.setenv("OILGUARD_DEVICE_KEY", key.hex())
+    output = tmp_path / "signed.csv"
+
+    unsigned_row = next(generate.iter_rows("clean", 0.1, "wheel-RH-01", 7, start=T0))
+    assert list(unsigned_row) == generate.HEADER
+    assert "sig" not in unsigned_row
+
+    assert generate.main(["--scenario", "clean", "--seconds", "0.3", "--out", str(output), "--sign"]) == 0
+
+    with output.open(newline="") as source:
+        reader = csv.DictReader(source)
+        rows = list(reader)
+    assert reader.fieldnames == [*generate.HEADER, "sig_v", "sig"]
+    assert len(rows) == 3
+    assert all(verify_row(row, key) for row in rows)
+
+
+def test_signing_requires_device_key(monkeypatch, tmp_path):
+    monkeypatch.delenv("OILGUARD_DEVICE_KEY", raising=False)
+    output = tmp_path / "unsigned.csv"
+
+    with pytest.raises(SystemExit, match="OILGUARD_DEVICE_KEY"):
+        generate.main(["--scenario", "clean", "--seconds", "0.1", "--out", str(output), "--sign"])
+
+
+def test_invalid_device_key_error_does_not_echo_key_material(monkeypatch, tmp_path):
+    key_material = secrets.token_bytes(32).hex()
+    monkeypatch.setenv("OILGUARD_DEVICE_KEY", f"{key_material}z")
+
+    with pytest.raises(SystemExit) as error:
+        generate.main(["--scenario", "clean", "--seconds", "0.1", "--out", str(tmp_path / "invalid.csv"), "--sign"])
+
+    assert "OILGUARD_DEVICE_KEY" in str(error.value)
+    assert key_material not in str(error.value)
+
+
+def test_unsigned_csv_keeps_the_existing_header(tmp_path):
+    output = tmp_path / "unsigned.csv"
+
+    assert generate.main(["--scenario", "clean", "--seconds", "0.1", "--out", str(output)]) == 0
+
+    with output.open(newline="") as source:
+        assert next(csv.reader(source)) == generate.HEADER
 
 
 def test_moving_pool_pressure_is_lower_than_at_rest_due_to_holdup():

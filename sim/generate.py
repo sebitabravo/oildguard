@@ -35,9 +35,17 @@ from __future__ import annotations
 import argparse
 import csv
 import math
+import os
 import random
+import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Iterator
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from shared.signing import sign_row
 
 try:  # ejecución como paquete o como script (python3 sim/generate.py)
     from sim.geometry import DEFAULT_GEAR_CASE
@@ -306,6 +314,7 @@ def parse_args(argv=None):
     p.add_argument("--drop-liters", type=float, default=ABRUPT_DROP_L)
     p.add_argument("--viscosity-proxy", type=float, default=1.0,
                    help="drain-back time scale of the held-up oil (1.0 = nominal 85W-140)")
+    p.add_argument("--sign", action="store_true", help="sign rows with OILGUARD_DEVICE_KEY")
     return p.parse_args(argv)
 
 
@@ -313,11 +322,26 @@ def main(argv=None) -> int:
     args = parse_args(argv)
     if args.seconds <= 0:
         raise SystemExit("--seconds must be > 0")
+    signing_key = None
+    if args.sign:
+        key_hex = os.environ.get("OILGUARD_DEVICE_KEY", "")
+        if not key_hex:
+            raise SystemExit("OILGUARD_DEVICE_KEY is required when --sign is enabled")
+        try:
+            signing_key = bytes.fromhex(key_hex)
+        except ValueError:
+            raise SystemExit("OILGUARD_DEVICE_KEY must contain valid hexadecimal bytes") from None
+        if not signing_key:
+            raise SystemExit("OILGUARD_DEVICE_KEY must not be empty")
     rows = list(iter_rows(args.scenario, args.seconds, args.device_id,
                           args.seed, args.leak_pct_per_h, args.drop_liters,
                           viscosity_proxy=args.viscosity_proxy))
+    fieldnames = HEADER
+    if signing_key is not None:
+        rows = [sign_row(row, signing_key) for row in rows]
+        fieldnames = [*HEADER, "sig_v", "sig"]
     with open(args.out, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=HEADER)
+        w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()
         w.writerows(rows)
     print(f"scenario={args.scenario} rows={len(rows)} rate_hz={SAMPLE_RATE_HZ} "
