@@ -151,6 +151,11 @@ export default function BenchView() {
   const status = (
     <>
       <h2 className="og-h2">{es ? "Lectura de aceite" : "Oil readout"}</h2>
+      {initial.truckId && initial.wheelId && (
+        <p className="og-body og-num" aria-live="polite">
+          {t("wheel.fleetContext", lang)}: {initial.truckId} · {initial.wheelId}
+        </p>
+      )}
       <div className="og-card og-card--tone" style={{ ["--tone" as string]: oilCss }}>
         <div className="og-value og-value--lg" style={{ color: oilCss }}>
           {formatOilText(frac)}

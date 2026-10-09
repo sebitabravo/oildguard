@@ -37,6 +37,8 @@ import {
 } from "./demoData";
 import { emitDemoOil, type DemoStageId } from "./demoBus";
 import { t, useLang } from "../i18n";
+import { buildWheelDetailHref } from "../sim/bench/wheelUrl";
+import { DEMO_FLEET_WHEELS, evaluateCombinedRisk, latestWheelMetrics } from "./fleetRisk";
 
 type Source = "loading" | "live" | "demo";
 
@@ -67,10 +69,10 @@ function stageLabel(stage: DemoStageId, es: boolean): string {
 }
 
 const ALERT_CSS: Record<string, string> = {
-  N1: "#f5a623",
-  N2: "#ff8c42",
-  N3: "#ff8c42",
-  N4: "#ff3b30",
+  N1: "var(--og-amber)",
+  N2: "var(--og-orange)",
+  N3: "var(--og-orange)",
+  N4: "var(--og-red)",
 };
 
 export default function Dashboard() {
@@ -213,12 +215,70 @@ export default function Dashboard() {
   return (
     <div className="og-page">
     <div className="og-page__inner">
-      <p style={{ margin: "0 0 12px", color: "#9fb0c9" }}>
+      <p style={{ margin: "0 0 12px", color: "var(--og-muted)" }}>
         {es
           ? <>Nivel fusionado + confianza, ventanas de reposo, escalera N1–N4, RUL e indicador de modo. Modelo <code>{DEMO_MODEL}</code>.</>
           : <>Fused level + confidence, rest windows, N1–N4 ladder, RUL, and the sim-linked mode indicator. Model <code>{DEMO_MODEL}</code>.</>}{" "}
         {t("dash.honesty", lang)}
       </p>
+
+      <section className="og-fleet-panel" aria-labelledby="og-fleet-title">
+        <div className="og-fleet-panel__heading">
+          <div>
+            <h2 id="og-fleet-title">{t("dash.fleet.title", lang)}</h2>
+            <p>{t("dash.fleet.proxy", lang)}</p>
+          </div>
+          <span className="og-fleet-panel__risk-title">{t("dash.fleet.risk", lang)}</span>
+        </div>
+        <p className="og-fleet-panel__assumption">{t("dash.fleet.assumptions", lang)}</p>
+        <div className="og-fleet-wrap">
+          <table className="og-fleet-table">
+            <thead>
+              <tr>
+                <th>{t("dash.fleet.truck", lang)}</th>
+                <th>{t("dash.fleet.wheel", lang)}</th>
+                <th>{t("dash.fleet.oil", lang)}</th>
+                <th>{t("dash.fleet.temp", lang)}</th>
+                <th>{t("dash.fleet.vibration", lang)}</th>
+                <th>{t("dash.fleet.current", lang)}</th>
+                <th>{t("dash.fleet.risk", lang)}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {DEMO_FLEET_WHEELS.map((wheel) => {
+                const metrics = latestWheelMetrics(wheel);
+                const risk = evaluateCombinedRisk(metrics);
+                return (
+                  <tr key={`${wheel.truckId}-${wheel.wheelId}`}>
+                    <td className="og-num">{wheel.truckId}</td>
+                    <td className="og-num">{wheel.wheelId}</td>
+                    <td className="og-num">{wheel.oilLitres.toFixed(1)}</td>
+                    <td className="og-num">{wheel.temperatureC.join(" · ")}</td>
+                    <td className="og-num">{wheel.vibrationMmS.map((value) => value.toFixed(1)).join(" · ")}</td>
+                    <td className="og-num">{wheel.currentA.join(" · ")}</td>
+                    <td>
+                      <span className={`og-fleet-risk${risk.alert ? " og-fleet-risk--alert" : ""}`}>
+                        {risk.alert ? t("dash.fleet.alert", lang) : t("dash.fleet.normal", lang)}
+                      </span>
+                      {risk.channels.length > 0 && (
+                        <span className="og-fleet-channels">
+                          {risk.channels.map((channel) => t(`dash.fleet.${channel === "low-oil" ? "lowOil" : channel === "high-temperature" ? "highTemperature" : "highVibration"}`, lang)).join(" · ")}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <a className="og-fleet-link" href={buildWheelDetailHref(wheel.truckId, wheel.wheelId)}>
+                        {t("dash.fleet.detail", lang)}
+                      </a>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       {/* source + backend row */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12, alignItems: "center" }}>
@@ -227,15 +287,15 @@ export default function Dashboard() {
             fontSize: 12,
             fontWeight: 800,
             letterSpacing: 0.5,
-            color: "#0e1420",
-            background: source === "live" ? "#2fbf71" : "#f5a623",
+            color: "var(--og-panel-inset)",
+            background: source === "live" ? "var(--og-green)" : "var(--og-amber)",
             borderRadius: 4,
             padding: "4px 10px",
           }}
         >
           {source === "loading" ? (es ? "CONECTANDO…" : "CONNECTING…") : source === "live" ? (es ? "EN VIVO · backend" : "LIVE · backend") : (es ? "DEMO · local" : "DEMO · local fallback")}
         </span>
-        <span style={{ fontSize: 12, color: "#9fb0c9" }}>
+        <span style={{ fontSize: 12, color: "var(--og-muted)" }}>
           {es
             ? source === "loading" ? t("dash.backend.probing", lang) : source === "live" ? t("dash.backend.connected", lang) : t("dash.backend.offline", lang)
             : backendNote || t("dash.backend.probing", lang)}
@@ -245,9 +305,9 @@ export default function Dashboard() {
           onClick={() => void fetchAll()}
           style={{
             cursor: "pointer",
-            color: "#e8edf5",
+            color: "var(--og-text)",
             background: "transparent",
-            border: "1px solid #f5a623",
+            border: "1px solid var(--og-amber)",
             borderRadius: 6,
             padding: "5px 12px",
             fontWeight: 600,
@@ -262,8 +322,8 @@ export default function Dashboard() {
             onClick={startDemo}
             style={{
               cursor: "pointer",
-              color: "#0e1420",
-              background: "#f5a623",
+              color: "var(--og-panel-inset)",
+              background: "var(--og-amber)",
               border: "1px solid transparent",
               borderRadius: 6,
               padding: "5px 12px",
@@ -279,9 +339,9 @@ export default function Dashboard() {
             onClick={resetDemo}
             style={{
               cursor: "pointer",
-              color: "#e8edf5",
+              color: "var(--og-text)",
               background: "transparent",
-              border: "1px solid #3a4a63",
+              border: "1px solid var(--og-line-soft)",
               borderRadius: 6,
               padding: "5px 12px",
               fontWeight: 600,
@@ -297,11 +357,11 @@ export default function Dashboard() {
       {demoActive && (
         <div
           style={{
-            border: "1px solid #f5a623",
+            border: "1px solid var(--og-amber)",
             borderRadius: 6,
             padding: "10px 12px",
             marginBottom: 12,
-            background: "#111a2c",
+            background: "var(--og-panel-dashboard)",
           }}
         >
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
@@ -311,9 +371,9 @@ export default function Dashboard() {
                 style={{
                   fontSize: 12,
                   fontWeight: 700,
-                  color: s === demoStage ? "#0e1420" : "#e8edf5",
-                  background: s === demoStage ? "#f5a623" : "transparent",
-                  border: `1px solid ${s === demoStage ? "#f5a623" : "#3a4a63"}`,
+                  color: s === demoStage ? "var(--og-panel-inset)" : "var(--og-text)",
+                  background: s === demoStage ? "var(--og-amber)" : "transparent",
+                  border: `1px solid ${s === demoStage ? "var(--og-amber)" : "var(--og-line-soft)"}`,
                   borderRadius: 4,
                   padding: "3px 10px",
                 }}
@@ -321,7 +381,7 @@ export default function Dashboard() {
                 {stageLabel(s, es)}
               </span>
             ))}
-            <span style={{ fontSize: 13, color: "#c7d3e8" }}>
+            <span style={{ fontSize: 13, color: "var(--og-body)" }}>
               {stageBlurb(demoStage, es)} · {es ? "aceite" : "oil"} {formatOilText(demoFrac)} · {es ? "también mueve el nivel del banco 3D" : "also driving the Bench 3D fill"}
             </span>
           </div>
@@ -330,22 +390,22 @@ export default function Dashboard() {
 
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
         {/* level chart */}
-        <div style={{ flex: "2 1 560px", minWidth: 320, border: "1px solid #2a3a55", padding: 16, background: "#111a2c" }}>
+        <div style={{ flex: "2 1 560px", minWidth: 320, border: "1px solid var(--og-line-dashboard)", padding: 16, background: "var(--og-panel-dashboard)" }}>
           <h2 style={{ margin: "0 0 4px", fontSize: 16 }}>
             {es ? "Nivel de aceite + confianza" : "Oil level + confidence"}{" "}
-            <span style={{ fontSize: 12, fontWeight: 500, color: "#9fb0c9" }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color: "var(--og-muted)" }}>
               ±{sigmaL.toFixed(2)} L · conf {Number(confidence).toFixed(3)} · {es ? "bandas verdes = ventanas de reposo" : "green bands = rest windows"}
             </span>
           </h2>
           <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} />
-          <p style={{ margin: "8px 0 0", fontSize: 12, color: "#9fb0c9" }}>
+          <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--og-muted)" }}>
             {t("dash.footnote", lang)}
           </p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8, fontSize: 13 }}>
             <span style={{ color: demoOilCss, fontWeight: 700 }}>
               {demoActive ? `${es ? "Demo " : "Demo fill "}${formatOilText(demoFrac)}` : level ? `${Number(level.data.level_liters).toFixed(1)} L · ${Number(level.data.level_pct).toFixed(1)}%` : "—"}
             </span>
-            <span style={{ color: "#9fb0c9" }}>
+            <span style={{ color: "var(--og-muted)" }}>
               {demoActive
                 ? (es ? DEMO_LAB_NOTE_ES : DEMO_LAB_NOTE)
                 : `${es ? "origen" : "source"}: ${level?.data.source ?? (es ? "sin datos del backend" : "no backend payload yet")}`}
@@ -356,17 +416,17 @@ export default function Dashboard() {
         {/* side column */}
         <div style={{ flex: "1 1 280px", minWidth: 260, maxWidth: 400, display: "flex", flexDirection: "column", gap: 12 }}>
           {/* mode indicator */}
-          <div style={{ border: "1px solid #2a3a55", borderRadius: 6, padding: "10px 12px", background: "#111a2c" }}>
+          <div style={{ border: "1px solid var(--og-line-dashboard)", borderRadius: 6, padding: "10px 12px", background: "var(--og-panel-dashboard)" }}>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>
               {es ? "Modo · " : "Mode · "}
-              <span style={{ color: moving ? "#3a7bd5" : "#2fbf71" }}>
+              <span style={{ color: moving ? "var(--og-blue)" : "var(--og-green)" }}>
                 {moving ? (es ? "EN MOVIMIENTO" : "MOVING") : (es ? "DETENIDO" : "REST")}
               </span>{" "}
-              <span style={{ fontSize: 12, color: recal ? "#2fbf71" : "#8b98ad" }}>
+              <span style={{ fontSize: 12, color: recal ? "var(--og-green)" : "var(--og-muted)" }}>
                 {recal ? (es ? "· RECALIBRANDO" : "· RECALIBRATING") : (es ? "· recal bloqueado" : "· recal gated")}
               </span>
             </div>
-            <div style={{ fontSize: 13, color: "#c7d3e8" }}>
+            <div style={{ fontSize: 13, color: "var(--og-body)" }}>
               FSM <strong>{fsm.state}</strong> (t+{fsmTick.toFixed(0)} s {es ? "reloj compartido con el camión" : "shared clock with the Truck sim"}) ·{" "}
               {source === "live"
                 ? `backend windows: ${windows?.count ?? 0} (store_rows=${storeRows})`
@@ -377,34 +437,34 @@ export default function Dashboard() {
           <RulPanel rul={demoActive ? demoRulFor(demoStage) : (rul?.data ?? null)} />
 
           {/* N1–N4 timeline */}
-          <div style={{ border: "1px solid #2a3a55", borderRadius: 6, padding: "10px 12px", background: "#111a2c" }}>
+          <div style={{ border: "1px solid var(--og-line-dashboard)", borderRadius: 6, padding: "10px 12px", background: "var(--og-panel-dashboard)" }}>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>
               {es ? "Alertas N1–N4 " : "Alerts timeline "}
-              <span style={{ fontSize: 12, fontWeight: 500, color: "#9fb0c9" }}>
+              <span style={{ fontSize: 12, fontWeight: 500, color: "var(--og-muted)" }}>
                 {(alerts?.data.escalation ?? shownAlerts.map((a) => a.level)).join(" → ") || (es ? "sin alertas" : "no alerts")}
               </span>
             </div>
             {shownAlerts.length === 0 ? (
-              <p style={{ margin: 0, color: "#9fb0c9", fontSize: 13 }}>
+              <p style={{ margin: 0, color: "var(--og-muted)", fontSize: 13 }}>
                 {es ? "(sin alertas — línea base limpia; RUL suprimido, solo anomalías)" : "(no alerts — clean baseline; RUL stays suppressed anomaly-only)"}
               </p>
             ) : (
               <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
                 {shownAlerts.map((a) => (
-                  <li key={a.alert_id} style={{ marginBottom: 8, border: `1px solid ${ALERT_CSS[a.level] ?? "#2a3a55"}`, borderRadius: 6, padding: "6px 8px" }}>
-                    <span style={{ display: "inline-block", fontSize: 12, fontWeight: 800, color: "#0e1420", background: ALERT_CSS[a.level] ?? "#e8edf5", borderRadius: 4, padding: "1px 8px", marginRight: 8 }}>
+                  <li key={a.alert_id} style={{ marginBottom: 8, border: `1px solid ${ALERT_CSS[a.level] ?? "var(--og-line-dashboard)"}`, borderRadius: 6, padding: "6px 8px" }}>
+                    <span style={{ display: "inline-block", fontSize: 12, fontWeight: 800, color: "var(--og-panel-inset)", background: ALERT_CSS[a.level] ?? "var(--og-text)", borderRadius: 4, padding: "1px 8px", marginRight: 8 }}>
                       {a.level}
                     </span>
                     <strong style={{ fontSize: 13 }}>{a.alert_id}</strong>
-                    <span style={{ fontSize: 12, color: "#9fb0c9" }}> · t {a.t_s} s · {a.zone}</span>
+                    <span style={{ fontSize: 12, color: "var(--og-muted)" }}> · t {a.t_s} s · {a.zone}</span>
                     <br />
-                    <span style={{ fontSize: 13, color: "#c7d3e8" }}>{a.reason}</span>
+                    <span style={{ fontSize: 13, color: "var(--og-body)" }}>{a.reason}</span>
                   </li>
                 ))}
               </ul>
             )}
             {alerts && !demoActive && (
-              <p style={{ margin: "8px 0 0", fontSize: 12, color: "#9fb0c9" }}>
+              <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--og-muted)" }}>
                 {alerts.data.note} · {alerts.data.fallback}
               </p>
             )}

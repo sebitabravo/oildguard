@@ -32,10 +32,10 @@ const CRIT_L = 28.5;
 const CAP_L = 95;
 
 const ALERT_CSS: Record<string, string> = {
-  N1: "#f5a623",
-  N2: "#ff8c42",
-  N3: "#ff8c42",
-  N4: "#ff3b30",
+  N1: "var(--og-amber)",
+  N2: "var(--og-orange)",
+  N3: "var(--og-orange)",
+  N4: "var(--og-red)",
 };
 
 export default function LevelChart({
@@ -48,7 +48,7 @@ export default function LevelChart({
   const es = lang === "es";
   if (points.length === 0) {
     return (
-      <p style={{ color: "#9fb0c9", fontSize: 13 }}>
+      <p style={{ color: "var(--og-muted)", fontSize: 13 }}>
         {es ? "Sin muestras de nivel — ingiere filas o ejecuta la demo." : "No level samples yet — ingest rows or run the demo."}
       </p>
     );
@@ -78,7 +78,7 @@ export default function LevelChart({
       width="100%"
       role="img"
       aria-label={es ? "Nivel de aceite con banda de confianza" : "Oil level with confidence band"}
-      style={{ display: "block", background: "#0e1420" }}
+      style={{ display: "block", background: "var(--og-panel-inset)" }}
     >
       {/* rest-window shading */}
       {windows
@@ -94,24 +94,24 @@ export default function LevelChart({
               y={PAD_T}
               width={x1 - x0}
               height={H - PAD_T - PAD_B}
-              fill="#2fbf71"
+              fill="var(--og-green)"
               opacity={0.12}
             />
           );
         })}
       {/* threshold lines */}
-      <line x1={PAD_L} x2={W - PAD_R} y1={y(WARN_L)} y2={y(WARN_L)} stroke="#f5a623" strokeDasharray="5 4" strokeWidth={1} />
-      <line x1={PAD_L} x2={W - PAD_R} y1={y(CRIT_L)} y2={y(CRIT_L)} stroke="#ff3b30" strokeDasharray="5 4" strokeWidth={1} />
-      <text x={W - PAD_R - 2} y={y(WARN_L) - 4} fill="#f5a623" fontSize={10} textAnchor="end">
+      <line x1={PAD_L} x2={W - PAD_R} y1={y(WARN_L)} y2={y(WARN_L)} stroke="var(--og-amber)" strokeDasharray="5 4" strokeWidth={1} />
+      <line x1={PAD_L} x2={W - PAD_R} y1={y(CRIT_L)} y2={y(CRIT_L)} stroke="var(--og-red)" strokeDasharray="5 4" strokeWidth={1} />
+      <text x={W - PAD_R - 2} y={y(WARN_L) - 4} fill="var(--og-amber)" fontSize={10} textAnchor="end">
         {es ? "advertencia 50% (47.5 L)" : "warn 50% (47.5 L)"}
       </text>
-      <text x={W - PAD_R - 2} y={y(CRIT_L) - 4} fill="#ff3b30" fontSize={10} textAnchor="end">
+      <text x={W - PAD_R - 2} y={y(CRIT_L) - 4} fill="var(--og-red)" fontSize={10} textAnchor="end">
         {es ? "crítico 30% (28.5 L)" : "critical 30% (28.5 L)"}
       </text>
       {/* confidence band */}
-      <polygon points={`${bandTop} ${bandBottom}`} fill="#3a7bd5" opacity={0.22} />
+      <polygon points={`${bandTop} ${bandBottom}`} fill="var(--og-blue)" opacity={0.22} />
       {/* level line */}
-      <polyline points={line} fill="none" stroke="#e8edf5" strokeWidth={1.6} />
+      <polyline points={line} fill="none" stroke="var(--og-text)" strokeWidth={1.6} />
       {/* alert dots (ladder-offset so same-window N1/N2/N3 all stay visible) */}
       {alerts.map((a) => {
         const lvl = Number(a.inputs.level_med_L ?? 80);
@@ -124,14 +124,14 @@ export default function LevelChart({
               cx={x(a.t_s)}
               cy={cy}
               r={6}
-              fill={ALERT_CSS[a.level] ?? "#e8edf5"}
-              stroke="#0e1420"
+              fill={ALERT_CSS[a.level] ?? "var(--og-text)"}
+              stroke="var(--og-panel-inset)"
               strokeWidth={1.5}
             />
             <text
               x={x(a.t_s)}
               y={cy - 9}
-              fill={ALERT_CSS[a.level] ?? "#e8edf5"}
+              fill={ALERT_CSS[a.level] ?? "var(--og-text)"}
               fontSize={10}
               fontWeight={700}
               textAnchor="middle"
@@ -142,18 +142,18 @@ export default function LevelChart({
         );
       })}
       {/* axes */}
-      <line x1={PAD_L} x2={PAD_L} y1={PAD_T} y2={H - PAD_B} stroke="#3a4a63" />
-      <line x1={PAD_L} x2={W - PAD_R} y1={H - PAD_B} y2={H - PAD_B} stroke="#3a4a63" />
-      <text x={PAD_L - 6} y={y(CAP_L)} fill="#9fb0c9" fontSize={10} textAnchor="end">
+      <line x1={PAD_L} x2={PAD_L} y1={PAD_T} y2={H - PAD_B} stroke="var(--og-line-soft)" />
+      <line x1={PAD_L} x2={W - PAD_R} y1={H - PAD_B} y2={H - PAD_B} stroke="var(--og-line-soft)" />
+      <text x={PAD_L - 6} y={y(CAP_L)} fill="var(--og-muted)" fontSize={10} textAnchor="end">
         95
       </text>
-      <text x={PAD_L - 6} y={y(60)} fill="#9fb0c9" fontSize={10} textAnchor="end">
+      <text x={PAD_L - 6} y={y(60)} fill="var(--og-muted)" fontSize={10} textAnchor="end">
         60
       </text>
-      <text x={PAD_L} y={H - 8} fill="#9fb0c9" fontSize={10}>
+      <text x={PAD_L} y={H - 8} fill="var(--og-muted)" fontSize={10}>
         t {tMin.toFixed(0)} s
       </text>
-      <text x={W - PAD_R} y={H - 8} fill="#9fb0c9" fontSize={10} textAnchor="end">
+      <text x={W - PAD_R} y={H - 8} fill="var(--og-muted)" fontSize={10} textAnchor="end">
         {tMax.toFixed(0)} s
       </text>
     </svg>

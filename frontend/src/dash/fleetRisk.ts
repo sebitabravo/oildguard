@@ -54,8 +54,8 @@ export const DEMO_FLEET_WHEELS: FleetWheelProxy[] = [
 export function latestWheelMetrics(wheel: FleetWheelProxy): WheelProxyMetrics {
   return {
     oilLitres: wheel.oilLitres,
-    temperatureC: wheel.temperatureC.at(-1) ?? 0,
-    vibrationMmS: wheel.vibrationMmS.at(-1) ?? 0,
-    currentA: wheel.currentA.at(-1) ?? 0,
+    temperatureC: wheel.temperatureC[wheel.temperatureC.length - 1] ?? 0,
+    vibrationMmS: wheel.vibrationMmS[wheel.vibrationMmS.length - 1] ?? 0,
+    currentA: wheel.currentA[wheel.currentA.length - 1] ?? 0,
   };
 }
