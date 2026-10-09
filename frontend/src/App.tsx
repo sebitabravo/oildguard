@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import BenchView from "./sim/bench/BenchView";
+import TruckView from "./sim/truck/TruckView";
 
 // S0 placeholder scene, kept intact for the Stub tab. A rotating box proves
 // the Vite + React + Three.js pipeline works. Sim A (bench rig + GDY106
@@ -94,10 +95,22 @@ function StubScene() {
   );
 }
 
-type Mode = "bench" | "stub";
+type Mode = "bench" | "stub" | "truck";
+
+function initialMode(): Mode {
+  const hash = window.location.hash;
+  if (hash === "#truck") return "truck";
+  if (hash === "#stub") return "stub";
+  return "bench";
+}
 
 export default function App() {
-  const [mode, setMode] = useState<Mode>("bench");
+  const [mode, setMode] = useState<Mode>(initialMode);
+
+  const select = (next: Mode) => {
+    setMode(next);
+    window.location.hash = next === "bench" ? "" : next;
+  };
 
   const tabStyle = (active: boolean): React.CSSProperties => ({
     cursor: "pointer",
@@ -125,19 +138,32 @@ export default function App() {
         <button
           type="button"
           style={tabStyle(mode === "bench")}
-          onClick={() => setMode("bench")}
+          onClick={() => select("bench")}
         >
           Bench (S1/T2)
         </button>
         <button
           type="button"
+          style={tabStyle(mode === "truck")}
+          onClick={() => select("truck")}
+        >
+          Truck (S2/T4)
+        </button>
+        <button
+          type="button"
           style={tabStyle(mode === "stub")}
-          onClick={() => setMode("stub")}
+          onClick={() => select("stub")}
         >
           Stub (S0)
         </button>
       </div>
-      {mode === "bench" ? <BenchView /> : <StubScene />}
+      {mode === "bench" ? (
+        <BenchView />
+      ) : mode === "truck" ? (
+        <TruckView />
+      ) : (
+        <StubScene />
+      )}
     </div>
   );
 }
