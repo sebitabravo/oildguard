@@ -9,6 +9,8 @@ import { createStage } from "../../twin/render/stage";
 import { createMaterials } from "../../twin/render/materials";
 import { createLabel, setLabelActive, setLabelText } from "../../twin/render/labels";
 import { CAPACITY_L, headFromVolume, stageSpeeds } from "../../twin/physics";
+import { buildWheelSceneAccessibilityCopy } from "../sceneAccessibility";
+import { useThrottledSceneAccessibility } from "../useThrottledSceneAccessibility";
 
 // Escena del banco GDY106 (Sim A): bastidor, carcasa con corte e internos.
 // El render (tone mapping, IBL, sombras) viene de twin/render/stage.ts.
@@ -111,6 +113,8 @@ export default function BenchScene({
   cutawayRef.current = cutaway;
   const explodedRef = useRef(exploded);
   explodedRef.current = exploded;
+  const accessibilityCopy = buildWheelSceneAccessibilityCopy({ oilLevel, mode }, lang);
+  const publishedAccessibilityCopy = useThrottledSceneAccessibility(accessibilityCopy);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -126,6 +130,9 @@ export default function BenchScene({
       maxPolarAngle: Math.PI * 0.495,
     });
     const { scene, camera, renderer, controls } = stage;
+    renderer.domElement.setAttribute("role", "img");
+    renderer.domElement.setAttribute("aria-label", accessibilityCopy.label);
+    renderer.domElement.setAttribute("aria-describedby", "wheel-scene-description");
     const mats = createMaterials();
 
     // Studio floor + faint technical grid (receives the rig shadows).
@@ -626,6 +633,14 @@ export default function BenchScene({
     };
   }, []);
 
+  useEffect(() => {
+    const canvas = hostRef.current?.querySelector("canvas");
+    if (!canvas) return;
+    canvas.setAttribute("role", "img");
+    canvas.setAttribute("aria-label", publishedAccessibilityCopy.label);
+    canvas.setAttribute("aria-describedby", "wheel-scene-description");
+  }, [publishedAccessibilityCopy.label, publishedAccessibilityCopy.caption]);
+
   const oilState = oilStateFor(clamp01(oilLevel));
   const oilCss = oilCssFor(oilState);
   const resting = mode === "rest";
@@ -633,6 +648,9 @@ export default function BenchScene({
   return (
     <div className="og-scene">
       <div ref={hostRef} className="og-scene__host" />
+      <p id="wheel-scene-description" className="og-visually-hidden" aria-live="polite" aria-atomic="true">
+        {publishedAccessibilityCopy.caption}
+      </p>
       <div className="og-overlay">
         <div
           className="og-hud og-hud--tl"

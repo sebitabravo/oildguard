@@ -186,6 +186,22 @@ export const dict = {
     es: "Foso sintético · rampa 10 % SUPUESTO · geometría y flota reproducibles (semilla {seed})",
   },
   "mine.hud.cycle": { en: "cycle", es: "ciclo" },
+  "a11y.mine.scene": {
+    en: "Open-pit mine: truck {truck}, {state}, cycle {cycle}.",
+    es: "Mina a cielo abierto: camión {truck}, {state}, ciclo {cycle}.",
+  },
+  "a11y.mine.caption": {
+    en: "Synthetic proxy only. Selected truck {truck}: {state}, cycle {cycle}. The five-truck fleet state is simulated; field data is pending.",
+    es: "Solo sustituto sintético. Camión seleccionado {truck}: {state}, ciclo {cycle}. El estado de la flota de cinco camiones es simulado; los datos de campo están pendientes.",
+  },
+  "a11y.wheel.scene": {
+    en: "GDY106 wheel cutaway: oil level {oil}, mode {mode}.",
+    es: "Corte de rueda GDY106: nivel de aceite {oil}, modo {mode}.",
+  },
+  "a11y.wheel.caption": {
+    en: "Synthetic proxy only. Oil level {oil} and mode {mode} are modelled, not field measurements.",
+    es: "Solo sustituto sintético. El nivel de aceite {oil} y el modo {mode} son valores modelados, no mediciones de campo.",
+  },
   "mine.hud.status.recal": { en: "RECAL", es: "RECAL" },
   "mine.hud.status.moving": { en: "IN MOTION", es: "EN MOVIMIENTO" },
   "mine.hud.status.standby": { en: "STANDBY", es: "EN ESPERA" },

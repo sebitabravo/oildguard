@@ -4,6 +4,11 @@ import { dict, dictKeys, t, type DictKey, type DictParams } from "./index";
 const exampleValues: Readonly<Record<string, string | number>> = {
   trucks: 5,
   queued: 0,
+  truck: "OG-03",
+  state: "Hauling",
+  cycle: 2,
+  oil: "66.5 L · 70%",
+  mode: "MOVING",
   seed: 7,
   length: 15.6,
   width: 8.69,

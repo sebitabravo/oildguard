@@ -14,6 +14,8 @@ import { getFleetStore, getPitWorld, normalizeMineCam, readMineUrl } from "./min
 import { HAUL_STATE_CSS, type HaulState } from "./cycle";
 import type { PlmState, TruckTick } from "../../twin/fleet/fleetSim";
 import { buildMineHudStatus, buildMineHudTitle, buildMineSceneLabelText, type MineSceneLabelId } from "./mineSceneCopy";
+import { buildMineSceneAccessibilityCopy } from "../sceneAccessibility";
+import { useThrottledSceneAccessibility } from "../useThrottledSceneAccessibility";
 
 interface TruckSceneProps {
   paused: boolean;
@@ -79,6 +81,11 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
     setPresetUi(preset);
   };
   const [hud, setHud] = useState({ state: "empty" as PlmState, selected: "OG-03", trucks: 5, queued: 0, recal: false, onGrade: false, cycle: 0 });
+  const accessibilityCopy = buildMineSceneAccessibilityCopy(
+    { truckId: hud.selected, state: hud.state, cycle: hud.cycle },
+    lang,
+  );
+  const publishedAccessibilityCopy = useThrottledSceneAccessibility(accessibilityCopy);
 
   useEffect(() => {
     if (stepTick > 0) pendingStepRef.current += 1;
@@ -104,6 +111,9 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
       maxPolarAngle: Math.PI * 0.49,
     });
     const { scene, camera, controls, sun, renderer } = stage;
+    renderer.domElement.setAttribute("role", "img");
+    renderer.domElement.setAttribute("aria-label", accessibilityCopy.label);
+    renderer.domElement.setAttribute("aria-describedby", "mine-scene-description");
     scene.environmentIntensity = 0.42;
     const mats = createMaterials();
     const pit: PitBuild = buildPit(mats, world);
@@ -298,6 +308,14 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
   }, []);
 
   useEffect(() => {
+    const canvas = hostRef.current?.querySelector("canvas");
+    if (!canvas) return;
+    canvas.setAttribute("role", "img");
+    canvas.setAttribute("aria-label", publishedAccessibilityCopy.label);
+    canvas.setAttribute("aria-describedby", "mine-scene-description");
+  }, [publishedAccessibilityCopy.label, publishedAccessibilityCopy.caption]);
+
+  useEffect(() => {
     const fleet = getFleetStore();
     fleet.setPaused(paused);
   }, [paused]);
@@ -314,6 +332,9 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
   return (
     <div className="og-scene og-scene--mine">
       <div ref={hostRef} className="og-scene__host" />
+      <p id="mine-scene-description" className="og-visually-hidden" aria-live="polite" aria-atomic="true">
+        {publishedAccessibilityCopy.caption}
+      </p>
       <div className="og-overlay">
         <div className="og-hud og-hud--tl" style={{ width: 390, ["--tone" as string]: css }}>
           <div className="og-hud__title">
