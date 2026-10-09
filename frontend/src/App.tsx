@@ -1,11 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import BenchView from "./sim/bench/BenchView";
 
-// S0 placeholder scene. A rotating box proves the Vite + React + Three.js
-// pipeline works. Full Sim A (bench rig + GDY106 wheel internals) lands in
-// S1 (T2/T3) and Sim B (930E truck + open-pit haul cycle) lands in S2 (T4/T5).
-// See odd/tasks/oilguard-mining-sim.md for the feature plan.
-export default function App() {
+// S0 placeholder scene, kept intact for the Stub tab. A rotating box proves
+// the Vite + React + Three.js pipeline works. Sim A (bench rig + GDY106
+// wheel internals) lands in S1 (T2/T3) and Sim B (930E truck + open-pit haul
+// cycle) lands in S2 (T4/T5). See odd/tasks/oilguard-mining-sim.md.
+function StubScene() {
   const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,17 +76,7 @@ export default function App() {
   }, []);
 
   return (
-    <div
-      style={{
-        fontFamily: "system-ui, sans-serif",
-        color: "#e8edf5",
-        background: "#0e1420",
-        minHeight: "100vh",
-        margin: 0,
-        padding: 24,
-      }}
-    >
-      <h1 style={{ margin: "0 0 8px" }}>OilGuard Mining Sim — S0 Stub</h1>
+    <div>
       <p style={{ margin: "0 0 16px", color: "#9fb0c9" }}>
         Placeholder Three.js canvas. Full Sim A (bench rig + wheel internals)
         arrives in S1 and Sim B (930E truck + haul cycle) arrives in S2.
@@ -99,6 +90,54 @@ export default function App() {
         the box auto-rotates. Orbit + camera presets land with the S1/S2 sim
         scenes.
       </p>
+    </div>
+  );
+}
+
+type Mode = "bench" | "stub";
+
+export default function App() {
+  const [mode, setMode] = useState<Mode>("bench");
+
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    cursor: "pointer",
+    color: active ? "#0e1420" : "#e8edf5",
+    background: active ? "#f5a623" : "transparent",
+    border: "1px solid #f5a623",
+    borderRadius: 6,
+    padding: "6px 14px",
+    fontWeight: 600,
+  });
+
+  return (
+    <div
+      style={{
+        fontFamily: "system-ui, sans-serif",
+        color: "#e8edf5",
+        background: "#0e1420",
+        minHeight: "100vh",
+        margin: 0,
+        padding: 24,
+      }}
+    >
+      <h1 style={{ margin: "0 0 8px" }}>OilGuard Mining Sim</h1>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <button
+          type="button"
+          style={tabStyle(mode === "bench")}
+          onClick={() => setMode("bench")}
+        >
+          Bench (S1/T2)
+        </button>
+        <button
+          type="button"
+          style={tabStyle(mode === "stub")}
+          onClick={() => setMode("stub")}
+        >
+          Stub (S0)
+        </button>
+      </div>
+      {mode === "bench" ? <BenchView /> : <StubScene />}
     </div>
   );
 }
