@@ -1,0 +1,441 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-09T09:38:37Z",
+  "title": "Design System: OilGuard Mining",
+  "extensions": {
+    "colorMeta": {
+      "machine-yellow": {
+        "role": "primary",
+        "displayName": "Machine Yellow",
+        "canonical": "#f2b705",
+        "tonalRamp": [
+          "oklch(15.0% 0.0459 85.0)",
+          "oklch(28.0% 0.0594 85.0)",
+          "oklch(41.0% 0.0850 85.0)",
+          "oklch(54.0% 0.1099 85.0)",
+          "oklch(66.0% 0.1349 85.0)",
+          "oklch(77.0% 0.1573 85.0)",
+          "oklch(87.0% 0.1420 85.0)",
+          "oklch(95.0% 0.0509 85.0)"
+        ]
+      },
+      "machine-yellow-deep": {
+        "role": "primary",
+        "displayName": "Machine Yellow Deep",
+        "canonical": "#d9a200",
+        "tonalRamp": [
+          "oklch(15.0% 0.0446 84.1)",
+          "oklch(28.0% 0.0606 84.1)",
+          "oklch(41.0% 0.0825 84.1)",
+          "oklch(54.0% 0.1066 84.1)",
+          "oklch(66.0% 0.1309 84.1)",
+          "oklch(77.0% 0.1527 84.1)",
+          "oklch(87.0% 0.1378 84.1)",
+          "oklch(95.0% 0.0494 84.1)"
+        ]
+      },
+      "instrument-amber": {
+        "role": "secondary",
+        "displayName": "Instrument Amber",
+        "canonical": "#f5a623",
+        "tonalRamp": [
+          "oklch(15.0% 0.0463 73.0)",
+          "oklch(28.0% 0.0630 73.0)",
+          "oklch(41.0% 0.0858 73.0)",
+          "oklch(54.0% 0.1108 73.0)",
+          "oklch(66.0% 0.1361 73.0)",
+          "oklch(77.0% 0.1587 73.0)",
+          "oklch(87.0% 0.1053 73.0)",
+          "oklch(95.0% 0.0377 73.0)"
+        ]
+      },
+      "caution-orange": {
+        "role": "secondary",
+        "displayName": "Caution Orange",
+        "canonical": "#ff8c42",
+        "tonalRamp": [
+          "oklch(15.0% 0.0587 50.4)",
+          "oklch(28.0% 0.0758 50.4)",
+          "oklch(41.0% 0.1086 50.4)",
+          "oklch(54.0% 0.1403 50.4)",
+          "oklch(66.0% 0.1637 50.4)",
+          "oklch(77.0% 0.1477 50.4)",
+          "oklch(87.0% 0.0758 50.4)",
+          "oklch(95.0% 0.0272 50.4)"
+        ]
+      },
+      "signal-green": {
+        "role": "tertiary",
+        "displayName": "Signal Green",
+        "canonical": "#2fbf71",
+        "tonalRamp": [
+          "oklch(15.0% 0.0480 154.1)",
+          "oklch(28.0% 0.0724 154.1)",
+          "oklch(41.0% 0.1036 154.1)",
+          "oklch(54.0% 0.1339 154.1)",
+          "oklch(66.0% 0.1644 154.1)",
+          "oklch(77.0% 0.1644 154.1)",
+          "oklch(87.0% 0.1644 154.1)",
+          "oklch(95.0% 0.0802 154.1)"
+        ]
+      },
+      "motion-blue": {
+        "role": "tertiary",
+        "displayName": "Motion Blue",
+        "canonical": "#4a8ef0",
+        "tonalRamp": [
+          "oklch(15.0% 0.1193 257.8)",
+          "oklch(28.0% 0.1077 257.8)",
+          "oklch(41.0% 0.1465 257.8)",
+          "oklch(54.0% 0.1623 257.8)",
+          "oklch(66.0% 0.1623 257.8)",
+          "oklch(77.0% 0.1134 257.8)",
+          "oklch(87.0% 0.0613 257.8)",
+          "oklch(95.0% 0.0231 257.8)"
+        ]
+      },
+      "critical-red": {
+        "role": "tertiary",
+        "displayName": "Critical Red",
+        "canonical": "#ff4d42",
+        "tonalRamp": [
+          "oklch(15.0% 0.0736 28.0)",
+          "oklch(28.0% 0.1167 28.0)",
+          "oklch(41.0% 0.1672 28.0)",
+          "oklch(54.0% 0.2160 28.0)",
+          "oklch(66.0% 0.2160 28.0)",
+          "oklch(77.0% 0.1293 28.0)",
+          "oklch(87.0% 0.0664 28.0)",
+          "oklch(95.0% 0.0251 28.0)"
+        ]
+      },
+      "graphite-base": {
+        "role": "neutral",
+        "displayName": "Graphite Base",
+        "canonical": "#0a0e16",
+        "tonalRamp": [
+          "oklch(15.0% 0.0182 263.9)",
+          "oklch(28.0% 0.0182 263.9)",
+          "oklch(41.0% 0.0182 263.9)",
+          "oklch(54.0% 0.0182 263.9)",
+          "oklch(66.0% 0.0182 263.9)",
+          "oklch(77.0% 0.0182 263.9)",
+          "oklch(87.0% 0.0182 263.9)",
+          "oklch(95.0% 0.0182 263.9)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "canonical": "#111823",
+        "tonalRamp": [
+          "oklch(15.0% 0.0244 259.3)",
+          "oklch(28.0% 0.0244 259.3)",
+          "oklch(41.0% 0.0244 259.3)",
+          "oklch(54.0% 0.0244 259.3)",
+          "oklch(66.0% 0.0244 259.3)",
+          "oklch(77.0% 0.0244 259.3)",
+          "oklch(87.0% 0.0244 259.3)",
+          "oklch(95.0% 0.0232 259.3)"
+        ]
+      },
+      "panel-raised": {
+        "role": "neutral",
+        "displayName": "Panel Raised",
+        "canonical": "#182233",
+        "tonalRamp": [
+          "oklch(15.0% 0.0355 260.7)",
+          "oklch(28.0% 0.0355 260.7)",
+          "oklch(41.0% 0.0355 260.7)",
+          "oklch(54.0% 0.0355 260.7)",
+          "oklch(66.0% 0.0355 260.7)",
+          "oklch(77.0% 0.0355 260.7)",
+          "oklch(87.0% 0.0355 260.7)",
+          "oklch(95.0% 0.0236 260.7)"
+        ]
+      },
+      "readout": {
+        "role": "neutral",
+        "displayName": "Readout",
+        "canonical": "#e9eef7",
+        "tonalRamp": [
+          "oklch(15.0% 0.0132 262.4)",
+          "oklch(28.0% 0.0132 262.4)",
+          "oklch(41.0% 0.0132 262.4)",
+          "oklch(54.0% 0.0132 262.4)",
+          "oklch(66.0% 0.0132 262.4)",
+          "oklch(77.0% 0.0132 262.4)",
+          "oklch(87.0% 0.0132 262.4)",
+          "oklch(95.0% 0.0132 262.4)"
+        ]
+      },
+      "body-copy": {
+        "role": "neutral",
+        "displayName": "Body Copy",
+        "canonical": "#c9d5e8",
+        "tonalRamp": [
+          "oklch(15.0% 0.0294 259.6)",
+          "oklch(28.0% 0.0294 259.6)",
+          "oklch(41.0% 0.0294 259.6)",
+          "oklch(54.0% 0.0294 259.6)",
+          "oklch(66.0% 0.0294 259.6)",
+          "oklch(77.0% 0.0294 259.6)",
+          "oklch(87.0% 0.0294 259.6)",
+          "oklch(95.0% 0.0239 259.6)"
+        ]
+      },
+      "annotation": {
+        "role": "neutral",
+        "displayName": "Annotation",
+        "canonical": "#9db0cc",
+        "tonalRamp": [
+          "oklch(15.0% 0.0457 258.0)",
+          "oklch(28.0% 0.0457 258.0)",
+          "oklch(41.0% 0.0457 258.0)",
+          "oklch(54.0% 0.0457 258.0)",
+          "oklch(66.0% 0.0457 258.0)",
+          "oklch(77.0% 0.0457 258.0)",
+          "oklch(87.0% 0.0457 258.0)",
+          "oklch(95.0% 0.0234 258.0)"
+        ]
+      },
+      "rule-line": {
+        "role": "neutral",
+        "displayName": "Rule Line",
+        "canonical": "#3a4a63",
+        "tonalRamp": [
+          "oklch(15.0% 0.0470 259.2)",
+          "oklch(28.0% 0.0470 259.2)",
+          "oklch(41.0% 0.0470 259.2)",
+          "oklch(54.0% 0.0470 259.2)",
+          "oklch(66.0% 0.0470 259.2)",
+          "oklch(77.0% 0.0470 259.2)",
+          "oklch(87.0% 0.0470 259.2)",
+          "oklch(95.0% 0.0229 259.2)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "brand": {
+        "displayName": "Brand",
+        "purpose": "Product name in the fixed header rail. Appears once."
+      },
+      "readout": {
+        "displayName": "Readout",
+        "purpose": "The primary instrument value. At most one per panel."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Drawer and panel section headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Control labels, tab labels, metric names."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running prose in the drawer, 65-75ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "HUD metadata and field labels."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "Uppercase plate text: table headers, badges, tags."
+      }
+    },
+    "shadows": [
+      {
+        "name": "floating-glass",
+        "value": "0 10px 30px rgba(0, 0, 0, 0.35)",
+        "purpose": "HUD panels and popovers suspended over the live 3D render, always paired with a backdrop blur."
+      },
+      {
+        "name": "tone-ring",
+        "value": "0 0 0 1px var(--tone, transparent) inset",
+        "purpose": "Active state of a tone-carrying card. An inset hairline in the tone colour, never a glow."
+      },
+      {
+        "name": "label-bloom",
+        "value": "0 4px 14px rgba(0, 0, 0, 0.4)",
+        "purpose": "In-scene labels, so text stays legible against arbitrary geometry."
+      },
+      {
+        "name": "brand-mark",
+        "value": "0 0 0 1px rgba(255, 255, 255, 0.12) inset, 0 4px 14px rgba(242, 183, 5, 0.25)",
+        "purpose": "The OG mark in the header rail. The only glow that is not a state response."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "0.15s ease",
+        "purpose": "Default transition for background and border-colour on interactive elements."
+      },
+      {
+        "name": "ease-panel",
+        "value": "0.2s ease",
+        "purpose": "Drawer collapse and resize. The only timing function named in the system."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "hud-trim",
+        "value": "1100px",
+        "purpose": "Header tagline and the bottom-left HUD stack are removed entirely."
+      },
+      {
+        "name": "stack",
+        "value": "900px",
+        "purpose": "View stacks vertically; the drawer becomes a full-width band capped at 45% of viewport height."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action on a surface. Machine Yellow on near-black text.",
+      "html": "<button class=\"ds-btn-primary\">PAUSE CYCLE</button>",
+      "css": ".ds-btn-primary { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: #15110a; background: var(--og-yellow); border: 1px solid transparent; border-radius: 8px; height: 34px; padding: 0 14px; cursor: pointer; transition: background .15s, border-color .15s; } .ds-btn-primary:hover { background: var(--og-yellow-deep); } .ds-btn-primary:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; } .ds-btn-primary:active { background: var(--og-yellow-deep); }"
+    },
+    {
+      "name": "OK Button",
+      "kind": "button",
+      "refersTo": "button-ok",
+      "description": "Advances a running simulation. Signal Green, same geometry.",
+      "html": "<button class=\"ds-btn-ok\">STEP +1 s</button>",
+      "css": ".ds-btn-ok { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: var(--og-bg); background: var(--og-green); border: 1px solid transparent; border-radius: 8px; height: 34px; padding: 0 14px; cursor: pointer; transition: background .15s; } .ds-btn-ok:hover { filter: brightness(.92); } .ds-btn-ok:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; } .ds-btn-ok:disabled { background: var(--og-panel-2); color: var(--og-muted); opacity: .45; cursor: not-allowed; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary or reversible action. Translucent wash with a hairline.",
+      "html": "<button class=\"ds-btn-ghost\">RESTART (LOAD)</button>",
+      "css": ".ds-btn-ghost { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: var(--og-text); background: rgba(255,255,255,.05); border: 1px solid var(--og-line); border-radius: 8px; height: 34px; padding: 0 14px; cursor: pointer; transition: background .15s, border-color .15s; } .ds-btn-ghost:hover { background: rgba(255,255,255,.12); border-color: var(--og-line-strong); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
+    },
+    {
+      "name": "Icon Button",
+      "kind": "button",
+      "refersTo": "icon-button",
+      "description": "The 32px drawer collapse toggle. Glyph in, chrome out.",
+      "html": "<button class=\"ds-icon-btn\" aria-label=\"Collapse panel\">&#8250;</button>",
+      "css": ".ds-icon-btn { font-family: var(--og-font); font-size: 18px; line-height: 1; color: var(--og-text); background: rgba(255,255,255,.05); border: 1px solid var(--og-line); border-radius: 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background .15s, border-color .15s; } .ds-icon-btn:hover { background: rgba(255,255,255,.12); } .ds-icon-btn:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
+    },
+    {
+      "name": "Nav Item (active)",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Section rail. Exactly one item is active, and it is machine yellow.",
+      "html": "<nav class=\"ds-nav\"><button class=\"ds-nav-item\">Mine &amp; Fleet</button><button class=\"ds-nav-item\" aria-current=\"page\" class=\"ds-nav-item ds-nav-item--on\">Monitoring</button></nav>",
+      "css": ".ds-nav { display: flex; gap: 4px; } .ds-nav-item { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: var(--og-muted); background: transparent; border: 1px solid transparent; border-radius: 8px; height: 36px; padding: 0 12px; cursor: pointer; transition: background .15s, color .15s, border-color .15s; } .ds-nav-item:hover { color: var(--og-text); } .ds-nav-item--on { color: var(--og-yellow); background: rgba(242,183,5,.12); border-color: rgba(242,183,5,.38); } .ds-nav-item:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "button",
+      "refersTo": "seg-button-pressed",
+      "description": "Camera presets inside a 3D view. Compressed version of the nav idea.",
+      "html": "<div class=\"ds-seg\"><button class=\"ds-seg-btn\">pit</button><button class=\"ds-seg-btn ds-seg-btn--on\">hero</button><button class=\"ds-seg-btn\">cab</button></div>",
+      "css": ".ds-seg { display: inline-flex; gap: 4px; padding: 3px; background: var(--og-glass); border: 1px solid var(--og-glass-line); border-radius: 8px; } .ds-seg-btn { font-family: var(--og-font); font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--og-muted); background: transparent; border: 0; border-radius: 6px; height: 28px; padding: 0 10px; cursor: pointer; } .ds-seg-btn:hover { color: var(--og-text); } .ds-seg-btn--on { background: var(--og-yellow); color: #15110a; } .ds-seg-btn:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
+    },
+    {
+      "name": "Tone Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "A machine-state card. Flat at rest; an inset tone ring when active.",
+      "html": "<div class=\"ds-card\"><span class=\"ds-dot\"></span><strong>HAUL</strong><p class=\"ds-card-sub\">moving &middot; 12 s</p></div><div class=\"ds-card ds-card--on\" style=\"--tone: #4a8ef0\"><span class=\"ds-dot\"></span><strong>WAIT</strong><p class=\"ds-card-sub\">rest &middot; 5 s</p></div>",
+      "css": ".ds-card { font-family: var(--og-font); position: relative; background: var(--og-panel); border: 1px solid var(--og-line); border-radius: 8px; padding: 12px; color: var(--og-body); } .ds-card--on { background: #1d2a40; box-shadow: 0 0 0 1px var(--tone, transparent) inset; } .ds-card strong { display: block; font-size: 13px; font-weight: 700; color: var(--og-text); letter-spacing: .02em; } .ds-card-sub { margin: 4px 0 0; font-size: 12px; color: var(--og-muted); font-variant-numeric: tabular-nums; } .ds-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--tone, var(--og-muted)); box-shadow: 0 0 8px var(--tone, transparent); margin-bottom: 6px; }"
+    },
+    {
+      "name": "Data Panel",
+      "kind": "card",
+      "refersTo": "data-panel",
+      "description": "The monitoring material: hairline border, 6px radius, darker than the shell.",
+      "html": "<section class=\"ds-panel\"><h3>Oil level + confidence</h3><p class=\"ds-readout\">80.0 <span>L</span></p><p class=\"ds-meta\">conf 0.925 &middot; SYNTHETIC-PROXY</p></section>",
+      "css": ".ds-panel { font-family: var(--og-font); background: #0e1420; border: 1px solid #2a3a55; border-radius: 6px; padding: 16px; } .ds-panel h3 { margin: 0 0 4px; font-size: 14px; font-weight: 700; letter-spacing: .02em; color: var(--og-text); } .ds-readout { margin: 8px 0 0; font-size: 22px; font-weight: 700; line-height: 1.1; color: var(--og-green); font-variant-numeric: tabular-nums; } .ds-readout span { font-size: 13px; font-weight: 600; color: var(--og-muted); } .ds-meta { margin: 8px 0 0; font-size: 12px; color: #9fb0c9; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Honesty Badge",
+      "kind": "chip",
+      "refersTo": "badge-caution",
+      "description": "The truth qualifier. Never decorative; expands into the full claim.",
+      "html": "<button class=\"ds-badge\">Synthetic proxy</button>",
+      "css": ".ds-badge { font-family: var(--og-font); font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #ffd27a; background: rgba(30,22,8,.8); border: 1px solid rgba(245,166,35,.7); border-radius: 999px; height: 24px; padding: 0 10px; cursor: pointer; transition: background .15s; } .ds-badge:hover { background: rgba(60,42,8,.88); } .ds-badge:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
+    },
+    {
+      "name": "Provenance Tag",
+      "kind": "chip",
+      "refersTo": "tag-verified",
+      "description": "The signature component. Three variants, three fixed meanings, no fill.",
+      "html": "<span class=\"ds-tag ds-tag--verified\">VERIFIED</span> <span class=\"ds-tag ds-tag--derived\">DERIVED</span> <span class=\"ds-tag ds-tag--assumption\">ASSUMPTION</span>",
+      "css": ".ds-tag { font-family: var(--og-font); display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; padding: 1px 6px; border-radius: 999px; border: 1px solid currentColor; } .ds-tag--verified { color: var(--og-green); } .ds-tag--derived { color: var(--og-blue); } .ds-tag--assumption { color: var(--og-yellow); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Calibrated Instrument",
+    "overview": "Every surface in this product behaves like a measuring instrument, not like an application. A gauge does not decorate its reading; it declares its uncertainty. The oil level arrives wrapped in a confidence band because the reading has one. Every figure carries a provenance tag - VERIFIED, DERIVED, ASSUMPTION - because a number without a source is a liability on equipment a person is accountable for.\n\nMachine yellow on graphite carries that idea physically. The yellow is Komatsu's own paint - komatsuYellow in the 3D palette is the same value as the brand token - so the interface and the machine are literally the same colour. Graphite is the unlit pit the instrument sits in.\n\nDensity is deliberate and high. This is read by an engineer comparing a trend against a threshold, so information per square centimetre outranks whitespace. The system refuses the entire vocabulary of reassurance: no progress theatre, no celebratory motion, no soft-card dashboard idiom. The instrument is quiet at rest. Its job is to be believed when it speaks.",
+    "keyCharacteristics": [
+      "Machine yellow as identity, Instrument amber as caution - two near-identical yellows that never trade roles.",
+      "Depth by tone in the shell, by hairline border in the data surfaces: two documented materials.",
+      "Provenance as a first-class visual component, alongside colour and type size.",
+      "Tabular figures everywhere, so nothing jitters while it updates.",
+      "Flat at rest. Shadow is a response to state, never decoration."
+    ],
+    "rules": [
+      {
+        "name": "The Two-Yellow Rule",
+        "section": "colors",
+        "body": "Machine Yellow is who we are; Instrument Amber is what we warn about. Neither ever takes the other's job. If a state can only be distinguished by swapping which yellow it uses, the state needs a second signal - a label, a ring, or a position."
+      },
+      {
+        "name": "The Machine-Wears-Its-Own-Paint Rule",
+        "section": "colors",
+        "body": "Machine Yellow is simultaneously the brand colour and the machine's paint in the 3D scene, and that overlap is intentional, not a coincidence to be normalised away."
+      },
+      {
+        "name": "The Status Palette Is Closed",
+        "section": "colors",
+        "body": "Signal Green, Motion Blue, Instrument Amber, Caution Orange and Critical Red carry fixed meanings. They are never reassigned for decoration."
+      },
+      {
+        "name": "The Tabular Rule",
+        "section": "typography",
+        "body": "Every number that changes over time carries tabular-nums, so a figure holds its column while it updates."
+      },
+      {
+        "name": "The Fixed-Pixel Rule",
+        "section": "typography",
+        "body": "The system is absolute pixels - no rem, no html font-size - so a readout occupies the same width at every density."
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "section": "elevation",
+        "body": "Surfaces are flat at rest. Shadow appears only as a response to state - focus, active tone, or a panel genuinely floating above a render."
+      },
+      {
+        "name": "The Glass Is Not Frosted, It Is Situated",
+        "section": "elevation",
+        "body": "Backdrop blur marks a panel floating over live 3D content. Do not blur a panel sitting on flat graphite; there is nothing behind it to situate."
+      }
+    ],
+    "dos": [
+      "Do carry the provenance of every figure into the layout - a tag, a badge, a footnote naming the source file and the assumption it rests on.",
+      "Do use Machine Yellow for identity and selection, and Instrument Amber for caution, and keep them in their lanes.",
+      "Do mark live data and demo data differently, and label which is which, even when the backend is healthy.",
+      "Do let density serve the comparison being made. An engineer reading a trend against a threshold wants the pixels.",
+      "Do keep the 2px Machine Yellow focus ring on every interactive element."
+    ],
+    "donts": [
+      "Don't gamify. No celebratory progress fills, no status emojis, no green glow because a number went up.",
+      "Don't polish into a SaaS dashboard. No soft white cards, no gentle floating shadows, no generous corner radii.",
+      "Don't build a game. No neon, no cinematic bloom, no particles, no dramatic sky.",
+      "Don't invent a type scale. Fixed absolute pixels, tabular figures, and the existing steps.",
+      "Don't let a shadow appear without a state to name.",
+      "Don't reuse a status colour for anything but its assigned condition.",
+      "Don't quietly approximate the 980E. Validation covers the 930E and GDY106 only."
+    ]
+  }
+}
