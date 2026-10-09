@@ -19,4 +19,9 @@ describe("dashboard backend note localization", () => {
     expect(localizeDashboardBackendText(known, "en")).toBe("No evaluation is available for the current data store.");
     expect(localizeDashboardBackendText(unknown, "es")).toBe(unknown);
   });
+
+  test("preserves prototype property names as unknown backend text", () => {
+    expect(localizeDashboardBackendText("constructor", "es")).toBe("constructor");
+    expect(localizeDashboardBackendText("toString", "es")).toBe("toString");
+  });
 });

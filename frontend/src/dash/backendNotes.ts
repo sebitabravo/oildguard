@@ -7,6 +7,7 @@ const BACKEND_TEXT_KEYS: Record<string, DictKey> = {
 };
 
 export function localizeDashboardBackendText(value: string, lang: Lang): string {
+  if (!Object.prototype.hasOwnProperty.call(BACKEND_TEXT_KEYS, value)) return value;
   const key = BACKEND_TEXT_KEYS[value];
-  return key ? t(key, lang) : value;
+  return t(key, lang);
 }
