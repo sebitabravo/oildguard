@@ -11,8 +11,9 @@ fallback is logged clearly (never a silent drop).
 
 Query path: GET /level (latest row + confidence stub), GET /windows
 (rest windows grouped from in-memory ``recal_window`` flags; the full
-rules detector lives in ``sim/detect.py``), GET /alerts + GET /rul
-(honest NOT_IMPLEMENTED_YET stubs until S5 T9/T10).
+rules detector lives in ``sim/detect.py``), GET /alerts (T10 N1–N4
+ladder over the memory store) + GET /rul (T10 trend-extrapolated RUL,
+lubrication-gated with an honest anomaly-only fallback).
 
 OpenAPI docs are served at /docs and /openapi.json.
 """
@@ -50,12 +51,14 @@ CAPACITY_L = 95.0  # GDY106 nominal, SAE 85W-140 (physics anchor)
 
 app = FastAPI(
     title="OilGuard Mining Sim API (S4/T8)",
-    version="0.2.0",
+    version="0.3.0",
     description=(
         "S4 ingestion + query slice. POST /ingest accepts T6 SignalRow "
         "batches; GET /level and GET /windows serve the memory store "
-        "(InfluxDB when reachable). GET /alerts and GET /rul are honest "
-        "NOT_IMPLEMENTED_YET stubs until S5 (T9/T10)."
+        "(InfluxDB when reachable). GET /alerts serves the T10 N1–N4 "
+        "ladder and GET /rul the T10 trend-extrapolated RUL "
+        "(synthetic-proxy until S7 bench proof; suppressed to "
+        "anomaly-only when precision is insufficient)."
     ),
 )
 
@@ -187,6 +190,53 @@ def _latest_row() -> dict[str, Any] | None:
         return max(_store_rows, key=lambda r: int(r.get("seq", 0)))
 
 
+def _t10_bundle() -> tuple[dict[str, Any] | None, str]:
+    """Evaluate the T10 ladder/RUL over the in-memory store.
+
+    Returns (bundle, fallback_note). bundle is None when no evaluation
+    is possible (empty store, missing T10 logic, evaluation error) — the
+    fallback note says why, so callers stay honest instead of 500ing.
+    Rest grouping reuses the same ``recal_window`` runs as GET /windows
+    (the full T7 rules detector is ``sim/detect.py``).
+    """
+    with _store_lock:
+        rows = sorted(_store_rows, key=lambda r: int(r.get("seq", 0)))
+    if not rows:
+        return None, (
+            "no rows ingested yet; POST SignalRow batches to /ingest, "
+            "then GET /alerts walks the N1–N4 ladder."
+        )
+    try:
+        from ai.ladder import evaluate as _evaluate_ladder  # type: ignore
+    except Exception as exc:  # noqa: BLE001 - optional T10 logic boundary
+        return None, (
+            f"T10 logic unavailable in this image ({exc}); rows are kept, "
+            f"alerts unavailable. Rebuild with the repo-root context so "
+            f"ai/ ships (see backend/Dockerfile)."
+        )
+    samples = []
+    for r in rows:
+        s = dict(r)
+        try:
+            s["rest"] = int(float(r.get("recal_window", 0))) == 1
+        except (ValueError, TypeError):
+            s["rest"] = False
+        samples.append(s)
+    try:
+        bundle = _evaluate_ladder(samples)
+    except Exception as exc:  # noqa: BLE001 - scoring must never 500 queries
+        log.warning("T10 evaluation failed: %s", exc)
+        return None, (
+            f"T10 evaluation failed ({exc}); surface anomaly-only "
+            f"(ai/flags.jsonl path) instead."
+        )
+    return bundle, (
+        "memory-store grouping by recal_window flags (full T7 detector: "
+        "sim/detect.py); rest-gated synthetic-proxy model, UNPROVEN until "
+        "S7 bench (see docs/t10-rul-ladder.md)."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -308,32 +358,65 @@ def windows(limit: int = 50) -> dict:
 
 @app.get("/alerts")
 def alerts() -> dict:
-    return {
-        "status": "NOT_IMPLEMENTED_YET",
-        "kind": "alerts",
-        "as_of": _now_iso(),
-        "data": {
+    bundle, fallback = _t10_bundle()
+    if bundle is None:
+        data: dict[str, Any] = {
             "alerts": [],
+            "escalation": [],
             "ladder": ["N1", "N2", "N3", "N4"],
-            "note": "N1-N4 ladder logic lands in S5 (T10). No synthetic alerts are emitted before then.",
-        },
-    }
+            "model": "synthetic-proxy",
+            "note": "No T10 evaluation available for the current store.",
+            "fallback": fallback,
+        }
+    else:
+        data = {
+            "alerts": bundle["alerts"],
+            "escalation": bundle["escalation"],
+            "ladder": bundle["ladder"],
+            "level": bundle["level"],
+            "rul_status": bundle["rul"].get("status"),
+            "model": bundle["model"],
+            "note": bundle["note"],
+            "fallback": fallback,
+        }
+    return {"status": "ok", "kind": "alerts", "as_of": _now_iso(), "data": data}
 
 
 @app.get("/rul")
 def rul() -> dict:
-    return {
-        "status": "NOT_IMPLEMENTED_YET",
-        "kind": "rul",
-        "as_of": _now_iso(),
-        "data": {
+    bundle, fallback = _t10_bundle()
+    if bundle is None or bundle["rul"].get("status") != "ok":
+        reason = fallback if bundle is None else bundle["rul"].get("reason", "")
+        data = {
             "hours": None,
             "haul_cycles": None,
             "shifts": None,
             "confidence": 0.0,
-            "note": "Trend-extrapolated RUL lands in S5 (T10).",
-        },
-    }
+            "status": "suppressed",
+            "anomaly_only": True,
+            "model": "synthetic-proxy",
+            "note": f"RUL unavailable: {reason} Surface anomaly-only alerts instead.",
+            "fallback": fallback,
+        }
+    else:
+        r = bundle["rul"]
+        data = {
+            "hours": r["hours"],
+            "hours_to_warning": r["hours_to_warning"],
+            "hours_to_critical": r["hours_to_critical"],
+            "haul_cycles": r["haul_cycles"],
+            "shifts": r["shifts"],
+            "confidence": r["confidence"],
+            "status": "ok",
+            "anomaly_only": False,
+            "slope_L_per_h": r["slope_L_per_h"],
+            "r2": r["r2"],
+            "current_level_L": r["current_level_L"],
+            "model": r["model"],
+            "note": r["note"],
+            "fallback": fallback,
+        }
+    return {"status": "ok", "kind": "rul", "as_of": _now_iso(), "data": data}
 
 
 # ---------------------------------------------------------------------------

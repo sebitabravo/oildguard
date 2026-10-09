@@ -16,8 +16,8 @@ In compose the dashboard uses `VITE_BACKEND_URL=http://localhost:8000`.
 | POST | `/ingest` | `ok` — batch stored (memory + best-effort InfluxDB) |
 | GET | `/level` | `ok` — latest row echoed; `confidence` stub `0.0` until T10 |
 | GET | `/windows?limit=50` | `ok` — rest windows grouped from `recal_window` flags |
-| GET | `/alerts` | `NOT_IMPLEMENTED_YET` (honest stub until S5 T10) |
-| GET | `/rul` | `NOT_IMPLEMENTED_YET` (honest stub until S5 T10) |
+| GET | `/alerts` | `ok` — T10 N1–N4 ladder over the memory store (`synthetic-proxy`; honest fallback note when unevaluatable) |
+| GET | `/rul` | `ok` — T10 trend-extrapolated RUL, or `suppressed` + anomaly-only note when precision-gated |
 
 ## POST /ingest
 
@@ -151,9 +151,21 @@ EOF
 
 curl -s localhost:8000/level
 curl -s 'localhost:8000/windows?limit=5'
-curl -s localhost:8000/alerts   # NOT_IMPLEMENTED_YET until T10
-curl -s localhost:8000/rul      # NOT_IMPLEMENTED_YET until T10
+curl -s localhost:8000/alerts   # T10 ladder (fallback note when store empty)
+curl -s localhost:8000/rul      # T10 RUL (suppressed + anomaly-only when gated)
 ```
+
+## GET /alerts + GET /rul (T10)
+
+Both evaluate the memory store with `ai/ladder.py` (rest runs grouped
+by `recal_window`, same contract as `/windows`). `GET /alerts` returns
+`{alerts, escalation, ladder: [N1..N4], level, rul_status, model:
+"synthetic-proxy", note, fallback}`; `GET /rul` returns `{hours,
+hours_to_warning, hours_to_critical, haul_cycles, shifts, confidence,
+...}` or the suppressed variant (`hours: null, anomaly_only: true` +
+reason). Empty store, missing `ai/` in the image, or evaluation errors
+return the honest `fallback`/`note` strings — never a 500. Full method,
+thresholds, and real log excerpts: `docs/t10-rul-ladder.md`.
 
 ## Round-trip (generator -> MQTT -> backend -> query)
 
