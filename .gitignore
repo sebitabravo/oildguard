@@ -42,3 +42,7 @@ coverage/
 # Agent tooling scratch
 .playwright-mcp/
 .atl/
+
+# Impeccable skill — platform engine binaries (16MB, identical per harness).
+# The launcher downloads the engine on first run, so docs travel but binaries don't.
+**/skills/impeccable/scripts/bin/
