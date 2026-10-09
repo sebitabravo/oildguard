@@ -13,6 +13,12 @@ services:
       DOCKER_INFLUXDB_INIT_ORG: oilguard
       DOCKER_INFLUXDB_INIT_BUCKET: oilguard
       DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: oilguard-local-admin-token
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
 
   mqtt:
     image: eclipse-mosquitto:2.0.18
@@ -24,6 +30,13 @@ services:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
       - ./mosquitto/log:/mosquitto/log
+    healthcheck:
+      # Broker is up when it accepts a publish on localhost.
+      test: ["CMD-SHELL", "mosquitto_pub -h localhost -t oilguard/health -m ok -q 0 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
 
   backend:
     build: ./backend
@@ -31,14 +44,26 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - influxdb
-      - mqtt
+      influxdb:
+        condition: service_healthy
+      mqtt:
+        condition: service_healthy
     environment:
       INFLUXDB_URL: http://influxdb:8086
       INFLUXDB_ORG: oilguard
       INFLUXDB_BUCKET: oilguard
+      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN:-oilguard-local-admin-token}
       MQTT_HOST: mqtt
       MQTT_PORT: "1883"
+      MQTT_TOPIC: oilguard/signals
+      BACKEND_URL: http://backend:8000
+    healthcheck:
+      # stdlib-only probe (python:3.11-slim has no curl).
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
 
   frontend:
     build: ./frontend
@@ -47,6 +72,8 @@ services:
       - "5173:5173"
     depends_on:
       - backend
+    environment:
+      VITE_BACKEND_URL: http://localhost:8000
 
 volumes:
   influxdb-data:
