@@ -331,21 +331,22 @@ Pills at 1px/6px padding, 11px uppercase, outlined in `currentColor` with no fil
 
 ## Known Debt
 
-The monitoring dashboard does not read the tokens. It was built with inline style objects and its own hex palette, and it has since drifted from the shell. **`theme.css` is normative**; the values below are the debt, recorded so it can be corrected against this spec.
+The fleet dashboard's `.og-fleet-*` styles are defined in `frontend/src/theme.css` and use the shared semantic theme variables. A scan of `frontend/src/dash/*.tsx` found no inline hex color literals; some non-color layout styles remain inline in the Preact component.
 
-| Dashboard literal | Nearest token | State |
-|---|---|---|
-| `#9fb0c9` (12 uses) | Annotation `#9db0cc` | near-miss grey |
-| `#e8edf5` (8 uses) | Readout `#e9eef7` | near-miss grey |
-| `#c7d3e8` (5 uses) | Body Copy `#c9d5e8` | near-miss grey |
-| `#ff3b30` | Critical Red `#ff4d42` | different red, same meaning |
-| `#3a7bd5` | Motion Blue `#4a8ef0` | different blue, same meaning |
-| `#8b98ad` | Annotation `#9db0cc` | fourth neutral grey |
-| `#2a3a55` (5 uses) | — | no token: card border |
-| `#111a2c` (4 uses) | Panel Raised `#182233` | no token: card fill |
-| `#0e1420` (5 uses) | Panel `#111823` | no token: panel fill |
+The current fleet table class-to-token mapping is:
 
-Exact duplicates already present and safe: `#f5a623` (Instrument Amber), `#2fbf71` (Signal Green), `#3a4a63` (Rule Line). `--og-orange` is defined but referenced zero times, its exact value `#ff8c42` hardcoded twice — wire the token or delete it.
+| Class | Semantic theme variables |
+|---|---|
+| `.og-fleet-panel` | `--og-line-dashboard`, `--og-panel-dashboard` |
+| `.og-fleet-panel__heading p`, `.og-fleet-link` | `--og-yellow` |
+| `.og-fleet-panel__risk-title`, `.og-fleet-table th` | `--og-muted` |
+| `.og-fleet-panel__assumption`, `.og-fleet-table` | `--og-body` |
+| `.og-fleet-wrap`, `.og-fleet-table` borders | `--og-line` |
+| `.og-fleet-risk`, `.og-fleet-risk--alert` | `--og-green`, `--og-red` |
+| `.og-fleet-instrumented`, `.og-fleet-channels` | `--og-blue`, `--og-amber` |
+| `.og-fleet-link:hover` | `--og-text` |
+
+`frontend/src/theme.css` remains the source of these tokens. Other dashboard-specific inline layout styles are not a separate color palette.
 
 Also outside the token system: `font-weight: 500` is used in the dashboard but defined nowhere in the stylesheet; the alert colour map is duplicated byte-for-byte in two files; `tabular-nums` is declared as two independent rules rather than composed; and the dock gap has three different values (8px, 12px, 16px) for one role.
 

@@ -21,7 +21,7 @@ The pre-proposal defines four operational recipients, one per alert level, and t
 
 Direct beneficiaries are maintenance technicians, reliability engineers, and maintenance supervisors. Secondary beneficiaries are maintenance management and planning, mine operations, and fleet customers.
 
-Stated experience target: a maintenance supervisor understands fleet state in seconds and reaches one wheel's detail in two clicks, with the wheel as the unit of analysis. The current implementation does not meet this — there is no fleet view.
+Stated experience target: a maintenance supervisor understands fleet state in seconds and reaches one wheel's detail in two clicks, with the wheel as the unit of analysis. The current monitoring page provides a fleet table with direct links that carry the selected truck and wheel into wheel detail.
 
 A demo audience — the judge who walks the guided path in under five minutes — is a vehicle for showing the product, not a product user. The two must not be confused in the interface.
 
@@ -63,12 +63,13 @@ A neighbouring product cannot truthfully copy that claim without re-deriving the
 
 **Confirmed functionality**
 
-- Three sections: a 930E haul-cycle view, a GDY106 bench rig with cutaway, and a monitoring dashboard. Hash-routed, no router library.
-- Haul-cycle state machine `LOAD | HAUL | DUMP | WAIT` over a 29 s cycle, with an 8 h shift used for RUL projection.
-- Mode gate: `MOVING` over HAUL and WAIT, `REST` over LOAD and DUMP. Recalibration is permitted only when stopped, level, and engine on.
+- Three Astro page routes: `/mine` (930E mine and fleet), `/wheel` (GDY106 cutaway), and `/monitoring` (dashboard). Legacy hashes redirect to these routes; normal navigation uses paths, not hash routing.
+- The synthetic signal generator retains a four-state `LOAD | HAUL | DUMP | WAIT` telemetry loop of 29 s; AI RUL-to-warning is compared with an 8 h maintenance shift. The mine's five-truck visual fleet instead uses an eight-state PLM III FSM. These are separate simulations: the former supplies synthetic telemetry while the latter renders the mine fleet.
+- In the signal generator, the mode gate is `MOVING` over HAUL and WAIT, and `REST` over LOAD and DUMP. Recalibration is permitted only when stopped, level, and engine on.
 - Oil level derived from pressure fusion, presented with a ±σ confidence band, rest-window shading, and N1–N4 escalation plus remaining useful life.
 - Alerts ladder N1 watch → N2 warning → N3 warning → N4 critical, each carrying reason, window, and zone.
-- Combined-risk recognition: low level together with high temperature and anomalous vibration escalates even though no single channel would.
+- Combined-risk recognition: the tested dashboard `SYNTHETIC-PROXY` rule alerts when at least two `ASSUMPTION` thresholds are crossed: oil ≤ 47.5 L, temperature ≥ 90 °C, or vibration ≥ 7 mm/s. Current is displayed but is not an input. This is not the calibrated backend N1–N4 leak analysis or a field-validated risk estimate.
+- Fleet overview: `/mine` runs five simulated trucks, while `/monitoring` displays synthetic-proxy wheel rows and direct truck/wheel links to `/wheel`; these are not live calibrated fleet telemetry.
 - Manual inspection reference chain for the GDY106, with fixed manual item numbers that must never be renumbered.
 
 **Instrumentation defined in the proposal**
@@ -96,10 +97,9 @@ Edge node is an ESP32-S3 acquiring vibration at 1 kHz and pressure and temperatu
 
 **Explicitly undecided**
 
-- Fleet view and multi-truck pit. The `Mine & Fleet` navigation label is aspirational: only the single-truck view renders today, and the proposal's stated experience target is fleet-first.
 - Security slice — per-row HMAC-SHA256 integrity verified before ingest — is implemented in the prototype. This is not IEC 62443 compliance. MQTT/TLS, device certificates, secure key provisioning/storage/rotation, HTTP caller authentication, and role-based access remain gaps; no role model exists in code.
 - Dashboard technology. The proposal names Grafana; the repository deliberately chose a custom Astro + Preact dashboard (React until the 2026-10-09 migration) with Grafana recorded as an alternative.
-- CI. Every check is currently run manually.
+- CI. `.github/workflows/ci.yml` runs the Python tests, frozen-lockfile frontend tests and build, and Compose configuration validation on pushes and pull requests.
 - Performance. The ≥ 30 fps target has no recorded benchmark.
 
 ## Brand Commitments
@@ -112,20 +112,20 @@ Edge node is an ESP32-S3 acquiring vibration at 1 kHz and pressure and temperatu
 - Inter by name with a system fallback stack, and tabular numerals on every readout so figures do not jitter as they update.
 - **The honesty contract is permanent product DNA, not scaffolding.** Every value traces to its provenance, and unproven status stays visible in the interface after calibration exists. Interface copy may never imply field accuracy, and a missing backend degrades to an explicitly labeled local dataset rather than to silence or stale live-looking data.
 - **Read-only posture is part of the promise.** OilGuard never connects to the truck's control bus and has no physical or logical path to machine control. The prototype edge mock can sign measurement rows with per-device HMAC-SHA256 and the backend verifies them before storage; this is a row-integrity slice, not IEC 62443 compliance or a complete industrial security case. Production still requires encrypted and device-authenticated MQTT/TLS, secure key provisioning/storage/rotation, signed firmware updates, role-based backend access, and a segmented instrumentation network.
-- Known drift to resolve: the monitoring dashboard still uses inline hex values instead of the theme tokens, so the design system is not yet a single source of truth for that screen.
+- Dashboard styling uses semantic tokens from `frontend/src/theme.css`; a scan of `frontend/src/dash/*.tsx` found no inline hex color literals.
 
 ## Evidence on Hand
 
 **Verified**
 
 - **US 12,073,660 B2** — patent exists, is active, and is held by Komatsu Reman Center Chile SA. Confirmed directly against Google Patents: title, assignee, inventors Arroyo and Orellana, priority 2019-04-05, granted 2024-08-27, adjusted expiration 2040-09-23. Its disclosure explicitly includes oil level as a use of its sensor, which bounds the differentiation claim.
-- Ten real headless-browser renders of the running app in `docs/screenshots/`, in both EN and ES.
+- Six current 1600 × 1000 headless-browser screenshots of `/mine`, `/wheel`, and `/monitoring` in EN and ES are in `docs/screenshots/pro-twin-*.png`. Other older PNG files are not part of this current capture set.
 - `ai/flags.jsonl` — 135 lines of genuine anomaly-flag output, a true-positive abrupt-drop case.
-- `docs/thesis-annex.md` — a 232-line parameter table with per-row VERIFIED / ASSUMPTION / GAP marks.
+- `docs/thesis-annex.md` — the parameter table records evidence labels and source references; see the annex for current scope and assumptions.
 - `docs/research/twin-reference.md` — a 354-line sourced research sheet.
 - Recorded pass results for windowing, anomaly detection, the N1→N4 walk, and a backend ingest smoke test.
 - A cross-language physics parity fixture.
-- Suite results at the time of writing: 61 pytest, 49 bun.
+- Latest local suite results (2026-10-09): `python3 -m pytest -q` → 97 passed, 3 existing deprecation warnings; `cd frontend && bun test src` → 168 passed, 0 failed.
 
 **Stated in the pre-proposal, not independently substantiated**
 
