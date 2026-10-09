@@ -1,5 +1,8 @@
 # T13 — Feasibility verdict: was the idea winnable? (S7 closeout)
 
+Validated scope: **930E/GDY106 (32.62:1) ONLY** — the 980E-5 (GDY108-C,
+35.02:1) stays future work without validation.
+
 **Verdict: YES — winnable as a staged bet.** Ship anomaly + precise rest
 readings NOW; promote fusion AFTER the bench drain-and-weigh
 (`docs/calibration.md`). No field-accuracy claim is made in this slice.
@@ -23,6 +26,9 @@ readings NOW; promote fusion AFTER the bench drain-and-weigh
 - What is NOT proven: fused pressure→level field accuracy (anchor 28 kPa at
   95 L, temp beta, vibration confirmation, 0.5 %/h detectability horizon).
   Status PARTIAL per `docs/calibration.md` — bench correlation PENDING.
+  The 28 kPa anchor is SYNTHETIC-PROXY (field-anchor pending h(L) bench:
+  ~3.2 m implied head is absurd; realistic ≈2.6–4.4 kPa — priors in
+  `sim/physics.py`, see `docs/thesis-annex.md` §2).
 
 ## Pivot decision (recorded)
 

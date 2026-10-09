@@ -17,6 +17,12 @@ Scenarios: clean | slow-leak (0.5 %/h default) | abrupt-drop |
 sensor-drift | link-outage. Ground truth travels in level_liters /
 level_pct / label / link_down columns. See sim/SCHEMA.md.
 
+SYNTHETIC-PROXY (field-anchor pending h(L) bench): PRESSURE_AT_FULL_KPA =
+28.0 kPa at 95 L is a pipeline gain, NOT a hydrostatic head — 28 kPa would
+imply a ~3.2 m oil head (absurd; realistic 0.3-0.5 m gives ~2.6-4.4 kPa).
+Kept running unchanged for the N1-N4 demo; bench-ready literature priors
+live in sim/physics.py. See docs/thesis-annex.md §2 (930E/GDY106 scope).
+
 Stdlib only (no extra deps).
 """
 

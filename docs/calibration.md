@@ -4,9 +4,14 @@ Status: procedure documented, correlation template provided, **no physical bench
 Fusion verdict on available evidence: **PARTIAL** — synthetic-proxy logic proven, field-rate + bench correlation PENDING.
 Anomaly-only + precise rest readings viable NOW. Do NOT read this doc as proven field accuracy.
 
-Physics anchors (non-negotiable): 95 L SAE 85W-140 per GDY106 wheel motor;
-synthetic rest anchor 28 kPa at 95 L (`sim/generate.py`, `ai/level.py`);
-warning < 50% (47.5 L), critical < 30% (28.5 L); rest-gating stopped + leveled + engine-on.
+Physics anchors (non-negotiable, 930E/GDY106 32.62:1 scope ONLY — 980E-5
+GDY108-C 35.02:1 stays future work without validation): 95 L SAE 85W-140
+per GDY106 wheel motor; synthetic rest anchor 28 kPa at 95 L
+(`sim/generate.py`, `ai/level.py`) is SYNTHETIC-PROXY (field-anchor pending
+h(L) bench: 28 kPa implies an absurd ~3.2 m head; realistic 0.3–0.5 m gives
+≈2.6–4.4 kPa — bench-ready literature priors in `sim/physics.py`, see
+`docs/thesis-annex.md` §2); warning < 50% (47.5 L), critical < 30%
+(28.5 L); rest-gating stopped + leveled + engine-on.
 
 ## 1. Procedure (drain-and-weigh)
 

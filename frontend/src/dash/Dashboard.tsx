@@ -312,6 +312,9 @@ export default function Dashboard() {
             </span>
           </h2>
           <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} />
+          <p style={{ margin: "8px 0 0", fontSize: 12, color: "#9fb0c9" }}>
+            28 kPa @ 95 L anchor: SYNTHETIC-PROXY (field-anchor pending h(L) bench) · priors in sim/physics.py · see docs/thesis-annex.md
+          </p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8, fontSize: 13 }}>
             <span style={{ color: demoOilCss, fontWeight: 700 }}>
               {demoActive ? `Demo fill ${formatOilText(demoFrac)}` : level ? `${Number(level.data.level_liters).toFixed(1)} L · ${Number(level.data.level_pct).toFixed(1)}%` : "—"}

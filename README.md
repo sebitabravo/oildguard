@@ -1,6 +1,7 @@
 # OilGuard Mining Sim (S0 scaffolding)
 
-Local-only prototype slice for Komatsu 930E/980E GDY106 motorized wheels.
+Local-only prototype slice for the Komatsu 930E with GDY106 motorized wheels (32.62:1).
+Validated scope is 930E/GDY106 ONLY — the 980E-5 (GDY108-C, 35.02:1) stays future work without validation.
 This S0 stub wires a Vite + React + Three.js placeholder, a FastAPI stub,
 InfluxDB, and an MQTT mock via Docker Compose.
 

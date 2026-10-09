@@ -779,7 +779,7 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
             padding: "2px 8px",
           }}
         >
-          930E · {moving ? "MOVING" : "REST"}
+          930E · GDY106 · {moving ? "MOVING" : "REST"}
         </div>
       </div>
     </div>

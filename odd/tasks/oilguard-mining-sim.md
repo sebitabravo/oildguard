@@ -15,7 +15,9 @@
 
 ## Objective
 
-Build a professional, demonstrable OilGuard Mining prototype slice for Komatsu 930E/980E motorized wheels (GDY106):
+Build a professional, demonstrable OilGuard Mining prototype slice for the Komatsu 930E with GDY106 motorized wheels (32.62:1):
+
+Validated scope is 930E/GDY106 ONLY. The 980E-5 (GDY108-C, 35.02:1) stays future work without validation.
 
 1. Two interactive 3D simulators (web profesional):
    - (A) Bench / test-rig + GDY106 wheel internals (oil volume, settling transient, sensor points).
@@ -27,7 +29,7 @@ Success = a reviewer can run the stack locally, drive both 3D sims, see fused le
 
 ## Problem
 
-- There is no continuous oil-level device for Komatsu 930E/980E motorized wheels (GDY106 final drives).
+- There is no continuous oil-level device for Komatsu 930E motorized wheels (GDY106 final drives, validated scope; 980E/GDY108-C is future work).
 - Inspections every 250 h leave a blind spot; between inspections, slow leaks / degradation go unseen.
 - Consequence: catastrophic traction-motor failures, unplanned downtime, high cost, safety risk.
 - Existing practice relies on periodic manual checks (drain plug / magnetic plug inspection), not trendable data.
@@ -340,6 +342,7 @@ Each task declares `route: inline | delegated` plus trigger evidence:
 | T11 | `2e0a4918e13db3c7b37b2722a0fd4aa1c4200231` (pre-id-record; final amended id — see `git log`) | Done: `frontend/src/dash/` Dashboard (SVG level + ±σ band, rest-window shading, ladder-offset N1–N4 dots, RUL ok/suppressed panel, FSM-clock mode indicator + backend window count, LIVE/DEMO badge), S4 API via api.ts (new T10 Alerts/Rul types; CORS already open, no backend change), one-click clean → LAB-ACCELERATED slow-leak → abrupt-drop → N4 demo driving Bench 3D fill via demoBus event + `#dash-demo` autostart, `docs/demo-script.md` <5-min judge path, real headless-Chrome screenshot `docs/screenshots/t11-dashboard.png` (dev-server, slow-leak N1/N2/N3 + LAB label). App Dash tab (Stub/Bench/Truck/Dash). Route: delegated (UX/dashboard + demo-choreography domain, fresh reviewer eyes per feature doc). Checks: C1/C2 pass, C4 `npx tsc --noEmit -p tsconfig.json` (frontend/) pass, C3 `docker compose config` pass, C5 screenshot real. Running: 4250 (forecast; actual ~1014 authored lines Δ, png excluded — overrun why: chart + RUL + demo runner + link bus + judge script kept as one coherent S6 work-unit; heuristic advisory only). |
 | T12 | `c836741` (final amended id — see `git log`) | Done: `docs/calibration.md` bench drain-and-weigh procedure (95 L SAE 85W-140 steps 95→90→80→70→47.5→28.5, 20 min stabilization, rest-gate stopped+leveled+engine-on 3 s, 3 repeats) + correlation template (weighed vs fused, err/RMSE/conf) + honest PARTIAL verdict (synthetic-proxy logic proven, field-rate + bench correlation PENDING, anomaly-only viable NOW — no field-accuracy claim). Route: inline (docs + analysis). Checks: C1/C2 pass, C3 `docker compose config` pass. Running: 4550 (forecast; actual ~200 authored lines Δ — docs-only work-unit; heuristic advisory only). |
 | T13 | `c836741` (final amended id — see `git log`) | Done: `docs/feasibility.md` one-page verdict YES winnable as staged bet (anomaly+rest NOW, fusion AFTER bench; links T7/T9/T10) + pivot decision recorded (fusion-as-day-one-claim REJECTED, anomaly-only ADOPTED) + pilot needs (120 °C, EMI, T-adapter, epoxy MEMS, Hall clamp, LoRaWAN future, 250 h blind-spot ≈ USD 150k ref) + `docs/demo-script.md` polish (Stub→Bench→Truck→Dash tab tour, judge path ~4 min) + this closeout (status done, assumption PARTIAL recorded). Route: inline (synthesis). Checks: C1/C2 pass. Running: 4750 forecast final (actual ~150 authored lines Δ — docs-only; heuristic advisory only). |
+| Thesis hardening (930E scope) | `537e33c67a439a82e51569a60a70f77bd81d8bea` (pre-id-record; final amended id — see `git log`) | Done: `docs/thesis-annex.md` (parameter table VERIFIED/ASSUMPTION/GAP + hydrostatic math + sensor-range spec + falsifier + top-5 + freshness notes) + `sim/physics.py` (literature priors + absurdity_check smoke PASS, additive only, no gain rescale) + scope lines to 930E/GDY106 + future-work note (README, demo-script, feasibility, calibration, TruckView/TruckScene, Dashboard SYNTHETIC-PROXY footnote) + header comments (generate.py, level.py). Route: delegated-thesis (bounded writer). Checks: `git branch` feature/oilguard-sim, `py_compile` pass, frontend `tsc --noEmit` pass, `docker compose config` pass. Running: 4750 + ~450 authored lines Δ (docs-first hardening work-unit; heuristic advisory only). |
 
 ## Closeout (T12+T13, final)
 
@@ -353,6 +356,22 @@ Each task declares `route: inline | delegated` plus trigger evidence:
   t3/t4/t5/t7/t9/t10 notes.
 - Assumption outcome: fusion PARTIAL (see Key Assumption Under Test);
   no push/PR/remote (local only). Plan closed.
+
+## Thesis hardening (930E scope, post-closeout)
+
+- Binding user decision: validated claim scoped to 930E/GDY106 32.62:1
+  ONLY; 980E-5 GDY108-C 35.02:1 stays future work without validation.
+- `docs/thesis-annex.md` (new): parameter table with VERIFIED/ASSUMPTION/GAP
+  marks, hydrostatic correction (§2), sensor-range spec (§3), falsifier (§4),
+  top-5 hardening list (§5), freshness/paywall notes (§6). No bench data invented.
+- `sim/physics.py` (new, additive only): literature priors — rho(T) with
+  7e-4/°C prior, p=rho·g·h, viscosity interpolation, absurdity_check smoke.
+  Demo pipeline gains NOT rescaled; 28 kPa anchor relabeled SYNTHETIC-PROXY
+  (field-anchor pending h(L) bench) at every surface.
+- Scope lines corrected to 930E/GDY106 + future-work note: README,
+  docs/demo-script, docs/feasibility, docs/calibration, TruckView intro +
+  TruckScene HUD tag, Dashboard SYNTHETIC-PROXY footnote; header comments in
+  sim/generate.py + ai/level.py point at the annex.
 
 ## Risks / Watchlist
 

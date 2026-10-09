@@ -4,6 +4,12 @@ MODEL LABEL: ``synthetic-proxy`` — NOT proven until the S7 bench
 drain-and-weigh calibration. Every output carries the label; do not
 present these levels as a validated measurement.
 
+SYNTHETIC-PROXY (field-anchor pending h(L) bench): the ``28 kPa at 95 L``
+anchor (``KPA_PER_L = 28/95``) is a pipeline gain, NOT hydrostatics —
+28 kPa implies a ~3.2 m head (absurd; realistic 0.3-0.5 m gives ~2.6-4.4
+kPa). Kept unchanged for the N1-N4 demo; literature priors in
+``sim/physics.py``. See ``docs/thesis-annex.md`` §2 (930E/GDY106 scope).
+
 Method
 ------
 Same rest-gated, temperature-compensated residual as T9 (``ai/anomaly.py``;

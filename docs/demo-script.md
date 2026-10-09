@@ -1,5 +1,7 @@
 # T11 demo script — judge path < 5 min (S6)
 
+Scope: 930E/GDY106 (32.62:1) ONLY — 980E-5 (GDY108-C, 35.02:1) is future work without validation.
+
 Goal: from `compose up` to a visible N1 → N2 → N3 → N4 walk with RUL,
 linked 3D oil fill, and dashboard alerts.
 
@@ -80,7 +82,7 @@ Open http://localhost:5173. Tabs in order (deep-links `#stub`, `#bench`,
 - **Bench (15 s):** rig + GDY106 cutaway, 95 L slab (green ≥50% / amber /
   red), Move/Rest toggle → settling wobble + RECAL badge; 4 sensor markers
   (pressure T-adapter, temp mag-plug, vibration pinion-cover, Hall clamp).
-- **Truck (15 s):** 930E loop LOAD 6 s → HAUL 12 s → DUMP 6 s → WAIT 5 s;
+- **Truck (15 s):** 930E (GDY106) loop LOAD 6 s → HAUL 12 s → DUMP 6 s → WAIT 5 s;
   MOVING (blue, HAUL/WAIT) vs REST (green, LOAD/DUMP) + RECAL badge;
   camera presets Pit/Cab/Side/Wheel, Pause + Step.
 - **Dash (20 s):** continue below (LIVE backend if §2 ingested, else DEMO

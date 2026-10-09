@@ -25,8 +25,8 @@ export default function TruckView() {
   return (
     <div>
       <p style={{ margin: "0 0 16px", color: "#9fb0c9" }}>
-        S2 truck sim (T4+T5): a simplified 930E loops LOAD (6 s) → HAUL
-        (12 s) → DUMP (6 s) → WAIT (5 s) around the pit. Drag to orbit
+        S2 truck sim (T4+T5): a simplified 930E (GDY106, 32.62:1) loops LOAD (6 s) → HAUL
+        (12 s) → DUMP (6 s) → WAIT (5 s) around the pit. 980E-5 (GDY108-C) is future work without validation. Drag to orbit
         (releases the camera preset to free), scroll to zoom, or pick a
         preset (Pit / Cab / Side / Wheel) in the HUD panel. The truck glows
         blue while MOVING and green at REST; the RECAL badge lights only
