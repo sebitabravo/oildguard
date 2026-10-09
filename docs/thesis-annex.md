@@ -6,8 +6,10 @@ Scope (binding): every validated claim in this annex covers the **Komatsu
 validation** — no 980E number in this repo is validated.
 
 Status marks used below: **VERIFIED** (checked against a cited source),
-**ASSUMPTION** (explicit placeholder the bench must replace), **GAP**
-(documented-not-built: spec'd for the thesis, not implemented/purchased).
+**DERIVED** (calculated from cited inputs or code), **ASSUMPTION** (explicit
+placeholder the bench must replace), **GAP** (documented-not-built: spec'd for
+the thesis, not implemented/purchased), and **SYNTHETIC-PROXY** (generated
+demo data, not field measurements).
 
 No bench data is invented in this annex: every table cell is either a cited
 value, an explicit assumption, or an empty bench slot.
@@ -18,7 +20,7 @@ value, an explicit assumption, or an empty bench slot.
 |---|-----------|-------|--------|--------|
 | P1 | Oil capacity per wheel motor | 95 L SAE 85W-140 | VERIFIED | Komatsu 930E shop-manual set (vendor PDF, held by thesis author; paywalled — see §6). Code anchor: `sim/generate.py:37`, `ai/level.py:47`, `sim/physics.py:28` |
 | P2 | Final drive | GDY106, 32.62:1 | VERIFIED | Komatsu 930E-5 spec sheet: "Motorized wheels: GDY106-B … Ratio: 32.62:1" — https://www.komatsu.com/en-us/products/equipment/trucks/electric-drive-mining-trucks/930e-5 and brochure PDF https://www.komatsu.com/content/dam/komatsu/sales-and-marketing-documents/brochures/trucks/930e/930e-5-aess921-01-ev1.pdf |
-| P3 | Rotor → wheel arithmetic | 3000 rpm / 32.62 ≈ 91.97 ≈ 92 rpm | VERIFIED (arithmetic) | `sim/physics.py:wheel_rpm` + smoke; demo narrative `frontend/src/sim/truck/TruckScene.tsx:710` |
+| P3 | Rotor → wheel arithmetic | 3000 rpm / 32.62 ≈ 91.97 ≈ 92 rpm | VERIFIED (arithmetic) | `sim/physics.py:43-45` (`ROTOR_MAX_RPM`, `GEAR_RATIO`, `WHEEL_RPM_AT_MAX`) |
 | P4 | 930E max travel speed | 64.5 km/h (40 mph) | VERIFIED | Same Komatsu 930E-5 spec sources as P2 |
 | P5 | Oil density 85W-140 | 890–912 kg/m³ @15 °C | VERIFIED | 85W-140 PDS set (vendor data sheets, held by thesis author; paywalled — see §6). Prior midpoint 901 kg/m³ in `sim/physics.py:33` |
 | P6 | Viscosity 85W-140 | 350–420 cSt @40 °C; 26–28.6 cSt @100 °C; VI 95–103 | VERIFIED | Same PDS set as P5; J306 limits (85W ≤150 000 cP @−12 °C; 140 grade 24.0–41.0 cSt @100 °C) contain the PDS band |
@@ -31,6 +33,26 @@ value, an explicit assumption, or an empty bench slot.
 | P13 | Gear-case oil cavity: horizontal annulus, R_OUT = 0.60 m, R_IN = 0.22 m, L = 0.42 m (411 L full) | Pool geometry h(V) | ASSUMPTION (GE does not publish the cavity; sized so 95 L gives a decimetre head) | `sim/geometry.py:GearCase`, mirrored in `frontend/src/twin/physics.ts`; one edit replaces it when the bench gives h(L) |
 | P14 | Hold-up while the wheel turns: `V_holdup = 6 L · wheel_rpm / 91.97`; drain-back `tau = 0.75 s · viscosity_proxy` | Settling transient (pre-proposal §3.1) | ASSUMPTION (shape + parameters); bench fits them from weighed runs | `sim/generate.py:V_HOLDUP_MAX_L`, `SETTLE_TAU0_S` |
 | P15 | Planetary tooth counts (shared ring Zr = 92; HS 16/38/3 planets, LS 24/34/4 planets) | Two-stage train 32.625:1 | ASSUMPTION (illustrative; GE does not publish tooth counts). Stage ratio `1 + Zr/Zs` is DERIVED | `sim/geartrain.py:GDY106_TRAIN` |
+| P16 | T5 pit dimensions and scene tags | Each design value carries VERIFIED, DERIVED, or ASSUMPTION provenance; examples include assumed bench count/height and ramp grade, with derived catch width | DERIVED / ASSUMPTION / VERIFIED per field; scene geometry is not field survey data | `frontend/src/twin/pit/pitSpec.ts:1-68`; source notes in `docs/research/twin-reference.md` §3 |
+| P17 | T6 cutaway, exploded assembly, and oil pool | GDY106 internals are a simplified, non-CAD-exact cutaway with exploded-view control; pool height is computed from `headFromVolume`; illustrative stage ratios 6.750:1 × 4.8333:1 ≈ 32.625:1 (displayed 32.63:1) | Geometry is a visual reconstruction; pool calculation is DERIVED from P13; tooth counts remain ASSUMPTION | `frontend/src/sim/bench/BenchView.tsx:134-147`, `frontend/src/sim/bench/BenchScene.tsx:20-23`, `frontend/src/twin/physics.ts:61-92,160-185`, `sim/geartrain.py:GDY106_TRAIN` |
+| P18 | T7 fleet table and combined-risk demo rule | 12 fleet rows; alert requires any 2 of low oil ≤47.5 L, temperature ≥90 °C, vibration ≥7 mm/s; current is displayed, not a trigger | SYNTHETIC-PROXY rows; threshold values and 2-of-3 policy are ASSUMPTION, not calibrated field limits | `frontend/src/dash/Dashboard.tsx:41-43,232-282`, `frontend/src/dash/fleetRisk.ts:15-27,37-53`; `odd/tasks/oilguard-pro-twin.md` T7 evidence |
+| P19 | T8 signed-ingest scope | Per-row HMAC-SHA256 verification in the prototype checks signed-row integrity/shared-key origin before storage; it does not provide confidentiality or HTTP caller authentication | VERIFIED prototype behavior; GAP for firmware integration, secure key provisioning/storage/rotation, persistent replay history, caller authentication, CORS hardening, and role controls | `shared/signing.py`, `backend/main.py`, `tests/test_signed_ingest.py`; exact limitations remain in §3 and `odd/tasks/oilguard-pro-twin.md` T8 evidence |
+| P20 | T10 rotating-sensor regime thresholds | Froude transitions at 0.10 and 1.00 | ASSUMPTION; no bench validation | `sim/physics.py:66-70`; mirrored in `frontend/src/twin/physics.ts:26-31` |
+| P21 | T10 rotor ceiling | 3000 rpm | VERIFIED project rotor ceiling (not a wheel-speed limit) | `sim/physics.py:68-70` |
+
+The two oil-cavity geometries are intentionally distinct. P13 (0.60 / 0.22 /
+0.42 m) remains the static level-estimator's calibration placeholder, while
+`RESEARCH_ROTATING_CAVITY` (0.50 / 0.15 / 0.70 m) is a separate research
+assumption for rotating-sensor regime and submerged-fraction analysis. The
+latter models the rotating output around sensors; it must not silently replace
+the static estimator's established geometry. Neither cavity is a published GE
+dimension (`sim/physics.py:66-70`; `frontend/src/twin/physics.ts:26-31`).
+
+T10 also corrects the pre-proposal phrase “fixed points, no moving parts” for
+sensor items 56/41/39: the drain plug, magnetic pipe plug, and sun cover are on
+the rotating output (LS carrier → torque tube → hub). They are service-point
+locations, not stationary references; see `docs/research/twin-reference.md`
+§2 and `frontend/src/sim/bench/BenchScene.tsx:20-23`.
 
 ## 2. Hydrostatic anchor (geometry-derived, replaces the 28 kPa gain)
 
@@ -211,24 +233,19 @@ Closeout pointer: S7 assumption outcome stays PARTIAL (logic proven on
 synthetic-proxy, field accuracy pending bench); this annex is the bench-ready
 anchor, not bench evidence.
 
-## 7b. S2 truck scene: HD465 visual-proxy mesh (provenance + proxy note)
+## 7b. Historical S2 truck scene: HD465 visual-proxy mesh
 
-- The S2 3D truck view renders `frontend/public/models/komatsu_hd-465-7eo.glb`
-  (≈20 MB, glTF 2.0, Sketchfab export by `drcrazzie`, embedded license string
-  CC-BY-4.0 with source URL — reuse outside this repo NOT-CLEARED until the
-  source page/terms are independently verified; full record in
-  `docs/models.md`). The mesh is a **Komatsu HD465-7EO (~55 t class)** used as
-  a **scale-adapted visual proxy**: longest horizontal extent scaled to the
-  6.0-unit scene envelope that stands in for the 930E 15.29 m length
-  (expected factor ≈ 0.64; runtime-measured value wins and is console-logged).
-- **It is not a 930E and is never presented as one.** All spec content shown
-  with the mesh — 15.29 × 8.89 × 8.10 m, body-up 14.80 m, weights, fluids
-  (§7 table above), QSK78/GTA-39 powertrain, GDY106, 32.62:1, rotor ≈3000 RPM
-  / wheel ≈92 RPM — is the 930E-4SE fidelity pack (`cycle.ts`, display-only),
-  restated by the bilingual footnote in `TruckView.tsx` and the in-scene badge.
-- Methodological consequence: the mesh carries **no measurement claim**. Bed
-  articulation, wheel spin, and material tint are disabled/not-applied on the
-  rigid proxy (documented fallbacks: level chassis, static wheels, overlay
-  axle ring + light-shift tint); the FSM, zone highlights, RECAL gating, and
-  camera presets are unchanged. No thesis figure may crop out the proxy
-  footnote when reproducing this view.
+This subsection records the previous S2 scene, not the current `/mine` truck.
+That historical view used `frontend/public/models/komatsu_hd-465-7eo.glb`
+(≈20 MB, glTF 2.0, Sketchfab export by `drcrazzie`, embedded CC-BY-4.0 license
+string with source URL; reuse outside this repo remains NOT-CLEARED pending
+independent verification; see `docs/models.md`). The mesh is a Komatsu
+HD465-7EO (~55 t class), not a 930E, and was scale-adapted as a visual proxy.
+It carried no measurement claim. Any reproduction of that historical view
+must retain its proxy disclosure and must not present the HD465 as a 930E.
+
+The current mine scene uses the procedural 930E model assembled by
+`frontend/src/twin/truck930e/build930E.ts`, integrated in
+`frontend/src/sim/truck/TruckScene.tsx:8-13`. Its parametric geometry is still
+a visual reconstruction, not CAD-exact; manual-derived specification values
+remain separate from model geometry and are not field measurements.
