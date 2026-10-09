@@ -71,3 +71,30 @@ def test_health_reports_memory_fallback(client):
 def test_legacy_four_field_payload_is_rejected(client):
     r = client.post("/ingest", json={"device_id": "x", "pressure_kpa": 1.0})
     assert r.status_code == 422
+
+
+def test_generated_t10_fields_survive_http_ingest(client, monkeypatch):
+    monkeypatch.setattr(backend_main, "_write_to_influx", lambda _rows: "test-memory")
+    generated = next(iter_rows("clean", 0.1, "wheel-RH-01", 7, start=T0))
+    response = client.post("/ingest", json={"rows": [generated]})
+    assert response.status_code == 200
+
+    with backend_main._store_lock:
+        stored = dict(backend_main._store_rows[-1])
+
+    assert "rotating_sensor_regime" in stored
+    assert stored["rotating_sensor_regime"] == generated["rotating_sensor_regime"]
+    assert isinstance(stored["submerged_fraction_per_revolution"], float)
+    assert stored["submerged_fraction_per_revolution"] == float(
+        generated["submerged_fraction_per_revolution"]
+    )
+
+
+def test_mqtt_csv_parser_types_t10_fraction_without_publishing():
+    from backend.ingest_mqtt import parse_csv_row
+
+    generated = next(iter_rows("clean", 0.1, "wheel-RH-01", 7, start=T0))
+    parsed = parse_csv_row(generated)
+
+    assert isinstance(parsed["submerged_fraction_per_revolution"], float)
+    assert parsed["rotating_sensor_regime"] == generated["rotating_sensor_regime"]

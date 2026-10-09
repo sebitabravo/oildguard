@@ -57,6 +57,29 @@ def decode_payload(raw: bytes) -> list[dict[str, Any]]:
     return rows
 
 
+def parse_csv_row(row: dict[str, str]) -> dict[str, Any]:
+    int_fields = {"seq", "moving", "recal_window", "engine_on", "link_down"}
+    float_fields = {
+        "t_s",
+        "slope_deg",
+        "rotor_rpm",
+        "wheel_rpm",
+        "pressure_kpa",
+        "temperature_c",
+        "vib_rms_g",
+        "vib_kurtosis",
+        "level_liters",
+        "level_pct",
+        "submerged_fraction_per_revolution",
+    }
+    parsed: dict[str, Any] = dict(row)
+    for key in int_fields:
+        parsed[key] = int(float(parsed[key]))
+    for key in float_fields:
+        parsed[key] = float(parsed[key])
+    return parsed
+
+
 def post_to_backend(rows: list[dict[str, Any]], backend_url: str = BACKEND_URL) -> dict[str, Any]:
     """POST a batch to /ingest via stdlib HTTP (raises on failure)."""
     data = json.dumps({"rows": rows}).encode("utf-8")
@@ -132,28 +155,10 @@ def publish_csv(path: str, host: str, port: int, topic: str, limit: int = 0) -> 
     except ImportError as exc:
         log.error("paho-mqtt not installed (%s); cannot publish", exc)
         raise
-    int_fields = {"seq", "moving", "recal_window", "engine_on", "link_down"}
-    float_fields = {
-        "t_s",
-        "slope_deg",
-        "rotor_rpm",
-        "wheel_rpm",
-        "pressure_kpa",
-        "temperature_c",
-        "vib_rms_g",
-        "vib_kurtosis",
-        "level_liters",
-        "level_pct",
-    }
     rows: list[dict[str, Any]] = []
     with open(path, newline="") as f:
         for row in csv.DictReader(f):
-            parsed: dict[str, Any] = dict(row)
-            for k in int_fields:
-                parsed[k] = int(float(parsed[k]))
-            for k in float_fields:
-                parsed[k] = float(parsed[k])
-            rows.append(parsed)
+            rows.append(parse_csv_row(row))
             if limit and len(rows) >= limit:
                 break
     client = mqtt.Client()

@@ -88,6 +88,8 @@ class SignalRow(BaseModel):
     slope_deg: float
     rotor_rpm: float
     wheel_rpm: float
+    rotating_sensor_regime: Literal["static_pool", "slosh", "centrifugal_rimming"]
+    submerged_fraction_per_revolution: float = Field(ge=0, le=1)
     pressure_kpa: float
     temperature_c: float
     vib_rms_g: float
