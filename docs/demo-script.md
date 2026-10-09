@@ -1,69 +1,38 @@
-# T11 demo script — judge path < 5 min (S6)
+# OilGuard Pro Twin — five-minute judge demo (T9)
 
-Scope: 930E/GDY106 (32.62:1) ONLY — 980E-5 (GDY108-C, 35.02:1) is future work without validation.
+Validated scope: Komatsu 930E-4SE / GDY106 only. The 980E-5 / GDY108-C remains future work without validation. Scene reconstruction, fluid values, and demo fleet metrics retain their visible assumptions and synthetic-proxy labels; this is not a field-calibrated system.
 
-Goal: from `compose up` to a visible N1 → N2 → N3 → N4 walk with RUL,
-linked 3D oil fill, and dashboard alerts.
+## Five-minute path
 
-Model label everywhere: **`synthetic-proxy` — NOT proven until the S7
-bench drain-and-weigh.** LAB-accelerated rates are labeled in every line
-they appear.
+### 0:00–0:30 — Start and health
 
-## 0. Prerequisites (30 s)
+From the repository root:
 
 ```bash
-git branch --show-current   # feature/oilguard-sim
-docker compose config --quiet && echo COMPOSE_OK
+docker compose config --quiet
+docker compose up -d --build -V
+curl -s http://localhost:8000/health
 ```
 
-## 1. Stack up (90 s)
+Confirm the health response contains `"status":"ok"`. Open `http://localhost:5173` for the three pages: `/mine`, `/wheel`, and `/monitoring`.
 
-```bash
-docker compose up -d --build -V frontend
-```
+### 0:30–1:30 — Mine and fleet
 
-Wait for `oilguard-backend` healthy (`GET localhost:8000/health` →
-`status: ok`). Frontend pages are `/mine`, `/wheel`, and `/monitoring` at
-http://localhost:5173.
+Open [`/mine`](http://localhost:5173/mine). The view shows five simulated trucks and the selected truck's estimated eight-state PLM III status in the HUD. Camera buttons in English are **Pit**, **Shovel**, **Crusher**, **Ramp**, and **Cab**; in Spanish they are **Foso**, **Pala**, **Chancadora**, **Rampa**, and **Cabina**. Pause with **Pause cycle** / **Pausar ciclo**, then use **Step +1 s** / **Paso +1 s** to advance the paused FSM clock. Select the ramp view and read its visible caption: **RAMP · 10% ASSUMPTION** (Spanish: **RAMPA · 10 % ASSUMPTION**). The model honesty badge describes the truck as a parametric reconstruction, not CAD-exact. Use **Open GDY106 wheel** / **Abrir rueda GDY106** to continue.
 
-## 2. Ingest the leak timeline (30 s)
+### 1:30–2:15 — GDY106 wheel detail
 
-In a second terminal (backend stays up):
+On [`/wheel`](http://localhost:5173/wheel), inspect the simplified cutaway and the **Exploded view** / **Vista explotada** control. The readout shows the derived stage ratios and a displayed overall ratio of **32.63:1**. Move the **Oil fill** / **Nivel de aceite** slider and observe the modeled oil-pool response; it is synthetic, not measured. Inspect the pressure, temperature, and vibration sensor markers at manual items 56, 41, and 39/36; the Hall marker is on the traction cable. The handoff opens in rest mode: the control reads **Resting — start Move** / **Detenido — iniciar marcha**, with a **RECALIBRATING** / **RECALIBRANDO** badge when stopped, level, and engine-on. The honesty note states that the cutaway is simplified and oil/pressure/settling remain SYNTHETIC-PROXY pending bench calibration.
 
-```bash
-# 120 s LAB-accelerated slow-leak + abrupt-drop tail (same stitch the
-# T10 smoke uses; audit labels show the seam — production is continuous)
-python3 sim/generate.py --scenario slow-leak --seconds 120 --out /tmp/t11-leak.csv
-python3 sim/generate.py --scenario abrupt-drop --seconds 60 --out /tmp/t11-drop.csv
-python3 - <<'EOF'
-import csv, json, urllib.request
-def load(path):
-    rows = []
-    with open(path, newline='') as f:
-        for r in csv.DictReader(f):
-            for k in ('seq', 'moving', 'recal_window', 'engine_on', 'link_down'):
-                r[k] = int(float(r[k]))
-            for k in ('t_s', 'slope_deg', 'rotor_rpm', 'wheel_rpm', 'pressure_kpa',
-                      'temperature_c', 'vib_rms_g', 'vib_kurtosis',
-                      'level_liters', 'level_pct'):
-                r[k] = float(r[k])
-            rows.append(r)
-    return rows
-leak = load('/tmp/t11-leak.csv')
-drop = load('/tmp/t11-drop.csv')[-600:]
-base_t, base_seq = leak[-1]['t_s'], leak[-1]['seq']
-for r in drop:
-    r['t_s'] = base_t + (r['t_s'] - drop[0]['t_s']) + 0.1
-    r['seq'] = base_seq + (r['seq'] - drop[0]['seq']) + 1
-rows = leak + drop
-req = urllib.request.Request('http://localhost:8000/ingest',
-    data=json.dumps({'rows': rows}).encode(),
-    headers={'Content-Type': 'application/json'})
-print(urllib.request.urlopen(req).read().decode()[:300])
-EOF
-```
+### 2:15–3:30 — Monitoring and wheel handoff
 
-Expect `ingested: 1800`, `store_rows: 1800`.
+Open [`/monitoring`](http://localhost:5173/monitoring). The fleet table has 12 demo wheel rows and labels its data **SYNTHETIC-PROXY** (Spanish: **SUSTITUTO SINTÉTICO**); it is not a live per-wheel feed. Read the assumption line: the combined demo rule requires at least two of oil ≤47.5 L, temperature ≥90 °C, and vibration ≥7 mm/s; current is displayed but does not trigger it. The demo rows currently include **DEMO ALERT** for OG-03/RR and OG-05/RL (Spanish: **ALERTA DEMO**). Select **Open wheel detail** / **Abrir detalle de rueda** on a row. It opens `/wheel` carrying that row's truck and wheel selection; from the mine page this is two clicks, within AC6's limit. The fleet thresholds and values are demo assumptions, separate from backend N1–N4 leak analysis.
+
+### 3:30–4:30 — Leak walk and optional signed-ingest check
+
+On `/monitoring`, click **Run leak demo (clean → N4)** / **Ejecutar demo de fuga (limpio → N4)**. Watch the local demonstration progress from clean baseline through the N1–N3 slow-leak stages to the abrupt-drop N4 alert. This dashboard demo is separate from backend ingest and does not prove field detection performance.
+
+The following T8 signed-ingest check is optional and separate from the local dashboard demo:
 
 ### Optional signed-ingest check
 
@@ -97,65 +66,47 @@ curl -s localhost:8000/alerts | python3 -c "import json,sys; d=json.load(sys.std
 curl -s localhost:8000/rul | head -c 400
 ```
 
-## 3. Page tour: Mine → Wheel → Monitoring (60 s)
 
-Open the three Astro pages from the shared header or directly:
+### 4:30–5:00 — Language and honesty
 
-- **`/mine` (15 s):** 930E (GDY106) loop LOAD 6 s → HAUL 12 s → DUMP 6 s → WAIT 5 s;
-  MOVING (blue, HAUL/WAIT) vs REST (green, LOAD/DUMP) + RECAL badge;
-  camera presets Pit/Cab/Side/Wheel, Pause + Step.
-- **`/wheel` (15 s):** rig + GDY106 cutaway, 95 L slab (green ≥50% / amber /
-  red), Move/Rest toggle → settling wobble + RECAL badge; 4 sensor markers
-  (pressure T-adapter, temp mag-plug, vibration pinion-cover, Hall clamp).
-- **`/monitoring` (30 s):** LIVE backend if §2 ingested, else DEMO badge;
-  continue with the dashboard checks below.
+Use the header's **EN** / **ES** control and revisit the honesty copy. `?lang=en` and `?lang=es` also select and persist the page language. Keep the scope statement visible: the 930E/GDY106 model is parametric, the wheel geometry and demo thresholds include assumptions, and the dashboard fleet values are synthetic proxies until bench calibration and field evidence exist.
 
-- Badge reads **LIVE · backend** (else DEMO fallback — still demoable,
-  badge says so honestly).
-- Level chart: trace + ±σ band + green rest-window shading + N1–N4 dots.
-- RUL panel: `0.18 h to critical · 22.1 cycles · 0.02 shifts` (live) or
-  the staged countdown (demo override).
-- Mode indicator: MOVING/REST + RECAL badge on the shared FSM clock;
-  backend window count beside it.
-- Click **Refresh from backend** after ingesting.
+## Current screenshots (1600 × 1000)
 
-## 4. One-click demo, no backend needed (30 s)
+| Page | English | Español |
+|---|---|---|
+| Mine | [Mine EN](screenshots/pro-twin-mine-en.png) | [Mina ES](screenshots/pro-twin-mine-es.png) |
+| Wheel detail | [Wheel EN](screenshots/pro-twin-wheel-en.png) | [Rueda ES](screenshots/pro-twin-wheel-es.png) |
+| Monitoring | [Monitoring EN](screenshots/pro-twin-monitoring-en.png) | [Monitoreo ES](screenshots/pro-twin-monitoring-es.png) |
 
-On `/monitoring`, click **Run leak demo (clean → N4)**:
+## Guía rápida en español
 
-1. `clean` (5 s): 95 L flat, no alerts, RUL suppressed anomaly-only.
-2. `slow-leak` (15 s, LAB-ACCELERATED ~128.5 %/h x257 vs spec 0.5 %/h):
-   N1 → N2 → N3 walk, RUL countdown to ~0.35 h warning.
-3. `abrupt-drop` (6 s): 15 L step to ~80 L, **N4 critical** fires.
-4. `done`: full walk N1 → N2 → N3 → N4 held; **Reset demo** to rerun.
+### 0:00–0:30 — Inicio y estado
 
-The wheel simulation is a separate page with its own controls; the dashboard
-demo event does not cross Astro page boundaries. Its sliders remain available
-on `/wheel`.
+Desde la raíz del repositorio, ejecuta `docker compose config --quiet` y `docker compose up -d --build -V`; confirma que `http://localhost:8000/health` responda con `"status":"ok"`.
 
-Total judge path: ~4 min (up 90 s + ingest 30 s + page tour 60 s + demo 30 s).
+### 0:30–1:30 — Mina y flota
 
-## 5. What to screenshot
+Abre `/mine`: muestra cinco camiones simulados y el estado estimado del FSM de ocho estados del PLM III. Revisa las cámaras **Foso**, **Pala**, **Chancadora**, **Rampa** y **Cabina**. Usa **Pausar ciclo** y luego **Paso +1 s**. En la cámara de rampa, confirma **RAMPA · 10 % ASSUMPTION**. La insignia describe una reconstrucción paramétrica, no un modelo CAD exacto. Continúa con **Abrir rueda GDY106**.
 
-`docs/screenshots/t11-dashboard.png` — `/monitoring` mid-demo (slow-leak,
-N1/N2/N3 visible, LAB label in frame). This repo's copy was rendered
-from the local dev server (see Evidence Log T11).
-Fidelity pass: `docs/screenshots/fidelity-en.png` + `docs/screenshots/fidelity-es.png`
-(Bench chain + Truck 930E-4SE + Dashboard, EN + ES).
+### 1:30–2:15 — Detalle de rueda GDY106
 
-## 6. Guia rapida en espanol (bilingue autorizado)
+En `/wheel`, revisa el **Corte** y activa **Vista explotada**. El readout muestra la relación total derivada **32.63:1**. Mueve el control **Nivel de aceite** y observa la respuesta del depósito modelado; no es una medición real. Revisa los sensores en los ítems 56, 41 y 39/36, y la pinza Hall en el cable de tracción. En modo detenido, el control indica **Detenido — iniciar marcha** y la insignia **RECALIBRANDO** cuando el equipo está parado, nivelado y con el motor encendido. La nota de honestidad identifica los valores como sustituto sintético hasta la calibración en banco.
 
-1. Start Compose with `docker compose up -d --build -V frontend`.
-2. Open `/wheel`, `/mine`, and `/monitoring` at http://localhost:5173; EN/ES persists in localStorage.
-3. `/wheel`: GDY106 Fig.95 chain and steps 1–11; see `docs/inspection.md`.
-4. `/mine`: 930E-4SE dimensions, weights, fluids, and callouts 1–22.
-5. `/monitoring`: run the leak demo (clean → N4); the synthetic-proxy note is bilingual.
+### 2:15–3:30 — Monitoreo y selección de rueda
 
-## Honesty notes
+Abre `/monitoring`. La tabla contiene 12 filas de demostración marcadas **SUSTITUTO SINTÉTICO**, no datos reales por rueda. Lee la línea de supuestos: se requieren al menos dos de tres límites (aceite ≤47,5 L, temperatura ≥90 °C y vibración ≥7 mm/s); la corriente se muestra, pero no activa la regla. Revisa las filas **ALERTA DEMO** OG-03/RR y OG-05/RL. Pulsa **Abrir detalle de rueda** para llegar a `/wheel` con el camión y la rueda seleccionados; desde la página de mina son dos clics como máximo.
 
-- Slow-leak rate is LAB-ACCELERATED by construction (spec-true 0.5 %/h
-  drops ~0.008 L in 120 s — invisible; see docs/t9-anomaly.md).
-- Backend-less runs show the DEMO badge with local synthetic-proxy data;
-  LIVE badge requires `store_rows > 0` from §2.
-- Fusion stays synthetic-proxy until S7 bench proof; a failed bench
-  keeps N1/N2/N4 anomaly-only (see docs/t10-rul-ladder.md S7 pointer).
+### 3:30–4:30 — Demostración de fuga y firma
+
+Pulsa **Ejecutar demo de fuga (limpio → N4)** y observa la secuencia local desde la línea base, pasando por N1–N3, hasta la alerta N4 por caída abrupta. Es una demostración del dashboard, distinta del ingest del backend y no prueba rendimiento en terreno. El chequeo opcional de ingest firmado de T8 aparece arriba y usa la misma configuración y advertencias de seguridad.
+
+### 4:30–5:00 — Idioma y honestidad
+
+Alterna **EN** / **ES** y vuelve a leer las notas de honestidad. El modelo es una reconstrucción paramétrica; la geometría y los límites demo incluyen supuestos, y los valores de flota son sustitutos sintéticos hasta disponer de calibración en banco y evidencia de terreno.
+
+## Notas de honestidad
+
+- Los valores del wheel twin y del tablero de flota son SYNTHETIC-PROXY; no hay datos de rueda calibrados ni validación de campo.
+- La rampa **10% ASSUMPTION** es un supuesto del modelo visual, no una pendiente verificada de una mina real.
+- Las firmas HMAC verifican integridad de fila y origen mediante clave compartida; no aportan confidencialidad, autenticación del cliente HTTP, MQTT/TLS ni cumplimiento IEC 62443.
