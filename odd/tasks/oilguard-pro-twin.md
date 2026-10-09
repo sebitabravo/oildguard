@@ -146,7 +146,7 @@ RDD outcomes: T2 slice c4a9ba6 declined; T2+T3 range lens_context_budget_exceede
 
 ## Next step
 
-Finish Q8's documentation work by recording the D-06 neutral sensor-identity cue and D-07 `.og-page` scrolling rule in `DESIGN.md`, then mark Q8 complete. The D-06 implementation commit is recorded below; T1–T10 and Q1–Q7 remain complete. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
+The QA follow-up is complete: Q1–Q8 are closed, and T1–T10 remain complete. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
 
 ## QA follow-up (2026-10-09)
 
@@ -165,7 +165,7 @@ This follow-up addresses the Playwright QA findings in `/tmp/oilguard-qa/report.
 - [x] **Q5 — A-01, A-05 accessible 3D regions:** Give mine and wheel scenes localized named image regions and visually hidden synthetic-proxy captions; update state labels at most once per second; test pure label builders. Verified below.
 - [x] **Q6 — A-02 page headings and table header:** Add one localized first `<h1>` to each page and label the fleet table's eighth column. Verified below.
 - [x] **Q7 — A-03, A-04 keyboard and slider semantics:** Move focus with drawer tab arrows and support Home/End using tested pure key-to-index logic; provide localized slider value text and an oil-percentage name tied to the 95 L reference. Verified below.
-- [ ] **Q8 — D-06, D-07 palette and dashboard scroll:** Use neutral sensor identity cues while reserving status colors for condition; keep dashboard scrolling within `.og-page`; document both decisions in `DESIGN.md`.
+- [x] **Q8 — D-06, D-07 palette and dashboard scroll:** Use neutral sensor identity cues while reserving status colors for condition; keep dashboard scrolling within `.og-page`; document both decisions in `DESIGN.md` §Colors and §Layout. Verified below.
 
 ### Evidence
 
@@ -181,7 +181,7 @@ This follow-up addresses the Playwright QA findings in `/tmp/oilguard-qa/report.
 | Q5 review correction: R3-pending-throttle-timer | `fix(frontend): cancel stale scene announcement timer` (this work unit) | Finding from acknowledged `review-ffbd0c0c091de94d`, `frontend/src/sim/useThrottledSceneAccessibility.ts:24-28`: a delayed scheduled timer survived an immediate publish and could announce a newer copy less than one second afterward. Fixed by cancelling and clearing the pending timer before immediate publication. |
 | Q6 page headings and fleet table header | `fix(frontend): add page headings and table header` (this work unit) | One localized first `<h1>` is present per `/mine`, `/wheel`, and `/monitoring`; the monitoring table's eighth column is `Detail` / `Detalle`. Chromium DOM evidence and verification below. The preceding timer-fix commit `b65b7bf` was assessed medium/under-budget (no review due). |
 | Q7 drawer tabs and slider semantics | `fix(frontend): improve tabs focus and slider semantics` (this work unit) | TDD RED→GREEN; localized EN/ES accessible slider values and labels; Chromium keyboard/focus evidence below. |
-| Q8 palette and dashboard scroll | `fix(frontend): keep status palette for machine state` (this work unit) | D-06 implementation complete: sensor identity uses neutral numbered cues, while oil-condition color remains driven by the machine state. D-07 scroll behavior is unchanged; the separate `DESIGN.md` documentation commit is still pending, so Q8 remains open. Chromium EN/ES evidence and checks below. |
+| Q8 palette and dashboard scroll | `bd9a35f fix(frontend): keep status palette for machine state`; `docs(design): document sensor cues and dashboard scroll` (this work unit) | D-06 uses neutral numbered sensor identity cues while machine-condition colors remain state-driven. D-07 keeps dashboard content scrolling inside `.og-page`. Both rules are documented in `DESIGN.md` §Colors and §Layout; browser evidence and checks below. |
 
 ### Q2 interim evidence — first copy migration work unit
 
@@ -257,13 +257,14 @@ This follow-up addresses the Playwright QA findings in `/tmp/oilguard-qa/report.
 - **Runtime DOM / keyboard:** Headless Chromium 154.0.8037.94 on `/wheel` at 1366×768. In EN, the oil slider exposed `Oil fill percentage of the 95 L reference` and `66.5 L, 70 %`; viscosity exposed `1.80, degraded`. Without navigation, switching to ES updated these to `Porcentaje de llenado de aceite respecto de la referencia de 95 L`, `66,5 L, 70 %`, and `1,80, degradado`. In both languages, ArrowRight, ArrowLeft, wraparound ArrowLeft, Home, End, and wraparound ArrowRight produced matching focused/selected tab indices `[1, 0, 2, 0, 2, 0]`, with exactly one `tabIndex=0` each time. Full DOM evidence: `/tmp/og-shots/q7-dom-evidence.json`.
 - **Commit:** `fix(frontend): improve tabs focus and slider semantics` (this work unit; exact hash recorded in the completion handoff).
 
-### Q8 palette and dashboard scroll — implementation work unit
+### Q8 palette and dashboard scroll
 
-- **D-06:** Replaced red/amber/cyan/violet sensor identity hues with the neutral Annotation token (`--og-muted` / `#9db0cc`) for the 3D markers, CSS2D label rings, and sidebar cues. Each sensor is identified by a numbered ring (`56`, `41`, `39`, `A`); selection uses Machine Yellow only. Oil readout and fill colors remain derived from `oilStateFor`/`oilCssFor`, preserving green for normal, amber for warning, and red for critical machine condition.
-- **D-07:** No scrolling implementation was changed; `/monitoring` continues to scroll inside `.og-page`. Document this viewport-first rule together with the sensor identity cue in the follow-up `DESIGN.md` commit before closing Q8.
+- **D-06:** Code commit `bd9a35f` replaced red/amber/cyan/violet sensor identity hues with the neutral Annotation token (`--og-muted` / `#9db0cc`) for the 3D markers, CSS2D label rings, and sidebar cues. Each sensor is identified by a numbered ring (`56`, `41`, `39`, `A`); selection uses Machine Yellow only. Oil readout and fill colors remain derived from `oilStateFor`/`oilCssFor`, preserving green for normal, amber for warning, and red for critical machine condition.
+- **D-07:** No scrolling implementation was changed; `/monitoring` continues to scroll inside `.og-page`. `DESIGN.md` §Layout now explicitly states that dashboard content scrolls within `.og-page` and the document window is not the dashboard scroll container.
 - **Chromium DOM / visual proof:** Headless Chromium 154.0.8037.94 at 1600×1000 on `/wheel`, EN and ES. The four CSS2D markers and sidebar sensor rings compute to neutral `rgb(157, 176, 204)` for borders and identity text, with pseudo-element contents `"56"`, `"41"`, `"39"`, and `"A"`; all four marker materials use the same neutral `0x9db0cc` value in `sensors.ts`. At 70% oil, the condition readout remains normal green `rgb(47, 191, 113)` in both locales. Browser JSON: `/tmp/og-shots/q8-dom-evidence.json`; inspected captures: `/tmp/og-shots/q8-wheel-en.png` and `/tmp/og-shots/q8-wheel-es.png`. The impeccable toolbar was removed only from the capture DOM; the `BaseLayout.astro` live.js source hunk remained present and unstaged.
 - **GREEN, full:** `cd frontend && bun test src` → 188 pass, 0 fail, 114,053 expectations across 36 files.
 - **GREEN, build:** `cd frontend && bun run build` → pass; Astro check 0 errors, 0 warnings, 4 hints; 4 static routes built; existing >500 kB chunk warning.
-- **Commit:** `fix(frontend): keep status palette for machine state` (this work unit; Q8 remains unchecked pending the DESIGN.md documentation commit).
+- **Design read-back:** `DESIGN.md` §Colors contains the Sensor Identity Rule, separating neutral numbered rings from the closed condition palette; §Layout explicitly confines dashboard scrolling to `.og-page`.
+- **Documentation commit:** `docs(design): document sensor cues and dashboard scroll` (this work unit).
 
 Engram mirror for this follow-up remains pending because memory tools and an authoritative session identity are unavailable.

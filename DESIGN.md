@@ -216,6 +216,8 @@ Komatsu yellow on graphite, with a fixed semantic status ramp that means the sam
 
 **The Status Palette Is Closed.** Signal Green, Motion Blue, Instrument Amber, Caution Orange and Critical Red carry fixed meanings. They are never reassigned for decoration, never introduced as accents, and never used to signal anything other than the machine condition they were assigned to.
 
+**The Sensor Identity Rule.** Sensor identity uses neutral Annotation-colored numbered rings, never the closed status palette. Machine Yellow may indicate selection; status colors communicate machine condition only.
+
 ## Typography
 
 **Display Font:** Inter (with `ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial` fallback)
@@ -244,7 +246,7 @@ Komatsu yellow on graphite, with a fixed semantic status ramp that means the sam
 
 A viewport-first shell. The app fills the window with no page scroll on the 3D views; only the drawer body scrolls. The header is a fixed 60px rail, the content area is a flex row of viewport plus drawer, and the drawer is a fixed 400px column capped at 42vw so it can never crowd the render. Collapsed, the drawer becomes a 52px rail with the toggle alone.
 
-The dashboard is the exception and the reason for the second material: it is a scrolling page at up to 1440px wide, laid out as a flex-wrap row of one primary chart panel and a side column, with no media query of its own — it wraps on `flex-basis` rather than on viewport width.
+The dashboard is the exception and the reason for the second material: it is a scrolling page at up to 1440px wide, laid out as a flex-wrap row of one primary chart panel and a side column, with no media query of its own — it wraps on `flex-basis` rather than on viewport width. Dashboard content scrolls within `.og-page`; the document window is not the dashboard scroll container.
 
 Spacing follows an undeclared 4px rhythm: 4, 8, 12, 16, 20, 24px. There is no spacing scale; these are the steps that recur.
 
