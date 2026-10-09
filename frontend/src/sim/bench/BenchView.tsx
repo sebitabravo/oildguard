@@ -25,6 +25,8 @@ import {
   viscosityLabel,
 } from "./settling";
 import { DEMO_OIL_EVENT, parseDemoOil } from "../../dash/demoBus";
+import { CAPACITY_L, GDY106_TRAIN, stageRatio, trainRatio } from "../../twin/physics";
+import { parseWheelUrl } from "./wheelUrl";
 import { t, useLang } from "../../i18n";
 import Drawer from "../../ui/Drawer";
 import HonestyBadge from "../../ui/HonestyBadge";
@@ -57,11 +59,13 @@ export const INSPECTION_STEPS: InspStep[] = [
 ];
 
 export default function BenchView() {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [oilPct, setOilPct] = useState(70);
+  const [initial] = useState(() => parseWheelUrl(window.location.search));
+  const [selectedId, setSelectedId] = useState<string | null>(initial.sensorId);
+  const [oilPct, setOilPct] = useState(Math.round((initial.oilLitres / CAPACITY_L) * 100));
   const [viscosity, setViscosity] = useState(VISC_NOMINAL);
-  const [mode, setMode] = useState<BenchMode>("rest");
-  const [cutaway, setCutaway] = useState(true);
+  const [mode, setMode] = useState<BenchMode>(initial.mode);
+  const [cutaway, setCutaway] = useState(initial.cutaway);
+  const [exploded, setExploded] = useState(initial.exploded);
   const [lang] = useLang();
   const es = lang === "es";
 
@@ -133,6 +137,14 @@ export default function BenchView() {
         />
         {es ? "Corte" : "Cutaway"}
       </label>
+      <label className="og-check">
+        <input
+          type="checkbox"
+          checked={exploded}
+          onChange={(e) => setExploded(e.currentTarget.checked)}
+        />
+        {es ? "Vista explotada" : "Exploded view"}
+      </label>
     </div>
   );
 
@@ -149,6 +161,9 @@ export default function BenchView() {
         <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
           {es ? "Asentamiento ≈" : "Settling ≈"} {settlingMs} ms · {es ? "proxy" : "viscosity proxy"}{" "}
           {viscosity.toFixed(2)} ({viscosityLabel(viscosity)})
+        </div>
+        <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
+          {es ? "Tren planetario" : "Planetary train"}: {stageRatio(GDY106_TRAIN.hs).toFixed(2)}:1 × {stageRatio(GDY106_TRAIN.ls).toFixed(2)}:1 = {trainRatio().toFixed(2)}:1 · {es ? "velocidades derivadas" : "derived stage speeds"}
         </div>
         <div
           style={{
@@ -239,6 +254,7 @@ export default function BenchView() {
           viscosityProxy={viscosity}
           mode={mode}
           cutaway={cutaway}
+          exploded={exploded}
           dock={dock}
           badge={<HonestyBadge label={t("badge.proxy", lang)} text={t("bench.honesty", lang)} />}
         />

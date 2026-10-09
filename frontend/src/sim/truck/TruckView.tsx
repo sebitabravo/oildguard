@@ -54,6 +54,12 @@ export default function TruckView() {
       <button type="button" className="og-btn" onClick={() => { resetFleetStore(); setRunId((n) => n + 1); }}>
         {t("truck.restart", lang)}
       </button>
+      <a
+        className="og-btn"
+        href="/wheel?from=mine&truck=930E-4SE&wheel=RH&sensor=pressure&oil=66.5&mode=rest&cutaway=1"
+      >
+        {es ? "Abrir rueda GDY106" : "Open GDY106 wheel"}
+      </a>
     </div>
   );
 

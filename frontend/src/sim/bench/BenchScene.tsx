@@ -8,6 +8,7 @@ import { wobbleAt } from "./settling";
 import { createStage } from "../../twin/render/stage";
 import { createMaterials } from "../../twin/render/materials";
 import { createLabel, setLabelActive, setLabelText } from "../../twin/render/labels";
+import { CAPACITY_L, headFromVolume, stageSpeeds } from "../../twin/physics";
 
 // Escena del banco GDY106 (Sim A): bastidor, carcasa con corte e internos.
 // El render (tone mapping, IBL, sombras) viene de twin/render/stage.ts.
@@ -34,18 +35,49 @@ interface BenchSceneProps {
   mode: BenchMode;
   /** Semi-transparent housing shell revealing internals + oil. */
   cutaway: boolean;
+  exploded: boolean;
   /** Controles inferiores (sliders, marcha/reposo, corte) que dibuja la vista. */
   dock?: ComponentChildren;
   /** Insignias de honestidad visual, bajo la insignia RECAL. */
   badge?: ComponentChildren;
 }
 
-/** Oil fill slab geometry inside the barrel (scene units). */
-const OIL_BOTTOM = 1.6;
-const OIL_MIN_H = 0.04;
-const OIL_MAX_H = 0.94;
-
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+
+function oilPoolGeometry(volumeL: number): THREE.BufferGeometry {
+  const radius = 0.6;
+  const h = headFromVolume(Math.min(CAPACITY_L, Math.max(0, volumeL)));
+  const y = h - radius;
+  const halfChord = Math.sqrt(Math.max(0, radius * radius - y * y));
+  const asin = Math.asin(y / radius);
+  const shape = new THREE.Shape();
+  shape.moveTo(-halfChord, y);
+  for (let i = 0; i <= 36; i++) {
+    const angle = Math.PI - asin + ((Math.PI + 2 * asin) * i) / 36;
+    shape.lineTo(radius * Math.cos(angle), radius * Math.sin(angle));
+  }
+  shape.closePath();
+  const innerRadius = 0.22;
+  if (y > -innerRadius) {
+    const hole = new THREE.Path();
+    if (y >= innerRadius) {
+      hole.absellipse(0, 0, innerRadius, innerRadius, 0, Math.PI * 2, true, 0);
+    } else {
+      const innerChord = Math.sqrt(Math.max(0, innerRadius * innerRadius - y * y));
+      const innerAsin = Math.asin(y / innerRadius);
+      hole.moveTo(-innerChord, y);
+      for (let i = 0; i <= 24; i++) {
+        const angle = Math.PI - innerAsin + ((Math.PI + 2 * innerAsin) * i) / 24;
+        hole.lineTo(innerRadius * Math.cos(angle), innerRadius * Math.sin(angle));
+      }
+      hole.closePath();
+    }
+    shape.holes.push(hole);
+  }
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: 1.15, bevelEnabled: false, curveSegments: 36 });
+  geometry.rotateY(Math.PI / 2);
+  return geometry;
+}
 
 const HOUSING_Y = 2.09; // motor axis height above ground
 
@@ -56,6 +88,7 @@ export default function BenchScene({
   viscosityProxy,
   mode,
   cutaway,
+  exploded,
   dock,
   badge,
 }: BenchSceneProps) {
@@ -76,6 +109,8 @@ export default function BenchScene({
   modeRef.current = mode;
   const cutawayRef = useRef(cutaway);
   cutawayRef.current = cutaway;
+  const explodedRef = useRef(exploded);
+  explodedRef.current = exploded;
 
   useEffect(() => {
     const host = hostRef.current;
@@ -196,7 +231,7 @@ export default function BenchScene({
       rib.position.set(rx, HOUSING_Y, 0);
       scene.add(rib);
     }
-    box(1.1, 1.15, 1.15, gearboxMat, -1.4, HOUSING_Y, 0); // gearbox
+    const gearboxShell = box(1.1, 1.15, 1.15, gearboxMat, -1.4, HOUSING_Y, 0); // gearbox
     box(0.08, 0.95, 0.95, darkSteel, -1.99, HOUSING_Y, 0); // sun-pinion cover
     cylX(0.8, 0.26, housingMat, 1.0, HOUSING_Y, 0); // output flange
     cylX(0.22, 0.5, steel, 1.35, HOUSING_Y, 0); // shaft stub
@@ -258,11 +293,17 @@ export default function BenchScene({
       scene.add(group);
       return { group, rate };
     };
+    const rotorRpm = 3000;
+    const speeds = stageSpeeds(rotorRpm);
+    const toRadPerSecond = (rpm: number) => (rpm * Math.PI * 2) / 60;
     const spinners = [
-      spinGroup(3), // sun shaft + sun gear
-      spinGroup(6), // rotor barrel (illustrative speed; real 3000 RPM aliases)
+      spinGroup(toRadPerSecond(rotorRpm)),
+      spinGroup(toRadPerSecond(rotorRpm)),
+      spinGroup(toRadPerSecond(speeds.hsCarrierRpm)),
+      spinGroup(toRadPerSecond(speeds.wheelRpm)),
     ];
-    const pinionSpinners = [spinGroup(-6), spinGroup(-6), spinGroup(-6)];
+    const pinionSpinners = [0, 1, 2].map(() => spinGroup(toRadPerSecond(speeds.hsPlanetRelRpm)));
+    const lowPlanetSpinners = [0, 1, 2, 3].map(() => spinGroup(toRadPerSecond(speeds.lsPlanetRelRpm)));
     const gearAt = (
       parent: THREE.Group,
       x: number,
@@ -300,7 +341,7 @@ export default function BenchScene({
     sunShaft.position.set(-0.3, HOUSING_Y, 0);
     spinners[0].group.add(sunShaft);
     gearAt(spinners[0].group, -1.4, HOUSING_Y, 0, 0.2, 0.14, 10);
-    // Three planetary pinions at 120° around the sun (carrier fixed).
+    // Three high-speed planetary pinions at 120° around the sun.
     for (let k = 0; k < 3; k++) {
       const a = (k / 3) * Math.PI * 2;
       gearAt(
@@ -312,6 +353,10 @@ export default function BenchScene({
         0.3,
         8
       );
+    }
+    for (let k = 0; k < 4; k++) {
+      const a = (k / 4) * Math.PI * 2;
+      gearAt(lowPlanetSpinners[k].group, -1.08, HOUSING_Y + Math.cos(a) * 0.52, Math.sin(a) * 0.52, 0.13, 0.34, 8);
     }
     // Ring-gear hint (static torus around the pinion set).
     const ring = new THREE.Mesh(
@@ -350,14 +395,14 @@ export default function BenchScene({
     );
     hsCarrier.rotation.z = Math.PI / 2;
     hsCarrier.position.set(-0.85, HOUSING_Y, 0);
-    spinners[0].group.add(hsCarrier);
+    spinners[2].group.add(hsCarrier);
     const lsCarrier = new THREE.Mesh(
       new THREE.CylinderGeometry(0.44, 0.44, 0.08, 20),
       gearMat
     );
     lsCarrier.rotation.z = Math.PI / 2;
     lsCarrier.position.set(-1.15, HOUSING_Y, 0);
-    scene.add(lsCarrier);
+    spinners[3].group.add(lsCarrier);
     const torqueTube = new THREE.Mesh(
       new THREE.CylinderGeometry(0.16, 0.16, 1.1, 14),
       gearMat
@@ -423,10 +468,8 @@ export default function BenchScene({
     // Height tracks the driven fill fraction (the <50% warning / <30%
     // critical bands of oil.ts are shown in the HUD). The slab tilts with
     // the settling wobble driven in the animation loop below.
-    const oilMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(1.5, 1, 0.9),
-      oilMat
-    );
+    const oilMesh = new THREE.Mesh(oilPoolGeometry(oilLevelRef.current * CAPACITY_L), oilMat);
+    oilMesh.position.set(-2.0, HOUSING_Y, 0);
     scene.add(oilMesh);
 
     // ---- Sensor markers: small emissive spheres (clickable) ----
@@ -510,6 +553,11 @@ export default function BenchScene({
     let elapsed = 0;
     let prevMode: BenchMode = modeRef.current;
     let restStart = -10;
+    let lastOilLitres = oilLevelRef.current * CAPACITY_L;
+    const compactGearboxX = gearboxShell.position.x;
+    const compactRingX = ring.position.x;
+    const compactHubX = hub.position.x;
+    const compactTireX = tire.position.x;
 
     const stopFrame = stage.onFrame((dt) => {
       elapsed += dt;
@@ -524,6 +572,7 @@ export default function BenchScene({
         // Churn: gear set spins, oil surface sloshes continuously.
         for (const s of spinners) s.group.rotation.x += dt * s.rate;
         for (const p of pinionSpinners) p.group.rotation.x += dt * p.rate;
+        for (const p of lowPlanetSpinners) p.group.rotation.x += dt * p.rate;
         tilt =
           0.08 * Math.sin(elapsed * 7) + 0.03 * Math.sin(elapsed * 11.3);
       } else {
@@ -532,13 +581,20 @@ export default function BenchScene({
         const tRest = elapsed - restStart;
         tilt = tRest < 8 ? wobbleAt(tRest, viscosityRef.current) : 0;
       }
-      oilMesh.rotation.z = tilt;
+      oilMesh.rotation.x = tilt;
+      const oilLitres = clamp01(oilLevelRef.current) * CAPACITY_L;
+      if (Math.abs(oilLitres - lastOilLitres) > 0.05) {
+        const previous = oilMesh.geometry;
+        oilMesh.geometry = oilPoolGeometry(oilLitres);
+        previous.dispose();
+        lastOilLitres = oilLitres;
+      }
 
-      // Oil fill height follows the driven fraction.
-      const frac = clamp01(oilLevelRef.current);
-      const h = OIL_MIN_H + frac * (OIL_MAX_H - OIL_MIN_H);
-      oilMesh.scale.y = h;
-      oilMesh.position.set(0, OIL_BOTTOM + h / 2, 0);
+      const spread = explodedRef.current ? 0.5 : 0;
+      gearboxShell.position.x += (compactGearboxX - spread - gearboxShell.position.x) * 0.12;
+      ring.position.x += (compactRingX - spread * 0.35 - ring.position.x) * 0.12;
+      hub.position.x += (compactHubX + spread - hub.position.x) * 0.12;
+      tire.position.x += (compactTireX + spread * 1.5 - tire.position.x) * 0.12;
 
       // Cutaway fades the housing shell so internals + oil stay visible.
       const shellTarget = cutawayRef.current ? 0.22 : 1;
