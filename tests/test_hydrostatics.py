@@ -4,6 +4,7 @@ import pytest
 
 from sim import physics
 from sim.geometry import GearCase, head_from_volume
+from sim.physics import RESEARCH_ROTATING_CAVITY as RESEARCH_GC
 
 GC = GearCase()
 
@@ -94,3 +95,38 @@ def test_local_sensitivity_matches_finite_difference():
 
 def test_sensitivity_is_worst_where_the_surface_is_widest():
     assert physics.kpa_per_liter(130.0, 60.0, GC) < physics.kpa_per_liter(10.0, 60.0, GC)
+
+
+def test_rotating_sensor_regime_thresholds_are_explicit_and_ordered():
+    from sim.physics import rotating_sensor_regime
+
+    assert rotating_sensor_regime(0.0) == "static_pool"
+    assert rotating_sensor_regime(30.0) == "slosh"
+    assert rotating_sensor_regime(60.0) == "centrifugal_rimming"
+
+
+def test_research_cavity_is_separate_assumption_from_static_gear_case():
+    from sim.physics import RESEARCH_ROTATING_CAVITY
+
+    assert (RESEARCH_ROTATING_CAVITY.r_out, RESEARCH_ROTATING_CAVITY.r_in,
+            RESEARCH_ROTATING_CAVITY.length) == pytest.approx((0.50, 0.15, 0.70))
+    assert physics.pressure_kpa_from_volume(95.0, 60.0, GC) == pytest.approx(
+        physics.pressure_kpa_from_volume(95.0, 60.0)
+    )
+
+
+def test_submerged_fraction_is_per_revolution_and_bounded():
+    from sim.physics import submerged_fraction_per_revolution
+
+    low = submerged_fraction_per_revolution(45.0, 0.50, 0.0, RESEARCH_GC)
+    high = submerged_fraction_per_revolution(45.0, 0.50, 60.0, RESEARCH_GC)
+    assert 0.0 <= low <= 1.0
+    assert 0.0 <= high <= 1.0
+    assert submerged_fraction_per_revolution(45.0, 0.50, 0.0, RESEARCH_GC, samples=720) == pytest.approx(low, abs=0.01)
+
+
+def test_rotating_sensor_inputs_are_clamped_to_physical_bounds():
+    from sim.physics import submerged_fraction_per_revolution
+
+    assert submerged_fraction_per_revolution(1e6, 9.0, 1e6, RESEARCH_GC) == 1.0
+    assert submerged_fraction_per_revolution(-20.0, -3.0, -1e6, RESEARCH_GC) == 0.0

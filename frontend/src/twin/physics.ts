@@ -23,6 +23,13 @@ export const BETA_RHO_PER_C = 7e-4;
 export const G = 9.81;
 export const CAPACITY_L = 95;
 
+/** Research geometry for rotating-output sensors; ASSUMPTION, not calibrated. */
+export const RESEARCH_ROTATING_CAVITY: GearCase = { rOut: 0.5, rIn: 0.15, length: 0.7 };
+// Regime thresholds and slosh envelope are ASSUMPTIONS pending bench data.
+const ROTATING_STATIC_FROUDE_MAX = 0.1;
+const ROTATING_RIMMING_FROUDE_MIN = 1;
+const ROTATING_RPM_MAX = 3000;
+
 const HEAD_TOL_M = 1e-9;
 
 export function volumeFullL(gc: GearCase = DEFAULT_GEAR_CASE): number {
@@ -93,6 +100,49 @@ export function pressureKpaFromMass(massKg: number, tempC: number, gc: GearCase 
 export function volumeFromPressureKpa(pressureKpa: number, tempC: number, gc: GearCase = DEFAULT_GEAR_CASE): number {
   const head = (pressureKpa * 1000) / (oilDensityKgM3(tempC) * G);
   return volumeFromHead(head, gc);
+}
+
+export type RotatingSensorRegime = "static_pool" | "slosh" | "centrifugal_rimming";
+
+export function rotatingSensorRegime(wheelRpm: number, gc: GearCase = RESEARCH_ROTATING_CAVITY): RotatingSensorRegime {
+  const rpm = Math.min(ROTATING_RPM_MAX, Math.max(0, Math.abs(wheelRpm)));
+  const froude = (rpm * 2 * Math.PI / 60) ** 2 * gc.rOut / G;
+  if (froude < ROTATING_STATIC_FROUDE_MAX) return "static_pool";
+  if (froude < ROTATING_RIMMING_FROUDE_MIN) return "slosh";
+  return "centrifugal_rimming";
+}
+
+/** Estimated wet fraction across one output revolution; assumptions need bench calibration. */
+export function submergedFractionPerRevolution(
+  volumeL: number,
+  sensorRadiusM: number,
+  wheelRpm: number,
+  gc: GearCase = RESEARCH_ROTATING_CAVITY,
+  samples = 360,
+): number {
+  const fullL = volumeFullL(gc);
+  const volume = Math.min(fullL, Math.max(0, volumeL));
+  if (volume <= 0) return 0;
+  if (volume >= fullL) return 1;
+  const radius = Math.min(gc.rOut, Math.max(0, sensorRadiusM));
+  const regime = rotatingSensorRegime(wheelRpm, gc);
+  if (regime === "centrifugal_rimming") {
+    const filmDepth = volume / 1000 / (2 * Math.PI * gc.rOut * gc.length);
+    return radius >= gc.rOut - filmDepth ? 1 : 0;
+  }
+
+  let surfaceHeight = headFromVolume(volume, gc) - gc.rOut;
+  if (regime === "slosh") {
+    const rpm = Math.min(ROTATING_RPM_MAX, Math.max(0, Math.abs(wheelRpm)));
+    const froude = (rpm * 2 * Math.PI / 60) ** 2 * gc.rOut / G;
+    surfaceHeight += Math.min(0.15 * gc.rOut, 0.1 * gc.rOut * froude);
+  }
+  const count = Math.min(4096, Math.max(36, Math.trunc(samples)));
+  let wet = 0;
+  for (let i = 0; i < count; i++) {
+    if (radius * Math.sin(2 * Math.PI * i / count) <= surfaceHeight) wet++;
+  }
+  return wet / count;
 }
 
 // --- Tren planetario GDY106 (ASSUMPTION: dientes ilustrativos) ---

@@ -62,8 +62,60 @@ VISC_VI = (95, 103)              # VERIFIED viscosity-index range
 
 G = 9.81  # m/s²
 
+# T10 research geometry is a separately named ASSUMPTION. Keep the original
+# static level-estimator GearCase as its existing calibration placeholder.
+RESEARCH_ROTATING_CAVITY = GearCase(r_out=0.50, r_in=0.15, length=0.70)
+ROTATING_STATIC_FROUDE_MAX = 0.10  # ASSUMPTION; transition requires bench data.
+ROTATING_RIMMING_FROUDE_MIN = 1.00  # ASSUMPTION; gravity/circulation boundary.
+ROTATING_RPM_MAX = 3000.0  # VERIFIED rotor ceiling, not a wheel-speed limit.
+
 # Ancla lineal histórica (NO física); solo la usa absurdity_check().
 SYNTHETIC_PROXY_KPA_AT_FULL = 28.0
+
+
+def rotating_sensor_regime(wheel_rpm: float, gc: GearCase = RESEARCH_ROTATING_CAVITY) -> str:
+    """Classify pool / slosh / rimming using the ASSUMED Froude thresholds."""
+    rpm = min(ROTATING_RPM_MAX, max(0.0, abs(float(wheel_rpm))))
+    froude = (rpm * 2.0 * math.pi / 60.0) ** 2 * gc.r_out / G
+    if froude < ROTATING_STATIC_FROUDE_MAX:
+        return "static_pool"
+    if froude < ROTATING_RIMMING_FROUDE_MIN:
+        return "slosh"
+    return "centrifugal_rimming"
+
+
+def submerged_fraction_per_revolution(
+    volume_l: float, sensor_radius_m: float, wheel_rpm: float,
+    gc: GearCase = RESEARCH_ROTATING_CAVITY, samples: int = 360,
+) -> float:
+    """Estimated wet fraction for an output-mounted sensor over one wheel turn.
+
+    Geometry/regime thresholds and slosh envelope are research assumptions,
+    not calibrated behavior. Rimming uses a uniform outer-wall film model.
+    """
+    full_l = math.pi * (gc.r_out**2 - gc.r_in**2) * gc.length * 1000.0
+    volume = min(full_l, max(0.0, float(volume_l)))
+    if volume <= 0.0:
+        return 0.0
+    if volume >= full_l:
+        return 1.0
+    radius = min(gc.r_out, max(0.0, float(sensor_radius_m)))
+    regime = rotating_sensor_regime(wheel_rpm, gc)
+    if regime == "centrifugal_rimming":
+        film_depth = volume / 1000.0 / (2.0 * math.pi * gc.r_out * gc.length)
+        return float(radius >= gc.r_out - film_depth)
+
+    surface_height = head_from_volume(volume, gc) - gc.r_out
+    if regime == "slosh":
+        omega = min(ROTATING_RPM_MAX, max(0.0, abs(float(wheel_rpm)))) * 2.0 * math.pi / 60.0
+        froude = omega**2 * gc.r_out / G
+        surface_height += min(0.15 * gc.r_out, 0.10 * gc.r_out * froude)
+    count = min(4096, max(36, int(samples)))
+    wet = sum(
+        radius * math.sin(2.0 * math.pi * i / count) <= surface_height
+        for i in range(count)
+    )
+    return wet / count
 
 
 def oil_density_kg_m3(temp_c: float, rho_ref: float = RHO_REF,

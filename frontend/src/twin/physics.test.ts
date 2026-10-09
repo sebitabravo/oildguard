@@ -7,6 +7,9 @@ import {
   headFromVolume,
   pressureKpaFromMass,
   pressureKpaFromVolume,
+  rotatingSensorRegime,
+  submergedFractionPerRevolution,
+  RESEARCH_ROTATING_CAVITY,
   stageSpeeds,
   trainRatio,
   volumeFromHead,
@@ -84,5 +87,30 @@ describe("python parity", () => {
   test("3000 rpm rotor gives about 92 wheel rpm", () => {
     expect(stageSpeeds(3000).wheelRpm).toBeGreaterThan(91);
     expect(stageSpeeds(3000).wheelRpm).toBeLessThan(93);
+  });
+});
+
+describe("rotating sensor assumptions", () => {
+  test("selects static pool, slosh, and centrifugal regimes", () => {
+    expect(rotatingSensorRegime(0)).toBe("static_pool");
+    expect(rotatingSensorRegime(30)).toBe("slosh");
+    expect(rotatingSensorRegime(60)).toBe("centrifugal_rimming");
+  });
+
+  test("keeps researched cavity separate from static defaults", () => {
+    expect(RESEARCH_ROTATING_CAVITY).toEqual({ rOut: 0.5, rIn: 0.15, length: 0.7 });
+    expect(pressureKpaFromVolume(95, 60, gc)).toBeCloseTo(pressureKpaFromVolume(95, 60), 12);
+  });
+
+  test("computes a bounded deterministic per-revolution wet fraction", () => {
+    const fraction = submergedFractionPerRevolution(45, 0.5, 0, RESEARCH_ROTATING_CAVITY);
+    expect(fraction).toBeGreaterThanOrEqual(0);
+    expect(fraction).toBeLessThanOrEqual(1);
+    expect(submergedFractionPerRevolution(45, 0.5, 0, RESEARCH_ROTATING_CAVITY, 720)).toBeCloseTo(fraction, 1);
+  });
+
+  test("clamps volume, sensor radius, rpm, and integration samples", () => {
+    expect(submergedFractionPerRevolution(1e6, 9, 1e6, RESEARCH_ROTATING_CAVITY)).toBe(1);
+    expect(submergedFractionPerRevolution(-20, -3, -1e6, RESEARCH_ROTATING_CAVITY)).toBe(0);
   });
 });
