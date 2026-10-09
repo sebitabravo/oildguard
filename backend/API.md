@@ -13,8 +13,8 @@ The frontend reads `PUBLIC_BACKEND_URL`; Compose sets it to
 
 | Method | Path | Status when real |
 |---|---|---|
-| GET | `/health` | `ok` (always; `store_rows`, `influx`, `mqtt` diagnostics) |
-| POST | `/ingest` | `ok` — batch stored (memory + best-effort InfluxDB) |
+| GET | `/health` | `ok` (store, Influx, MQTT, and aggregate signing diagnostics) |
+| POST | `/ingest` | `ok` — accepted rows stored; per-row signature rejections returned in the ack |
 | GET | `/level` | `ok` — latest row echoed; `confidence` stub `0.0` until T10 |
 | GET | `/windows?limit=50` | `ok` — rest windows grouped from `recal_window` flags |
 | GET | `/alerts` | `ok` — T10 N1–N4 ladder over the memory store (`synthetic-proxy`; honest fallback note when unevaluatable) |
@@ -40,6 +40,8 @@ from `sim/generate.py`).
       "slope_deg": 0.13,
       "rotor_rpm": 113.6,
       "wheel_rpm": 3.48,
+      "rotating_sensor_regime": "static_pool",
+      "submerged_fraction_per_revolution": 1.0,
       "pressure_kpa": 2.579,
       "temperature_c": 74.94,
       "vib_rms_g": 0.324,
@@ -63,7 +65,9 @@ Ack:
   "ingested": 5,
   "latest_seq": 4,
   "store_rows": 5,
-  "influx": "fallback-memory (unreachable ...); rows kept in memory"
+  "influx": "fallback-memory (unreachable ...); rows kept in memory",
+  "rejected": 0,
+  "rejected_reasons": {}
 }
 ```
 
@@ -71,6 +75,60 @@ The `influx` string reports the write outcome per batch: either
 `written (N points -> URL bucket=...)` or a `fallback-memory (reason)`
 message that is also logged server-side. Rows are never dropped when
 InfluxDB is down.
+
+### Per-row signatures
+
+The edge mock can add `sig_v` and `sig` as the last two CSV columns. `sig_v`
+is `ogs1`; `sig` is the HMAC-SHA256 digest over the complete canonical row
+described in `sim/SCHEMA.md`. The HTTP model preserves those optional fields.
+The backend verifies rows inside the shared ingest path before InfluxDB or
+memory storage, including rows forwarded directly by the in-process MQTT
+bridge.
+
+Configure keys by device ID using `OILGUARD_DEVICE_KEYS` with comma-separated
+`device_id:hex_key` entries. `OILGUARD_REQUIRE_SIGNATURE=1` rejects unsigned
+rows; its default is `0`, which accepts unsigned demo rows. A present but
+invalid signature is always rejected. A successful or partially rejected
+batch returns HTTP 200 and includes `rejected` plus `rejected_reasons` counts.
+When enforcement is enabled and every row is rejected, the backend returns
+HTTP 401 with the same counts at the response body's top level. Stable reason
+codes are `unsigned`, `unknown_device`, `bad_signature`, and `replay`.
+Signed rows carry `sig_v: "ogs1"` and `sig: "<HMAC-SHA256 hex digest>"`;
+the signature field is 64 lowercase hexadecimal characters for a SHA-256
+digest. Unsigned rows omit both fields.
+
+`GET /health` includes aggregate status only; it never returns device IDs or
+keys:
+
+```json
+{
+  "signing": {
+    "enforced": true,
+    "devices": 1,
+    "verified_total": 10,
+    "rejected_total": 1,
+    "rejected_reasons": {"bad_signature": 1}
+  }
+}
+```
+
+Create a local key without saving it in the repository, then use the same key
+for the edge signer and backend device entry:
+
+```bash
+DEVICE_KEY="$(python3 -c "import secrets; print(secrets.token_hex(32))")"
+export OILGUARD_DEVICE_KEYS="wheel-RH-01:${DEVICE_KEY}"
+export OILGUARD_REQUIRE_SIGNATURE=1
+docker compose up -d --build backend
+OILGUARD_DEVICE_KEY="${DEVICE_KEY}" python3 sim/generate.py --sign --scenario clean --seconds 5 --out /tmp/t8-signed.csv
+python3 backend/ingest_mqtt.py --publish-csv /tmp/t8-signed.csv --host localhost
+```
+
+The key is a local development secret: never paste it into docs, fixtures, or
+commits. HMAC provides per-row integrity and shared-key origin verification,
+not confidentiality, transport security, HTTP caller authentication, or IEC
+62443 compliance. Provisioning, secure key storage, and key rotation remain
+out of scope.
 
 Migration note (breaking vs S0 stub): the S0 `POST /ingest` accepted a
 single 4-field object (`device_id`, `pressure_kpa`, `temperature_c`,
@@ -129,7 +187,7 @@ down, `POST /ingest` still works).
 curl -s localhost:8000/health
 curl -s localhost:8000/openapi.json | head -c 300
 
-# ingest 5 rows from a T6 CSV (needs python3, no extra deps)
+# ingest 5 unsigned demo rows from a T6 CSV (signing is permissive by default)
 python3 - <<'EOF'
 import csv, json, urllib.request
 rows = []
@@ -139,7 +197,8 @@ with open('/tmp/t8-sample.csv', newline='') as f:
             break
         for k in ('seq', 'moving', 'recal_window', 'engine_on', 'link_down'):
             r[k] = int(float(r[k]))
-        for k in ('t_s', 'slope_deg', 'rotor_rpm', 'wheel_rpm', 'pressure_kpa',
+        for k in ('t_s', 'slope_deg', 'rotor_rpm', 'wheel_rpm',
+                  'submerged_fraction_per_revolution', 'pressure_kpa',
                   'temperature_c', 'vib_rms_g', 'vib_kurtosis',
                   'level_liters', 'level_pct'):
             r[k] = float(r[k])

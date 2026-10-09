@@ -52,7 +52,7 @@ A neighbouring product cannot truthfully copy that claim without re-deriving the
 - Four-service local Docker Compose stack: InfluxDB 2.7.6, Eclipse Mosquitto 2.0.18 as an anonymous local mock broker, FastAPI ingest/query, Astro dev server (Bun).
 - Transports and identities: MQTT topic `oilguard/signals`, InfluxDB org and bucket `oilguard`, device id `wheel-RH-01`, measurement `oilguard_signals`.
 - Local only for the prototype. No remote steps, no hardware, no push required.
-- No authentication, authorization, or multi-tenancy in the current build — explicit non-scope, though the proposal commits to role-based access in the backend as part of the industrial design.
+- No HTTP caller authentication, authorization, or multi-tenancy in the current build — explicit non-scope, though the proposal commits to role-based access in the backend as part of the industrial design. Per-device row signatures protect signed measurements under a shared key; they do not authenticate HTTP clients.
 - The proposal's deployment sequence is staged to reduce technical and financial risk: test bench → single-truck controlled pilot → limited-fleet pilot → progressive scale-up.
 - Connectivity is Wi-Fi + MQTT for the prototype; LoRaWAN is named as the industrial deployment alternative still to be validated.
 - Bilingual EN/ES interface and documentation; code identifiers and comments stay English. Spanish uses a neutral professional register.
@@ -97,7 +97,7 @@ Edge node is an ESP32-S3 acquiring vibration at 1 kHz and pressure and temperatu
 **Explicitly undecided**
 
 - Fleet view and multi-truck pit. The `Mine & Fleet` navigation label is aspirational: only the single-truck view renders today, and the proposal's stated experience target is fleet-first.
-- Security slice — per-device signed measurements verified at ingest — is committed in the proposal under IEC 62443 but not implemented. No role model exists in code.
+- Security slice — per-row HMAC-SHA256 integrity verified before ingest — is implemented in the prototype. This is not IEC 62443 compliance. MQTT/TLS, device certificates, secure key provisioning/storage/rotation, HTTP caller authentication, and role-based access remain gaps; no role model exists in code.
 - Dashboard technology. The proposal names Grafana; the repository deliberately chose a custom Astro + Preact dashboard (React until the 2026-10-09 migration) with Grafana recorded as an alternative.
 - CI. Every check is currently run manually.
 - Performance. The ≥ 30 fps target has no recorded benchmark.
@@ -111,7 +111,7 @@ Edge node is an ESP32-S3 acquiring vibration at 1 kHz and pressure and temperatu
 - Status palette is fixed and semantic: green rest/OK, amber caution, red critical, blue moving. These meanings must not be reassigned for decoration.
 - Inter by name with a system fallback stack, and tabular numerals on every readout so figures do not jitter as they update.
 - **The honesty contract is permanent product DNA, not scaffolding.** Every value traces to its provenance, and unproven status stays visible in the interface after calibration exists. Interface copy may never imply field accuracy, and a missing backend degrades to an explicitly labeled local dataset rather than to silence or stale live-looking data.
-- **Read-only posture is part of the promise.** OilGuard never connects to the truck's control bus and has no physical or logical path to machine control. That is what removes the critical attack surface, and it is also what lets the proposal claim compliance with IEC 62443 zones and conduits: measurements signed at the source, transport encrypted and device-authenticated over MQTT/TLS with per-node identities and certificates, firmware updated only via signed images, role-based access in the backend, and a segmented instrumentation network.
+- **Read-only posture is part of the promise.** OilGuard never connects to the truck's control bus and has no physical or logical path to machine control. The prototype edge mock can sign measurement rows with per-device HMAC-SHA256 and the backend verifies them before storage; this is a row-integrity slice, not IEC 62443 compliance or a complete industrial security case. Production still requires encrypted and device-authenticated MQTT/TLS, secure key provisioning/storage/rotation, signed firmware updates, role-based backend access, and a segmented instrumentation network.
 - Known drift to resolve: the monitoring dashboard still uses inline hex values instead of the theme tokens, so the design system is not yet a single source of truth for that screen.
 
 ## Evidence on Hand

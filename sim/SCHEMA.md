@@ -49,10 +49,51 @@ in the demo loop. WAIT is the empty return drive (moving, recal gated).
 | `link_down` | 0/1 | 1 = link down, row buffered not sent |
 | `label` | — | normal \| slow-leak \| abrupt-drop \| sensor-drift \| link-outage-buffered |
 
-Backend mapping (`backend/main.py` IngestPayload): `device_id`,
-`pressure_kpa`, `temperature_c` match 1:1; `vib_rms_g` maps to the stub's
-`vibration_rms`. All other columns are T6 extensions the T8 ingestion
-contract can adopt unchanged.
+HTTP mapping: `POST /ingest` accepts the complete `SignalRow` schema above.
+The backend preserves both T10 fields, `rotating_sensor_regime` and
+`submerged_fraction_per_revolution`, through HTTP and MQTT ingestion.
+
+## Signed CSV rows
+
+The default unsigned CSV keeps the header above unchanged. With
+`sim/generate.py --sign`, the final two columns are `sig_v` and `sig`:
+`sig_v` is `ogs1`; `sig` is the lowercase hexadecimal HMAC-SHA256 digest.
+The signing key is read only from the local `OILGUARD_DEVICE_KEY` environment
+variable and must never be committed.
+
+The signature covers every schema field in header order, including ground-truth
+columns, but excludes `sig_v` and `sig`. Version `ogs1` canonicalizes a compact
+UTF-8 JSON array `["ogs1", ...values]` with no spaces and non-ASCII text left
+unescaped. Float fields use fixed decimal places matching the generator:
+
+| Field | Decimal places |
+|---|---:|
+| `t_s` | 1 |
+| `slope_deg` | 2 |
+| `rotor_rpm` | 1 |
+| `wheel_rpm` | 2 |
+| `submerged_fraction_per_revolution` | 4 |
+| `pressure_kpa` | 3 |
+| `temperature_c` | 2 |
+| `vib_rms_g` | 3 |
+| `vib_kurtosis` | 3 |
+| `level_liters` | 4 |
+| `level_pct` | 3 |
+
+Integer values are normalized through `int(float(value))`; strings are encoded
+as `str(value)`. The canonical field sequence is:
+
+```text
+t_iso, t_s, seq, device_id, fsm_state, moving, recal_window, engine_on,
+slope_deg, rotor_rpm, wheel_rpm, rotating_sensor_regime,
+submerged_fraction_per_revolution, pressure_kpa, temperature_c, vib_rms_g,
+vib_kurtosis, level_liters, level_pct, link_down, label
+```
+
+Because signing quantizes values to the listed precision, a change smaller
+than that field's precision can canonicalize to the same value and is not
+detectable. This is an integrity feature for the synthetic prototype, not
+confidentiality or a complete industrial security implementation.
 
 ## Scenario params (ground truth)
 
@@ -74,6 +115,8 @@ reported rate.
 ```bash
 python3 sim/generate.py --scenario slow-leak --seconds 30 --out out.csv
 python3 sim/generate.py --scenario clean --seconds 5 --out /tmp/t6-smoke.csv
+DEVICE_KEY="$(python3 -c "import secrets; print(secrets.token_hex(32))")"
+OILGUARD_DEVICE_KEY="$DEVICE_KEY" python3 sim/generate.py --sign --scenario clean --seconds 5 --out /tmp/signed.csv
 python3 sim/store_forward.py --in out.csv --out flushed.csv
 python3 sim/store_forward.py --in clean.csv --out flushed.csv --outage-from 2 --outage-to 3
 ```

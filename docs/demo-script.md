@@ -65,6 +65,30 @@ EOF
 
 Expect `ingested: 1800`, `store_rows: 1800`.
 
+### Optional signed-ingest check
+
+The judge path above stays unsigned and works with Compose defaults
+(`OILGUARD_REQUIRE_SIGNATURE=0`). For a separate integrity check, create a
+local-only key and enable enforcement in the backend; never commit or share
+the generated key:
+
+```bash
+DEVICE_KEY="$(python3 -c "import secrets; print(secrets.token_hex(32))")"
+export OILGUARD_DEVICE_KEYS="wheel-RH-01:${DEVICE_KEY}"
+export OILGUARD_REQUIRE_SIGNATURE=1
+docker compose up -d --build backend
+OILGUARD_DEVICE_KEY="${DEVICE_KEY}" python3 sim/generate.py --sign --scenario clean --seconds 5 --out /tmp/t8-signed.csv
+python3 backend/ingest_mqtt.py --publish-csv /tmp/t8-signed.csv --host localhost
+curl -s localhost:8000/health
+unset OILGUARD_DEVICE_KEYS OILGUARD_REQUIRE_SIGNATURE DEVICE_KEY
+docker compose up -d backend
+```
+
+The health response exposes aggregate signing counters only, not device IDs
+or keys. HMAC verifies row integrity and shared-key origin; it does not provide
+confidentiality, HTTP caller authentication, MQTT/TLS, or IEC 62443 compliance.
+Key provisioning, secure storage, and rotation remain production gaps.
+
 Verify:
 
 ```bash

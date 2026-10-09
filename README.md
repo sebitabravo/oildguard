@@ -36,6 +36,33 @@ docker compose up -d --build -V frontend
 - InfluxDB: http://localhost:8086 (user `oilguard`, org `oilguard`)
 - MQTT mock: localhost:1883 (anonymous, local demo only)
 
+### Optional signed-measurement demo
+
+By default, unsigned rows remain accepted for the local demo
+(`OILGUARD_REQUIRE_SIGNATURE=0`). To exercise the per-device HMAC-SHA256
+integrity path, generate a local-only key and use it at both the edge mock and
+backend. Do not commit or share the key:
+
+```bash
+DEVICE_KEY="$(python3 -c "import secrets; print(secrets.token_hex(32))")"
+export OILGUARD_DEVICE_KEYS="wheel-RH-01:${DEVICE_KEY}"
+export OILGUARD_REQUIRE_SIGNATURE=1
+docker compose up -d --build backend
+OILGUARD_DEVICE_KEY="${DEVICE_KEY}" python3 sim/generate.py --sign --scenario clean --seconds 5 --out /tmp/t8-signed.csv
+python3 backend/ingest_mqtt.py --publish-csv /tmp/t8-signed.csv --host localhost
+curl -s localhost:8000/health
+unset OILGUARD_DEVICE_KEYS OILGUARD_REQUIRE_SIGNATURE DEVICE_KEY
+docker compose up -d backend
+```
+
+The backend verifies each row before storage; unsigned rows are rejected while
+enforcement is enabled, and signed rows that fail verification are rejected
+even in permissive mode. The signature provides row integrity/shared-key
+origin verification only. It does not provide confidentiality, MQTT/TLS,
+device provisioning or key rotation, HTTP caller authentication, or IEC 62443
+compliance. See [`backend/API.md`](backend/API.md) and
+[`sim/SCHEMA.md`](sim/SCHEMA.md) for the contract and canonicalization limits.
+
 ## Run without Docker (optional)
 
 Frontend:

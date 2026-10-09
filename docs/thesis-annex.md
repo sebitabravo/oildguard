@@ -128,7 +128,8 @@ print(h, dV_dh(h), physics.pressure_kpa_from_volume(95.0, 60.0))
 | Current | Split-core Hall clamp | Feasible, non-invasive | No change; operational-var context only |
 | Edge compute | ESP32-S3 sampling over I2C/SPI + esp-dsp FFT note | Feasible; **no firmware written (non-scope)** | Thesis cites ESP32-S force; bench uses lab DAQ, not the MCU |
 | Transport | MQTT plaintext mock | GAP vs production: TLS per-device (+40–50 KB heap, +37% CPU worst case) | Thesis annex states the TLS budget; demo keeps the plaintext mock labeled |
-| API/auth | CORS `*` + hardcoded token | GAP, design-level only | Thesis states per-device credentials + locked CORS as pilot requirements |
+| Measurement integrity | Per-row HMAC-SHA256 in the synthetic edge mock; backend verifies before memory/Influx storage | VERIFIED (prototype implementation and tests); shared-key integrity/origin check only, not confidentiality. No firmware integration, secure key provisioning/storage/rotation, or persistent replay history; sub-precision changes may canonicalize identically | Keep prototype claim limited to signed-row integrity; production key lifecycle and transport security remain gaps |
+| API/auth | `POST /ingest` has no HTTP caller authentication; CORS `*` remains local-demo configuration | GAP: row signatures do not authenticate HTTP clients or provide role controls | Pilot requires caller credentials, locked CORS, and role-based access |
 | Cycle timing | FSM 29 s loop | 40× time-compressed demo vs real ≈20 min cycle | Documented in demo script; WAIT-as-moving is an explicit justified deviation (rest strictly LOAD/DUMP) |
 
 ## 4. Falsifier (kept from S7 — fusion refuted iff)
@@ -152,7 +153,8 @@ These are the exact gates already implemented (`ai/rul.py:40-42`,
 3. Spec the low-range pressure cell (§3) in the thesis annex; budget Type-K
    tolerance into `sigma_L`.
 4. Close the GAP rows that affect the pilot safety case first (TLS budget,
-   CORS/credentials, high-temp MEMS variant) — design-level, no purchase.
+   secure per-device key provisioning/storage/rotation, HTTP CORS/credentials,
+   role-based access, high-temp MEMS variant) — design-level, no purchase.
 5. Apply the §4 falsifier to bench data and record fusion proven / refuted;
    keep anomaly-only live either way.
 

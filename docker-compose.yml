@@ -59,6 +59,8 @@ services:
       MQTT_PORT: "1883"
       MQTT_TOPIC: oilguard/signals
       BACKEND_URL: http://backend:8000
+      OILGUARD_DEVICE_KEYS: ${OILGUARD_DEVICE_KEYS:-}
+      OILGUARD_REQUIRE_SIGNATURE: ${OILGUARD_REQUIRE_SIGNATURE:-0}
     healthcheck:
       # stdlib-only probe (python:3.11-slim has no curl).
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)\" || exit 1"]
