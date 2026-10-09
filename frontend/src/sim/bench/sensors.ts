@@ -37,9 +37,9 @@ export const BENCH_SENSORS: BenchSensor[] = [
   {
     id: "pressure",
     shortLabel: "Pressure · T-adapter (item 56)",
-    shortLabelEs: "Presion · adaptador T (item 56)",
+    shortLabelEs: "Presión · adaptador en T (ítem 56)",
     label: "Pressure — oil drain pipe plug item 56, 6 o'clock",
-    labelEs: "Presion — tapon de drenaje item 56, 6 en punto",
+    labelEs: "Presión — tapón de drenaje, ítem 56, a las 6",
     item: "56",
     color: 0xff3b30,
     cssColor: "#ff3b30",
@@ -50,18 +50,18 @@ export const BENCH_SENSORS: BenchSensor[] = [
       "through the T branch. No drilling. TD930E-P improvement: recessed-tube fitting removes the " +
       "120 mm protrusion strike hazard of the legacy T branch.",
     mountEs:
-      "Adaptador en T en el tapon de drenaje existente (item 56) a las 6 en punto. " +
-      "El tapon se conserva (extraible para controles de 250 h); el transductor lee presion por la rama T. Sin perforar. " +
-      "Mejora TD930E-P: conexion de tubo empotrado elimina el riesgo de golpe de la protuberancia de 120 mm.",
+      "Adaptador en T en el tapón de drenaje existente (ítem 56), a las 6. " +
+      "El tapón se conserva (extraíble para controles de 250 h); el transductor lee la presión por la rama en T. Sin perforar. " +
+      "Mejora TD930E-P: la conexión de tubo empotrado elimina el riesgo de golpe contra la protuberancia de 120 mm.",
     signal: "10 Hz oil pressure. Primary level proxy + abrupt-drop trigger.",
-    signalEs: "Presion de aceite 10 Hz. Proxy principal de nivel + disparo por caida brusca.",
+    signalEs: "Presión de aceite a 10 Hz. Proxy principal del nivel + disparo por caída brusca.",
   },
   {
     id: "temperature",
     shortLabel: "Temp · mag plug (item 41)",
-    shortLabelEs: "Temp · tapon magnetico (item 41)",
+    shortLabelEs: "Temp. · tapón magnético (ítem 41)",
     label: "Temperature — magnetic pipe plug item 41",
-    labelEs: "Temperatura — tapon magnetico item 41",
+    labelEs: "Temperatura — tapón magnético, ítem 41",
     item: "41",
     color: 0xff9f0a,
     cssColor: "#ff9f0a",
@@ -70,17 +70,17 @@ export const BENCH_SENSORS: BenchSensor[] = [
       "Type-K thermocouple probe fitted at the magnetic pipe plug port (item 41). Same thread, " +
       "same port — debris-capture duty is kept via an external inspection note. No drilling.",
     mountEs:
-      "Sonda termopar tipo K en el tapon magnetico (item 41). Misma rosca y puerto — la captura de particulas " +
-      "se conserva por nota de inspeccion externa. Sin perforar.",
+      "Sonda termopar tipo K en el tapón magnético (ítem 41). Misma rosca y puerto; la captura de partículas " +
+      "se conserva según una nota de inspección externa. Sin perforar.",
     signal: "10 Hz oil temperature. Viscosity/density compensation for fusion.",
-    signalEs: "Temperatura de aceite 10 Hz. Compensacion de viscosidad/densidad para la fusion.",
+    signalEs: "Temperatura del aceite a 10 Hz. Compensación de viscosidad/densidad para la fusión.",
   },
   {
     id: "vibration",
     shortLabel: "Vibration · cover (items 39/36)",
-    shortLabelEs: "Vibracion · tapa (items 39/36)",
+    shortLabelEs: "Vibración · tapa (ítems 39/36)",
     label: "Vibration — sun inspection cover items 39/36",
-    labelEs: "Vibracion — tapa de inspeccion del sol items 39/36",
+    labelEs: "Vibración — tapa de inspección del sol, ítems 39/36",
     item: "39/36",
     color: 0x22d3ee,
     cssColor: "#22d3ee",
@@ -89,17 +89,17 @@ export const BENCH_SENSORS: BenchSensor[] = [
       "Triaxial MEMS puck bonded with epoxy to the sun inspection cover (items 39/36). Removable " +
       "with heat + solvent, housing untouched. No drilling.",
     mountEs:
-      "Sensor MEMS triaxial adherido con epoxi a la tapa de inspeccion del sol (items 39/36). Removible " +
-      "con calor + solvente, carcasa intacta. Sin perforar.",
+      "Sensor MEMS triaxial adherido con epoxi a la tapa de inspección del sol (ítems 39/36). Se retira " +
+      "con calor + solvente, sin alterar la carcasa. Sin perforar.",
     signal: "1 kHz on edge (features/decimated for transport). Move/rest rules + settling shape.",
     signalEs: "1 kHz en borde (rasgos/diezmado para transporte). Reglas de movimiento/reposo + forma de asentamiento.",
   },
   {
     id: "current",
     shortLabel: "Current · Hall clamp (traction cable)",
-    shortLabelEs: "Corriente · pinza Hall (cable de traccion)",
+    shortLabelEs: "Corriente · pinza Hall (cable de tracción)",
     label: "Current — Hall clamp on traction power cable",
-    labelEs: "Corriente — pinza Hall en cable de potencia de traccion",
+    labelEs: "Corriente — pinza Hall en el cable de potencia de tracción",
     item: "cable",
     color: 0xa78bfa,
     cssColor: "#a78bfa",
@@ -108,8 +108,8 @@ export const BENCH_SENSORS: BenchSensor[] = [
       "Split-core Hall clamp snapped around the traction power cable. Fully non-invasive, " +
       "no electrical splice, no housing contact. No drilling.",
     mountEs:
-      "Pinza Hall de nucleo dividido sobre el cable de potencia de traccion. Totalmente no invasiva, " +
-      "sin empalme electrico ni contacto con la carcasa. Sin perforar.",
+      "Pinza Hall de núcleo dividido sobre el cable de potencia de tracción. Totalmente no invasiva, " +
+      "sin empalme eléctrico ni contacto con la carcasa. Sin perforar.",
     signal: "Motor current draw. Operational var: engine-on / load context for rest gating.",
     signalEs: "Consumo de corriente del motor. Variable operativa: motor encendido / contexto de carga.",
   },
@@ -125,11 +125,11 @@ export const NO_DRILL_NARRATIVE =
   "to the field without housing modifications.";
 
 export const NO_DRILL_NARRATIVE_ES =
-  "Los cuatro puntos sensan sin perforar la carcasa GDY106: el transductor de presion usa " +
-  "un adaptador en T que conserva el tapon de drenaje, el termopar reemplaza el tapon " +
-  "magnetico en su propia rosca, el MEMS de vibracion va en base epoxi sobre la tapa del " +
-  "sol, y la pinza Hall es no invasiva en el cable. El banco reproduce estos puntos exactos " +
-  "para que la calibracion (drenaje y pesaje en banco) transfiera a campo sin modificar la carcasa.";
+  "Los cuatro puntos miden sin perforar la carcasa GDY106: el transductor de presión usa " +
+  "un adaptador en T que conserva el tapón de drenaje, el termopar reemplaza el tapón " +
+  "magnético en su propia rosca, el MEMS de vibración va en una base epoxi sobre la tapa del " +
+  "sol y la pinza Hall se instala sin contacto invasivo en el cable. El banco reproduce estos puntos exactos " +
+  "para que la calibración (drenaje y pesaje en banco) pueda transferirse al campo sin modificar la carcasa.";
 
 /** Environment note: documented in T2, engineered later (field pilot / T13). */
 export const ENV_NOTE =
@@ -139,7 +139,7 @@ export const ENV_NOTE =
 
 export const ENV_NOTE_ES =
   "Nota 120 °C / EMI (documentada, no construida): el entorno del motor de rueda alcanza ~120 °C " +
-  "con EMI fuerte del accionamiento de traccion. Los sensores de campo requieren rango de alta temperatura + " +
+  "con EMI fuerte del accionamiento de tracción. Los sensores de campo requieren rango de alta temperatura + " +
   "cableado blindado. El banco no simula calor ni EMI.";
 
 /**
@@ -161,15 +161,15 @@ export const GDY106_CHAIN_EN = [
 ];
 
 export const GDY106_CHAIN_ES = [
-  "Motor de traccion AC (alternador)",
-  "Eje de transmision",
+  "Motor de tracción AC (alternador)",
+  "Eje de transmisión",
   "Portador de alta velocidad",
-  "Pinon solar GE1288",
+  "Piñón solar GE1288",
   "Portador de baja + planetarios",
   "Tubo de torsion",
-  "Maza sobre rodamientos conicos interior/exterior",
-  "Neumaticos",
-  "Frenos humedos + freno de estacionamiento por resorte",
+  "Maza sobre rodamientos cónicos interiores/exteriores",
+  "Neumáticos",
+  "Frenos húmedos + freno de estacionamiento por resorte",
 ];
 
 /** Modified-cover oil transfer duct narrative (low-gear splash path). */
@@ -180,5 +180,5 @@ export const OIL_DUCT_NARRATIVE =
 
 export const OIL_DUCT_NARRATIVE_ES =
   "Ducto de transferencia en tapa modificada: el chapoteo del engranaje bajo lanza aceite a la cavidad exterior, " +
-  "corre por dentro de la tapa del sol (items 39/36), pasa por el interior del pinon solar " +
-  "y llega al reten/arandela interior. Alinear marcas flecha-a-pasador en el montaje.";
+  "corre por dentro de la tapa del sol (ítems 39/36), pasa por el interior del piñón solar " +
+  "y llega al retén/arandela interior. Alinear las marcas de flecha y pasador durante el montaje.";

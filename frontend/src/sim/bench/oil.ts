@@ -56,7 +56,7 @@ export function oilStateLabel(state: OilState, lang: "en" | "es" = "en"): string
   if (lang === "es") {
     switch (state) {
       case "critical":
-        return "CRITICO (<30%)";
+        return "CRÍTICO (<30%)";
       case "warning":
         return "ADVERTENCIA (30–50%)";
       case "normal":

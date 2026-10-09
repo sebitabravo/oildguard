@@ -46,13 +46,24 @@ function stageBlurb(stage: string, es: boolean): string {
   if (es) {
     if (stage === "clean") return "Base: 95 L, sin alertas. RUL suprimido (sin tendencia).";
     if (stage === "slow-leak") return `Fuga lenta (${DEMO_LAB_NOTE_ES}). Recorrido N1 → N2 → N3.`;
-    if (stage === "abrupt-drop") return "Caida brusca 15 L. N4 critico dispara; RUL lineal invalido.";
+    if (stage === "abrupt-drop") return "Caída brusca de 15 L. Se activa N4 crítico; el RUL lineal no es válido.";
     return "Recorrido completo: N1 → N2 → N3 → N4. Reinicia para repetir.";
   }
   if (stage === "clean") return "Baseline: 95 L, no alerts. RUL suppressed (no leak trend).";
   if (stage === "slow-leak") return `Slow leak (${DEMO_LAB_NOTE}). N1 -> N2 -> N3 walk.`;
   if (stage === "abrupt-drop") return "Abrupt 15 L step. N4 critical fires; linear RUL invalid.";
   return "Walk complete: N1 -> N2 -> N3 -> N4. Reset to run again.";
+}
+
+function stageLabel(stage: DemoStageId, es: boolean): string {
+  const labels: Record<DemoStageId, { en: string; es: string }> = {
+    idle: { en: "Idle", es: "Inactivo" },
+    clean: { en: "Baseline", es: "Línea base" },
+    "slow-leak": { en: "Slow leak", es: "Fuga lenta" },
+    "abrupt-drop": { en: "Abrupt drop", es: "Caída brusca" },
+    done: { en: "Complete", es: "Completo" },
+  };
+  return labels[stage][es ? "es" : "en"];
 }
 
 const ALERT_CSS: Record<string, string> = {
@@ -224,7 +235,11 @@ export default function Dashboard() {
         >
           {source === "loading" ? (es ? "CONECTANDO…" : "CONNECTING…") : source === "live" ? (es ? "EN VIVO · backend" : "LIVE · backend") : (es ? "DEMO · local" : "DEMO · local fallback")}
         </span>
-        <span style={{ fontSize: 12, color: "#9fb0c9" }}>{backendNote || (es ? "probando backend…" : "probing backend…")}</span>
+        <span style={{ fontSize: 12, color: "#9fb0c9" }}>
+          {es
+            ? source === "loading" ? t("dash.backend.probing", lang) : source === "live" ? t("dash.backend.connected", lang) : t("dash.backend.offline", lang)
+            : backendNote || t("dash.backend.probing", lang)}
+        </span>
         <button
           type="button"
           onClick={() => void fetchAll()}
@@ -303,11 +318,11 @@ export default function Dashboard() {
                   padding: "3px 10px",
                 }}
               >
-                {s}
+                {stageLabel(s, es)}
               </span>
             ))}
             <span style={{ fontSize: 13, color: "#c7d3e8" }}>
-              {stageBlurb(demoStage, es)} · {es ? "aceite" : "oil"} {formatOilText(demoFrac)} · {es ? "tambien mueve el banco 3D" : "also driving the Bench 3D fill"}
+              {stageBlurb(demoStage, es)} · {es ? "aceite" : "oil"} {formatOilText(demoFrac)} · {es ? "también mueve el nivel del banco 3D" : "also driving the Bench 3D fill"}
             </span>
           </div>
         </div>
@@ -333,7 +348,7 @@ export default function Dashboard() {
             <span style={{ color: "#9fb0c9" }}>
               {demoActive
                 ? (es ? DEMO_LAB_NOTE_ES : DEMO_LAB_NOTE)
-                : `source: ${level?.data.source ?? (es ? "sin datos del backend" : "no backend payload yet")}`}
+                : `${es ? "origen" : "source"}: ${level?.data.source ?? (es ? "sin datos del backend" : "no backend payload yet")}`}
             </span>
           </div>
         </div>
@@ -352,10 +367,10 @@ export default function Dashboard() {
               </span>
             </div>
             <div style={{ fontSize: 13, color: "#c7d3e8" }}>
-              FSM <strong>{fsm.state}</strong> (t+{fsmTick.toFixed(0)} s {es ? "reloj compartido con el camion" : "shared clock with the Truck sim"}) ·{" "}
+              FSM <strong>{fsm.state}</strong> (t+{fsmTick.toFixed(0)} s {es ? "reloj compartido con el camión" : "shared clock with the Truck sim"}) ·{" "}
               {source === "live"
                 ? `backend windows: ${windows?.count ?? 0} (store_rows=${storeRows})`
-                : (es ? "backend caido — ventanas del set DEMO local" : "backend down — windows from local DEMO set")}
+                : (es ? "backend caído — ventanas del conjunto DEMO local" : "backend down — windows from local DEMO set")}
             </div>
           </div>
 
@@ -371,7 +386,7 @@ export default function Dashboard() {
             </div>
             {shownAlerts.length === 0 ? (
               <p style={{ margin: 0, color: "#9fb0c9", fontSize: 13 }}>
-                {es ? "(sin alertas — base limpia; RUL suprimido solo-anomalias)" : "(no alerts — clean baseline; RUL stays suppressed anomaly-only)"}
+                {es ? "(sin alertas — línea base limpia; RUL suprimido, solo anomalías)" : "(no alerts — clean baseline; RUL stays suppressed anomaly-only)"}
               </p>
             ) : (
               <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>

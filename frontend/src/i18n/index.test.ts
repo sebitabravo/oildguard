@@ -1,5 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { dictKeys, t } from "./index";
+import { dict, dictKeys, t } from "./index";
+
+function collectSpanishStrings(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(collectSpanishStrings);
+  if (!value || typeof value !== "object") return [];
+
+  const record = value as Record<string, unknown>;
+  if (Object.prototype.hasOwnProperty.call(record, "es")) return collectSpanishStrings(record.es);
+  return Object.values(record).flatMap(collectSpanishStrings);
+}
 
 describe("i18n dictionary", () => {
   test("every key has non-empty EN and ES copy", () => {
@@ -15,6 +25,28 @@ describe("i18n dictionary", () => {
       expect(codes.test(t(key, "en"))).toBe(false);
       expect(codes.test(t(key, "es"))).toBe(false);
     }
+  });
+
+  test("Spanish dictionary copy keeps required accents", () => {
+    const unaccentedForms = [
+      /presion/i,
+      /tapon/i,
+      /traccion/i,
+      /inspeccion/i,
+      /electrico/i,
+      /vibracion/i,
+      /camion/i,
+      /rotacion/i,
+      /calibracion/i,
+      /posicion/i,
+      /\baceite\s+ok\b/i,
+    ];
+    const copy = collectSpanishStrings(dict);
+    const violations = copy.flatMap((value) =>
+      unaccentedForms.filter((pattern) => pattern.test(value)).map((pattern) => ({ pattern: pattern.source, value })),
+    );
+
+    expect(violations).toEqual([]);
   });
 
   test("the dashboard footnote reflects the geometry-derived pressure", () => {

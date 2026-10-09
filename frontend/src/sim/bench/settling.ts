@@ -59,8 +59,8 @@ export function estimateSettlingMs(viscosityProxy: number): number {
 }
 
 /** Honest proxy label for the readout (never called "viscosity"). */
-export function viscosityLabel(viscosityProxy: number): string {
-  if (viscosityProxy < 0.8) return "dilute · fast settling";
+export function viscosityLabel(viscosityProxy: number, lang: "en" | "es" = "en"): string {
+  if (viscosityProxy < 0.8) return lang === "es" ? "diluido · asentamiento rápido" : "dilute · fast settling";
   if (viscosityProxy < 1.5) return "nominal";
-  return "degraded · slow settling";
+  return lang === "es" ? "degradado · asentamiento lento" : "degraded · slow settling";
 }

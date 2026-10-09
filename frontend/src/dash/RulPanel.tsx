@@ -6,7 +6,7 @@
 
 import type { CSSProperties } from "preact";
 import type { RulData } from "../sim/api";
-import { useLang } from "../i18n";
+import { t, useLang } from "../i18n";
 
 const panel: CSSProperties = {
   border: "1px solid #2a3a55",
@@ -21,9 +21,9 @@ export default function RulPanel({ rul }: { rul: RulData | null }) {
   if (!rul) {
     return (
       <div style={panel}>
-        <strong>{es ? "Vida util remanente (RUL)" : "RUL"}</strong>
+        <strong>{t("rul.title", lang)}</strong>
         <p style={{ margin: "6px 0 0", color: "#9fb0c9", fontSize: 13 }}>
-          {es ? "Sin datos RUL aun." : "No RUL payload yet."}
+          {t("rul.unavailable", lang)}
         </p>
       </div>
     );
@@ -32,15 +32,16 @@ export default function RulPanel({ rul }: { rul: RulData | null }) {
     return (
       <div style={{ ...panel, borderColor: "#f5a623" }}>
         <div style={{ fontWeight: 700 }}>
-          {es ? "RUL suprimido · " : "RUL suppressed · "}
-          <span style={{ color: "#f5a623" }}>{es ? "solo anomalias" : "anomaly-only"}</span>
+          {t("rul.suppressed", lang)}
         </div>
         <p style={{ margin: "6px 0", color: "#c7d3e8", fontSize: 13 }}>
-          {rul.note}
+          {es
+            ? t(rul.model === "synthetic-proxy" ? "rul.syntheticNote" : "rul.suppressedNote", lang)
+            : rul.note}
         </p>
         <p style={{ margin: 0, color: "#9fb0c9", fontSize: 12 }}>
-          model={rul.model} ({es ? "NO PROBADO hasta el banco" : "UNPROVEN until the bench"}) ·{" "}
-          {es ? "mostrar alertas N1/N2/N4 en vez de cuenta regresiva." : "surface N1/N2/N4 anomaly alerts instead of a countdown."}
+          {es ? "Modelo" : "Model"}={rul.model} ({t("rul.unproven", lang)}) ·{" "}
+          {es ? "mostrar alertas de anomalía N1/N2/N4 en lugar de una cuenta regresiva." : "surface N1/N2/N4 anomaly alerts instead of a countdown."}
         </p>
       </div>
     );
@@ -48,9 +49,9 @@ export default function RulPanel({ rul }: { rul: RulData | null }) {
   return (
     <div style={{ ...panel, borderColor: "#2fbf71" }}>
       <div style={{ fontWeight: 700 }}>
-        {es ? "Vida util remanente (RUL)" : "RUL"} ·{" "}
+        {t("rul.title", lang)} ·{" "}
         <span style={{ color: "#2fbf71" }}>
-          {rul.hours} h {es ? "a critico" : "to critical"}
+          {rul.hours} h {es ? "hasta crítico" : "to critical"}
         </span>
       </div>
       <div
@@ -64,7 +65,7 @@ export default function RulPanel({ rul }: { rul: RulData | null }) {
         }}
       >
         <span>
-          {es ? "aviso en " : "warn in "}
+          {es ? "advertencia en " : "warn in "}
           <strong style={{ color: "#e8edf5" }}>{rul.hours_to_warning} h</strong>
         </span>
         <span>
@@ -76,13 +77,13 @@ export default function RulPanel({ rul }: { rul: RulData | null }) {
           {es ? "turnos (8 h)" : "shifts (8 h)"}
         </span>
         <span>
-          {es ? "conf " : "conf "}
+          {es ? "confianza " : "confidence "}
           <strong style={{ color: "#e8edf5" }}>{rul.confidence}</strong>
         </span>
       </div>
       <p style={{ margin: "8px 0 0", color: "#9fb0c9", fontSize: 12 }}>
-        slope {rul.slope_L_per_h} L/h · R² {rul.r2} · level {rul.current_level_L} L ·
-        model={rul.model} ({es ? "sustituto sintetico, NO PROBADO hasta el banco" : "synthetic-proxy, UNPROVEN until the bench"})
+        {es ? "pendiente" : "slope"} {rul.slope_L_per_h} L/h · R² {rul.r2} · {es ? "nivel" : "level"} {rul.current_level_L} L ·
+        {es ? "modelo" : "model"}={rul.model} ({es ? `${t("badge.proxy", lang)}, ${t("rul.unproven", lang)}` : "synthetic-proxy, UNPROVEN until the bench"})
       </p>
     </div>
   );

@@ -329,7 +329,7 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
         </div>
         <div className="og-stack og-stack--bl">
           <div className="og-hud og-hud--caption og-num">{lang === "es" ? `${hud.trucks} camiones · ${hud.queued} en cola · PLM III · pendiente de datos de campo` : `${hud.trucks} trucks · ${hud.queued} queued · PLM III · synthetic proxy, field data pending`}</div>
-          <div className="og-hud og-hud--caption">{lang === "es" ? "Foso sintético · rampa 10 % ASSUMPTION · geometría y flota reproducibles por ?seed=" : "Synthetic open pit · 10% ramp ASSUMPTION · seeded reproducible geometry and fleet"}</div>
+          <div className="og-hud og-hud--caption">{lang === "es" ? "Foso sintético · rampa 10 % SUPUESTO · geometría y flota reproducibles por ?seed=" : "Synthetic open pit · 10% ramp ASSUMPTION · seeded reproducible geometry and fleet"}</div>
           {url.debug && <div ref={debugRef} className="og-hud og-hud--caption og-num" />}
         </div>
         {dock && <div className="og-dock og-dock--right">{dock}</div>}

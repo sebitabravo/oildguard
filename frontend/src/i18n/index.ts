@@ -57,7 +57,7 @@ export function useLang(): [Lang, (l: Lang) => void] {
 export const pick = (lang: Lang, en: string, es: string): string =>
   lang === "es" ? es : en;
 
-const dict = {
+export const dict = {
   "nav.label": { en: "Primary navigation", es: "Navegación principal" },
   "nav.mine": { en: "Mine & Fleet", es: "Mina y flota" },
   "nav.wheel": { en: "GDY106 Wheel", es: "Rueda GDY106" },
@@ -108,6 +108,9 @@ const dict = {
     en: "UNPROVEN until the bench drain-and-weigh calibration. If the backend is down, a local DEMO set is used and always labeled.",
     es: "NO PROBADO hasta la calibración de drenaje y pesaje en banco. Si el backend cae se usa un set DEMO local, siempre rotulado.",
   },
+  "dash.backend.probing": { en: "Probing backend…", es: "Consultando el backend…" },
+  "dash.backend.connected": { en: "Backend connected", es: "Backend conectado" },
+  "dash.backend.offline": { en: "Backend unavailable · local DEMO data", es: "Backend no disponible · datos DEMO locales" },
   "hud.oil": { en: "Oil", es: "Aceite" },
   "hud.recal": {
     en: "RECALIBRATING (stopped+leveled+engine-on)",
@@ -115,16 +118,27 @@ const dict = {
   },
   "hud.standby": {
     en: "STANDBY · recalibration gated (moving)",
-    es: "ESPERA · recalibracion bloqueada (en movimiento)",
+    es: "ESPERA · recalibración bloqueada (en movimiento)",
   },
   "hud.moving": { en: "MOVING", es: "EN MOVIMIENTO" },
   "hud.rest": { en: "REST", es: "DETENIDO" },
   "hud.camera": { en: "Camera", es: "Cámara" },
   "oil.normal": { en: "NORMAL (≥50%)", es: "NORMAL (≥50%)" },
   "oil.warning": { en: "WARNING (30–50%)", es: "ADVERTENCIA (30–50%)" },
-  "oil.critical": { en: "CRITICAL (<30%)", es: "CRITICO (<30%)" },
-  "rul.title": { en: "RUL", es: "Vida util remanente (RUL)" },
-  "rul.suppressed": { en: "RUL suppressed · anomaly-only", es: "RUL suprimido · solo anomalias" },
+  "oil.critical": { en: "CRITICAL (<30%)", es: "CRÍTICO (<30%)" },
+  "rul.title": { en: "RUL", es: "Vida útil remanente (RUL)" },
+  "rul.suppressed": { en: "RUL suppressed · anomaly-only", es: "RUL suprimido · solo anomalías" },
+  "rul.unavailable": { en: "No RUL payload yet.", es: "Aún no hay datos de vida útil remanente (RUL)." },
+  "rul.syntheticNote": {
+    en: "The synthetic proxy is unproven until bench calibration; anomaly alerts remain the supported output.",
+    es: "El sustituto sintético no está validado hasta completar la calibración en banco; las alertas de anomalía siguen siendo el resultado disponible.",
+  },
+  "rul.suppressedNote": {
+    en: "RUL is suppressed; anomaly alerts are the supported output.",
+    es: "El RUL está suprimido; las alertas de anomalía son el resultado disponible.",
+  },
+  "rul.unproven": { en: "UNPROVEN until the bench", es: "no validado hasta completar la calibración en banco" },
+  "wheel.reference": { en: "95 L reference", es: "Referencia: 95 L" },
   "demo.run": {
     en: "Run leak demo (clean → N4)",
     es: "Ejecutar demo de fuga (limpio → N4)",

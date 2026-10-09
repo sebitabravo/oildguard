@@ -77,7 +77,7 @@ export default function LevelChart({
       viewBox={`0 0 ${W} ${H}`}
       width="100%"
       role="img"
-      aria-label="Oil level with confidence band"
+      aria-label={es ? "Nivel de aceite con banda de confianza" : "Oil level with confidence band"}
       style={{ display: "block", background: "#0e1420" }}
     >
       {/* rest-window shading */}
@@ -103,10 +103,10 @@ export default function LevelChart({
       <line x1={PAD_L} x2={W - PAD_R} y1={y(WARN_L)} y2={y(WARN_L)} stroke="#f5a623" strokeDasharray="5 4" strokeWidth={1} />
       <line x1={PAD_L} x2={W - PAD_R} y1={y(CRIT_L)} y2={y(CRIT_L)} stroke="#ff3b30" strokeDasharray="5 4" strokeWidth={1} />
       <text x={W - PAD_R - 2} y={y(WARN_L) - 4} fill="#f5a623" fontSize={10} textAnchor="end">
-        {es ? "aviso 50% (47.5 L)" : "warn 50% (47.5 L)"}
+        {es ? "advertencia 50% (47.5 L)" : "warn 50% (47.5 L)"}
       </text>
       <text x={W - PAD_R - 2} y={y(CRIT_L) - 4} fill="#ff3b30" fontSize={10} textAnchor="end">
-        {es ? "crit 30% (28.5 L)" : "crit 30% (28.5 L)"}
+        {es ? "crítico 30% (28.5 L)" : "critical 30% (28.5 L)"}
       </text>
       {/* confidence band */}
       <polygon points={`${bandTop} ${bandBottom}`} fill="#3a7bd5" opacity={0.22} />

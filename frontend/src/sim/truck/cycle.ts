@@ -87,9 +87,9 @@ export const HAUL_STATE_BLURB: Record<HaulState, string> = {
 
 export const HAUL_STATE_BLURB_ES: Record<HaulState, string> = {
   LOAD: "Detenido en el cargador, nivelado, motor encendido. Ventana RECAL.",
-  HAUL: "En movimiento, cargado, del cargador a la chancadora. Recalibracion bloqueada.",
-  DUMP: "Detenido en la chancadora, tolva bascula, chasis nivelado. Ventana RECAL.",
-  WAIT: "Retorno vacio por la pista de cola. Recalibracion bloqueada.",
+  HAUL: "En movimiento, cargado, del cargador a la chancadora. Recalibración bloqueada.",
+  DUMP: "Detenido en la chancadora, la tolva bascula y el chasis queda nivelado. Ventana RECAL.",
+  WAIT: "Retorno vacío por la pista de cola. Recalibración bloqueada.",
 };
 
 /** Truck slot [x, z] at the loader. */
@@ -143,18 +143,18 @@ export const TRUCK_CALLOUTS: TruckCallout[] = [
   { n: 6, en: "Control cabinet (PCS/PLM/AID/VHMS/IM)", es: "Gabinete de control (PCS/PLM/AID/VHMS/IM)" },
   { n: 7, en: "Inverter + condenser group", es: "Grupo inversor + condensadores" },
   { n: 8, en: "Cooling blower 453 m3/min", es: "Soplador de enfriamiento 453 m3/min" },
-  { n: 9, en: "Retard grids (5400 short / 3300 cont hp)", es: "Rejillas de retardo (5400 corto / 3300 cont hp)" },
-  { n: 10, en: "Fuel tank (see fluids footnote)", es: "Estanque combustible (ver nota de fluidos)" },
-  { n: 11, en: "Hydraulic tank 1324/1325 L", es: "Estanque hidraulico 1324/1325 L" },
+  { n: 9, en: "Retard grids (5400 short / 3300 cont hp)", es: "Rejillas de retardo (5400 hp en ciclo corto / 3300 hp continuos)" },
+  { n: 10, en: "Fuel tank (see fluids footnote)", es: "Estanque de combustible (ver nota de fluidos)" },
+  { n: 11, en: "Hydraulic tank 1324/1325 L", es: "Estanque hidráulico de 1324/1325 L" },
   { n: 12, en: "Dump body 211 m3", es: "Tolva 211 m3" },
   { n: 13, en: "Hoist cylinders (HOLD/FLOAT)", es: "Cilindros de levante (HOLD/FLOAT)" },
-  { n: 14, en: "Front axle + Hydrair II suspension", es: "Eje delantero + suspension Hydrair II" },
-  { n: 15, en: "Rear axle box + GDY106 pair", es: "Caja eje trasero + par GDY106" },
-  { n: 16, en: "AC traction motors (MT)", es: "Motores de traccion AC (MT)" },
-  { n: 17, en: "Wet service brakes (all wheels <8 km/h)", es: "Frenos humedos (todas las ruedas <8 km/h)" },
-  { n: 18, en: "Spring parking brake (rear, stopped-only)", es: "Freno estacionamiento por resorte (trasero, solo detenido)" },
-  { n: 19, en: "Tires + rims (hub on tapered rollers)", es: "Neumaticos + llantas (maza en rodillos conicos)" },
-  { n: 20, en: "VHMS snapshot (blue) + red link", es: "VHMS captura (azul) + enlace rojo" },
+  { n: 14, en: "Front axle + Hydrair II suspension", es: "Eje delantero + suspensión Hydrair II" },
+  { n: 15, en: "Rear axle box + GDY106 pair", es: "Caja del eje trasero + par GDY106" },
+  { n: 16, en: "AC traction motors (MT)", es: "Motores de tracción AC (MT)" },
+  { n: 17, en: "Wet service brakes (all wheels <8 km/h)", es: "Frenos húmedos de servicio (todas las ruedas <8 km/h)" },
+  { n: 18, en: "Spring parking brake (rear, stopped-only)", es: "Freno de estacionamiento por resorte (trasero; solo con el camión detenido)" },
+  { n: 19, en: "Tires + rims (hub on tapered rollers)", es: "Neumáticos + llantas (maza sobre rodamientos cónicos)" },
+  { n: 20, en: "VHMS snapshot (blue) + red link", es: "Captura VHMS (azul) + enlace rojo" },
   { n: 21, en: "RSC turtle/rabbit + yellow switch", es: "RSC tortuga/liebre + interruptor amarillo" },
-  { n: 22, en: "E-stop + engine service (blue) + PLM", es: "Parada emergencia + servicio motor (azul) + PLM" },
+  { n: 22, en: "E-stop + engine service (blue) + PLM", es: "Parada de emergencia + servicio del motor (azul) + PLM" },
 ];

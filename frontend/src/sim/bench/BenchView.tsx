@@ -45,17 +45,17 @@ interface InspStep {
 }
 
 export const INSPECTION_STEPS: InspStep[] = [
-  { n: 1, en: "Park level, 20 min settle, engine off; confirm OM decal level rule.", es: "Estacionar nivelado, asentar 20 min, motor apagado; confirmar regla de nivel de la calcomania OM." },
-  { n: 2, en: "Drain-plug port item 56 at 6 o'clock: fit new 12 in hose each time, sample every 250 h.", es: "Puerto item 56 a las 6 en punto: usar manguera nueva de 12 pulg cada vez, muestrear cada 250 h." },
-  { n: 3, en: "Magnetic plug item 41: classify Normal (soft ring paste) / Flaky (bearing-cup laminar) / Pasty (chunk disintegration = last warning).", es: "Tapon magnetico item 41: clasificar Normal (pasta anular blanda) / Escamoso (laminar de taza) / Pastoso (desintegracion = ultimo aviso)." },
-  { n: 4, en: "Plug map 1-8 + planetaries 1-4: record position of every chip.", es: "Mapa de tapones 1-8 + planetarios 1-4: registrar la posicion de cada particula." },
+  { n: 1, en: "Park level, 20 min settle, engine off; confirm OM decal level rule.", es: "Estacionar nivelado, dejar asentar 20 min, motor apagado; confirmar la regla de nivel de la calcomanía OM." },
+  { n: 2, en: "Drain-plug port item 56 at 6 o'clock: fit new 12 in hose each time, sample every 250 h.", es: "Puerto de drenaje, ítem 56, a las 6: usar una manguera nueva de 12 pulg cada vez y tomar una muestra cada 250 h." },
+  { n: 3, en: "Magnetic plug item 41: classify Normal (soft ring paste) / Flaky (bearing-cup laminar) / Pasty (chunk disintegration = last warning).", es: "Tapón magnético, ítem 41: clasificar como normal (pasta anular blanda), escamoso (laminar de taza) o pastoso (desintegración en fragmentos = última advertencia)." },
+  { n: 4, en: "Plug map 1-8 + planetaries 1-4: record position of every chip.", es: "Mapa de tapones 1-8 + planetarios 1-4: registrar la posición de cada partícula." },
   { n: 5, en: "Washer N/P 1489: nominal 0.869 in, condemn at <= 0.824 in.", es: "Arandela N/P 1489: nominal 0.869 pulg, condenar si <= 0.824 pulg." },
   { n: 6, en: "Inner washer GE1309: nominal 0.558 in, replace at <= 0.513 in.", es: "Arandela interior GE1309: nominal 0.558 pulg, reemplazar si <= 0.513 pulg." },
   { n: 7, en: "Final axial play 0.100-0.125 in; grooves-visible rule holds.", es: "Juego axial final 0.100-0.125 pulg; aplica la regla de surcos visibles." },
   { n: 8, en: "Level correct if oil visible at port + 20 min level-ground rule.", es: "Nivel correcto si hay aceite visible + regla de 20 min en terreno nivelado." },
-  { n: 9, en: "ISO 4406 target 18/13 (>5 um 130k-250k / >15 um 4k-8k per 100 ml); micro-filter oil above 50 C until 18/13.", es: "Meta ISO 4406 18/13 (>5 um 130k-250k / >15 um 4k-8k por 100 ml); microfiltrar sobre 50 C hasta 18/13." },
-  { n: 10, en: "Spectrometry limits: Fe 200/233, Cu 24/35, Cr 3/3, Ni 3/3, Ca 30/50+P check, Zn 40/50, P-hyd 200/250; watch rate-of-change. Cu = cage/axial wear, Cr = platinated-flake bearings, Ca+P = hydraulic crossover.", es: "Limites espectrometria: Fe 200/233, Cu 24/35, Cr 3/3, Ni 3/3, Ca 30/50+revision P, Zn 40/50, P-hid 200/250; vigilar tasa de cambio. Cu = jaula/axial, Cr = rodamientos de hojuela platinada, Ca+P = cruce hidraulico." },
-  { n: 11, en: "Commissioning samples 20/50/100/250/500/750/1000 h; missing windows affects warranty.", es: "Muestras de puesta en marcha 20/50/100/250/500/750/1000 h; omitir ventanas afecta la garantia." },
+  { n: 9, en: "ISO 4406 target 18/13 (>5 um 130k-250k / >15 um 4k-8k per 100 ml); micro-filter oil above 50 C until 18/13.", es: "Meta ISO 4406 18/13 (>5 µm: 130k-250k / >15 µm: 4k-8k por 100 ml); microfiltrar el aceite a más de 50 °C hasta alcanzar 18/13." },
+  { n: 10, en: "Spectrometry limits: Fe 200/233, Cu 24/35, Cr 3/3, Ni 3/3, Ca 30/50+P check, Zn 40/50, P-hyd 200/250; watch rate-of-change. Cu = cage/axial wear, Cr = platinated-flake bearings, Ca+P = hydraulic crossover.", es: "Límites de espectrometría: Fe 200/233, Cu 24/35, Cr 3/3, Ni 3/3, Ca 30/50 + revisión de P, Zn 40/50, P-hid 200/250; vigilar la tasa de cambio. Cu = desgaste de jaula/axial, Cr = rodamientos con escamas platinadas, Ca+P = cruce hidráulico." },
+  { n: 11, en: "Commissioning samples 20/50/100/250/500/750/1000 h; missing windows affects warranty.", es: "Muestras de puesta en marcha a las 20/50/100/250/500/750/1000 h; omitir ventanas afecta la garantía." },
 ];
 
 export default function BenchView() {
@@ -107,8 +107,8 @@ export default function BenchView() {
       </label>
       <label className="og-field">
         <span className="og-field__label">
-          <span>{es ? "Proxy viscosidad" : "Viscosity proxy"}</span>
-          <span className="og-num">{viscosity.toFixed(2)} ({viscosityLabel(viscosity)})</span>
+          <span>{es ? "Proxy de viscosidad" : "Viscosity proxy"}</span>
+          <span className="og-num">{viscosity.toFixed(2)} ({viscosityLabel(viscosity, lang)})</span>
         </span>
         <input
           type="range"
@@ -156,11 +156,11 @@ export default function BenchView() {
           {formatOilText(frac)}
         </div>
         <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
-          {oilStateLabel(oilState, lang)} · 95 L reference
+          {oilStateLabel(oilState, lang)} · {t("wheel.reference", lang)}
         </div>
         <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
           {es ? "Asentamiento ≈" : "Settling ≈"} {settlingMs} ms · {es ? "proxy" : "viscosity proxy"}{" "}
-          {viscosity.toFixed(2)} ({viscosityLabel(viscosity)})
+          {viscosity.toFixed(2)} ({viscosityLabel(viscosity, lang)})
         </div>
         <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
           {es ? "Tren planetario" : "Planetary train"}: {stageRatio(GDY106_TRAIN.hs).toFixed(2)}:1 × {stageRatio(GDY106_TRAIN.ls).toFixed(2)}:1 = {trainRatio().toFixed(2)}:1 · {es ? "velocidades derivadas" : "derived stage speeds"}
@@ -175,10 +175,10 @@ export default function BenchView() {
         >
           {resting
             ? t("hud.recal", lang)
-            : es ? "En movimiento — recalibracion bloqueada" : "Moving — recalibration gated"}
+            : es ? "En movimiento — recalibración bloqueada" : "Moving — recalibration gated"}
         </div>
       </div>
-      <h2 className="og-h2">{es ? "Sensores (sin perforar + items)" : "Sensor markers (no-drill + items)"}</h2>
+      <h2 className="og-h2">{es ? "Sensores (instalación sin perforación · ítems)" : "Sensor markers (no-drill + items)"}</h2>
       <ul className="og-plain">
         {BENCH_SENSORS.map((sensor) => {
           const active = sensor.id === selectedId;
@@ -227,16 +227,16 @@ export default function BenchView() {
       <h2 className="og-h2">{es ? "Sobre esta vista" : "About this view"}</h2>
       <p className="og-body">
         {es
-          ? "Cadena GDY106 Fig.95 GEK-91680A — motor AC → eje → portador alta → pinon solar GE1288 → portador baja/planetarios → tubo torsion → maza en rodillos conicos → neumaticos; frenos humedos + estacionamiento por resorte. Arrastra para orbitar, haz clic en un marcador (items 56/41/39-36/cable). Deten el banco y observa el asentamiento antes de la ventana de recalibracion. Ver docs/inspection.md (pasos 1-11)."
+          ? "Cadena GDY106 Fig.95 GEK-91680A — motor AC → eje → portador de alta → piñón solar GE1288 → portador de baja/planetarios → tubo de torsión → maza sobre rodamientos cónicos → neumáticos; frenos húmedos + estacionamiento por resorte. Arrastra para orbitar y haz clic en un marcador (ítems 56/41/39-36/cable). Detén el banco y observa el asentamiento antes de la ventana de recalibración. Ver docs/inspection.md (pasos 1-11)."
           : "GDY106 Fig.95 GEK-91680A chain — AC motor → shaft → high-speed carrier → sun pinion GE1288 → low-speed carrier/planetaries → torque tube → hub on tapered rollers → tires; wet brakes + spring parking brake. Drag to orbit, click a marker (items 56/41/39-36/cable). Stop the rig and watch settling into the recalibration window. See docs/inspection.md (Steps 1-11)."}
       </p>
       <p className="og-body">{t("app.scope", lang)}</p>
       <p className="og-body">{t("bench.honesty", lang)}</p>
-      <h2 className="og-h2">{es ? "Inspeccion pasos 1-11" : "Inspection Steps 1-11"}</h2>
+      <h2 className="og-h2">{es ? "Inspección: pasos 1-11" : "Inspection Steps 1-11"}</h2>
       <ol className="og-list">
         {INSPECTION_STEPS.map((s) => (
           <li key={s.n}>
-            <strong>Step {s.n} / Paso {s.n}:</strong> {es ? s.es : s.en}
+            <strong>{es ? `Paso ${s.n}:` : `Step ${s.n}:`}</strong> {es ? s.es : s.en}
           </li>
         ))}
       </ol>
