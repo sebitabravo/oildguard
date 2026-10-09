@@ -3,6 +3,8 @@ import * as THREE from "three";
 import BenchView from "./sim/bench/BenchView";
 import TruckView from "./sim/truck/TruckView";
 import { Dashboard } from "./dash";
+import { useLang, t } from "./i18n";
+import "./theme.css";
 
 // S0 placeholder scene, kept intact for the Stub tab. A rotating box proves
 // the Vite + React + Three.js pipeline works. Sim A (bench rig + GDY106
@@ -108,6 +110,7 @@ function initialMode(): Mode {
 
 export default function App() {
   const [mode, setMode] = useState<Mode>(initialMode);
+  const [lang, setLang] = useLang();
 
   const select = (next: Mode) => {
     setMode(next);
@@ -135,36 +138,58 @@ export default function App() {
         padding: 24,
       }}
     >
-      <h1 style={{ margin: "0 0 8px" }}>OilGuard Mining Sim</h1>
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      <h1 style={{ margin: "0 0 8px" }}>{t("app.title", lang)}</h1>
+      <p style={{ margin: "0 0 12px", color: "#9fb0c9", fontSize: 13 }}>
+        {t("app.subtitle", lang)}
+      </p>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
         <button
           type="button"
           style={tabStyle(mode === "bench")}
           onClick={() => select("bench")}
         >
-          Bench (S1/T2)
+          {t("tab.bench", lang)}
         </button>
         <button
           type="button"
           style={tabStyle(mode === "truck")}
           onClick={() => select("truck")}
         >
-          Truck (S2/T4)
+          {t("tab.truck", lang)}
         </button>
         <button
           type="button"
           style={tabStyle(mode === "dash")}
           onClick={() => select("dash")}
         >
-          Dash (S6/T11)
+          {t("tab.dash", lang)}
         </button>
         <button
           type="button"
           style={tabStyle(mode === "stub")}
           onClick={() => select("stub")}
         >
-          Stub (S0)
+          {t("tab.stub", lang)}
         </button>
+        <span style={{ marginLeft: "auto", display: "inline-flex", gap: 8, alignItems: "center" }}>
+          <span style={{ fontSize: 12, color: "#9fb0c9" }}>{t("lang.label", lang)}</span>
+          <button
+            type="button"
+            aria-label="Toggle language EN/ES"
+            onClick={() => setLang(lang === "en" ? "es" : "en")}
+            style={{
+              cursor: "pointer",
+              color: "#0e1420",
+              background: "#f5a623",
+              border: "1px solid transparent",
+              borderRadius: 6,
+              padding: "6px 14px",
+              fontWeight: 800,
+            }}
+          >
+            {t("lang.toggle", lang)}
+          </button>
+        </span>
       </div>
       {mode === "bench" ? (
         <BenchView />

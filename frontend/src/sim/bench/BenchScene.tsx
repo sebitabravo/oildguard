@@ -1,7 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { BENCH_SENSORS } from "./sensors";
+import {
+  BENCH_SENSORS,
+  GDY106_CHAIN_EN,
+  GDY106_CHAIN_ES,
+  OIL_DUCT_NARRATIVE,
+  OIL_DUCT_NARRATIVE_ES,
+} from "./sensors";
+import { useLang } from "../../i18n";
 import {
   formatOilText,
   oilColorFor,
@@ -12,11 +19,15 @@ import {
 import { wobbleAt } from "./settling";
 
 // T2 bench-rig scene (Sim A, part 1 of 2) + T3 cutaway internals (part 2).
-// Steel test-rig frame + simplified GDY106 wheel/motor housing with four
+// Steel test-rig frame + GDY106 wheel/motor housing with four
 // no-drill sensor markers. Physically-plausible proportions, NOT CAD-exact.
-// T3 adds: sun gear + planetary pinions + rotor barrel (low-poly, same
-// low-metalness PBR rule as T2), 95 L oil fill with threshold colors, and a
-// damped-sine settling wobble on move->rest driven by `viscosityProxy`.
+// Manual-faithful chain per GDY106 Fig.95 GEK-91680A longitudinal section:
+// alternator AC motor -> drive shaft -> high-speed carrier -> sun pinion GE1288
+// -> low-speed carrier/planetaries -> torque tube -> wheel hub on inboard/outboard
+// tapered roller bearings -> tires; wet brakes + spring parking brake.
+// Sensor points snap to manual items: pressure T at oil drain pipe plug item 56
+// (6 o'clock), temperature at magnetic pipe plug item 41, vibration at sun
+// inspection cover items 39/36, Hall clamp on traction power cable.
 
 export type BenchMode = "move" | "rest";
 
@@ -371,6 +382,95 @@ export default function BenchScene({
       spinners[1].group.add(endRing);
       disposables.push(endRing.geometry);
     }
+    // ---- GDY106 Fig.95 chain extension (manual-faithful order) ----
+    // High-speed carrier disc on the drive shaft, sun pinion GE1288 (the
+    // spinning sun gear above is the GE1288 pinion), low-speed carrier plate
+    // behind the planetaries, torque tube to the outboard side, wheel hub on
+    // inboard/outboard tapered roller bearings, tire torus, wet brake discs
+    // + spring parking-brake can. All low-poly, same PBR rule.
+    const hsCarrier = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.28, 0.28, 0.1, 18),
+      gearMat
+    );
+    hsCarrier.rotation.z = Math.PI / 2;
+    hsCarrier.position.set(-0.85, HOUSING_Y, 0);
+    spinners[0].group.add(hsCarrier);
+    disposables.push(hsCarrier.geometry);
+    const lsCarrier = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.44, 0.44, 0.08, 20),
+      gearMat
+    );
+    lsCarrier.rotation.z = Math.PI / 2;
+    lsCarrier.position.set(-1.15, HOUSING_Y, 0);
+    scene.add(lsCarrier);
+    disposables.push(lsCarrier.geometry);
+    const torqueTube = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.16, 0.16, 1.1, 14),
+      gearMat
+    );
+    torqueTube.rotation.z = Math.PI / 2;
+    torqueTube.position.set(0.75, HOUSING_Y, 0);
+    scene.add(torqueTube);
+    disposables.push(torqueTube.geometry);
+    // Wheel hub + inboard/outboard tapered roller bearing cones.
+    for (const [bx, br] of [[0.45, 0.26], [1.05, 0.3]] as Array<[number, number]>) {
+      const cone = new THREE.Mesh(
+        new THREE.CylinderGeometry(br, br * 0.78, 0.12, 16),
+        brass
+      );
+      cone.rotation.z = Math.PI / 2;
+      cone.position.set(bx, HOUSING_Y, 0);
+      scene.add(cone);
+      disposables.push(cone.geometry);
+    }
+    const hub = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.34, 0.34, 0.7, 18),
+      darkSteel
+    );
+    hub.rotation.z = Math.PI / 2;
+    hub.position.set(0.75, HOUSING_Y, 0);
+    scene.add(hub);
+    disposables.push(hub.geometry);
+    // Tire torus outboard + wet brake discs + spring parking-brake can.
+    const tire = new THREE.Mesh(
+      new THREE.TorusGeometry(0.62, 0.2, 12, 28),
+      cableMat
+    );
+    tire.rotation.y = Math.PI / 2;
+    tire.position.set(1.35, HOUSING_Y, 0);
+    scene.add(tire);
+    disposables.push(tire.geometry);
+    for (const bx of [1.18, 1.28]) {
+      const disc = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.4, 0.4, 0.05, 20),
+        gearMat
+      );
+      disc.rotation.z = Math.PI / 2;
+      disc.position.set(bx, HOUSING_Y, 0);
+      scene.add(disc);
+      disposables.push(disc.geometry);
+    }
+    const springCan = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.1, 0.22, 12),
+      brass
+    );
+    springCan.position.set(1.0, HOUSING_Y + 0.55, 0);
+    scene.add(springCan);
+    disposables.push(springCan.geometry);
+    // Modified-cover oil transfer duct: thin tube from the outer cavity into
+    // the sun inspection cover (items 39/36), through the sun pinion interior.
+    const ductCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-1.9, HOUSING_Y - 0.45, 0.3),
+      new THREE.Vector3(-1.95, HOUSING_Y + 0.1, 0.28),
+      new THREE.Vector3(-1.4, HOUSING_Y + 0.2, 0.0),
+      new THREE.Vector3(-0.9, HOUSING_Y, 0.0),
+    ]);
+    const duct = new THREE.Mesh(
+      new THREE.TubeGeometry(ductCurve, 24, 0.025, 8),
+      brass
+    );
+    scene.add(duct);
+    disposables.push(duct.geometry);
 
     // ---- T3 oil volume: fill slab inside the barrel ----
     // Height tracks the driven fill fraction; color follows the
@@ -539,6 +639,9 @@ export default function BenchScene({
   const oilState = oilStateFor(clamp01(oilLevel));
   const oilCss = oilCssFor(oilState);
   const resting = mode === "rest";
+  const [lang] = useLang();
+  const chain = lang === "es" ? GDY106_CHAIN_ES : GDY106_CHAIN_EN;
+  const ductNote = lang === "es" ? OIL_DUCT_NARRATIVE_ES : OIL_DUCT_NARRATIVE;
 
   return (
     <div style={{ position: "relative", width: "100%", height: 480 }}>
@@ -575,7 +678,7 @@ export default function BenchScene({
               marginRight: 8,
             }}
           />
-          Oil {formatOilText(clamp01(oilLevel))} · {oilStateLabel(oilState)}
+          {lang === "es" ? "Aceite" : "Oil"} {formatOilText(clamp01(oilLevel))} · {oilStateLabel(oilState, lang)}
         </div>
         <div
           style={{
@@ -593,8 +696,30 @@ export default function BenchScene({
           }}
         >
           {resting
-            ? "RECALIBRATING (stopped+leveled+engine-on)"
-            : "STANDBY · recalibration gated (moving)"}
+            ? lang === "es"
+              ? "RECALIBRANDO (detenido+nivelado+motor encendido)"
+              : "RECALIBRATING (stopped+leveled+engine-on)"
+            : lang === "es"
+              ? "ESPERA · recalibracion bloqueada (en movimiento)"
+              : "STANDBY · recalibration gated (moving)"}
+        </div>
+        <div
+          title={ductNote}
+          style={{
+            position: "absolute",
+            left: 12,
+            bottom: 12,
+            maxWidth: 340,
+            fontSize: 11,
+            color: "#c7d3e8",
+            background: "rgba(10, 16, 28, 0.82)",
+            border: "1px solid #3a4a63",
+            borderRadius: 4,
+            padding: "4px 10px",
+          }}
+        >
+          {lang === "es" ? "Cadena GDY106 Fig.95: " : "GDY106 Fig.95 chain: "}
+          {chain.slice(0, 4).join(" → ")} → …
         </div>
         {BENCH_SENSORS.map((sensor) => (
           <div
@@ -629,7 +754,7 @@ export default function BenchScene({
                 marginRight: 6,
               }}
             />
-            {sensor.shortLabel}
+            {lang === "es" ? sensor.shortLabelEs : sensor.shortLabel}
           </div>
         ))}
       </div>

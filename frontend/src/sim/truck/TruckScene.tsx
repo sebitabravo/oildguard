@@ -13,6 +13,7 @@ import {
   stateAt,
   type HaulState,
 } from "./cycle";
+import { useLang } from "../../i18n";
 
 // T4 truck + open-pit scene (Sim B, S2) + T5 modes/cameras polish.
 // Simplified 930E (chassis box + cab + tiltable dump bed + 6 cylinder
@@ -51,6 +52,7 @@ const MODE_REST_CSS = "#2fbf71";
 interface ZoneDef {
   id: HaulState;
   label: string;
+  labelEs: string;
   cx: number;
   cz: number;
   w: number;
@@ -58,10 +60,10 @@ interface ZoneDef {
 }
 
 const ZONES: ZoneDef[] = [
-  { id: "LOAD", label: "LOAD · loader", cx: -8, cz: -3, w: 4.6, d: 4.4 },
-  { id: "HAUL", label: "HAUL · loaded lane", cx: 0, cz: -3, w: 11.4, d: 3.0 },
-  { id: "DUMP", label: "DUMP · crusher", cx: 8, cz: -3, w: 4.6, d: 4.4 },
-  { id: "WAIT", label: "WAIT · return queue", cx: 0, cz: 3.2, w: 15.5, d: 3.0 },
+  { id: "LOAD", label: "LOAD · loader", labelEs: "CARGA · cargador", cx: -8, cz: -3, w: 4.6, d: 4.4 },
+  { id: "HAUL", label: "HAUL · loaded lane", labelEs: "ACARREO · pista cargada", cx: 0, cz: -3, w: 11.4, d: 3.0 },
+  { id: "DUMP", label: "DUMP · crusher", labelEs: "DESCARGA · chancadora", cx: 8, cz: -3, w: 4.6, d: 4.4 },
+  { id: "WAIT", label: "WAIT · return queue", labelEs: "ESPERA · retorno", cx: 0, cz: 3.2, w: 15.5, d: 3.0 },
 ];
 
 const DUMP_TILT = 0.5;
@@ -326,7 +328,10 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
     prop(2.2, 2.4, 2.2, darkSteel, 8, 1.2, -6.3); // crusher block
     prop(1.4, 0.8, 1.4, bedMat, 8, 2.8, -6.3); // crusher hopper
 
-    // ---- Simplified 930E truck (forward = +X), NOT CAD-exact ----
+    // ---- Simplified 930E truck (forward = +X), proportions toward manual ----
+    // 930E-4SE: 15.29 x 8.89 x 8.10 m (LxWxH), body-up 14.80 m. Scene units are
+    // illustrative (pit loop preserved): chassis 6.0 long x 3.4 wide keeps the
+    // true L/W = 1.72; total height ~3.3 keeps H/L = 0.53. NOT CAD-exact.
     const truck = new THREE.Group();
     scene.add(truck);
     const tbox = (
@@ -345,9 +350,9 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
       disposables.push(m.geometry);
       return m;
     };
-    tbox(truck, 4.4, 0.5, 2.2, darkSteel, 0, 1.35, 0); // chassis
-    tbox(truck, 1.5, 1.3, 2.0, cabMat, 1.55, 2.25, 0); // cab
-    tbox(truck, 0.4, 0.6, 2.0, darkSteel, 2.4, 1.2, 0); // bumper
+    tbox(truck, 6.0, 0.6, 3.4, darkSteel, 0, 1.35, 0); // chassis (15.29 m class)
+    tbox(truck, 1.8, 1.6, 2.8, cabMat, 2.2, 2.45, 0); // cab
+    tbox(truck, 0.5, 0.7, 2.8, darkSteel, 3.2, 1.2, 0); // bumper
     const modeRing = new THREE.Mesh(
       new THREE.RingGeometry(2.7, 3.1, 40),
       modeRingMat
@@ -358,31 +363,31 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
     disposables.push(modeRing.geometry);
     // Dump bed on a rear pivot so the front lifts in DUMP.
     const bedPivot = new THREE.Group();
-    bedPivot.position.set(-2.0, 1.95, 0);
+    bedPivot.position.set(-2.8, 1.95, 0);
     truck.add(bedPivot);
-    tbox(bedPivot, 3.6, 0.25, 2.3, bedMat, 1.75, 0.15, 0); // bed floor
-    tbox(bedPivot, 3.6, 0.8, 0.15, bedMat, 1.75, 0.65, 1.075); // walls
-    tbox(bedPivot, 3.6, 0.8, 0.15, bedMat, 1.75, 0.65, -1.075);
-    tbox(bedPivot, 0.15, 1.3, 2.3, bedMat, 3.5, 0.75, 0); // headboard
-    const ore = tbox(bedPivot, 2.6, 0.7, 1.9, oreMat, 1.6, 0.6, 0); // load
+    tbox(bedPivot, 5.0, 0.3, 3.4, bedMat, 2.4, 0.18, 0); // bed floor (211 m3 class)
+    tbox(bedPivot, 5.0, 1.0, 0.18, bedMat, 2.4, 0.8, 1.6); // walls
+    tbox(bedPivot, 5.0, 1.0, 0.18, bedMat, 2.4, 0.8, -1.6);
+    tbox(bedPivot, 0.18, 1.6, 3.4, bedMat, 4.85, 0.9, 0); // headboard
+    const ore = tbox(bedPivot, 3.6, 0.9, 2.8, oreMat, 2.2, 0.75, 0); // load
 
     // 6 cylinder wheels (3 axles x 2 sides); rearmost pair = motorized.
     const wheelGroups: THREE.Group[] = [];
-    for (const ax of [1.5, -0.7, -1.6]) {
-      for (const sz of [-1.15, 1.15]) {
+    for (const ax of [2.2, -0.9, -2.1]) {
+      for (const sz of [-1.7, 1.7]) {
         const g = new THREE.Group();
-        g.position.set(ax, 0.55, sz);
+        g.position.set(ax, 0.75, sz);
         truck.add(g);
-        const motorized = ax === -1.6;
+        const motorized = ax === -2.1;
         const tire = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.55, 0.55, 0.42, 20),
+          new THREE.CylinderGeometry(0.75, 0.75, 0.55, 20),
           tireMat
         );
         tire.rotation.x = Math.PI / 2;
         g.add(tire);
         disposables.push(tire.geometry);
         const hub = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.22, 0.22, 0.44, 14),
+          new THREE.CylinderGeometry(0.3, 0.3, 0.57, 14),
           motorized ? motorMat : hubMat
         );
         hub.rotation.x = Math.PI / 2;
@@ -516,8 +521,8 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
         } else {
           // Wheel close-up: rear-axle (+Z) motorized wheel in world space.
           // Three.js rotation-Y: x' = x cos + z sin, z' = -x sin + z cos.
-          const lx = -1.6;
-          const lz = 1.15;
+          const lx = -2.1;
+          const lz = 1.7;
           const c = Math.cos(yaw);
           const s = Math.sin(yaw);
           const wx = px + lx * c + lz * s;
@@ -558,6 +563,11 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
   const recal = isRecalState(hud.state);
   const moving = isMovingState(hud.state);
   const modeCss = moving ? MODE_MOVING_CSS : MODE_REST_CSS;
+  const [lang] = useLang();
+
+  const camLabel: Record<string, string> = lang === "es"
+    ? { pit: "Foso", cab: "Cabina", side: "Lateral", wheel: "Rueda" }
+    : { pit: "Pit overview", cab: "Cab", side: "Side", wheel: "Wheel close-up" };
 
   return (
     <div style={{ position: "relative", width: "100%", height: 480 }}>
@@ -595,7 +605,7 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
               marginRight: 8,
             }}
           />
-          {hud.state} · cycle {hud.cycle}
+          {hud.state} · {lang === "es" ? "ciclo" : "cycle"} {hud.cycle}
           <span
             style={{
               display: "inline-block",
@@ -610,7 +620,7 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
               verticalAlign: "1px",
             }}
           >
-            {moving ? "MOVING" : "REST"}
+            {moving ? (lang === "es" ? "EN MOVIMIENTO" : "MOVING") : (lang === "es" ? "DETENIDO" : "REST")}
           </span>
           <div
             style={{
@@ -644,7 +654,7 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
                 lineHeight: "22px",
               }}
             >
-              Camera:
+              {lang === "es" ? "Camara:" : "Camera:"}
             </span>
             {CAM_PRESETS.map((p) => {
               const active = presetUi === p.id;
@@ -655,8 +665,8 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
                   onClick={() => setPreset(p.id)}
                   title={
                     presetUi === "free" || !active
-                      ? `Fly camera to ${p.label} (lerp)`
-                      : `${p.label} (tracking)`
+                      ? lang === "es" ? `Volar a ${camLabel[p.id]}` : `Fly camera to ${p.label} (lerp)`
+                      : `${camLabel[p.id]} (tracking)`
                   }
                   style={{
                     cursor: "pointer",
@@ -669,7 +679,7 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
                     padding: "2px 8px",
                   }}
                 >
-                  {p.label}
+                  {camLabel[p.id]}
                 </button>
               );
             })}
@@ -691,8 +701,12 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
           }}
         >
           {recal
-            ? "RECALIBRATING (stopped+leveled+engine-on)"
-            : "STANDBY · recalibration gated (moving)"}
+            ? lang === "es"
+              ? "RECALIBRANDO (detenido+nivelado+motor encendido)"
+              : "RECALIBRATING (stopped+leveled+engine-on)"
+            : lang === "es"
+              ? "ESPERA · recalibracion bloqueada (en movimiento)"
+              : "STANDBY · recalibration gated (moving)"}
         </div>
         <div
           style={{
@@ -707,7 +721,9 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
             padding: "4px 10px",
           }}
         >
-          Rotor ≈3000 RPM · wheel ≈92 RPM (32.62:1) · spin illustrative
+          {lang === "es"
+            ? "Rotor ≈3000 RPM · rueda ≈92 RPM (32.62:1) · giro ilustrativo · 15.29×8.89×8.10 m"
+            : "Rotor ≈3000 RPM · wheel ≈92 RPM (32.62:1) · spin illustrative · 15.29×8.89×8.10 m"}
         </div>
         <div
           style={{
@@ -732,7 +748,7 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
               marginRight: 6,
             }}
           />
-          Rear axle motorized (GDY106) · engine ON · chassis leveled
+          Rear axle motorized (GDY106) · engine ON · chassis leveled · body-up 14.80 m
         </div>
         {ZONES.map((zone) => (
           <div
@@ -756,7 +772,7 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
               padding: "2px 8px",
             }}
           >
-            {zone.label}
+            {lang === "es" ? zone.labelEs : zone.label}
           </div>
         ))}
         <div
@@ -779,7 +795,7 @@ export default function TruckScene({ paused, stepTick, onPhase }: TruckSceneProp
             padding: "2px 8px",
           }}
         >
-          930E · GDY106 · {moving ? "MOVING" : "REST"}
+          930E · GDY106 · {moving ? (lang === "es" ? "EN MOVIMIENTO" : "MOVING") : (lang === "es" ? "DETENIDO" : "REST")}
         </div>
       </div>
     </div>

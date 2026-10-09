@@ -27,6 +27,7 @@ import RulPanel from "./RulPanel";
 import {
   DEMO_CONFIDENCE,
   DEMO_LAB_NOTE,
+  DEMO_LAB_NOTE_ES,
   DEMO_MODEL,
   DEMO_SERIES,
   DEMO_SIGMA_L,
@@ -35,17 +36,24 @@ import {
   demoFracFor,
 } from "./demoData";
 import { emitDemoOil, type DemoStageId } from "./demoBus";
+import { useLang } from "../i18n";
 
 type Source = "loading" | "live" | "demo";
 
 const DEMO_STAGES: DemoStageId[] = ["clean", "slow-leak", "abrupt-drop", "done"];
 
-const STAGE_BLURB: Record<string, string> = {
-  clean: "Baseline: 95 L, no alerts. RUL suppressed (no leak trend).",
-  "slow-leak": `Slow leak (${DEMO_LAB_NOTE}). N1 -> N2 -> N3 walk.`,
-  "abrupt-drop": "Abrupt 15 L step. N4 critical fires; linear RUL invalid.",
-  done: "Walk complete: N1 -> N2 -> N3 -> N4. Reset to run again.",
-};
+function stageBlurb(stage: string, es: boolean): string {
+  if (es) {
+    if (stage === "clean") return "Base: 95 L, sin alertas. RUL suprimido (sin tendencia).";
+    if (stage === "slow-leak") return `Fuga lenta (${DEMO_LAB_NOTE_ES}). Recorrido N1 → N2 → N3.`;
+    if (stage === "abrupt-drop") return "Caida brusca 15 L. N4 critico dispara; RUL lineal invalido.";
+    return "Recorrido completo: N1 → N2 → N3 → N4. Reinicia para repetir.";
+  }
+  if (stage === "clean") return "Baseline: 95 L, no alerts. RUL suppressed (no leak trend).";
+  if (stage === "slow-leak") return `Slow leak (${DEMO_LAB_NOTE}). N1 -> N2 -> N3 walk.`;
+  if (stage === "abrupt-drop") return "Abrupt 15 L step. N4 critical fires; linear RUL invalid.";
+  return "Walk complete: N1 -> N2 -> N3 -> N4. Reset to run again.";
+}
 
 const ALERT_CSS: Record<string, string> = {
   N1: "#f5a623",
@@ -55,6 +63,8 @@ const ALERT_CSS: Record<string, string> = {
 };
 
 export default function Dashboard() {
+  const [lang] = useLang();
+  const es = lang === "es";
   const [source, setSource] = useState<Source>("loading");
   const [backendNote, setBackendNote] = useState("");
   const [storeRows, setStoreRows] = useState(0);
@@ -192,10 +202,9 @@ export default function Dashboard() {
   return (
     <div>
       <p style={{ margin: "0 0 12px", color: "#9fb0c9" }}>
-        S6 pro dashboard (T11): fused level + confidence, rest windows,
-        N1–N4 ladder, RUL, and the sim-linked mode indicator. Model{" "}
-        <code>{DEMO_MODEL}</code> — synthetic-proxy, UNPROVEN until the S7
-        bench drain-and-weigh.
+        {es
+          ? <>Tablero S6 (T11): nivel fusionado + confianza, ventanas de reposo, escalera N1–N4, RUL e indicador de modo. Modelo <code>{DEMO_MODEL}</code> — sustituto sintetico, NO PROBADO hasta el banco S7.</>
+          : <>S6 pro dashboard (T11): fused level + confidence, rest windows, N1–N4 ladder, RUL, and the sim-linked mode indicator. Model <code>{DEMO_MODEL}</code> — synthetic-proxy, UNPROVEN until the S7 bench drain-and-weigh.</>}
       </p>
 
       {/* source + backend row */}
@@ -211,9 +220,9 @@ export default function Dashboard() {
             padding: "4px 10px",
           }}
         >
-          {source === "loading" ? "CONNECTING…" : source === "live" ? "LIVE · backend" : "DEMO · local fallback"}
+          {source === "loading" ? (es ? "CONECTANDO…" : "CONNECTING…") : source === "live" ? (es ? "EN VIVO · backend" : "LIVE · backend") : (es ? "DEMO · local" : "DEMO · local fallback")}
         </span>
-        <span style={{ fontSize: 12, color: "#9fb0c9" }}>{backendNote || "probing backend…"}</span>
+        <span style={{ fontSize: 12, color: "#9fb0c9" }}>{backendNote || (es ? "probando backend…" : "probing backend…")}</span>
         <button
           type="button"
           onClick={() => void fetchAll()}
@@ -228,7 +237,7 @@ export default function Dashboard() {
             fontSize: 12,
           }}
         >
-          Refresh from backend
+          {es ? "Actualizar desde backend" : "Refresh from backend"}
         </button>
         {!demoActive ? (
           <button
@@ -245,7 +254,7 @@ export default function Dashboard() {
               fontSize: 12,
             }}
           >
-            Run leak demo (clean → N4)
+            {es ? "Ejecutar demo de fuga (limpio → N4)" : "Run leak demo (clean → N4)"}
           </button>
         ) : (
           <button
@@ -262,7 +271,7 @@ export default function Dashboard() {
               fontSize: 12,
             }}
           >
-            Reset demo
+            {es ? "Reiniciar demo" : "Reset demo"}
           </button>
         )}
       </div>
@@ -296,7 +305,7 @@ export default function Dashboard() {
               </span>
             ))}
             <span style={{ fontSize: 13, color: "#c7d3e8" }}>
-              {STAGE_BLURB[demoStage]} · oil {formatOilText(demoFrac)} · also driving the Bench 3D fill
+              {stageBlurb(demoStage, es)} · {es ? "aceite" : "oil"} {formatOilText(demoFrac)} · {es ? "tambien mueve el banco 3D" : "also driving the Bench 3D fill"}
             </span>
           </div>
         </div>
@@ -306,23 +315,25 @@ export default function Dashboard() {
         {/* level chart */}
         <div style={{ flex: "2 1 560px", minWidth: 320, border: "1px solid #2a3a55", padding: 16, background: "#111a2c" }}>
           <h2 style={{ margin: "0 0 4px", fontSize: 16 }}>
-            Oil level + confidence{" "}
+            {es ? "Nivel de aceite + confianza" : "Oil level + confidence"}{" "}
             <span style={{ fontSize: 12, fontWeight: 500, color: "#9fb0c9" }}>
-              ±{sigmaL.toFixed(2)} L · conf {Number(confidence).toFixed(3)} · green bands = rest windows
+              ±{sigmaL.toFixed(2)} L · conf {Number(confidence).toFixed(3)} · {es ? "bandas verdes = ventanas de reposo" : "green bands = rest windows"}
             </span>
           </h2>
           <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} />
           <p style={{ margin: "8px 0 0", fontSize: 12, color: "#9fb0c9" }}>
-            28 kPa @ 95 L anchor: SYNTHETIC-PROXY (field-anchor pending h(L) bench) · priors in sim/physics.py · see docs/thesis-annex.md
+            {es
+              ? "Referencia 28 kPa @ 95 L: SUSTITUTO SINTETICO (anclaje de campo pendiente del banco h(L)) · priors en sim/physics.py · ver docs/thesis-annex.md"
+              : "28 kPa @ 95 L anchor: SYNTHETIC-PROXY (field-anchor pending h(L) bench) · priors in sim/physics.py · see docs/thesis-annex.md"}
           </p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8, fontSize: 13 }}>
             <span style={{ color: demoOilCss, fontWeight: 700 }}>
-              {demoActive ? `Demo fill ${formatOilText(demoFrac)}` : level ? `${Number(level.data.level_liters).toFixed(1)} L · ${Number(level.data.level_pct).toFixed(1)}%` : "—"}
+              {demoActive ? `${es ? "Demo " : "Demo fill "}${formatOilText(demoFrac)}` : level ? `${Number(level.data.level_liters).toFixed(1)} L · ${Number(level.data.level_pct).toFixed(1)}%` : "—"}
             </span>
             <span style={{ color: "#9fb0c9" }}>
               {demoActive
-                ? DEMO_LAB_NOTE
-                : `source: ${level?.data.source ?? "no backend payload yet"}`}
+                ? (es ? DEMO_LAB_NOTE_ES : DEMO_LAB_NOTE)
+                : `source: ${level?.data.source ?? (es ? "sin datos del backend" : "no backend payload yet")}`}
             </span>
           </div>
         </div>
@@ -332,19 +343,19 @@ export default function Dashboard() {
           {/* mode indicator */}
           <div style={{ border: "1px solid #2a3a55", borderRadius: 6, padding: "10px 12px", background: "#111a2c" }}>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>
-              Mode ·{" "}
+              {es ? "Modo · " : "Mode · "}
               <span style={{ color: moving ? "#3a7bd5" : "#2fbf71" }}>
-                {moving ? "MOVING" : "REST"}
+                {moving ? (es ? "EN MOVIMIENTO" : "MOVING") : (es ? "DETENIDO" : "REST")}
               </span>{" "}
               <span style={{ fontSize: 12, color: recal ? "#2fbf71" : "#8b98ad" }}>
-                {recal ? "· RECALIBRATING" : "· recal gated"}
+                {recal ? (es ? "· RECALIBRANDO" : "· RECALIBRATING") : (es ? "· recal bloqueado" : "· recal gated")}
               </span>
             </div>
             <div style={{ fontSize: 13, color: "#c7d3e8" }}>
-              FSM <strong>{fsm.state}</strong> (t+{fsmTick.toFixed(0)} s shared clock with the Truck sim) ·{" "}
+              FSM <strong>{fsm.state}</strong> (t+{fsmTick.toFixed(0)} s {es ? "reloj compartido con el camion" : "shared clock with the Truck sim"}) ·{" "}
               {source === "live"
                 ? `backend windows: ${windows?.count ?? 0} (store_rows=${storeRows})`
-                : "backend down — windows from local DEMO set"}
+                : (es ? "backend caido — ventanas del set DEMO local" : "backend down — windows from local DEMO set")}
             </div>
           </div>
 
@@ -353,14 +364,14 @@ export default function Dashboard() {
           {/* N1–N4 timeline */}
           <div style={{ border: "1px solid #2a3a55", borderRadius: 6, padding: "10px 12px", background: "#111a2c" }}>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>
-              Alerts timeline{" "}
+              {es ? "Alertas N1–N4 " : "Alerts timeline "}
               <span style={{ fontSize: 12, fontWeight: 500, color: "#9fb0c9" }}>
-                {(alerts?.data.escalation ?? shownAlerts.map((a) => a.level)).join(" → ") || "no alerts"}
+                {(alerts?.data.escalation ?? shownAlerts.map((a) => a.level)).join(" → ") || (es ? "sin alertas" : "no alerts")}
               </span>
             </div>
             {shownAlerts.length === 0 ? (
               <p style={{ margin: 0, color: "#9fb0c9", fontSize: 13 }}>
-                (no alerts — clean baseline; RUL stays suppressed anomaly-only)
+                {es ? "(sin alertas — base limpia; RUL suprimido solo-anomalias)" : "(no alerts — clean baseline; RUL stays suppressed anomaly-only)"}
               </p>
             ) : (
               <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>

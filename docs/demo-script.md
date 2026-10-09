@@ -118,6 +118,16 @@ Total judge path: ~4 min (up 90 s + ingest 30 s + tab tour 60 s + demo 30 s).
 `docs/screenshots/t11-dashboard.png` — Dash tab mid-demo (slow-leak,
 N1/N2/N3 visible, LAB label in frame). This repo's copy was rendered
 from the local dev server (see Evidence Log T11).
+Fidelity pass: `docs/screenshots/fidelity-en.png` + `docs/screenshots/fidelity-es.png`
+(Bench chain + Truck 930E-4SE + Dashboard, EN + ES).
+
+## 6. Guia rapida en espanol (bilingue autorizado)
+
+1. `docker compose up --build`; frontend http://localhost:5173.
+2. Pestanas: Banco / Camion / Tablero / Base; interruptor EN/ES arriba (persiste en localStorage).
+3. Banco: cadena GDY106 Fig.95 + items 56/41/39-36/cable; pasos 1-11 en el panel y docs/inspection.md.
+4. Camion: 15.29×8.89×8.10 m, tolva arriba 14.80 m; pesos y fluidos en el panel; llamados 1-22.
+5. Tablero: Ejecutar demo de fuga (limpio → N4); nota SUSTITUTO SINTETICO en ambos idiomas.
 
 ## Honesty notes
 

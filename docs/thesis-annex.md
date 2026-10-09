@@ -105,6 +105,42 @@ These are the exact gates already implemented (`ai/rul.py:40-42`,
 - J306 grade limits are SAE-standard text; confirm against the edition cited
   in the thesis bibliography.
 
+## 7. Manual sources + reconciled fluids table (fidelity update)
+
+Manual names (user-supplied, authoritative over prior placeholders):
+
+- GDY106 Fig.95 GEK-91680A longitudinal section: internals chain alternator AC
+  motor → drive shaft → high-speed carrier → sun pinion GE1288 → low-speed
+  carrier/planetaries → torque tube → wheel hub on inboard/outboard tapered
+  roller bearings → tires; wet brakes + spring parking brake. Sensor items:
+  pressure T at oil drain pipe plug item 56 (6 o'clock; TD930E-P recessed-tube
+  improvement removes the 120 mm protrusion strike hazard), temperature at
+  magnetic pipe plug item 41, vibration at sun inspection cover items 39/36,
+  Hall clamp on traction power cable. Modified-cover oil transfer duct:
+  low-gear splash → outer cavity → inside cover → through sun pinion interior
+  → retainer/inner washer (arrow-to-pin alignment).
+- 930E-4SE operation/maintenance set (dims/weights/fluids/powertrain/brakes/cab):
+  15.29 × 8.89 × 8.10 m, body-up 14.80 m; empty 215308 kg (F104460/R110848),
+  loaded 505611 kg (F165958/R339653), payload 290303 kg / 211 m³, max 320 T
+  (10% 320–348 T allowed, never above 348 T); QSK78 3500 HP @1900 (3429
+  flywheel; SSDA variant note); GTA-39 AC→DC→AC inverters/condensers; blower
+  453 m³/min; cabinet PCS/PLM/AID/VHMS/IM; MT AC induction; retard grids 5400
+  short/3300 cont hp 0.7 s; axle box + Hydrair II F12.92/R9.40 ±6.5°; brakes
+  (service <8 km/h all wheels, rear lock low-pressure, spring parking rear
+  stopped-only, emergency auto); cab (RSC turtle/rabbit + yellow switch,
+  override, e-stop, hoist HOLD/FLOAT, VHMS snapshot+blue, red link, blue
+  engine service, PLM fields); red-STOP vs amber-caution matrix; VHMS
+  read-only. Inspection Steps 1–11 per `docs/inspection.md`.
+
+Reconciled fluids (variants differ by compartment definition + usable vs nominal):
+
+| Fluid | Variant A | Variant B | Adopted |
+|-------|-----------|-----------|---------|
+| Fuel | 5299 L (INCAEX) | 4542 L usable (OM) | 5299 nominal, 4542 usable footnote |
+| Hydraulic | 1324 L | 1325 L | 1324/1325 footnote |
+| Engine sump | 340 L QSK78 | 280 L SSDA16V160 | variant note |
+| Propulsion gears | 94 L each | 76 L wheel gearbox (OM) | adopt 94 with OM compartment note |
+
 Closeout pointer: S7 assumption outcome stays PARTIAL (logic proven on
 synthetic-proxy, field accuracy pending bench); this annex is the bench-ready
 anchor, not bench evidence.

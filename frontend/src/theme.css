@@ -1,0 +1,110 @@
+/* OilGuard pro theme — Komatsu mining-industrial (yellow/gray/dark).
+ * High contrast, consistent type scale / spacing / cards / legends.
+ * Accessible focus states, responsive panels. Identifiers stay English. */
+:root {
+  --og-bg: #0e1420;
+  --og-panel: #111a2c;
+  --og-panel-2: #1b2946;
+  --og-line: #2a3a55;
+  --og-line-soft: #3a4a63;
+  --og-text: #e8edf5;
+  --og-muted: #9fb0c9;
+  --og-body: #c7d3e8;
+  --og-yellow: #f5a623;
+  --og-yellow-deep: #e0a52a;
+  --og-green: #2fbf71;
+  --og-blue: #3a7bd5;
+  --og-red: #ff3b30;
+  --og-orange: #ff8c42;
+  --og-radius: 6px;
+  --og-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  font-family: var(--og-font);
+  background: var(--og-bg);
+  color: var(--og-text);
+}
+
+.og-card {
+  border: 1px solid var(--og-line);
+  border-radius: var(--og-radius);
+  background: var(--og-panel);
+  padding: 16px;
+}
+
+.og-h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  line-height: 1.3;
+  letter-spacing: 0.1px;
+}
+
+.og-body {
+  margin: 0 0 12px;
+  color: var(--og-body);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.og-muted { color: var(--og-muted); }
+
+/* Accessible focus: visible 2px outline on all interactive elements. */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--og-yellow);
+  outline-offset: 2px;
+}
+
+/* Legend chips */
+.og-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--og-body);
+}
+.og-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* Empty states */
+.og-empty {
+  color: var(--og-muted);
+  font-size: 13px;
+  border: 1px dashed var(--og-line-soft);
+  border-radius: var(--og-radius);
+  padding: 10px 12px;
+  background: transparent;
+}
+
+/* Responsive panels: stack below 900px, side-by-side above. */
+.og-layout {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.og-main {
+  flex: 1 1 520px;
+  min-width: 300px;
+  border: 1px solid var(--og-line);
+  border-radius: var(--og-radius);
+  overflow: hidden;
+}
+.og-side {
+  flex: 1 1 280px;
+  min-width: 260px;
+  max-width: 420px;
+  border: 1px solid var(--og-line);
+  border-radius: var(--og-radius);
+  padding: 16px;
+  background: var(--og-panel);
+}
+@media (max-width: 900px) {
+  .og-side { max-width: none; }
+}

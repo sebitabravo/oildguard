@@ -52,7 +52,17 @@ export function oilCssFor(state: OilState): string {
 }
 
 /** Human band label for the readout panel. */
-export function oilStateLabel(state: OilState): string {
+export function oilStateLabel(state: OilState, lang: "en" | "es" = "en"): string {
+  if (lang === "es") {
+    switch (state) {
+      case "critical":
+        return "CRITICO (<30%)";
+      case "warning":
+        return "ADVERTENCIA (30–50%)";
+      case "normal":
+        return "NORMAL (≥50%)";
+    }
+  }
   switch (state) {
     case "critical":
       return "CRITICAL (<30%)";

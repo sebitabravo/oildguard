@@ -6,6 +6,7 @@
 
 import type { DashAlert } from "../sim/api";
 import type { RestWindow } from "../sim/signals";
+import { useLang } from "../i18n";
 
 export interface ChartPoint {
   t_s: number;
@@ -43,10 +44,12 @@ export default function LevelChart({
   windows,
   alerts,
 }: LevelChartProps) {
+  const [lang] = useLang();
+  const es = lang === "es";
   if (points.length === 0) {
     return (
       <p style={{ color: "#9fb0c9", fontSize: 13 }}>
-        No level samples yet — ingest rows or run the demo.
+        {es ? "Sin muestras de nivel — ingiere filas o ejecuta la demo." : "No level samples yet — ingest rows or run the demo."}
       </p>
     );
   }
@@ -100,10 +103,10 @@ export default function LevelChart({
       <line x1={PAD_L} x2={W - PAD_R} y1={y(WARN_L)} y2={y(WARN_L)} stroke="#f5a623" strokeDasharray="5 4" strokeWidth={1} />
       <line x1={PAD_L} x2={W - PAD_R} y1={y(CRIT_L)} y2={y(CRIT_L)} stroke="#ff3b30" strokeDasharray="5 4" strokeWidth={1} />
       <text x={W - PAD_R - 2} y={y(WARN_L) - 4} fill="#f5a623" fontSize={10} textAnchor="end">
-        warn 50% (47.5 L)
+        {es ? "aviso 50% (47.5 L)" : "warn 50% (47.5 L)"}
       </text>
       <text x={W - PAD_R - 2} y={y(CRIT_L) - 4} fill="#ff3b30" fontSize={10} textAnchor="end">
-        crit 30% (28.5 L)
+        {es ? "crit 30% (28.5 L)" : "crit 30% (28.5 L)"}
       </text>
       {/* confidence band */}
       <polygon points={`${bandTop} ${bandBottom}`} fill="#3a7bd5" opacity={0.22} />

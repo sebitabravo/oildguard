@@ -15,6 +15,8 @@ import type { RestWindow } from "../sim/signals";
 export const DEMO_MODEL = "synthetic-proxy";
 export const DEMO_LAB_NOTE =
   "LAB-ACCELERATED leak ~128.5 %/h x257 vs spec 0.5 %/h (~4.0 L over 120 s)";
+export const DEMO_LAB_NOTE_ES =
+  "Fuga LAB-ACELERADA ~128.5 %/h x257 vs espec 0.5 %/h (~4.0 L en 120 s)";
 
 export interface DemoPoint {
   t_s: number;

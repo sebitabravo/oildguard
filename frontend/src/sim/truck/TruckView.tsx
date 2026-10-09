@@ -4,35 +4,34 @@ import {
   HAUL_DURATIONS,
   HAUL_ORDER,
   HAUL_STATE_BLURB,
+  HAUL_STATE_BLURB_ES,
   HAUL_STATE_CSS,
+  TRUCK_CALLOUTS,
+  TRUCK_DIMS_M,
+  TRUCK_WEIGHTS_KG,
   isMovingState,
   isRecalState,
   type HaulState,
 } from "./cycle";
+import { useLang } from "../../i18n";
 
-// T4 truck view (Sim B, S2) + T5 modes/cameras polish: 930E open-pit
-// haul-cycle FSM with a state readout, wheel-speed narrative, and
-// recalibration-window panel. T5 adds moving/rest mode badges, camera
-// presets (in-scene), and pause + 1 s step. WAIT stays a moving state: it is
-// the empty return drive, so REST covers LOAD / DUMP only (documented).
+// Truck view: 930E-4SE fidelity panels (manual-faithful, display only).
+// Dimensions 15.29 x 8.89 x 8.10 m, body-up 14.80 m; weights; fluids footnote;
+// powertrain; brakes; cab; STOP/caution matrix; callouts 1-22 EN/ES.
 
 export default function TruckView() {
   const [current, setCurrent] = useState<HaulState>("LOAD");
   const [paused, setPaused] = useState(false);
   const [stepTick, setStepTick] = useState(0);
   const [runId, setRunId] = useState(0);
+  const [lang] = useLang();
 
   return (
     <div>
       <p style={{ margin: "0 0 16px", color: "#9fb0c9" }}>
-        S2 truck sim (T4+T5): a simplified 930E (GDY106, 32.62:1) loops LOAD (6 s) → HAUL
-        (12 s) → DUMP (6 s) → WAIT (5 s) around the pit. 980E-5 (GDY108-C) is future work without validation. Drag to orbit
-        (releases the camera preset to free), scroll to zoom, or pick a
-        preset (Pit / Cab / Side / Wheel) in the HUD panel. The truck glows
-        blue while MOVING and green at REST; the RECAL badge lights only
-        stopped + leveled + engine-on (LOAD / DUMP). The WAIT pad sits on
-        the return lane: the empty truck drives it back to the loader, so
-        WAIT counts as moving and recalibration stays gated until docking.
+        {lang === "es"
+          ? `Sim camion S2 (T4+T5): 930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, tolva arriba ${TRUCK_DIMS_M.bodyUp} m; ciclo CARGA 6 s → ACARREO 12 s → DESCARGA 6 s → ESPERA 5 s. 980E-5 (GDY108-C) es futuro sin validar. Arrastra para orbitar o elige preajuste (Foso/Cabina/Lateral/Rueda). Azul = EN MOVIMIENTO, verde = DETENIDO; RECAL solo detenido+nivelado+motor encendido.`
+          : `S2 truck sim (T4+T5): 930E-4SE ${TRUCK_DIMS_M.L}×${TRUCK_DIMS_M.W}×${TRUCK_DIMS_M.H} m, body-up ${TRUCK_DIMS_M.bodyUp} m; loop LOAD 6 s → HAUL 12 s → DUMP 6 s → WAIT 5 s. 980E-5 (GDY108-C) is future work without validation. Drag to orbit or pick a preset (Pit/Cab/Side/Wheel). Blue = MOVING, green = REST; RECAL only stopped+leveled+engine-on.`}
       </p>
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
         <div
@@ -70,15 +69,17 @@ export default function TruckView() {
                 fontWeight: 700,
               }}
             >
-              {paused ? "Resume cycle" : "Pause cycle"}
+              {paused
+                ? lang === "es" ? "Reanudar ciclo" : "Resume cycle"
+                : lang === "es" ? "Pausar ciclo" : "Pause cycle"}
             </button>
             <button
               type="button"
               disabled={!paused}
               title={
                 paused
-                  ? "Advance the FSM clock 1 s"
-                  : "Pause the cycle first, then step"
+                  ? lang === "es" ? "Avanzar 1 s" : "Advance the FSM clock 1 s"
+                  : lang === "es" ? "Pausa primero" : "Pause the cycle first, then step"
               }
               onClick={() => setStepTick((n) => n + 1)}
               style={{
@@ -107,7 +108,7 @@ export default function TruckView() {
                 fontWeight: 600,
               }}
             >
-              Restart (LOAD)
+              {lang === "es" ? "Reiniciar (CARGA)" : "Restart (LOAD)"}
             </button>
           </div>
         </div>
@@ -115,13 +116,15 @@ export default function TruckView() {
           style={{
             flex: "1 1 280px",
             minWidth: 260,
-            maxWidth: 380,
+            maxWidth: 420,
             border: "1px solid #2a3a55",
             padding: 16,
             background: "#111a2c",
           }}
         >
-          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>Haul cycle</h2>
+          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
+            {lang === "es" ? "Ciclo de acarreo" : "Haul cycle"}
+          </h2>
           <ul style={{ listStyle: "none", margin: "0 0 12px", padding: 0 }}>
             {HAUL_ORDER.map((s) => {
               const active = s === current;
@@ -149,11 +152,13 @@ export default function TruckView() {
                   />
                   <strong>
                     {s} · {HAUL_DURATIONS[s]} s ·{" "}
-                    {isMovingState(s) ? "moving" : "stopped"}
+                    {isMovingState(s)
+                      ? lang === "es" ? "en movimiento" : "moving"
+                      : lang === "es" ? "detenido" : "stopped"}
                   </strong>
                   <br />
                   <span style={{ color: "#9fb0c9", fontSize: 13 }}>
-                    {HAUL_STATE_BLURB[s]}
+                    {lang === "es" ? HAUL_STATE_BLURB_ES[s] : HAUL_STATE_BLURB[s]}
                   </span>
                   <br />
                   <span
@@ -163,40 +168,65 @@ export default function TruckView() {
                       color: isRecalState(s) ? "#2fbf71" : "#8b98ad",
                     }}
                   >
-                    {isRecalState(s) ? "RECAL window" : "recal gated"}
+                    {isRecalState(s)
+                      ? lang === "es" ? "Ventana RECAL" : "RECAL window"
+                      : lang === "es" ? "recal bloqueado" : "recal gated"}
                   </span>
                 </li>
               );
             })}
           </ul>
-          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>Wheel narrative</h2>
-          <p style={{ margin: "0 0 12px", color: "#c7d3e8", fontSize: 13 }}>
-            Rotor up to 3000 RPM, wheel ≈92 RPM through the 32.62:1
-            reduction. Canvas spin is illustrative (true speeds would alias
-            at 60 fps). The rear-axle wheel pair glows amber: the two GDY106
-            motorized units this project instruments.
-          </p>
           <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
-            Recalibration windows
+            {lang === "es" ? "930E-4SE dimensiones y pesos" : "930E-4SE dimensions & weights"}
           </h2>
           <p style={{ margin: "0 0 12px", color: "#c7d3e8", fontSize: 13 }}>
-            The HUD badge lights only when the truck is stopped + leveled +
-            engine on (LOAD at the loader, DUMP at the crusher — the chassis
-            never tilts, only the bed). HAUL and the WAIT return drive stay
-            gated. S3/T7 consumes the same stillness signal for move/rest
-            detection.
+            {lang === "es"
+              ? `Dimensiones ${TRUCK_DIMS_M.L} × ${TRUCK_DIMS_M.W} × ${TRUCK_DIMS_M.H} m; tolva arriba ${TRUCK_DIMS_M.bodyUp} m. Vacio ${TRUCK_WEIGHTS_KG.empty} kg (del ${TRUCK_WEIGHTS_KG.emptyF} / tras ${TRUCK_WEIGHTS_KG.emptyR}); cargado ${TRUCK_WEIGHTS_KG.loaded} kg (del ${TRUCK_WEIGHTS_KG.loadedF} / tras ${TRUCK_WEIGHTS_KG.loadedR}); util ${TRUCK_WEIGHTS_KG.payload} kg, ${TRUCK_WEIGHTS_KG.volumeM3} m3. Max ${TRUCK_WEIGHTS_KG.maxT} T (10% ${TRUCK_WEIGHTS_KG.maxT}-${TRUCK_WEIGHTS_KG.overloadT} T permitido, nunca sobre ${TRUCK_WEIGHTS_KG.overloadT} T).`
+              : `Envelope ${TRUCK_DIMS_M.L} × ${TRUCK_DIMS_M.W} × ${TRUCK_DIMS_M.H} m; body-up ${TRUCK_DIMS_M.bodyUp} m. Empty ${TRUCK_WEIGHTS_KG.empty} kg (F ${TRUCK_WEIGHTS_KG.emptyF} / R ${TRUCK_WEIGHTS_KG.emptyR}); loaded ${TRUCK_WEIGHTS_KG.loaded} kg (F ${TRUCK_WEIGHTS_KG.loadedF} / R ${TRUCK_WEIGHTS_KG.loadedR}); payload ${TRUCK_WEIGHTS_KG.payload} kg, ${TRUCK_WEIGHTS_KG.volumeM3} m3. Max ${TRUCK_WEIGHTS_KG.maxT} T (10% ${TRUCK_WEIGHTS_KG.maxT}-${TRUCK_WEIGHTS_KG.overloadT} T allowed, never above ${TRUCK_WEIGHTS_KG.overloadT} T).`}
           </p>
           <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
-            Modes + cameras (T5)
+            {lang === "es" ? "Fluidos (nota de conciliacion)" : "Fluids (reconciliation footnote)"}
           </h2>
-          <p style={{ margin: 0, color: "#c7d3e8", fontSize: 13 }}>
-            MOVING (blue: HAUL + WAIT return) vs REST (green: LOAD / DUMP)
-            follows the same live signal as the RECAL badge — WAIT is
-            honestly moving, so REST never claims a rolling truck. Camera
-            presets lerp position + target (Pit is static; Cab / Side /
-            Wheel track the truck); dragging releases to free orbit.
-            Pause freezes the FSM clock, Step advances it 1 s per press.
+          <p style={{ margin: "0 0 12px", color: "#9fb0c9", fontSize: 13 }}>
+            {lang === "es"
+              ? "Combustible 5299 L (INCAEX) vs 4542 L utilizable (OM); hidraulico 1324/1325 L; carter QSK78 340 L vs SSDA16V160 280 L; engranajes de propulsion 94 L c/u vs 76 L caja de rueda OM (definicion de compartimiento; se adopta 94 con nota OM). Las variantes difieren por definicion de compartimiento y utilizable vs nominal — ver thesis-annex."
+              : "Fuel 5299 L (INCAEX) vs 4542 L usable (OM); hydraulic 1324/1325 L; sump QSK78 340 L vs SSDA16V160 280 L; propulsion gears 94 L each vs OM wheel gearbox 76 L (compartment definition; adopt 94 with OM note). Variants differ by compartment definition and usable vs nominal — see thesis-annex."}
           </p>
+          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
+            {lang === "es" ? "Tren de potencia" : "Powertrain"}
+          </h2>
+          <p style={{ margin: "0 0 12px", color: "#c7d3e8", fontSize: 13 }}>
+            {lang === "es"
+              ? "QSK78 3500 HP @1900 (3429 volante; nota variante SSDA). GTA-39 AC→DC→AC por inversores/condensadores; soplador 453 m3/min; gabinete PCS/PLM/AID/VHMS/IM; motores MT de induccion AC; rejillas 5400 corto/3300 cont hp 0.7 s; caja del eje + Hydrair II del 12.92/tras 9.40 ±6.5°."
+              : "QSK78 3500 HP @1900 (3429 flywheel; SSDA variant note). GTA-39 AC→DC→AC via inverters/condensers; blower 453 m3/min; cabinet PCS/PLM/AID/VHMS/IM; MT AC induction motors; retard grids 5400 short/3300 cont hp 0.7 s; axle box + Hydrair II F12.92/R9.40 ±6.5deg."}
+          </p>
+          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
+            {lang === "es" ? "Frenos y cabina" : "Brakes & cab"}
+          </h2>
+          <p style={{ margin: "0 0 12px", color: "#c7d3e8", fontSize: 13 }}>
+            {lang === "es"
+              ? "Servicio <8 km/h todas las ruedas; bloqueo trasero a baja presion; estacionamiento por resorte/hidraulico trasero solo detenido; emergencia automatica. Cabina: RSC tortuga/liebre + interruptor amarillo, override, parada de emergencia, levante HOLD/FLOAT, VHMS captura+azul, enlace rojo, servicio motor azul, campos PLM. VHMS es solo lectura."
+              : "Service <8 km/h all wheels; rear lock at low pressure; spring/hydraulic parking rear stopped-only; emergency auto. Cab: RSC turtle/rabbit + yellow switch, override, e-stop, hoist HOLD/FLOAT, VHMS snapshot+blue, red link, blue engine service, PLM fields. VHMS is read-only."}
+          </p>
+          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
+            {lang === "es" ? "Matriz rojo-STOP vs ambar" : "Red-STOP vs amber-caution matrix"}
+          </h2>
+          <p style={{ margin: "0 0 12px", color: "#c7d3e8", fontSize: 13 }}>
+            <span style={{ color: "#ff3b30", fontWeight: 700 }}>STOP </span>
+            {lang === "es"
+              ? "rojo = detener de inmediato (falla critica, N4). Ambar = precaucion, planificar ventana (N1-N3). RUL suprimido = solo anomalias."
+              : "red = stop now (critical fault, N4). Amber = caution, plan a window (N1-N3). Suppressed RUL = anomaly-only."}
+          </p>
+          <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>
+            {lang === "es" ? "Vista superior 1-22" : "Top-view callouts 1-22"}
+          </h2>
+          <ol style={{ margin: "0 0 12px", paddingLeft: 20, color: "#c7d3e8", fontSize: 13 }}>
+            {TRUCK_CALLOUTS.map((c) => (
+              <li key={c.n} style={{ marginBottom: 2 }}>
+                <strong>{c.n}.</strong> {lang === "es" ? c.es : c.en}
+              </li>
+            ))}
+          </ol>
         </aside>
       </div>
     </div>
