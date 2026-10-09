@@ -5,7 +5,7 @@ import { Bin, xf } from "../truck930e/geom";
 import { S } from "../truck930e/spec";
 import { toWorld, frameHeading, createPitWorld, LANE, TURN_R, type PitWorld } from "./pitLayout";
 import { P, bermBaseM } from "./pitSpec";
-import { DOMAIN, stairHeight, type TerrainSample } from "./pitTerrain";
+import { DOMAIN, bermToeHeights, stairHeight, terrainMeshHeightAt, type TerrainSample } from "./pitTerrain";
 
 // Foso a cielo abierto como mallas de three.js a metros reales. La malla de terreno
 // sale de la misma función de altura que usa la ruta (pitTerrain), así que los
@@ -216,20 +216,35 @@ function buildBerms(world: PitWorld, mats: MaterialLibrary, ownMaterials: THREE.
   const height = P.berm.height;
 
   // Estaciones a lo largo del eje, solo sobre la rampa y su curva de pie.
-  const stations: Array<{ x: number; z: number; h: number; rx: number; rz: number }> = [];
+  const stations: Array<{ x: number; z: number; h: number; rx: number; rz: number; breakBefore: boolean }> = [];
   let acc = 0;
+  let breakNext = false;
   for (let i = 1; i < center.length - 1; i++) {
     const a = center[i - 1];
     const b = center[i + 1];
     acc += Math.hypot(center[i].x - a.x, center[i].z - a.z);
     if (acc < stepM) continue;
     acc = 0;
-    if (center[i].h > -0.2 && center[i].h < 0.05) continue;
-    if (center[i].h > 0.05) continue;
+    if (center[i].h > -0.2 && center[i].h < 0.05) {
+      breakNext = true;
+      continue;
+    }
+    if (center[i].h > 0.05) {
+      breakNext = true;
+      continue;
+    }
     const tx = b.x - a.x;
     const tz = b.z - a.z;
     const n = Math.hypot(tx, tz) || 1;
-    stations.push({ x: center[i].x, z: center[i].z, h: center[i].h, rx: -tz / n, rz: tx / n });
+    stations.push({
+      x: center[i].x,
+      z: center[i].z,
+      h: center[i].h,
+      rx: -tz / n,
+      rz: tx / n,
+      breakBefore: breakNext,
+    });
+    breakNext = false;
   }
 
   const open: Array<[number, number]> = stations.map((st) =>
@@ -271,12 +286,15 @@ function buildBerms(world: PitWorld, mats: MaterialLibrary, ownMaterials: THREE.
       const inner = [st.x + st.rx * side * (crest - baseHalf), st.z + st.rz * side * (crest - baseHalf)];
       const outer = [st.x + st.rx * side * (crest + baseHalf), st.z + st.rz * side * (crest + baseHalf)];
       const h0 = st.h;
+      const renderedGround = terrainMeshHeightAt(outer[0], outer[1], terrain.heightAt);
+      const toe = bermToeHeights(renderedGround);
       // Sección: pie interior, cresta, pie exterior y zócalo enterrado.
-      positions.push(inner[0], h0 + 0.02, inner[1], cx, h0 + height * f, cz, outer[0], h0 - 0.2, outer[1], outer[0], h0 - 3, outer[1]);
-      if (i > 0 && prevValid === i - 1) dist += stepM;
+      positions.push(inner[0], h0 + 0.02, inner[1], cx, h0 + height * f, cz, outer[0], toe.exposed, outer[1], outer[0], toe.buried, outer[1]);
+      const connectToPrevious = i > 0 && prevValid === i - 1 && !st.breakBefore;
+      if (connectToPrevious) dist += stepM;
       const u = dist / 18;
       uvs.push(u, 0, u, 0.5, u, 1, u, 1.4);
-      if (prevValid === i - 1) {
+      if (connectToPrevious) {
         const p = base - 4;
         const q = base;
         // Orden de caras según el lado para que las normales apunten hacia arriba.
@@ -509,8 +527,6 @@ export function buildPit(mats: MaterialLibrary, world: PitWorld = createPitWorld
   const terrain = buildTerrainMesh(world, mats, ownMaterials);
   group.add(terrain.mesh);
   const berms = buildBerms(world, mats, ownMaterials);
-  // The berm's projected edge creates a stray black line across the pit in the overview camera.
-  berms.visible = false;
   group.add(berms);
   group.add(buildCenterDashes(world, ownMaterials));
   const crusher = buildCrusher(world, ownMaterials, ownGeometries);

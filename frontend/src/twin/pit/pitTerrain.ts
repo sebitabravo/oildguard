@@ -46,6 +46,44 @@ const smooth01 = (t: number): number => {
   return c * c * (3 - 2 * c);
 };
 
+/** Terrain-relative heights for the berm's slightly embedded toe and buried base. */
+export function bermToeHeights(terrainHeightM: number): { exposed: number; buried: number } {
+  const epsilonM = 0.03;
+  const embedDepthM = 1.0;
+  return {
+    exposed: terrainHeightM - epsilonM,
+    buried: terrainHeightM - embedDepthM,
+  };
+}
+
+/** Height on the rendered 2 m triangle grid, matching buildPit's alternating diagonals. */
+export function terrainMeshHeightAt(x: number, z: number, heightAt: (x: number, z: number) => number): number {
+  const cellM = 2;
+  const nx = Math.round((DOMAIN.maxX - DOMAIN.minX) / cellM);
+  const nz = Math.round((DOMAIN.maxZ - DOMAIN.minZ) / cellM);
+  const gx = Math.min(nx, Math.max(0, (x - DOMAIN.minX) / cellM));
+  const gz = Math.min(nz, Math.max(0, (z - DOMAIN.minZ) / cellM));
+  const i = Math.min(nx - 1, Math.floor(gx));
+  const j = Math.min(nz - 1, Math.floor(gz));
+  const u = gx - i;
+  const v = gz - j;
+  const x0 = DOMAIN.minX + i * cellM;
+  const z0 = DOMAIN.minZ + j * cellM;
+  const a = heightAt(x0, z0);
+  const b = heightAt(x0 + cellM, z0);
+  const d = heightAt(x0, z0 + cellM);
+  const e = heightAt(x0 + cellM, z0 + cellM);
+
+  if ((i + j) % 2 === 0) {
+    return u + v <= 1
+      ? a * (1 - u - v) + d * v + b * u
+      : b * (1 - v) + d * (1 - u) + e * (u + v - 1);
+  }
+  return v >= u
+    ? a * (1 - v) + d * (v - u) + e * u
+    : a * (1 - u) + e * v + b * (u - v);
+}
+
 /** Escalera de bancos: cara inclinada y banco de captura plano. d en metros de planta. */
 export function stairHeight(d: number): number {
   const H = P.bench.height;
