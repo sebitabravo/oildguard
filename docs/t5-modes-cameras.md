@@ -1,3 +1,5 @@
+> **Historical (oilguard-mining-sim, pre-Astro). Current behavior: see [docs/demo-script.md](demo-script.md) and [frontend/README.md](../frontend/README.md).**
+
 # T5 — Moving/rest modes + camera/UX polish (Sim B, S2)
 
 T5 polishes the T4 truck scene without rewriting it: mode coloring + HUD,

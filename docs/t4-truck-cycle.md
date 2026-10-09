@@ -1,3 +1,5 @@
+> **Historical (oilguard-mining-sim, pre-Astro). Current behavior: see [docs/demo-script.md](demo-script.md) and [frontend/README.md](../frontend/README.md).**
+
 # T4 — 930E truck + open-pit haul-cycle FSM (Sim B, S2)
 
 Simplified 930E (chassis + cab + tiltable dump bed + 6 cylinder wheels, the

@@ -1,3 +1,5 @@
+> **Historical (oilguard-mining-sim, pre-Astro). Current behavior: see [docs/demo-script.md](demo-script.md) and [frontend/README.md](../frontend/README.md).**
+
 # T3 — Wheel internals + oil + settling (Sim A, part 2 of 2)
 
 Cutaway GDY106 housing on the S1 bench rig: simplified sun gear, three
