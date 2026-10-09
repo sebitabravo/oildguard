@@ -1,7 +1,7 @@
 ---
 import "../theme.css";
 import { t, type DictKey } from "../i18n";
-import { pathFromHash, type Section } from "../routes";
+import type { Section } from "../routes";
 
 interface Props {
   section: Section;
@@ -29,8 +29,8 @@ const navigation: Array<{ id: Section; label: DictKey; href: string }> = [
         <div class="og-brand">
           <div class="og-brand__mark" aria-hidden="true">OG</div>
           <div>
-            <div class="og-brand__name" data-i18n-en="OilGuard Mining" data-i18n-es="OilGuard Mining">OilGuard Mining</div>
-            <div class="og-brand__tag" data-i18n-en="Digital twin · Komatsu 930E-4SE · GDY106" data-i18n-es="Gemelo digital · Komatsu 930E-4SE · GDY106">Digital twin · Komatsu 930E-4SE · GDY106</div>
+            <div class="og-brand__name" data-i18n-en={t("app.brand", "en")} data-i18n-es={t("app.brand", "es")}>{t("app.brand", "en")}</div>
+            <div class="og-brand__tag" data-i18n-en={t("app.tagline", "en")} data-i18n-es={t("app.tagline", "es")}>{t("app.tagline", "en")}</div>
           </div>
         </div>
         <nav class="og-nav" aria-label={t("nav.label", "en")} data-i18n-en={t("nav.label", "en")} data-i18n-es={t("nav.label", "es")}>
@@ -55,7 +55,7 @@ const navigation: Array<{ id: Section; label: DictKey; href: string }> = [
       <main class="og-content"><slot /></main>
     </div>
     <script>
-      import { pathFromHash } from "../routes";
+      import { isLegacyHash, pathFromHash } from "../routes";
 
       const languageKey = "oilguard-lang";
       const readLanguage = () => {
@@ -98,7 +98,7 @@ const navigation: Array<{ id: Section; label: DictKey; href: string }> = [
       updateLanguage(readLanguage());
 
       const redirectLegacyHash = () => {
-        if (!window.location.hash) return;
+        if (!isLegacyHash(window.location.hash)) return;
         const target = pathFromHash(window.location.hash, window.location.search);
         if (`${window.location.pathname}${window.location.search}` !== target) {
           window.location.replace(target);

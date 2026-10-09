@@ -1,5 +1,28 @@
 import { describe, expect, test } from "bun:test";
-import { modeFromHash, pathFromHash } from "./routes";
+import { isLegacyHash, modeFromHash, pathFromHash } from "./routes";
+
+describe("isLegacyHash", () => {
+  test("recognizes section aliases and legacy prefixes", () => {
+    for (const hash of [
+      "#mine",
+      "#truck",
+      "#wheel",
+      "#bench",
+      "#monitoring",
+      "#monitoring-details",
+      "#dash",
+      "#dash-demo-test",
+    ]) {
+      expect(isLegacyHash(hash)).toBe(true);
+    }
+  });
+
+  test("does not redirect unknown anchors", () => {
+    for (const hash of ["", "#foo", "#section-2", "#stub"]) {
+      expect(isLegacyHash(hash)).toBe(false);
+    }
+  });
+});
 
 describe("modeFromHash", () => {
   test("canonical hashes", () => {

@@ -2,6 +2,17 @@
 
 export type Section = "mine" | "wheel" | "monitoring";
 
+export function isLegacyHash(hash: string): boolean {
+  return (
+    hash === "#mine" ||
+    hash === "#truck" ||
+    hash === "#wheel" ||
+    hash === "#bench" ||
+    hash.startsWith("#monitoring") ||
+    hash.startsWith("#dash")
+  );
+}
+
 export function modeFromHash(hash: string): Section {
   if (hash.startsWith("#monitoring") || hash.startsWith("#dash")) return "monitoring";
   if (hash === "#mine" || hash === "#truck") return "mine";
