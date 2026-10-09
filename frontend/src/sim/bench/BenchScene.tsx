@@ -535,7 +535,9 @@ export default function BenchScene({
       const label = createLabel({
         text: t(`bench.sensor.${sensor.id}.short` as DictKey, langRef.current),
         color: sensor.cssColor,
+        className: "og-label--sensor",
       });
+      label.element.querySelector(".og-label__pill")?.setAttribute("data-identity", sensor.identityCue);
       label.center.set(0, 0.5);
       label.element.style.marginLeft = "14px";
       label.element.style.marginTop = `${LABEL_DY[sensor.id] ?? 0}px`;

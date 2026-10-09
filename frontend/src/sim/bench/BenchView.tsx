@@ -194,12 +194,11 @@ export default function BenchView() {
             <li key={sensor.id} style={{ marginBottom: 8 }}>
               <button
                 type="button"
-                className={`og-card og-card--tone${active ? " og-card--active" : ""}`}
-                style={{ ["--tone" as string]: active ? sensor.cssColor : undefined }}
+                className={`og-card og-card--sensor${active ? " og-card--sensor-active" : ""}`}
                 aria-pressed={active}
                 onClick={() => setSelectedId(active ? null : sensor.id)}
               >
-                <span className="og-dot" style={{ ["--tone" as string]: sensor.cssColor, marginRight: 8 }} />
+                <span className="og-sensor-id" aria-hidden="true">{sensor.identityCue}</span>
                 <strong>{t(`bench.sensor.${sensor.id}.label` as DictKey, lang)}</strong>
                 <br />
                 <span className="og-muted" style={{ fontSize: 13 }}>
