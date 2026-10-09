@@ -89,15 +89,19 @@ input:focus-visible,
 
 .og-nav { display: flex; gap: 4px; margin-left: 8px; }
 .og-nav__item {
+  display: flex;
+  align-items: center;
   cursor: pointer;
   height: 36px;
   padding: 0 16px;
   border-radius: 8px;
   border: 1px solid transparent;
   background: transparent;
+  font-family: inherit;
   color: var(--og-muted);
   font-size: 14px;
   font-weight: 600;
+  text-decoration: none;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .og-nav__item:hover { color: var(--og-text); background: rgba(255, 255, 255, 0.05); }

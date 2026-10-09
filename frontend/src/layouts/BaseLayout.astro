@@ -1,3 +1,20 @@
+---
+import "../theme.css";
+import { t, type DictKey } from "../i18n";
+import { pathFromHash, type Section } from "../routes";
+
+interface Props {
+  section: Section;
+}
+
+const { section } = Astro.props;
+const navigation: Array<{ id: Section; label: DictKey; href: string }> = [
+  { id: "mine", label: "nav.mine", href: "/mine" },
+  { id: "wheel", label: "nav.wheel", href: "/wheel" },
+  { id: "monitoring", label: "nav.monitoring", href: "/monitoring" },
+];
+---
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -7,6 +24,91 @@
     <title>OilGuard Mining — Digital twin</title>
   </head>
   <body>
-    <slot />
+    <div class="og-app">
+      <header class="og-top">
+        <div class="og-brand">
+          <div class="og-brand__mark" aria-hidden="true">OG</div>
+          <div>
+            <div class="og-brand__name" data-i18n-en="OilGuard Mining" data-i18n-es="OilGuard Mining">OilGuard Mining</div>
+            <div class="og-brand__tag" data-i18n-en="Digital twin · Komatsu 930E-4SE · GDY106" data-i18n-es="Gemelo digital · Komatsu 930E-4SE · GDY106">Digital twin · Komatsu 930E-4SE · GDY106</div>
+          </div>
+        </div>
+        <nav class="og-nav" aria-label={t("nav.label", "en")} data-i18n-en={t("nav.label", "en")} data-i18n-es={t("nav.label", "es")}>
+          {navigation.map((item) => (
+            <a
+              class="og-nav__item"
+              href={item.href}
+              aria-current={section === item.id ? "page" : undefined}
+              data-i18n-en={t(item.label, "en")}
+              data-i18n-es={t(item.label, "es")}
+            >
+              {t(item.label, "en")}
+            </a>
+          ))}
+        </nav>
+        <div class="og-top__spacer"></div>
+        <div class="og-seg" role="group" aria-label={t("lang.label", "en")} data-i18n-en={t("lang.label", "en")} data-i18n-es={t("lang.label", "es")}>
+          <button type="button" class="og-seg__btn" data-lang="en" aria-pressed="true">EN</button>
+          <button type="button" class="og-seg__btn" data-lang="es" aria-pressed="false">ES</button>
+        </div>
+      </header>
+      <main class="og-content"><slot /></main>
+    </div>
+    <script>
+      import { pathFromHash } from "../routes";
+
+      const languageKey = "oilguard-lang";
+      const readLanguage = () => {
+        try {
+          return localStorage.getItem(languageKey) === "es" ? "es" : "en";
+        } catch {
+          return "en";
+        }
+      };
+
+      const updateLanguage = (language: "en" | "es") => {
+        document.documentElement.lang = language;
+        document.querySelectorAll<HTMLElement>("[data-i18n-en]").forEach((element) => {
+          element.textContent = element.dataset[`i18n${language === "en" ? "En" : "Es"}`] ?? "";
+        });
+        document.querySelectorAll<HTMLButtonElement>("[data-lang]").forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset.lang === language));
+        });
+      };
+
+      document.querySelectorAll<HTMLButtonElement>("[data-lang]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const language = button.dataset.lang === "es" ? "es" : "en";
+          try {
+            localStorage.setItem(languageKey, language);
+          } catch {
+            // El almacenamiento puede no estar disponible en algunos contextos.
+          }
+          window.dispatchEvent(new CustomEvent("oilguard:lang", { detail: language }));
+        });
+      });
+
+      window.addEventListener("oilguard:lang", (event) => {
+        const language = (event as CustomEvent<unknown>).detail;
+        if (language === "en" || language === "es") updateLanguage(language);
+      });
+      window.addEventListener("storage", (event) => {
+        if (event.key === languageKey) updateLanguage(readLanguage());
+      });
+      updateLanguage(readLanguage());
+
+      const redirectLegacyHash = () => {
+        if (!window.location.hash) return;
+        const target = pathFromHash(window.location.hash, window.location.search);
+        if (`${window.location.pathname}${window.location.search}` !== target) {
+          window.location.replace(target);
+          return;
+        }
+        window.history.replaceState(null, "", target);
+      };
+
+      redirectLegacyHash();
+      window.addEventListener("hashchange", redirectLegacyHash);
+    </script>
   </body>
 </html>

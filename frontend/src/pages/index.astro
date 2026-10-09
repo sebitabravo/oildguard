@@ -1,8 +1,8 @@
 ---
-import App from "../App";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import BenchView from "../sim/bench/BenchView";
 ---
 
-<BaseLayout>
-  <App client:only="preact" />
+<BaseLayout section="wheel">
+  <BenchView client:only="preact" />
 </BaseLayout>

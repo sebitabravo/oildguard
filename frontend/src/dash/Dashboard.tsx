@@ -114,8 +114,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     void fetchAll();
-    // Screenshot/judge helper: #dash-demo opens with the demo running.
-    if (/^#(dash|monitoring)-demo/.test(window.location.hash)) {
+    // El parámetro demo=1 inicia la demostración al abrir Monitoreo.
+    if (new URLSearchParams(window.location.search).get("demo") === "1") {
       setDemoTick(0);
       setDemoStage("clean");
     }

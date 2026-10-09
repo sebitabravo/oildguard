@@ -1,0 +1,8 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Dashboard from "../dash/Dashboard";
+---
+
+<BaseLayout section="monitoring">
+  <Dashboard client:only="preact" />
+</BaseLayout>
