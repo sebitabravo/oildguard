@@ -19,11 +19,12 @@ docker compose config --quiet && echo COMPOSE_OK
 ## 1. Stack up (90 s)
 
 ```bash
-docker compose up --build
+docker compose up -d --build -V frontend
 ```
 
 Wait for `oilguard-backend` healthy (`GET localhost:8000/health` →
-`status: ok`). Frontend: http://localhost:5173 (default tab Bench).
+`status: ok`). Frontend pages are `/mine`, `/wheel`, and `/monitoring` at
+http://localhost:5173.
 
 ## 2. Ingest the leak timeline (30 s)
 
@@ -72,21 +73,18 @@ curl -s localhost:8000/alerts | python3 -c "import json,sys; d=json.load(sys.std
 curl -s localhost:8000/rul | head -c 400
 ```
 
-## 3. Tab tour: Stub → Bench → Truck → Dash (60 s)
+## 3. Page tour: Mine → Wheel → Monitoring (60 s)
 
-Open http://localhost:5173. Tabs in order (deep-links `#stub`, `#bench`,
-`#truck`, `#dash`):
+Open the three Astro pages from the shared header or directly:
 
-- **Stub (10 s):** S0 skeleton intact — backend health + API contract pointer.
-  Proves the slice grew without breaking the scaffold.
-- **Bench (15 s):** rig + GDY106 cutaway, 95 L slab (green ≥50% / amber /
-  red), Move/Rest toggle → settling wobble + RECAL badge; 4 sensor markers
-  (pressure T-adapter, temp mag-plug, vibration pinion-cover, Hall clamp).
-- **Truck (15 s):** 930E (GDY106) loop LOAD 6 s → HAUL 12 s → DUMP 6 s → WAIT 5 s;
+- **`/mine` (15 s):** 930E (GDY106) loop LOAD 6 s → HAUL 12 s → DUMP 6 s → WAIT 5 s;
   MOVING (blue, HAUL/WAIT) vs REST (green, LOAD/DUMP) + RECAL badge;
   camera presets Pit/Cab/Side/Wheel, Pause + Step.
-- **Dash (20 s):** continue below (LIVE backend if §2 ingested, else DEMO
-  badge — still demoable, badge says so honestly). In the Dash tab:
+- **`/wheel` (15 s):** rig + GDY106 cutaway, 95 L slab (green ≥50% / amber /
+  red), Move/Rest toggle → settling wobble + RECAL badge; 4 sensor markers
+  (pressure T-adapter, temp mag-plug, vibration pinion-cover, Hall clamp).
+- **`/monitoring` (30 s):** LIVE backend if §2 ingested, else DEMO badge;
+  continue with the dashboard checks below.
 
 - Badge reads **LIVE · backend** (else DEMO fallback — still demoable,
   badge says so honestly).
@@ -99,7 +97,7 @@ Open http://localhost:5173. Tabs in order (deep-links `#stub`, `#bench`,
 
 ## 4. One-click demo, no backend needed (30 s)
 
-In the Dash tab click **Run leak demo (clean → N4)**:
+On `/monitoring`, click **Run leak demo (clean → N4)**:
 
 1. `clean` (5 s): 95 L flat, no alerts, RUL suppressed anomaly-only.
 2. `slow-leak` (15 s, LAB-ACCELERATED ~128.5 %/h x257 vs spec 0.5 %/h):
@@ -107,15 +105,15 @@ In the Dash tab click **Run leak demo (clean → N4)**:
 3. `abrupt-drop` (6 s): 15 L step to ~80 L, **N4 critical** fires.
 4. `done`: full walk N1 → N2 → N3 → N4 held; **Reset demo** to rerun.
 
-The Bench tab oil fill follows the same stages (demo bus event
-`oilguard:demo-oil`): switch to Bench mid-demo to see the slab drain
-green → amber and the RECAL badge. T3 sliders still work standalone.
+The wheel simulation is a separate page with its own controls; the dashboard
+demo event does not cross Astro page boundaries. Its sliders remain available
+on `/wheel`.
 
-Total judge path: ~4 min (up 90 s + ingest 30 s + tab tour 60 s + demo 30 s).
+Total judge path: ~4 min (up 90 s + ingest 30 s + page tour 60 s + demo 30 s).
 
 ## 5. What to screenshot
 
-`docs/screenshots/t11-dashboard.png` — Dash tab mid-demo (slow-leak,
+`docs/screenshots/t11-dashboard.png` — `/monitoring` mid-demo (slow-leak,
 N1/N2/N3 visible, LAB label in frame). This repo's copy was rendered
 from the local dev server (see Evidence Log T11).
 Fidelity pass: `docs/screenshots/fidelity-en.png` + `docs/screenshots/fidelity-es.png`
@@ -123,11 +121,11 @@ Fidelity pass: `docs/screenshots/fidelity-en.png` + `docs/screenshots/fidelity-e
 
 ## 6. Guia rapida en espanol (bilingue autorizado)
 
-1. `docker compose up --build`; frontend http://localhost:5173.
-2. Pestanas: Banco / Camion / Tablero / Base; interruptor EN/ES arriba (persiste en localStorage).
-3. Banco: cadena GDY106 Fig.95 + items 56/41/39-36/cable; pasos 1-11 en el panel y docs/inspection.md.
-4. Camion: 15.29×8.89×8.10 m, tolva arriba 14.80 m; pesos y fluidos en el panel; llamados 1-22.
-5. Tablero: Ejecutar demo de fuga (limpio → N4); nota SUSTITUTO SINTETICO en ambos idiomas.
+1. Start Compose with `docker compose up -d --build -V frontend`.
+2. Open `/wheel`, `/mine`, and `/monitoring` at http://localhost:5173; EN/ES persists in localStorage.
+3. `/wheel`: GDY106 Fig.95 chain and steps 1–11; see `docs/inspection.md`.
+4. `/mine`: 930E-4SE dimensions, weights, fluids, and callouts 1–22.
+5. `/monitoring`: run the leak demo (clean → N4); the synthetic-proxy note is bilingual.
 
 ## Honesty notes
 

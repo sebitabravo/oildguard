@@ -6,8 +6,8 @@ a damped-sine settling transient.
 
 ## Drive it
 
-1. `cd frontend && npm install && npm run dev` → http://localhost:5173
-   (Bench tab; Stub tab from S0 still works).
+1. Run `cd frontend && bun install && bun run dev`, then open
+   http://localhost:5173/wheel. The shared header links to the other pages.
 2. Oil slider (0–100%): fill height + color follow the bands —
    green ≥50%, amber 30–50% (warning), red <30% (critical). Liters + %
    shown on the in-scene chip and the readout panel.

@@ -5,8 +5,8 @@ camera presets, and pause/step controls. The FSM (`cycle.ts`) is untouched.
 
 ## Drive it
 
-1. `cd frontend && npm install && npm run dev` → http://localhost:5173/#truck
-   (Bench and Stub tabs still work).
+1. Run `cd frontend && bun install && bun run dev`, then open
+   http://localhost:5173/mine. The shared header links to the other pages.
 2. Watch the truck glow blue (MOVING: HAUL + WAIT return) and green (REST:
    LOAD / DUMP); the HUD badge and the 930E tag track the same signal.
 3. Pick camera presets in the HUD panel: Pit overview (static), Cab / Side /

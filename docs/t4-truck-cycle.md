@@ -7,8 +7,8 @@ segment with four colored ground pads + labels.
 
 ## Drive it
 
-1. `cd frontend && npm install && npm run dev` → http://localhost:5173/#truck
-   (Bench and Stub tabs still work).
+1. Run `cd frontend && bun install && bun run dev`, then open
+   http://localhost:5173/mine. The shared header links to the other pages.
 2. Watch one 29 s loop: the truck holds at LOAD (RECALIBRATING badge),
    drives the loaded lane to DUMP, holds + tilts the bed, then returns on
    the WAIT queue lane. Pause / Restart buttons sit under the canvas.
