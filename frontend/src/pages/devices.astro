@@ -1,0 +1,7 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import DeviceInventoryPage from "../platform/devices/DeviceInventoryPage";
+---
+<BaseLayout breadcrumb={["nav.group.platform", "nav.devices"]}>
+  <DeviceInventoryPage client:only="preact" />
+</BaseLayout>

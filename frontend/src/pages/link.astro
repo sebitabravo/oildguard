@@ -1,0 +1,7 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import LinkHealthPage from "../platform/link/LinkHealthPage";
+---
+<BaseLayout breadcrumb={["nav.group.platform", "nav.link"]}>
+  <LinkHealthPage client:only="preact" />
+</BaseLayout>
