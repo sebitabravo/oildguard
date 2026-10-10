@@ -539,9 +539,9 @@ button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og
 }
 @media (max-width: 900px) {
   .og-top {
-    flex-basis: 96px;
-    height: 96px;
-    min-height: 96px;
+    flex-basis: 108px;
+    height: 108px;
+    min-height: 108px;
     flex-wrap: wrap;
     align-content: center;
     justify-content: space-between;
@@ -556,7 +556,8 @@ button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og
     flex: 1 1 100%;
     width: 100%;
     min-width: 0;
-    height: 36px;
+    height: 44px;
+    min-height: 44px;
     margin: 0;
     overflow-x: auto;
     overflow-y: hidden;
@@ -564,9 +565,71 @@ button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og
     scrollbar-width: none;
   }
   .og-nav::-webkit-scrollbar { display: none; }
-  .og-nav__item { flex: 0 0 auto; padding: 0 12px; }
+  .og-nav__item { flex: 0 0 auto; min-height: 44px; padding: 0 12px; }
   .og-top__spacer { display: none; }
   .og-seg { order: 1; flex: 0 0 auto; }
+  button, [role="tab"], label {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .og-seg__btn, .og-seg--sm .og-seg__btn {
+    min-width: 44px;
+    min-height: 44px;
+    height: 44px;
+    padding-inline: 10px;
+  }
+  .og-btn--sm { min-height: 44px; height: 44px; }
+  .og-icon-btn { min-width: 44px; min-height: 44px; width: 44px; height: 44px; }
+  .og-drawer__tab { min-height: 44px; height: 44px; }
+  .og-field input[type="range"] { min-width: 44px; min-height: 44px; height: 44px; }
+  .og-check { gap: 8px; }
+  .og-check input[type="checkbox"] {
+    appearance: none;
+    position: relative;
+    display: grid;
+    flex: 0 0 44px;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+  }
+  .og-check input[type="checkbox"]::before {
+    content: "";
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--og-line-strong);
+    border-radius: 3px;
+    background: var(--og-panel-inset);
+  }
+  .og-check input[type="checkbox"]:checked::before {
+    border-color: var(--og-yellow);
+    background: var(--og-yellow);
+  }
+  .og-check input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    width: 8px;
+    height: 4px;
+    border-left: 2px solid var(--og-panel-inset);
+    border-bottom: 2px solid var(--og-panel-inset);
+    transform: translateY(-1px) rotate(-45deg);
+  }
+  .og-check input[type="checkbox"]:focus-visible::before {
+    outline: 2px solid var(--og-yellow);
+    outline-offset: 2px;
+  }
+  .og-nav__item, .og-fleet-link, a.og-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
   .og-hud--tl { width: calc(100% - 28px) !important; }
   .og-scene--wheel .og-stack--tr { display: none; }
   .og-scene--wheel .og-label--sensor .og-label__pill {
