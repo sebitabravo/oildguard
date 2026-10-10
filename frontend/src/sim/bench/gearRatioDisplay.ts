@@ -1,5 +1,6 @@
 import { GEAR_RATIO, GDY106_TRAIN, stageRatio } from "../../twin/physics";
 import type { DictParams, Lang } from "../../i18n";
+import { formatNumber } from "../../i18n/numberFormat";
 
 export type GearRatioDisplay = DictParams & {
   highSpeed: string;
@@ -8,21 +9,9 @@ export type GearRatioDisplay = DictParams & {
 };
 
 export function buildGearRatioDisplay(lang: Lang): GearRatioDisplay {
-  const locale = lang === "es" ? "es-ES" : "en-US";
-  const stageFormatter = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-    useGrouping: false,
-  });
-  const totalFormatter = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-    useGrouping: false,
-  });
-
   return {
-    highSpeed: stageFormatter.format(stageRatio(GDY106_TRAIN.hs)),
-    lowSpeed: stageFormatter.format(stageRatio(GDY106_TRAIN.ls)),
-    overall: totalFormatter.format(GEAR_RATIO),
+    highSpeed: formatNumber(stageRatio(GDY106_TRAIN.hs), lang, 3),
+    lowSpeed: formatNumber(stageRatio(GDY106_TRAIN.ls), lang, 3),
+    overall: formatNumber(GEAR_RATIO, lang, 2),
   };
 }

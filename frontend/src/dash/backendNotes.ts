@@ -1,4 +1,5 @@
 import { dict, t, type DictKey, type DictParams, type Lang } from "../i18n";
+import { formatNumber } from "../i18n/numberFormat";
 
 export interface StructuredBackendMessage {
   code: string;
@@ -43,9 +44,11 @@ function formatMessageValue(value: unknown, lang: Lang): string {
     return value.map((part) => formatMessageValue(part, lang)).join("+");
   }
   if (typeof value === "number" && Number.isFinite(value)) {
-    return new Intl.NumberFormat(lang === "es" ? "es-CL" : "en-US", {
-      maximumFractionDigits: 6,
-    }).format(value);
+    const formatted = formatNumber(value, lang, 6);
+    const separator = lang === "es" ? "," : ".";
+    const [integer, fraction] = formatted.split(separator);
+    const trimmedFraction = fraction?.replace(/0+$/, "");
+    return trimmedFraction ? `${integer}${separator}${trimmedFraction}` : integer;
   }
   return String(value ?? "");
 }

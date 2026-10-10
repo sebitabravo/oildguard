@@ -19,6 +19,7 @@ import { CAPACITY_L } from "../../twin/physics";
 import { parseWheelUrl } from "./wheelUrl";
 import { buildGearRatioDisplay } from "./gearRatioDisplay";
 import { t, type DictKey, useLang } from "../../i18n";
+import { formatNumber } from "../../i18n/numberFormat";
 import Drawer from "../../ui/Drawer";
 import HonestyBadge from "../../ui/HonestyBadge";
 
@@ -60,18 +61,12 @@ export default function BenchView() {
   const frac = clamp01(oilPct / 100);
   const oilState = oilStateFor(frac);
   const oilCss = oilCssFor(oilState);
-  const oilLitresText = new Intl.NumberFormat(lang, {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  }).format(frac * CAPACITY_L);
+  const oilLitresText = formatNumber(frac * CAPACITY_L, lang, 1);
   const oilValueText = t("bench.field.oilValueText", lang, {
     litres: oilLitresText,
     percent: oilPct,
   });
-  const viscosityValue = new Intl.NumberFormat(lang, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(viscosity);
+  const viscosityValue = formatNumber(viscosity, lang, 2);
   const viscosityStateKey = viscosity < 0.8
     ? "bench.viscosity.state.dilute"
     : viscosity < 1.5
@@ -91,7 +86,7 @@ export default function BenchView() {
       <label className="og-field">
         <span className="og-field__label">
           <span>{t("bench.field.oil", lang)}</span>
-          <span className="og-num" style={{ color: oilCss }}>{formatOilText(frac)}</span>
+          <span className="og-num" style={{ color: oilCss }}>{formatOilText(frac, lang)}</span>
         </span>
         <input
           type="range"
@@ -107,7 +102,7 @@ export default function BenchView() {
       <label className="og-field">
         <span className="og-field__label">
           <span>{t("bench.field.viscosity", lang)}</span>
-          <span className="og-num">{viscosity.toFixed(2)} ({viscosityLabel(viscosity, lang)})</span>
+          <span className="og-num">{formatNumber(viscosity, lang, 2)} ({viscosityLabel(viscosity, lang)})</span>
         </span>
         <input
           type="range"
@@ -156,15 +151,15 @@ export default function BenchView() {
       )}
       <div className="og-card og-card--tone" style={{ ["--tone" as string]: oilCss }}>
         <div className="og-value og-value--lg" style={{ color: oilCss }}>
-          {formatOilText(frac)}
+          {formatOilText(frac, lang)}
         </div>
         <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
           {oilStateLabel(oilState, lang)} · {t("wheel.reference", lang)}
         </div>
         <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
           {t("bench.readout.settling", lang, {
-            milliseconds: settlingMs,
-            value: viscosity.toFixed(2),
+            milliseconds: formatNumber(settlingMs, lang, 0),
+            value: formatNumber(viscosity, lang, 2),
             label: viscosityLabel(viscosity, lang),
           })}
         </div>

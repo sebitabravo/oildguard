@@ -664,7 +664,7 @@ export default function BenchScene({
           <div className="og-hud__title">
             <span className="og-dot" />
             <span className="og-value og-value--lg" style={{ color: oilCss }}>
-              {formatOilText(clamp01(oilLevel))}
+              {formatOilText(clamp01(oilLevel), lang)}
             </span>
           </div>
           <div style={{ marginTop: 4, fontSize: 12, color: "var(--og-body)" }}>

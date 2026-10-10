@@ -7,6 +7,7 @@
 import type { DashAlert } from "../sim/api";
 import type { RestWindow } from "../sim/signals";
 import { t, useLang } from "../i18n";
+import { formatNumber } from "../i18n/numberFormat";
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { BASE_WIDTH, chartLayoutForWidth } from "./chartLayout";
 
@@ -159,16 +160,16 @@ export default function LevelChart({
       <line x1={PAD_L} x2={PAD_L} y1={PAD_T} y2={H - PAD_B} stroke="var(--og-line-soft)" />
       <line x1={PAD_L} x2={W - PAD_R} y1={H - PAD_B} y2={H - PAD_B} stroke="var(--og-line-soft)" />
       <text x={PAD_L - 6 * scale} y={y(CAP_L)} fill="var(--og-muted)" font-size={11} text-anchor="end">
-        95
+        {formatNumber(CAP_L, lang, 0)}
       </text>
       <text x={PAD_L - 6 * scale} y={y(60)} fill="var(--og-muted)" font-size={11} text-anchor="end">
-        60
+        {formatNumber(60, lang, 0)}
       </text>
       <text x={PAD_L} y={H - 8 * scale} fill="var(--og-muted)" font-size={11}>
-        t {tMin.toFixed(0)} s
+        t {formatNumber(tMin, lang, 0)} s
       </text>
       <text x={W - PAD_R} y={H - 8 * scale} fill="var(--og-muted)" font-size={11} text-anchor="end">
-        {tMax.toFixed(0)} s
+        {formatNumber(tMax, lang, 0)} s
       </text>
     </svg>
   );

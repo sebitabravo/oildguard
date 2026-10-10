@@ -7,6 +7,7 @@
 import type { CSSProperties } from "preact";
 import type { RulData } from "../sim/api";
 import { t, useLang } from "../i18n";
+import { formatNumber } from "../i18n/numberFormat";
 import { localizeBackendMessage } from "./backendNotes";
 import { localizeUnevaluatedReason } from "./evaluationReason";
 
@@ -86,7 +87,7 @@ export default function RulPanel({
       <div style={{ fontWeight: 700 }}>
         {t("rul.title", lang)} ·{" "}
         <span style={{ color: "var(--og-green)" }}>
-          {t("rul.panel.hoursToCritical", lang, { hours: rul.hours })}
+          {t("rul.panel.hoursToCritical", lang, { hours: formatNumber(rul.hours, lang, 2) })}
         </span>
       </div>
       <div
@@ -100,23 +101,23 @@ export default function RulPanel({
         }}
       >
         <span>
-          {t("rul.panel.warningIn", lang, { hours: rul.hours_to_warning })}
+          {t("rul.panel.warningIn", lang, { hours: formatNumber(rul.hours_to_warning, lang, 2) })}
         </span>
         <span>
-          {t("rul.panel.haulCycles", lang, { cycles: rul.haul_cycles })}
+          {t("rul.panel.haulCycles", lang, { cycles: formatNumber(rul.haul_cycles, lang, 1) })}
         </span>
         <span>
-          {t("rul.panel.shifts", lang, { shifts: rul.shifts })}
+          {t("rul.panel.shifts", lang, { shifts: formatNumber(rul.shifts, lang, 2) })}
         </span>
         <span>
-          {t("rul.panel.confidenceValue", lang, { confidence: rul.confidence })}
+          {t("rul.panel.confidenceValue", lang, { confidence: formatNumber(rul.confidence, lang, 3) })}
         </span>
       </div>
       <p style={{ margin: "8px 0 0", color: "var(--og-muted)", fontSize: 12 }}>
         {t("rul.panel.summary", lang, {
-          slope: rul.slope_L_per_h,
-          r2: rul.r2,
-          level: rul.current_level_L,
+          slope: formatNumber(rul.slope_L_per_h, lang, 3),
+          r2: formatNumber(rul.r2, lang, 3),
+          level: formatNumber(rul.current_level_L, lang, 3),
           model: rul.model === "synthetic-proxy" ? t("rul.model.syntheticProxy", lang) : rul.model,
           qualifier: t("rul.unproven", lang),
         })}

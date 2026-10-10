@@ -1,4 +1,5 @@
 import { t, type DictKey, type Lang } from "../../i18n";
+import { formatNumber } from "../../i18n/numberFormat";
 
 // T3 oil-volume helpers (Sim A, part 2 of 2).
 //
@@ -65,8 +66,8 @@ export function oilStateLabel(state: OilState, lang: Lang = "en"): string {
 }
 
 /** "62.7 L · 66%" display text for a 0..1 fill fraction. */
-export function formatOilText(frac: number): string {
+export function formatOilText(frac: number, lang: Lang): string {
   const liters = oilLiters(frac);
   const pct = Math.round(frac * 100);
-  return `${liters.toFixed(1)} L · ${pct}%`;
+  return `${formatNumber(liters, lang, 1)} L · ${pct}%`;
 }

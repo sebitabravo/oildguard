@@ -1,4 +1,5 @@
 import { t, type Lang } from "../i18n";
+import { formatNumber } from "../i18n/numberFormat";
 import { formatOilText } from "./bench/oil";
 import { buildPlmStateLabel } from "./truck/mineSceneCopy";
 import type { PlmState } from "../twin/fleet/fleetSim";
@@ -15,7 +16,7 @@ export function buildMineSceneAccessibilityCopy(
   lang: Lang,
 ): SceneAccessibilityCopy {
   const stateLabel = buildPlmStateLabel(state.state, lang);
-  const params = { truck: state.truckId, state: stateLabel, cycle: state.cycle };
+  const params = { truck: state.truckId, state: stateLabel, cycle: formatNumber(state.cycle, lang, 0) };
   return {
     label: t("a11y.mine.scene", lang, params),
     caption: t("a11y.mine.caption", lang, params),
@@ -26,7 +27,7 @@ export function buildWheelSceneAccessibilityCopy(
   state: { oilLevel: number; mode: "move" | "rest" },
   lang: Lang,
 ): SceneAccessibilityCopy {
-  const oil = formatOilText(Math.max(0, Math.min(1, state.oilLevel)));
+  const oil = formatOilText(Math.max(0, Math.min(1, state.oilLevel)), lang);
   const mode = t(state.mode === "move" ? "hud.moving" : "hud.rest", lang);
   const params = { oil, mode };
   return {

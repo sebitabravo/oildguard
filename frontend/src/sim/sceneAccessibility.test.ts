@@ -23,8 +23,8 @@ describe("scene accessibility copy", () => {
       caption: "Synthetic proxy only. Oil level 66.5 L · 70% and mode MOVING are modelled, not field measurements.",
     });
     expect(buildWheelSceneAccessibilityCopy({ oilLevel: 0.7, mode: "move" }, "es")).toEqual({
-      label: "Corte de rueda GDY106: nivel de aceite 66.5 L · 70%, modo EN MOVIMIENTO.",
-      caption: "Solo sustituto sintético. El nivel de aceite 66.5 L · 70% y el modo EN MOVIMIENTO son valores modelados, no mediciones de campo.",
+      label: "Corte de rueda GDY106: nivel de aceite 66,5 L · 70%, modo EN MOVIMIENTO.",
+      caption: "Solo sustituto sintético. El nivel de aceite 66,5 L · 70% y el modo EN MOVIMIENTO son valores modelados, no mediciones de campo.",
     });
   });
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { h } from "preact";
 import renderToString from "preact-render-to-string";
-import type { RulDataSuppressed, RulDataUnavailable } from "../sim/api";
+import type { RulDataOk, RulDataSuppressed, RulDataUnavailable } from "../sim/api";
 import { t, type Lang } from "../i18n";
 import RulPanel from "./RulPanel";
 
@@ -30,7 +30,55 @@ function renderSuppressedNote(lang: Lang, note: string, evaluationReason?: strin
   }
 }
 
+function renderOkRul(lang: Lang): string {
+  const defaultStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: { getItem: () => lang },
+  });
+  const rul: RulDataOk = {
+    hours: 0.51,
+    hours_to_warning: 0.36,
+    hours_to_critical: 0.51,
+    haul_cycles: 62.2,
+    shifts: 0.06,
+    confidence: 0.822,
+    status: "ok",
+    anomaly_only: false,
+    slope_L_per_h: -1.23456,
+    r2: 0.369,
+    current_level_L: 92.102,
+    model: "synthetic-proxy",
+    note: "",
+    fallback: "",
+  };
+  try {
+    return renderToString(h(RulPanel, { rul }));
+  } finally {
+    if (defaultStorage) Object.defineProperty(globalThis, "localStorage", defaultStorage);
+    else Reflect.deleteProperty(globalThis, "localStorage");
+  }
+}
+
 describe("RUL suppression explanation", () => {
+  test("formats RUL metrics with the selected language's decimal separator", () => {
+    const english = renderOkRul("en");
+    const spanish = renderOkRul("es");
+
+    expect(english).toContain("0.51 h to critical");
+    expect(english).toContain("warn in 0.36 h");
+    expect(english).toContain("62.2 haul cycles");
+    expect(english).toContain("0.06 shifts");
+    expect(english).toContain("confidence 0.822");
+    expect(english).toContain("slope -1.235 L/h · R² 0.369 · level 92.102 L");
+    expect(spanish).toContain("0,51 h hasta crítico");
+    expect(spanish).toContain("advertencia en 0,36 h");
+    expect(spanish).toContain("62,2 ciclos");
+    expect(spanish).toContain("0,06 turnos");
+    expect(spanish).toContain("confianza 0,822");
+    expect(spanish).toContain("pendiente -1,235 L/h · R² 0,369 · nivel 92,102 L");
+  });
+
   test("renders the clean-baseline reason in English and Spanish", () => {
     expect(renderSuppressedNote("en", t("dash.demo.rul.cleanNote", "en")))
       .toContain("RUL suppressed: no leak trend");

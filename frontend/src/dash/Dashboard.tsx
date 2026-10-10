@@ -37,6 +37,7 @@ import {
 } from "./demoData";
 import { emitDemoOil, type DemoStageId } from "./demoBus";
 import { t, type DictKey, type Lang, useLang } from "../i18n";
+import { formatNumber } from "../i18n/numberFormat";
 import { buildWheelDetailHref } from "../sim/bench/wheelUrl";
 import { DEMO_FLEET_WHEELS, evaluateCombinedRisk, latestWheelMetrics } from "./fleetRisk";
 import { localizeBackendMessage, localizeBackendZone } from "./backendNotes";
@@ -292,10 +293,10 @@ export default function Dashboard() {
                       {wheel.wheelId}
                       {wheel.instrumented && <span className="og-fleet-instrumented">{t("dash.fleet.instrumented", lang)}</span>}
                     </td>
-                    <td className="og-num">{wheel.oilLitres.toFixed(1)}</td>
-                    <td className="og-num">{wheel.temperatureC.join(" · ")}</td>
-                    <td className="og-num">{wheel.vibrationMmS.map((value) => value.toFixed(1)).join(" · ")}</td>
-                    <td className="og-num">{wheel.currentA.join(" · ")}</td>
+                    <td className="og-num">{formatNumber(wheel.oilLitres, lang, 1)}</td>
+                    <td className="og-num">{wheel.temperatureC.map((value) => formatNumber(value, lang, 0)).join(" · ")}</td>
+                    <td className="og-num">{wheel.vibrationMmS.map((value) => formatNumber(value, lang, 1)).join(" · ")}</td>
+                    <td className="og-num">{wheel.currentA.map((value) => formatNumber(value, lang, 0)).join(" · ")}</td>
                     <td>
                       <span className={`og-fleet-risk${risk.alert ? " og-fleet-risk--alert" : ""}`}>
                         {risk.alert ? t("dash.fleet.alert", lang) : t("dash.fleet.normal", lang)}
@@ -446,7 +447,7 @@ export default function Dashboard() {
               </span>
             ))}
             <span style={{ fontSize: 13, color: "var(--og-body)" }}>
-              {stageBlurb(demoStage, lang)} · {t("dash.demo.oil", lang)} {formatOilText(demoFrac)} · {t("dash.demo.benchLink", lang)}
+              {stageBlurb(demoStage, lang)} · {t("dash.demo.oil", lang)} {formatOilText(demoFrac, lang)} · {t("dash.demo.benchLink", lang)}
             </span>
           </div>
         </div>
@@ -458,7 +459,7 @@ export default function Dashboard() {
           <h2 style={{ margin: "0 0 4px", fontSize: 16 }}>
             {t("dash.chart.title", lang)}{" "}
             <span style={{ fontSize: 12, fontWeight: 500, color: "var(--og-muted)" }}>
-              ±{sigmaL.toFixed(2)} L · conf {Number(confidence).toFixed(3)} · {t("dash.chart.restWindows", lang)}
+              ±{formatNumber(sigmaL, lang, 2)} L · conf {formatNumber(Number(confidence), lang, 3)} · {t("dash.chart.restWindows", lang)}
             </span>
           </h2>
           <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} />
@@ -468,9 +469,9 @@ export default function Dashboard() {
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8, fontSize: 13 }}>
             <span style={{ color: demoOilCss, fontWeight: 700 }}>
               {demoActive
-                ? t("dash.demo.fill", lang, { value: formatOilText(demoFrac) })
+                ? t("dash.demo.fill", lang, { value: formatOilText(demoFrac, lang) })
                 : level
-                  ? `${Number(level.data.level_liters).toFixed(1)} L · ${Number(level.data.level_pct).toFixed(1)}%`
+                  ? `${formatNumber(Number(level.data.level_liters), lang, 1)} L · ${formatNumber(Number(level.data.level_pct), lang, 1)}%`
                   : "—"}
             </span>
             <span style={{ color: "var(--og-muted)" }}>
@@ -495,7 +496,7 @@ export default function Dashboard() {
               </span>
             </div>
             <div style={{ fontSize: 13, color: "var(--og-body)" }}>
-              FSM <strong>{fsm.state}</strong> (t+{fsmTick.toFixed(0)} s {t("dash.fsm.sharedClock", lang)}) ·{" "}
+              FSM <strong>{fsm.state}</strong> (t+{formatNumber(fsmTick, lang, 0)} s {t("dash.fsm.sharedClock", lang)}) ·{" "}
               {source === "live"
                 ? t("dash.backend.windows", lang, { count: windows?.count ?? 0, rows: storeRows })
                 : t("dash.backend.localWindows", lang)}
@@ -528,7 +529,7 @@ export default function Dashboard() {
                       {a.level}
                     </span>
                     <strong style={{ fontSize: 13 }}>{a.alert_id}</strong>
-                    <span style={{ fontSize: 12, color: "var(--og-muted)" }}> · t {a.t_s} s · {localizeBackendZone(a.zone, lang)}</span>
+                    <span style={{ fontSize: 12, color: "var(--og-muted)" }}> · t {formatNumber(a.t_s, lang, 1)} s · {localizeBackendZone(a.zone, lang)}</span>
                     <br />
                     <span style={{ fontSize: 13, color: "var(--og-body)" }}>
                       {localizeBackendMessage(a.reason_message, a.reason, lang)}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import * as THREE from "three";
 import { t, type DictKey, useLang } from "../../i18n";
+import { formatNumber } from "../../i18n/numberFormat";
 import { createStage } from "../../twin/render/stage";
 import { createMaterials } from "../../twin/render/materials";
 import { createLabel, setLabelActive, setLabelText } from "../../twin/render/labels";
@@ -355,7 +356,10 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
           {badge}
         </div>
         <div className="og-stack og-stack--bl">
-          <div className="og-hud og-hud--caption og-num">{t("mine.hud.fleet", lang, { trucks: hud.trucks, queued: hud.queued })}</div>
+          <div className="og-hud og-hud--caption og-num">{t("mine.hud.fleet", lang, {
+            trucks: formatNumber(hud.trucks, lang, 0),
+            queued: formatNumber(hud.queued, lang, 0),
+          })}</div>
           <div className="og-hud og-hud--caption">{t("mine.hud.seeded", lang, { seed: url.seed })}</div>
           {url.debug && <div ref={debugRef} className="og-hud og-hud--caption og-num" />}
         </div>

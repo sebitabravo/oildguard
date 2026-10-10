@@ -1,4 +1,5 @@
 import { t, type DictKey, type Lang } from "../../i18n";
+import { formatNumber } from "../../i18n/numberFormat";
 import type { PlmState } from "../../twin/fleet/fleetSim";
 
 export const PLM_LABEL_KEYS: Record<PlmState, DictKey> = {
@@ -29,7 +30,7 @@ export function buildPlmStateLabel(state: PlmState, lang: Lang): string {
 }
 
 export function buildMineHudTitle(truckId: string, state: PlmState, cycle: number, lang: Lang): string {
-  return `${truckId} · ${buildPlmStateLabel(state, lang)} · ${t("mine.hud.cycle", lang)} ${cycle}`;
+  return `${truckId} · ${buildPlmStateLabel(state, lang)} · ${t("mine.hud.cycle", lang)} ${formatNumber(cycle, lang, 0)}`;
 }
 
 export function buildMineHudStatus(recal: boolean, moving: boolean, lang: Lang): string {
