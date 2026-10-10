@@ -1,1 +1,1 @@
-export { DataTable } from "./foundation";
+export { DataTable, type DataTableProps } from "./foundation";

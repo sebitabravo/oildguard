@@ -5,6 +5,7 @@
 // Base URL defaults to PUBLIC_BACKEND_URL (compose sets http://localhost:8000).
 
 import type { RestWindow, SignalRow } from "./signals";
+import { buildDeviceQuery } from "../ui/logic";
 
 export interface SigningStatus {
   enforced: boolean;
@@ -280,8 +281,7 @@ export async function postIngest(rows: SignalRow[]): Promise<IngestAck> {
 }
 
 export const getHealth = (): Promise<HealthResponse> => getJson("/health");
-const withDevice = (path: string, deviceId?: string) =>
-  deviceId ? `${path}${path.includes("?") ? "&" : "?"}device_id=${encodeURIComponent(deviceId)}` : path;
+const withDevice = buildDeviceQuery;
 export const getLevel = (deviceId?: string): Promise<LevelResponse> => getJson(withDevice("/level", deviceId));
 export const getLevelSeries = (limit = 300, deviceId?: string): Promise<LevelSeriesResponse> =>
   getJson(withDevice(`/level/series?limit=${limit}`, deviceId));

@@ -1,1 +1,5 @@
-export { TelemetryCard, KpiTile } from "./foundation";
+export {
+  KpiTile,
+  TelemetryCard,
+  type TelemetryCardProps,
+} from "./foundation";

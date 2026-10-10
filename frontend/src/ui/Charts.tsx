@@ -1,1 +1,5 @@
-export { Sparkline, TimeSeriesChart, ScatterChart } from "./foundation";
+export {
+  ScatterChart,
+  Sparkline,
+  TimeSeriesChart,
+} from "./foundation";

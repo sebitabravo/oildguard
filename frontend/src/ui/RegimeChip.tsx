@@ -1,1 +1,1 @@
-export { RegimeChip } from "./foundation";
+export { RegimeChip, ValidityChip } from "./foundation";

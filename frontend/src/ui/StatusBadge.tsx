@@ -1,1 +1,6 @@
-export { StatusBadge, SeverityBadge } from "./foundation";
+export {
+  SeverityBadge,
+  StatusBadge,
+  type Severity,
+  type StatusBadgeProps,
+} from "./foundation";

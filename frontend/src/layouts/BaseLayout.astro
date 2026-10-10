@@ -3,6 +3,7 @@ import "../theme.css";
 import { t } from "../i18n";
 import { type Section } from "../routes";
 import { activeRoute, navGroups } from "../nav";
+import { BackendStatePill } from "../ui/foundation";
 
 interface Props { section?: Section; title?: string; compact?: boolean; }
 const { section, title = "OilGuard Mining", compact = section === "mine" || section === "wheel" } = Astro.props;
@@ -14,7 +15,7 @@ const current = activeRoute(Astro.url.pathname) ?? section ?? null;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preload" href="/fonts/Geist[wght].woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/JetBrainsMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/JetBrainsMono[wght].woff2" as="font" type="font/woff2" crossorigin />
     <title>{title}</title>
     <script is:inline>
       document.documentElement.style.visibility = "hidden";
@@ -44,7 +45,7 @@ const current = activeRoute(Astro.url.pathname) ?? section ?? null;
           ))}
         </div>
         <footer class="og-sidebar__footer">
-          <div class="og-link-state"><span class="og-status-dot og-status-dot--ok"></span><span data-i18n-en="EDGE NODE ONLINE" data-i18n-es="NODO EDGE EN LÍNEA">EDGE NODE ONLINE</span></div>
+          <BackendStatePill client:load />
           <div class="og-label og-sidebar__footer-note" data-i18n-en={t("shell.synthetic", "en")} data-i18n-es={t("shell.synthetic", "es")}>{t("shell.synthetic", "en")}</div>
         </footer>
       </aside>
@@ -52,7 +53,7 @@ const current = activeRoute(Astro.url.pathname) ?? section ?? null;
         <button class="og-mobile-menu" type="button" aria-label={t("shell.menu", "en")}>☰</button>
         <div class="og-top__crumb"><span>OilGuard</span><b>/</b><strong data-i18n-en="Telemetry" data-i18n-es="Telemetría">Telemetry</strong></div>
         <div class="og-top__spacer"></div>
-        <div class="og-link-pill"><span class="og-status-dot og-status-dot--ok"></span><span>MQTT</span><span class="og-muted">·</span><span>LOCAL / DEMO</span></div>
+        <BackendStatePill client:load />
         <div class="og-seg" role="group" aria-label={t("lang.label", "en")}>
           <button type="button" class="og-seg__btn" data-lang="en" aria-pressed="true">EN</button>
           <button type="button" class="og-seg__btn" data-lang="es" aria-pressed="false">ES</button>
