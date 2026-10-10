@@ -131,22 +131,21 @@ export function AlertBanner({
   lang,
   severity = "N2",
   children,
-  backendLive = false,
 }: {
   lang: Lang;
   severity?: Severity;
   children: ComponentChildren;
   backendLive?: boolean;
 }) {
-  const reason = t("ui.noBackendAction", lang);
+  const reason = t("ui.noAlertLifecycleApi", lang);
   return (
     <div className={`og-alert-banner og-alert-banner--${severity.toLowerCase()}`}>
       <SeverityBadge lang={lang} severity={severity} />
       <span>{children}</span>
       <span className="og-alert-actions">
-        <button type="button" disabled={!backendLive} title={backendLive ? undefined : reason}>{t("ui.acknowledge", lang)}</button>
-        <button type="button" disabled={!backendLive} title={backendLive ? undefined : reason}>{t("ui.escalate", lang)}</button>
-        {!backendLive && <small>{reason}</small>}
+        <button type="button" disabled title={reason}>{t("ui.acknowledge", lang)}</button>
+        <button type="button" disabled title={reason}>{t("ui.escalate", lang)}</button>
+        <small>{reason} <a href="/alerts">{t("ui.openAlerts", lang)}</a></small>
       </span>
     </div>
   );
