@@ -308,6 +308,10 @@ export const dict = {
     en: "Live fleet telemetry · waiting for data",
     es: "Telemetría en vivo de la flota · esperando datos",
   },
+  "dash.live.error": {
+    en: "Live fleet telemetry is temporarily unavailable; the rest of Monitoring remains available.",
+    es: "La telemetría en vivo de la flota no está disponible temporalmente; el resto de Monitoreo sigue disponible.",
+  },
   "dash.live.polling": { en: "Polling backend", es: "Consultando backend" },
   "dash.live.connected": { en: "Connected", es: "Conectado" },
   "dash.live.status.keepingUp": { en: "Keeping up", es: "Al día" },
