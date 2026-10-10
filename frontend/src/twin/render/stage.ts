@@ -11,6 +11,7 @@ import {
   type StagePreset,
 } from "./settings";
 import { clampLabelCenterX } from "./labelLayout";
+import { observeReducedMotion } from "./motionPreference";
 
 // Stage compartido: renderer con tone mapping ACES, luz de entorno (IBL),
 // sol con sombras, OrbitControls, overlay CSS2D y un único bucle rAF.
@@ -69,6 +70,7 @@ export interface Stage {
   onFrame(cb: FrameCallback): () => void;
   setQuality(q: Quality): void;
   quality(): Quality;
+  prefersReducedMotion(): boolean;
   dispose(): void;
 }
 
@@ -146,7 +148,13 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
   host.appendChild(labels.domElement);
 
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
+  const motionPreference = observeReducedMotion(
+    window.matchMedia("(prefers-reduced-motion: reduce)"),
+    (reduced) => {
+      controls.enableDamping = !reduced;
+    },
+  );
+  controls.enableDamping = !motionPreference.reduced;
   controls.dampingFactor = 0.08;
   if (opts.minDistance !== undefined) controls.minDistance = opts.minDistance;
   if (opts.maxDistance !== undefined) controls.maxDistance = opts.maxDistance;
@@ -335,6 +343,7 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
       resize();
     },
     quality: () => quality,
+    prefersReducedMotion: () => motionPreference.reduced,
     dispose() {
       if (disposed) return;
       disposed = true;
@@ -342,6 +351,7 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
       document.removeEventListener("visibilitychange", onVisibility);
       observer.disconnect();
       callbacks.clear();
+      motionPreference.dispose();
       controls.dispose();
       scene.traverse((o) => {
         const mesh = o as THREE.Mesh;

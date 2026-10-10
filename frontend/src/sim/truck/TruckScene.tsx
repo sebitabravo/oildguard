@@ -16,6 +16,7 @@ import type { PlmState, TruckTick } from "../../twin/fleet/fleetSim";
 import { buildMineHudStatus, buildMineHudTitle, buildMineSceneLabelText, type MineSceneLabelId } from "./mineSceneCopy";
 import { buildMineSceneAccessibilityCopy } from "../sceneAccessibility";
 import { useThrottledSceneAccessibility } from "../useThrottledSceneAccessibility";
+import { resolveMotionAlpha } from "../../twin/render/motionPreference";
 
 interface TruckSceneProps {
   paused: boolean;
@@ -267,7 +268,7 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
           targetGoal.copy(pit.anchors.pitCenter).add(new THREE.Vector3(80, 10, 15));
           camGoal.copy(targetGoal).add(new THREE.Vector3(0, 330, 500));
         }
-        const blend = 1 - Math.exp(-3.2 * dt);
+        const blend = resolveMotionAlpha(stage.prefersReducedMotion(), 1 - Math.exp(-3.2 * dt));
         camera.position.lerp(camGoal, blend);
         controls.target.lerp(targetGoal, blend);
       }

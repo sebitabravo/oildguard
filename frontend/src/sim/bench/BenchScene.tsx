@@ -11,6 +11,7 @@ import { createLabel, setLabelActive, setLabelText } from "../../twin/render/lab
 import { CAPACITY_L, headFromVolume, stageSpeeds } from "../../twin/physics";
 import { buildWheelSceneAccessibilityCopy } from "../sceneAccessibility";
 import { useThrottledSceneAccessibility } from "../useThrottledSceneAccessibility";
+import { resolveMotionAlpha } from "../../twin/render/motionPreference";
 
 // Escena del banco GDY106 (Sim A): bastidor, carcasa con corte e internos.
 // El render (tone mapping, IBL, sombras) viene de twin/render/stage.ts.
@@ -566,6 +567,7 @@ export default function BenchScene({
     const compactTireX = tire.position.x;
 
     const stopFrame = stage.onFrame((dt) => {
+      const reducedMotion = stage.prefersReducedMotion();
       elapsed += dt;
       const benchMode = modeRef.current;
       if (prevMode === "move" && benchMode === "rest") {
@@ -597,21 +599,24 @@ export default function BenchScene({
       }
 
       const spread = explodedRef.current ? 0.5 : 0;
-      gearboxShell.position.x += (compactGearboxX - spread - gearboxShell.position.x) * 0.12;
-      ring.position.x += (compactRingX - spread * 0.35 - ring.position.x) * 0.12;
-      hub.position.x += (compactHubX + spread - hub.position.x) * 0.12;
-      tire.position.x += (compactTireX + spread * 1.5 - tire.position.x) * 0.12;
+      const explodedAlpha = resolveMotionAlpha(reducedMotion, 0.12);
+      gearboxShell.position.x += (compactGearboxX - spread - gearboxShell.position.x) * explodedAlpha;
+      ring.position.x += (compactRingX - spread * 0.35 - ring.position.x) * explodedAlpha;
+      hub.position.x += (compactHubX + spread - hub.position.x) * explodedAlpha;
+      tire.position.x += (compactTireX + spread * 1.5 - tire.position.x) * explodedAlpha;
 
       // Cutaway fades the housing shell so internals + oil stay visible.
       const shellTarget = cutawayRef.current ? 0.22 : 1;
-      housingMat.opacity += (shellTarget - housingMat.opacity) * 0.15;
-      gearboxMat.opacity += (shellTarget - gearboxMat.opacity) * 0.15;
+      const cutawayAlpha = resolveMotionAlpha(reducedMotion, 0.15);
+      housingMat.opacity += (shellTarget - housingMat.opacity) * cutawayAlpha;
+      gearboxMat.opacity += (shellTarget - gearboxMat.opacity) * cutawayAlpha;
 
       for (const marker of markerMeshes) {
         const active = marker.userData.sensorId === selectedRef.current;
         const target = active ? 1.5 : 1.0;
+        const selectionAlpha = resolveMotionAlpha(reducedMotion, 0.2);
         marker.scale.setScalar(
-          marker.scale.x + (target - marker.scale.x) * 0.2
+          marker.scale.x + (target - marker.scale.x) * selectionAlpha
         );
       }
       BENCH_SENSORS.forEach((sensor, i) => {
