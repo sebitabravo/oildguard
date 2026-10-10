@@ -1,3 +1,4 @@
+.og-content:has(.landing) { max-width: none !important; margin: 0 !important; padding: 0 !important; }
 .landing { width: min(1240px, 100%); margin: 0 auto; padding: 26px 42px 20px; color: var(--og-text-primary); }
 .landing a { color: inherit; text-decoration: none; }
 .landing__top, .landing__brand, .landing__top-actions, .landing__actions, .landing__visual-caption, .landing__visual-foot { display: flex; align-items: center; }

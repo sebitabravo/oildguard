@@ -1,11 +1,13 @@
 import { ProvenanceTag } from "../../ui/foundation";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t, useLang } from "../../i18n";
+import { useEffect } from "preact/hooks";
 import "./landing.css";
 
 export default function Landing() {
   const [lang, setLang] = useLang();
   const n = (value: number, digits = 0) => formatNumber(value, lang, digits);
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
   return (
     <div className="landing">
