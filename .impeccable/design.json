@@ -363,7 +363,21 @@
         "value": "900px",
         "purpose": "Two-row 108px header with a 44px scrolling nav; 44px minimum targets on every control; wheel view scrolls as a column with the dock in flow."
       }
-    ]
+    ],
+    "themeTokens": {
+      "--og-on-yellow": "#15110a",
+      "--og-card-active": "#1d2a40",
+      "--og-ground": "#0b0f17",
+      "--og-yellow-hover": "#ffc61f",
+      "--og-green-hover": "#43d386",
+      "--og-header-gradient-start": "#0f1521",
+      "--og-header-gradient-end": "#0b1019",
+      "--og-brand-mark-gradient-start": "#ffd23d",
+      "--og-brand-mark-gradient-end": "var(--og-yellow-deep)",
+      "--og-radius": "8px",
+      "--og-radius-panel": "6px",
+      "--og-dock-gap": "12px"
+    }
   },
   "components": [
     {
@@ -372,7 +386,7 @@
       "refersTo": "button-primary",
       "description": "The one action on a surface. Machine Yellow on near-black text.",
       "html": "<button class=\"ds-btn-primary\">PAUSE CYCLE</button>",
-      "css": ".ds-btn-primary { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: #15110a; background: var(--og-yellow); border: 1px solid transparent; border-radius: 8px; height: 34px; padding: 0 14px; cursor: pointer; transition: background .15s, border-color .15s; } .ds-btn-primary:hover { background: #ffc61f; } .ds-btn-primary:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: .45; cursor: not-allowed; }"
+      "css": ".ds-btn-primary { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: var(--og-on-yellow); background: var(--og-yellow); border: 1px solid transparent; border-radius: 8px; height: 34px; padding: 0 14px; cursor: pointer; transition: background .15s, border-color .15s; } .ds-btn-primary:hover { background: var(--og-yellow-hover); } .ds-btn-primary:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: .45; cursor: not-allowed; }"
     },
     {
       "name": "OK Button",
@@ -380,7 +394,7 @@
       "refersTo": "button-ok",
       "description": "Advances a running simulation. Signal Green, same geometry.",
       "html": "<button class=\"ds-btn-ok\">STEP +1 s</button>",
-      "css": ".ds-btn-ok { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: #07140d; background: var(--og-green); border: 1px solid transparent; border-radius: 8px; height: 34px; padding: 0 14px; cursor: pointer; transition: background .15s, border-color .15s; } .ds-btn-ok:hover { background: #43d386; } .ds-btn-ok:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; } .ds-btn-ok:disabled { opacity: .45; cursor: not-allowed; }"
+      "css": ".ds-btn-ok { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: var(--og-on-green); background: var(--og-green); border: 1px solid transparent; border-radius: 8px; height: 34px; padding: 0 14px; cursor: pointer; transition: background .15s, border-color .15s; } .ds-btn-ok:hover { background: var(--og-green-hover); } .ds-btn-ok:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; } .ds-btn-ok:disabled { opacity: .45; cursor: not-allowed; }"
     },
     {
       "name": "Ghost Button",
@@ -412,7 +426,7 @@
       "refersTo": "seg-button-pressed",
       "description": "Language switch and camera presets. A 28px pressed-state fill in Machine Yellow.",
       "html": "<div class=\"ds-seg\"><button class=\"ds-seg-btn\" aria-pressed=\"false\">pit</button><button class=\"ds-seg-btn\" aria-pressed=\"true\">hero</button><button class=\"ds-seg-btn\" aria-pressed=\"false\">cab</button></div>",
-      "css": ".ds-seg { display: inline-flex; gap: 2px; padding: 2px; background: rgba(255,255,255,.06); border: 1px solid var(--og-line); border-radius: 8px; } .ds-seg-btn { font-family: var(--og-font); font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--og-muted); background: transparent; border: 0; border-radius: 6px; min-width: 36px; height: 28px; padding: 0 10px; cursor: pointer; } .ds-seg-btn:hover { color: var(--og-text); } .ds-seg-btn[aria-pressed=\"true\"] { background: var(--og-yellow); color: #15110a; } .ds-seg-btn:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
+      "css": ".ds-seg { display: inline-flex; gap: 2px; padding: 2px; background: rgba(255,255,255,.06); border: 1px solid var(--og-line); border-radius: 8px; } .ds-seg-btn { font-family: var(--og-font); font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--og-muted); background: transparent; border: 0; border-radius: 6px; min-width: 36px; height: 28px; padding: 0 10px; cursor: pointer; } .ds-seg-btn:hover { color: var(--og-text); } .ds-seg-btn[aria-pressed=\"true\"] { background: var(--og-yellow); color: var(--og-on-yellow); } .ds-seg-btn:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
     },
     {
       "name": "Tone Card",
@@ -420,7 +434,7 @@
       "refersTo": "card",
       "description": "A machine-state card. Flat at rest; an inset tone ring when active.",
       "html": "<div class=\"ds-card\"><span class=\"ds-dot\"></span><strong>HAUL</strong><p class=\"ds-card-sub\">moving &middot; 12 s</p></div><div class=\"ds-card ds-card--on\" style=\"--tone: #4a8ef0\"><span class=\"ds-dot\"></span><strong>WAIT</strong><p class=\"ds-card-sub\">rest &middot; 5 s</p></div>",
-      "css": ".ds-card { font-family: var(--og-font); position: relative; background: var(--og-panel-2); border: 1px solid var(--og-line); border-radius: 8px; padding: 10px 12px; color: var(--og-body); } .ds-card--on { background: #1d2a40; box-shadow: 0 0 0 1px var(--tone, transparent) inset; } .ds-card strong { display: block; font-size: 13px; font-weight: 700; color: var(--og-text); letter-spacing: .02em; } .ds-card-sub { margin: 4px 0 0; font-size: 12px; color: var(--og-muted); font-variant-numeric: tabular-nums; } .ds-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--tone, var(--og-muted)); box-shadow: 0 0 8px var(--tone, transparent); margin-bottom: 6px; }"
+      "css": ".ds-card { font-family: var(--og-font); position: relative; background: var(--og-panel-2); border: 1px solid var(--og-line); border-radius: 8px; padding: 10px 12px; color: var(--og-body); } .ds-card--on { background: var(--og-card-active); box-shadow: 0 0 0 1px var(--tone, transparent) inset; } .ds-card strong { display: block; font-size: 13px; font-weight: 700; color: var(--og-text); letter-spacing: .02em; } .ds-card-sub { margin: 4px 0 0; font-size: 12px; color: var(--og-muted); font-variant-numeric: tabular-nums; } .ds-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--tone, var(--og-muted)); box-shadow: 0 0 8px var(--tone, transparent); margin-bottom: 6px; }"
     },
     {
       "name": "Data Panel",
@@ -428,15 +442,15 @@
       "refersTo": "data-panel",
       "description": "The monitoring material: Dashboard Line border, 6px radius, Panel Dashboard fill, darker than the shell.",
       "html": "<section class=\"ds-panel\"><h3>Oil level + confidence</h3><p class=\"ds-readout\">80,0 <span>L</span></p><p class=\"ds-meta\">conf 0,925 &middot; SYNTHETIC-PROXY</p></section>",
-      "css": ".ds-panel { font-family: var(--og-font); background: var(--og-panel-dashboard); border: 1px solid var(--og-line-dashboard); border-radius: 6px; padding: 10px 12px; } .ds-panel h3 { margin: 0 0 4px; font-size: 14px; font-weight: 700; letter-spacing: .02em; color: var(--og-text); } .ds-readout { margin: 8px 0 0; font-size: 22px; font-weight: 700; line-height: 1.1; color: var(--og-green); font-variant-numeric: tabular-nums; } .ds-readout span { font-size: 13px; font-weight: 600; color: var(--og-muted); } .ds-meta { margin: 8px 0 0; font-size: 12px; color: var(--og-muted); font-variant-numeric: tabular-nums; }"
+      "css": ".ds-panel { font-family: var(--og-font); background: var(--og-panel-dashboard); border: 1px solid var(--og-line-dashboard); border-radius: var(--og-radius-panel); padding: 10px 12px; } .ds-panel h3 { margin: 0 0 4px; font-size: 14px; font-weight: 700; letter-spacing: .02em; color: var(--og-text); } .ds-readout { margin: 8px 0 0; font-size: 22px; font-weight: 700; line-height: 1.1; color: var(--og-green); font-variant-numeric: tabular-nums; } .ds-readout span { font-size: 13px; font-weight: 600; color: var(--og-muted); } .ds-meta { margin: 8px 0 0; font-size: 12px; color: var(--og-muted); font-variant-numeric: tabular-nums; }"
     },
     {
       "name": "Fleet Table",
       "kind": "custom",
       "refersTo": "data-panel",
-      "description": "The monitoring page's primary sheet: one row per wheel, risk written as a word, sticky first column, tabular figures.",
+      "description": "The monitoring page's primary sheet: one row per wheel, risk written as a word, sticky first column, tabular figures; a shared 16px sheet heading and 6px panel radius.",
       "html": "<section class=\"ds-fleet\"><table class=\"ds-fleet-table\"><thead><tr><th>Truck</th><th>Wheel</th><th>Oil L</th><th>Risk</th><th>Detail</th></tr></thead><tbody><tr><td class=\"ds-num\">T-01</td><td class=\"ds-num\">LF</td><td class=\"ds-num\">80,5</td><td><span class=\"ds-risk\">Normal</span></td><td><a class=\"ds-link\" href=\"#\">Open wheel</a></td></tr><tr><td class=\"ds-num\">T-02</td><td class=\"ds-num\">RF</td><td class=\"ds-num\">61,2</td><td><span class=\"ds-risk ds-risk--alert\">Alert</span><span class=\"ds-channels\">Low oil</span></td><td><a class=\"ds-link\" href=\"#\">Open wheel</a></td></tr></tbody></table></section>",
-      "css": ".ds-fleet { font-family: var(--og-font); padding: 14px 16px; border: 1px solid var(--og-line-dashboard); background: var(--og-panel-dashboard); } .ds-fleet-table { width: 100%; border-collapse: collapse; font-size: 11px; color: var(--og-body); } .ds-fleet-table th, .ds-fleet-table td { padding: 7px 8px; border-bottom: 1px solid var(--og-line); text-align: left; vertical-align: middle; } .ds-fleet-table th { color: var(--og-muted); font-size: 10px; font-weight: 700; letter-spacing: .035em; text-transform: uppercase; } .ds-fleet-table tbody tr:hover { background: rgba(255,255,255,.035); } .ds-num { font-variant-numeric: tabular-nums; } .ds-risk { display: inline-block; color: var(--og-green); font-weight: 700; } .ds-risk--alert { color: var(--og-red); } .ds-channels { display: block; margin-top: 3px; color: var(--og-amber); } .ds-link { color: var(--og-yellow); font-weight: 700; text-underline-offset: 3px; } .ds-link:hover { color: var(--og-text); } .ds-link:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
+      "css": ".ds-fleet { font-family: var(--og-font); padding: 14px 16px; border: 1px solid var(--og-line-dashboard); background: var(--og-panel-dashboard); border-radius: var(--og-radius-panel); } .ds-fleet-table { width: 100%; border-collapse: collapse; font-size: 11px; color: var(--og-body); } .ds-fleet-table th, .ds-fleet-table td { padding: 7px 8px; border-bottom: 1px solid var(--og-line); text-align: left; vertical-align: middle; } .ds-fleet-table th { color: var(--og-muted); font-size: 10px; font-weight: 700; letter-spacing: .035em; text-transform: uppercase; } .ds-fleet-table tbody tr:hover { background: rgba(255,255,255,.035); } .ds-num { font-variant-numeric: tabular-nums; } .ds-risk { display: inline-block; color: var(--og-green); font-weight: 700; } .ds-risk--alert { color: var(--og-red); } .ds-channels { display: block; margin-top: 3px; color: var(--og-amber); } .ds-link { color: var(--og-yellow); font-weight: 700; text-underline-offset: 3px; } .ds-link:hover { color: var(--og-text); } .ds-link:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
     },
     {
       "name": "Analyzer Notice",
@@ -452,7 +466,7 @@
       "refersTo": "data-panel-inset",
       "description": "Remaining-life sheet. Border and text cue follow the shift horizon: red, amber or green.",
       "html": "<div class=\"ds-rul\"><div class=\"ds-rul-head\">RUL &middot; <span class=\"ds-rul-tone\">0,50 h to critical</span> <span class=\"ds-rul-tone ds-rul-cue\" role=\"status\">Inside the shift</span></div><p class=\"ds-rul-meta\">slope -124,795 L/h &middot; r2 0,822 &middot; SYNTHETIC-PROXY (unproven)</p></div>",
-      "css": ".ds-rul { font-family: var(--og-font); padding: 10px 12px; border: 1px solid var(--og-red); border-radius: 6px; background: var(--og-panel-inset); } .ds-rul-head { font-weight: 700; font-size: 13px; color: var(--og-text); } .ds-rul-tone { color: var(--og-red); } .ds-rul-cue { font-size: 12px; } .ds-rul-meta { margin: 8px 0 0; font-size: 12px; color: var(--og-muted); font-variant-numeric: tabular-nums; }"
+      "css": ".ds-rul { font-family: var(--og-font); padding: 10px 12px; border: 1px solid var(--og-red); border-radius: var(--og-radius-panel); background: var(--og-panel-inset); } .ds-rul-head { font-weight: 700; font-size: 13px; color: var(--og-text); } .ds-rul-tone { color: var(--og-red); } .ds-rul-cue { font-size: 12px; } .ds-rul-meta { margin: 8px 0 0; font-size: 12px; color: var(--og-muted); font-variant-numeric: tabular-nums; }"
     },
     {
       "name": "Sensor Identity Marker",
@@ -477,6 +491,22 @@
       "description": "The signature component. Three variants, three fixed meanings, no fill.",
       "html": "<span class=\"ds-tag ds-tag--verified\">VERIFIED</span> <span class=\"ds-tag ds-tag--derived\">DERIVED</span> <span class=\"ds-tag ds-tag--assumption\">ASSUMPTION</span>",
       "css": ".ds-tag { font-family: var(--og-font); display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; padding: 1px 6px; border-radius: 999px; border: 1px solid currentColor; } .ds-tag--verified { color: var(--og-green); } .ds-tag--derived { color: var(--og-blue); } .ds-tag--assumption { color: var(--og-yellow); }"
+    },
+    {
+      "name": "Monitoring Controls and Severity Chips",
+      "kind": "custom",
+      "refersTo": "button-ghost",
+      "description": "Dashboard refresh/demo controls use shared .og-btn classes; source/demo and N1–N4 chips use .og-badge modifiers. Modifiers preserve compact dimensions and semantic colors.",
+      "html": "<button class=\"og-btn og-btn--compact\">Refresh</button><span class=\"og-badge\">SOURCE</span><span class=\"og-badge og-badge--n1\">N1</span><span class=\"og-badge og-badge--n2\">N2</span><span class=\"og-badge og-badge--n3\">N3</span><span class=\"og-badge og-badge--n4\">N4</span>",
+      "css": ".og-btn { height: 34px; border-radius: var(--og-radius); } .og-btn--compact { padding: 5px 12px; border-radius: 6px; font-size: 12px; } .og-badge { display: inline-flex; font-weight: 700; } .og-badge--n1 { background: var(--og-amber); } .og-badge--n2, .og-badge--n3 { background: var(--og-orange); } .og-badge--n4 { background: var(--og-red); }"
+    },
+    {
+      "name": "Simulation Dock",
+      "kind": "layout",
+      "refersTo": "dock",
+      "description": "Mine and wheel simulation docks share the 12px --og-dock-gap spacing token.",
+      "html": "<div class=\"og-dock\">...</div>",
+      "css": ".og-dock { gap: var(--og-dock-gap); } /* Truck and bench dock wrappers use the same token. */"
     }
   ],
   "narrative": {
@@ -489,7 +519,8 @@
       "Tabular figures everywhere, so nothing jitters while it updates.",
       "Flat at rest. Shadow is a response to state, never decoration.",
       "Status never travels on colour alone: every tone ships with a word, a dot, or a numbered marker beside it.",
-      "Numbers are localised: Spanish reads with a decimal comma, English with a point, one formatter for both."
+      "Numbers are localised: Spanish reads with a decimal comma, English with a point, one formatter for both.",
+      "Only 400, 600 and 700 are used for font weight; no undocumented intermediate or heavier steps."
     ],
     "rules": [
       {
@@ -505,7 +536,7 @@
       {
         "name": "The Status Palette Is Closed",
         "section": "colors",
-        "body": "Signal Green, Motion Blue, Instrument Amber, Caution Orange and Critical Red carry fixed meanings. They are never reassigned for decoration."
+        "body": "Signal Green, Motion Blue, Instrument Amber, Caution Orange and Critical Red carry fixed meanings and are never reassigned for decoration. The shared alert map assigns N1 to Instrument Amber, N2/N3 to Caution Orange, and N4 to Critical Red."
       },
       {
         "name": "The Sensor Identity Rule",
@@ -520,7 +551,7 @@
       {
         "name": "The Tabular Rule",
         "section": "typography",
-        "body": "Every number that changes over time carries tabular-nums, so a figure holds its column while it updates."
+        "body": "Numeric selectors .og-num, .og-value and .og-sensor-id share one font-variant-numeric: tabular-nums rule so a figure holds its column while it updates."
       },
       {
         "name": "The Fixed-Pixel Rule",
@@ -541,6 +572,16 @@
         "name": "The Glass Is Not Frosted, It Is Situated",
         "section": "elevation",
         "body": "Backdrop blur marks a panel floating over live 3D content. Do not blur a panel sitting on flat graphite; there is nothing behind it to situate."
+      },
+      {
+        "name": "The Weight Steps Rule",
+        "section": "typography",
+        "body": "Only 400, 600 and 700 are used for font weight; all text roles use these documented steps."
+      },
+      {
+        "name": "The Simulation Dock Spacing Rule",
+        "section": "layout",
+        "body": "Mine and wheel simulation docks use the shared --og-dock-gap token at 12px."
       }
     ],
     "dos": [

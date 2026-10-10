@@ -206,12 +206,12 @@ Density is deliberate and high. This is read by an engineer comparing a trend ag
 
 ## Colors
 
-Komatsu yellow on graphite, with a fixed semantic status ramp that means the same thing on every screen.
+Komatsu yellow on graphite, with a fixed semantic status ramp that means the same thing on every screen. Supporting shell colors, contrast colors, active surfaces, gradient stops, hover colors, radii and the simulation dock gap are named in `frontend/src/theme.css` root tokens so component rules consume shared values rather than repeat literals.
 
 ### Primary
 
 - **Machine Yellow** (`#f2b705`): identity and selection. The brand mark, the active nav item, the pressed segmented control, the selected sensor card and scene label, the focus ring, the favicon, and links into wheel detail. It is also the machine's paint in the 3D scene, from the same value.
-- **Machine Yellow Deep** (`#d9a200`): the shadow end of the brand mark's gradient. Never a standalone colour. The primary button's hover is a literal lighter yellow (`#ffc61f`), not this token — see Known Debt.
+- **Machine Yellow Deep** (`#d9a200`): the shadow end of the brand mark's gradient. Never a standalone colour. Primary-button hover uses the named `--og-yellow-hover` theme token.
 
 ### Secondary
 
@@ -222,7 +222,7 @@ Komatsu yellow on graphite, with a fixed semantic status ramp that means the sam
 
 - **Signal Green** (`#2fbf71`): rest, OK, the normal oil band, rest-window shading, a normal fleet risk, the RUL panel when the critical horizon lies beyond the shift, VERIFIED tags.
 - **Motion Blue** (`#4a8ef0`): the MOVING state, the confidence band, the "instrumented" fleet marker, and DERIVED tags.
-- **Critical Red** (`#ff4d42`): critical threshold, STOP, N4, an alerting fleet row, the RUL panel inside the critical horizon, and the analyzer-outage notice.
+- **Critical Red** (`#ff4d42`): critical threshold, STOP, N4, an alerting fleet row, the RUL panel inside the critical horizon, and the analyzer-outage notice. The shared alert severity map assigns N1 to Instrument Amber, N2/N3 to Caution Orange, and N4 to Critical Red.
 
 ### Neutral
 
@@ -246,7 +246,7 @@ Komatsu yellow on graphite, with a fixed semantic status ramp that means the sam
 
 **The Machine-Wears-Its-Own-Paint Rule.** Machine Yellow is simultaneously the brand colour and the machine's paint in the 3D scene, and that overlap is intentional, not a coincidence to be normalised away. The interface and the asset share one colour because they are one system.
 
-**The Status Palette Is Closed.** Signal Green, Motion Blue, Instrument Amber, Caution Orange and Critical Red carry fixed meanings. They are never reassigned for decoration, never introduced as accents, and never used to signal anything other than the machine condition they were assigned to.
+**The Status Palette Is Closed.** Signal Green, Motion Blue, Instrument Amber, Caution Orange and Critical Red carry fixed meanings. They are never reassigned for decoration, never introduced as accents, and never used to signal anything other than the machine condition they were assigned to. The shared alert-severity map assigns N1 to Instrument Amber, N2 and N3 to Caution Orange, and N4 to Critical Red.
 
 **The Sensor Identity Rule.** Sensor identity uses neutral Annotation-colored numbered rings (24px beside a sensor card, 18px inside the in-scene label pill), never the closed status palette. Machine Yellow may indicate selection; status colors communicate machine condition only.
 
@@ -265,7 +265,7 @@ Komatsu yellow on graphite, with a fixed semantic status ramp that means the sam
 - **Brand** (700, 16px, 1.15, 0.01em): the product name in the header, once.
 - **Readout** (700, 22px, 1.1, tabular): the primary instrument value — oil level, RUL headline. One per panel at most.
 - **Headline** (700, 14px, 1.3, 0.02em): drawer and panel section headings.
-- **Dashboard heading** (700, 16px for the level chart, 18px for the fleet panel): the two monitoring sheets' titles. Two sizes for one role is recorded as debt, not as a step to extend.
+- **Dashboard heading** (700, 16px): both monitoring sheets share the same heading class and size.
 - **Title** (600, 13px): control labels, tab labels, metric names.
 - **Body** (400, 13px, 1.55): running prose in the drawer, at roughly 65–75 characters.
 - **Label** (600, 12px, 0.05em): HUD metadata, field labels, secondary controls.
@@ -274,7 +274,9 @@ Komatsu yellow on graphite, with a fixed semantic status ramp that means the sam
 
 ### Named Rules
 
-**The Tabular Rule.** Every number that changes over time carries `tabular-nums`. A figure must hold its column while it updates; a level readout that jitters as it counts is a broken instrument. Apply the property to the element, not only to a wrapper.
+**The Weight Steps Rule.** Only 400, 600 and 700 are used for font weight; labels, prose and emphasis map to these documented steps.
+
+**The Tabular Rule.** Numeric selectors `.og-num`, `.og-value`, and `.og-sensor-id` share one `font-variant-numeric: tabular-nums` rule. A figure must hold its column while it updates; a level readout that jitters as it counts is a broken instrument.
 
 **The Fixed-Pixel Rule.** The system is absolute pixels — no `rem`, no `html { font-size }`. A readout must occupy the same physical width regardless of user zoom or density, because it is compared against a fixed threshold.
 
@@ -282,7 +284,7 @@ Komatsu yellow on graphite, with a fixed semantic status ramp that means the sam
 
 ## Layout
 
-A viewport-first shell. On desktop the app fills the window with no page scroll on the 3D views; only the drawer body scrolls. The header is a fixed 60px rail, the content area is a flex row of viewport plus drawer, and the drawer is a fixed 400px column capped at 42vw so it can never crowd the render. Collapsed, the drawer becomes a 52px rail with the toggle alone. Each page carries one visually hidden `h1` (a 1px clipped `.og-visually-hidden` element) that repeats the active section name; the active nav item is the visible title, so no on-page heading duplicates it.
+A viewport-first shell. On desktop the app fills the window with no page scroll on the 3D views; only the drawer body scrolls. Mine and wheel simulation docks use the shared 12px `--og-dock-gap` token. The header is a fixed 60px rail, the content area is a flex row of viewport plus drawer, and the drawer is a fixed 400px column capped at 42vw so it can never crowd the render. Collapsed, the drawer becomes a 52px rail with the toggle alone. Each page carries one visually hidden `h1` (a 1px clipped `.og-visually-hidden` element) that repeats the active section name; the active nav item is the visible title, so no on-page heading duplicates it.
 
 The dashboard is the exception and the reason for the second material: it is a scrolling page at up to 1440px wide inside `.og-page` (the document window is not its scroll container). It opens with the fleet table sheet, then a flex-wrap row of one primary chart sheet and a side column (mode indicator, RUL panel, alert timeline). Above 1024px it wraps on `flex-basis`; at or below 1024px it is forced into a single column. The fleet table is a fixed-layout table with a 1126px minimum width inside a horizontally scrolling wrapper, and its first column (truck) is sticky so a row never loses its identity while scrolling.
 
@@ -320,11 +322,11 @@ Shadow in this system is never structural. The nine `box-shadow` declarations in
 
 ## Shapes
 
-Gently rounded and never soft. Controls and cards share 8px (`--og-radius`) — one radius for things you touch. Data panels and the analyzer notice use 6px, slightly tighter, because a data sheet is a document laid on the instrument rather than a part of it. Floating glass uses 12px. Full pills are reserved for status content: badges, provenance tags, in-scene label pills. Circles are reserved for markers: the 9px status dot, the 8px dot inside the analyzer notice, and the numbered sensor-identity rings (24px beside a card, 18px inside a scene label). The touch checkbox box is the one 3px corner.
+Gently rounded and never soft. Controls and cards share 8px (`--og-radius`) — one radius for things you touch. Monitoring/data panels and the analyzer notice share 6px (`--og-radius-panel`), slightly tighter, because a data sheet is a document laid on the instrument rather than a part of it. Floating glass uses 12px. Full pills are reserved for status content: badges, provenance tags, in-scene label pills. Circles are reserved for markers: the 9px status dot, the 8px dot inside the analyzer notice, and the numbered sensor-identity rings (24px beside a card, 18px inside a scene label). The touch checkbox box is the one 3px corner.
 
 Borders are hairlines. On dark surfaces they are white at low alpha rather than a lighter grey, which keeps them from reading as a second text colour. A status border (the analyzer notice, an RUL panel) is the full one-pixel border in the status colour on all four sides; a status is never a thick strip on one edge.
 
-One radius per role is a rule, not a coincidence — but note that the token is currently under-used: 8px is hardcoded in five places instead of read from `--og-radius`. See Known Debt.
+One radius per role is a rule, not a coincidence: shared `--og-radius` and `--og-radius-panel` tokens keep the matching component roles consistent.
 
 ## Components
 
@@ -336,14 +338,14 @@ Quiet and read-only. The instrument does not perform. It states, and only Critic
 - **Primary:** Machine Yellow fill with near-black text — the one action on a surface, if there is one.
 - **OK variant:** Signal Green fill, for actions that advance a running simulation.
 - **Ghost:** the default `.og-btn`: a translucent white wash at 6% with a Hairline Strong border, for secondary and reversible actions.
-- **Hover / Focus:** background and border fade over 0.15s (primary lightens to `#ffc61f`, OK to `#43d386`, ghost brightens its wash to 12%). Focus is a 2px Machine Yellow outline at 2px offset on every interactive element — the single strongest accessibility commitment in the system.
+- **Hover / Focus:** background and border fade over 0.15s (primary uses `--og-yellow-hover`, OK uses `--og-green-hover`, ghost brightens its wash to 12%). Focus is a 2px Machine Yellow outline at 2px offset on every interactive element — the single strongest accessibility commitment in the system.
 - **Disabled:** the variant's own fill at 45% opacity with a not-allowed cursor.
 - **Reduced motion:** under `prefers-reduced-motion: reduce` every CSS transition is removed, and 3D easing (gearbox spread, cutaway, marker scale) snaps to its target instead of interpolating.
 
 ### Chips
 
-- **Style:** pill, 999px, 24px tall, translucent amber-tinted fill, warm text, uppercase at 11px with wide tracking.
-- **State:** the honesty badge. Clicking expands the full claim into a glass popover. It is the only chip-like element, and it is never decorative — it always carries a truth qualifier.
+- **Style:** pill, 999px, 24px tall, translucent amber-tinted fill, warm text, uppercase at 11px with wide tracking. Shared `.og-badge` modifiers style the honesty/source badges, demo stepper, and N1–N4 severity chips while retaining each semantic color and compact modifier geometry.
+- **State:** the honesty badge. Clicking expands the full claim into a glass popover. Severity and stepper chips convey state; they are never decorative.
 
 ### Cards / Containers
 
@@ -389,18 +391,18 @@ A neutral Annotation-coloured ring carrying the sensor's number: 24px beside the
 
 ## Known Debt
 
-The monitoring page now reads its colours from the shared theme variables: a scan of `frontend/src/dash/*.tsx` and the pages finds no hex literals, and the `.og-fleet-*` rules in `frontend/src/theme.css` resolve to the same variables as the rest of the shell. What remains outside the token system:
+The eight items in the DESIGN-DEBT follow-up are resolved. Theme literals are tokenized; monitoring controls and chips use shared classes; panel radii and heading sizes are unified by role; font weights use only the documented 400/600/700 steps; alert severity colors share one map; tabular numerals share one rule; and the mine/wheel simulation docks use one spacing token.
 
-- `frontend/src/theme.css` still holds literal hex outside `:root`: `#15110a` (text on Machine Yellow, repeated), `#1d2a40` (active card), `#0b0f17` (viewport ground), the header gradient stops, the brand-mark gradient, and the hover fills `#ffc61f` and `#43d386` (button hover states, with no token). The 8px radius is hardcoded in five places instead of `--og-radius`.
-- Monitoring controls and badges are styled inline in `Dashboard.tsx` rather than through `.og-btn` and `.og-badge`: refresh and demo buttons use a 6px radius and 12px text; the source badge, demo stepper chips and N1–N4 level chips use a 4px radius and weight 800. They match the palette but not the 8px control and pill shapes.
-- The fleet sheet and the level chart sheet have square corners while the mode indicator, RUL panel and alert items use 6px.
-- `font-weight: 500` is used twice in the dashboard (chart and alert-timeline sub-labels) and is defined nowhere in the stylesheet; `800` is used for badges and the brand mark without being a documented step.
-- The alert colour map (N1 amber, N2 and N3 orange, N4 red) is duplicated byte-for-byte in `Dashboard.tsx` and `LevelChart.tsx`.
-- `tabular-nums` is declared as three independent rules (`.og-num`, `.og-value`, `.og-sensor-id`) rather than composed.
-- The dock gap has three different values for one role: 8px in the truck view, 12px in `.og-dock`, 16px in the bench view.
-- The monitoring sheets use two heading sizes (16px chart, 18px fleet) for one role.
+- D1 — Theme tokens: `eac0053`
+- D2 — Monitoring controls and chips: `0f1f0f9`
+- D3 — Shared panel radius: `5f58f3e`
+- D4 — Documented font weights: `6954477`
+- D5 — Shared alert severity colors: `f612eb5`
+- D6 — Shared tabular numerals rule: `7367bf0`
+- D7 — Shared simulation dock gap: `50f4396`
+- D8 — Shared monitoring-sheet heading: `da768e6`
 
-Layout-only inline styles in the Preact components (flex gaps, margins, `flex-basis`) are not a separate palette and are not debt by themselves.
+No unresolved known debt remains. The later test-only Astro/Bun typing compatibility commit `78e4f52` supports the debt guards and is not part of D1–D8.
 
 ## Do's and Don'ts
 
