@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { normalizeDustParameters, shouldAdvanceDust, stepDustFrame, stepDustParticle, stepSceneFrame } from "./dustParticles";
 
 describe("dust particle logic", () => {
@@ -32,13 +32,17 @@ describe("dust particle logic", () => {
   });
 
   test("production frame gate skips emission and particle updates while paused", () => {
-    const emitDust = mock(() => undefined);
-    const updateDust = mock(() => undefined);
+    let emitCount = 0;
+    let updateCount = 0;
 
-    stepDustFrame(true, emitDust, updateDust);
+    stepDustFrame(
+      true,
+      () => { emitCount += 1; },
+      () => { updateCount += 1; },
+    );
 
-    expect(emitDust).not.toHaveBeenCalled();
-    expect(updateDust).not.toHaveBeenCalled();
+    expect(emitCount).toBe(0);
+    expect(updateCount).toBe(0);
   });
 
   test("the production pause decision is false only while paused", () => {
@@ -47,13 +51,17 @@ describe("dust particle logic", () => {
   });
 
   test("production frame gate runs emission and particle updates while active", () => {
-    const emitDust = mock(() => undefined);
-    const updateDust = mock(() => undefined);
+    let emitCount = 0;
+    let updateCount = 0;
 
-    stepDustFrame(false, emitDust, updateDust);
+    stepDustFrame(
+      false,
+      () => { emitCount += 1; },
+      () => { updateCount += 1; },
+    );
 
-    expect(emitDust).toHaveBeenCalledTimes(1);
-    expect(updateDust).toHaveBeenCalledTimes(1);
+    expect(emitCount).toBe(1);
+    expect(updateCount).toBe(1);
   });
 
   test("shared scene pause gate freezes wheel motion and advances it while active", () => {
