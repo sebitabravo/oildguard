@@ -2,7 +2,9 @@ use anyhow::Result;
 use bytes::Bytes;
 use rumqttc::{AsyncClient, EventLoop, MqttOptions, QoS};
 use serde::Serialize;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
+
+pub type SharedClient = Arc<AsyncClient>;
 
 #[derive(Serialize)]
 struct Batch<'a, T> {
@@ -39,6 +41,28 @@ pub async fn publish<T: Serialize>(
             level,
             false,
             batch_payload(rows)?,
+        )
+        .await?;
+    Ok(())
+}
+
+pub async fn publish_payload(
+    client: &SharedClient,
+    device_id: &str,
+    payload: Vec<u8>,
+    qos: u8,
+) -> Result<()> {
+    let level = match qos {
+        0 => QoS::AtMostOnce,
+        1 => QoS::AtLeastOnce,
+        _ => QoS::ExactlyOnce,
+    };
+    client
+        .publish(
+            format!("oilguard/signals/{device_id}"),
+            level,
+            false,
+            payload,
         )
         .await?;
     Ok(())
