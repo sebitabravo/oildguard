@@ -1,0 +1,59 @@
+.calibration-page { color: var(--og-text); }
+.calibration-page__selector { display: grid; gap: 5px; min-width: 180px; color: var(--og-body); font: 10px var(--og-mono); text-transform: uppercase; }
+.calibration-page__selector select { min-height: 44px; padding: 0 12px; color: var(--og-text); background: var(--og-panel); border: 1px solid var(--og-line-strong); border-radius: var(--og-radius); font: 12px var(--og-mono); }
+.calibration-page__source { display: flex; align-items: center; gap: 12px; min-height: 52px; margin: 0 0 18px; padding: 0 14px; border: 1px solid var(--og-line); background: var(--og-panel); color: var(--og-body); font-size: 12px; }
+.calibration-page__source strong { color: var(--og-yellow); font: 11px var(--og-mono); }
+.calibration-page__source-dot { width: 8px; height: 8px; background: var(--og-muted); border-radius: 50%; }
+.calibration-page__source-dot--live { background: var(--og-green); }.calibration-page__source-dot--demo { background: var(--og-yellow); }
+.calibration-page__grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(260px, .75fr); gap: 14px; align-items: start; }
+.calibration-page__curve, .calibration-page__result, .calibration-page__window, .calibration-page__reference { min-width: 0; padding: 18px; border: 1px solid var(--og-line); background: var(--og-panel); }
+.calibration-page__section-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 12px; }
+.calibration-page__section-head h3 { margin: 0; color: var(--og-text); font-size: 16px; font-weight: 550; }
+.calibration-page__section-head p { margin: 5px 0 0; color: var(--og-body); font-size: 12px; line-height: 1.55; }
+.calibration-page__demo-label { display: inline-flex; align-items: center; min-height: 28px; padding: 0 8px; color: var(--og-yellow); border: 1px solid var(--og-yellow-deep); font: 10px var(--og-mono); white-space: nowrap; }
+.calibration-page__chart { padding: 10px 12px; background: var(--og-panel-inset); }
+.calibration-page__chart-wrap { position: relative; }
+.calibration-page__chart-wrap .og-time-series > text { display: none; }
+.calibration-page__chart-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.calibration-page__nominal-band { fill: color-mix(in srgb, var(--og-green) 11%, transparent); }
+.calibration-page__asymptote { stroke: var(--og-blue); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.calibration-page__chart-legend { display: flex; flex-wrap: wrap; gap: 9px 18px; margin: 8px 2px 0; color: var(--og-body); font: 10px var(--og-mono); }
+.calibration-page__chart-legend span { display: flex; align-items: center; gap: 7px; }
+.calibration-page__legend-line { width: 14px; border-top: 2px dashed var(--og-blue); }
+.calibration-page__legend-band { width: 14px; height: 9px; background: color-mix(in srgb, var(--og-green) 20%, transparent); border: 1px solid var(--og-green); }
+.calibration-page__legend-marker { height: 12px; border-left: 1px dashed var(--og-blue); }
+.calibration-page__chart-axis { display: flex; justify-content: space-between; margin-top: 8px; color: var(--og-muted); font: 10px var(--og-mono); }
+.calibration-page__model-note { margin: 12px 0 0; color: var(--og-body); font-size: 11px; line-height: 1.55; }
+.calibration-page__verdict { padding: 18px; border: 1px solid var(--og-green); background: color-mix(in srgb, var(--og-green) 7%, var(--og-panel)); }
+.calibration-page__verdict--slow { border-color: var(--og-yellow); background: color-mix(in srgb, var(--og-yellow) 7%, var(--og-panel)); }
+.calibration-page__verdict--invalid { border-color: var(--og-red); background: color-mix(in srgb, var(--og-red) 7%, var(--og-panel)); }
+.calibration-page__verdict--waiting { border-color: var(--og-blue); background: color-mix(in srgb, var(--og-blue) 7%, var(--og-panel)); }
+.calibration-page__verdict-label { color: var(--og-body); font: 10px var(--og-mono); text-transform: uppercase; }
+.calibration-page__verdict h3 { margin: 9px 0 5px; color: var(--og-green); font-size: 20px; }.calibration-page__verdict--slow h3 { color: var(--og-yellow); }.calibration-page__verdict--invalid h3 { color: var(--og-red); }
+.calibration-page__verdict--waiting h3 { color: var(--og-blue); }
+.calibration-page__verdict p { min-height: 42px; margin: 0; color: var(--og-body); font-size: 12px; line-height: 1.55; }
+.calibration-page__verdict dl, .calibration-page__window dl { display: grid; gap: 8px; margin: 16px 0 0; }
+.calibration-page__verdict dl div, .calibration-page__window dl div { display: flex; justify-content: space-between; gap: 10px; padding-top: 8px; border-top: 1px solid var(--og-line); }
+.calibration-page__verdict dt, .calibration-page__window dt { color: var(--og-body); font-size: 11px; }.calibration-page__verdict dd, .calibration-page__window dd { margin: 0; color: var(--og-text); font: 11px var(--og-mono); text-align: right; }
+.calibration-page__result { grid-column: 1; }
+.calibration-page__readout { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--og-line); }
+.calibration-page__readout strong { color: var(--og-text); font: 500 26px var(--og-mono); }.calibration-page__readout small { color: var(--og-body); font-size: 14px; }.calibration-page__readout span, .calibration-page__band-row { color: var(--og-body); font-size: 12px; }
+.calibration-page__band-row { display: flex; justify-content: space-between; gap: 8px; padding: 12px 0; }.calibration-page__band-row strong { color: var(--og-text); font: 11px var(--og-mono); }
+.calibration-page__provenance { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; color: var(--og-body); font-size: 11px; }
+.calibration-page__window p { color: var(--og-body); font-size: 12px; line-height: 1.55; }
+.calibration-page__reference { grid-column: 2; grid-row: 2 / span 2; }
+.calibration-page__reference .og-empty { min-height: 130px; padding: 28px 14px; border-color: var(--og-line-strong); font-size: 12px; line-height: 1.5; }
+.calibration-page__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.calibration-page__actions a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; color: var(--og-text); border: 1px solid var(--og-line-strong); text-decoration: none; font: 11px var(--og-mono); }
+.calibration-page__actions a:hover { border-color: var(--og-yellow); color: var(--og-yellow); }
+.calibration-page :is(a, button, select):focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 3px; }
+@media (max-width: 900px) {
+  .calibration-page__grid { grid-template-columns: 1fr; }
+  .calibration-page__result, .calibration-page__reference { grid-column: auto; grid-row: auto; }
+  .calibration-page__source { align-items: flex-start; flex-direction: column; gap: 5px; padding: 10px 12px; }
+  .calibration-page__source-dot { display: none; }
+  .calibration-page__section-head { align-items: flex-start; }
+  .calibration-page__curve .calibration-page__section-head { flex-wrap: wrap; }
+  .calibration-page__curve .calibration-page__section-head > div:first-child { flex: 1 1 100%; }
+  .calibration-page__readout { align-items: flex-start; flex-direction: column; }
+}
