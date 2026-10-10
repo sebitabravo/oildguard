@@ -42,4 +42,12 @@ describe("RUL suppression explanation", () => {
     const reason = "RUL unavailable: unknown calibration reason; inspect backend evidence.";
     expect(renderSuppressedNote("es", reason)).toContain(reason);
   });
+
+  test("localizes the known no-rows backend reason and preserves its English wording", () => {
+    const reason = "RUL unavailable: no rows ingested yet; POST SignalRow batches to /ingest, then GET /alerts walks the N1–N4 ladder. Surface anomaly-only alerts instead.";
+    expect(renderSuppressedNote("en", reason)).toContain(reason);
+    expect(renderSuppressedNote("es", reason)).toContain(
+      "RUL no disponible: aún no se han ingerido filas; envía lotes de SignalRow a /ingest y luego GET /alerts recorre la escalera N1–N4. En su lugar, muestra solo alertas de anomalías.",
+    );
+  });
 });

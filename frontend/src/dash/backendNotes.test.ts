@@ -13,6 +13,14 @@ describe("dashboard backend note localization", () => {
       .toBe("predeterminado (aún no se han ingerido filas)");
   });
 
+  test("localizes the known suppressed-RUL backend explanation without changing English", () => {
+    const note = "RUL unavailable: no rows ingested yet; POST SignalRow batches to /ingest, then GET /alerts walks the N1–N4 ladder. Surface anomaly-only alerts instead.";
+    expect(localizeDashboardBackendText(note, "en")).toBe(note);
+    expect(localizeDashboardBackendText(note, "es")).toBe(
+      "RUL no disponible: aún no se han ingerido filas; envía lotes de SignalRow a /ingest y luego GET /alerts recorre la escalera N1–N4. En su lugar, muestra solo alertas de anomalías.",
+    );
+  });
+
   test("preserves known English notes and passes unknown backend text through verbatim", () => {
     const known = "No T10 evaluation available for the current store.";
     const unknown = "Backend extension note: keep exact casing and punctuation!";

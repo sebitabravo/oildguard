@@ -118,6 +118,10 @@ export const dict = {
     en: "no rows ingested yet; POST SignalRow batches to /ingest, then GET /alerts walks the N1–N4 ladder.",
     es: "Aún no se han ingerido filas; envía lotes de SignalRow a /ingest y luego GET /alerts recorre la escalera N1–N4.",
   },
+  "dash.backend.note.rulNoRows": {
+    en: "RUL unavailable: no rows ingested yet; POST SignalRow batches to /ingest, then GET /alerts walks the N1–N4 ladder. Surface anomaly-only alerts instead.",
+    es: "RUL no disponible: aún no se han ingerido filas; envía lotes de SignalRow a /ingest y luego GET /alerts recorre la escalera N1–N4. En su lugar, muestra solo alertas de anomalías.",
+  },
   "dash.backend.source.defaultEmpty": {
     en: "default (no rows ingested yet)",
     es: "predeterminado (aún no se han ingerido filas)",
