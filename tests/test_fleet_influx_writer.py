@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend import main as backend_main
-from backend.influx_writer import InfluxWriter, encode_line_protocol
+from backend.influx_writer import InfluxWriter, encode_line_protocol, encode_row
 
 
 def row(**overrides):
@@ -47,15 +47,48 @@ def slow_writer(delay: float = 0.4):
 # --------------------------------------------------------------------------
 
 
-def test_line_protocol_has_measurement_tags_fields_and_timestamp():
+def test_line_protocol_has_measurement_tags_fields_and_epoch_timestamp():
+    """Influx rechaza RFC3339 (con +00:00 y con Z): exige un entero epoch."""
     line = encode_line_protocol([row()])
 
-    assert line == (
-        'oilguard_signals,device_id=wheel-RH-01,fsm_state=LOAD,label=normal,'
-        'sig_verified=false pressure_kpa=2.5,temperature_c=41.5,vib_rms_g=0.31,'
-        'vib_kurtosis=2.1,level_liters=90.25,seq=7i '
-        '2026-01-01T00:00:00.000000+00:00'
+    measurement, rest = line.split(" ", 1)
+    fields, timestamp = rest.rsplit(" ", 1)
+    assert measurement == (
+        "oilguard_signals,device_id=wheel-RH-01,fsm_state=LOAD,label=normal,"
+        "sig_verified=false"
     )
+    assert fields == (
+        "pressure_kpa=2.5,temperature_c=41.5,vib_rms_g=0.31,"
+        "vib_kurtosis=2.1,level_liters=90.25,seq=7i"
+    )
+    assert timestamp.isdigit()
+    assert timestamp == "1767225600000000000"  # 2026-01-01T00:00:00+00:00 en ns
+
+
+def test_line_protocol_coerces_numeric_strings():
+    """El simulador Rust publica los numeros como cadenas: si se descartan,
+    a Influx solo llega el seq y se pierden todas las senales."""
+    line = encode_line_protocol([
+        row(pressure_kpa="2.579", temperature_c="74.94", level_liters="95.0", seq="400")
+    ])
+
+    assert "pressure_kpa=2.579" in line
+    assert "temperature_c=74.94" in line
+    assert "level_liters=95.0" in line
+    assert "seq=400i" in line
+
+
+def test_line_protocol_uses_nanosecond_precision_not_seconds():
+    """El timestamp es clave primaria: a 10 Hz, precision de segundo se pisaria."""
+    first = encode_row(row(t_iso="2026-01-01T00:00:00.100000+00:00"))
+    second = encode_row(row(t_iso="2026-01-01T00:00:00.200000+00:00"))
+
+    assert first.rsplit(" ", 1)[1] != second.rsplit(" ", 1)[1]
+    assert first.rsplit(" ", 1)[1].endswith("100000000")
+
+
+def test_line_protocol_skips_rows_with_an_unparseable_timestamp():
+    assert encode_row(row(t_iso="no-es-una-fecha")) is None
 
 
 def test_line_protocol_joins_one_line_per_row():
@@ -83,8 +116,8 @@ def test_line_protocol_skips_rows_without_a_timestamp():
     assert encode_line_protocol([row(t_iso=None), row(t_iso="")]) == ""
 
 
-def test_line_protocol_tolerates_missing_numeric_fields():
-    line = encode_line_protocol([row(pressure_kpa=None, level_liters=None)])
+def test_line_protocol_tolerates_missing_or_unparseable_numeric_fields():
+    line = encode_line_protocol([row(pressure_kpa=None, level_liters="n/a")])
 
     assert "pressure_kpa" not in line
     assert "level_liters" not in line

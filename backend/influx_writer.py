@@ -16,6 +16,7 @@ from __future__ import annotations
 import logging
 import queue
 import threading
+from datetime import datetime, timezone
 from typing import Any, Callable, Iterable
 
 log = logging.getLogger("oilguard-influx-writer")
@@ -32,10 +33,80 @@ def _escape_tag(value: str) -> str:
     return value.replace("\\", "\\\\").replace(",", "\\,").replace(" ", "\\ ").replace("=", "\\=")
 
 
+def _as_number(value: Any) -> float | None:
+    """El simulador Rust publica los campos numericos como cadenas.
+
+    Descartarlas perderia todas las senales en Influx y solo dejaria el seq,
+    asi que se coaccionan igual que hacia la escritura por Points.
+    """
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, (int, float)):
+        number = float(value)
+    elif isinstance(value, str):
+        try:
+            number = float(value)
+        except ValueError:
+            return None
+    else:
+        return None
+    return number if number == number and -1e308 < number < 1e308 else None
+
+
+_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+_NS_CACHE_LIMIT = 4096
+_NS_CACHE: dict[str, int | None] = {}
+
+
+def _iso_to_ns(value: str) -> int | None:
+    """ISO-8601 -> nanosegundos epoch, en aritmetica entera exacta.
+
+    ``datetime.timestamp()`` devuelve float y a 1.77e9 el float64 solo deja
+    ~95 ns de resolucion: se perde precision que el reloj del simulador si
+    tiene. Con enteros no hay deriva.
+    """
+    cached = _NS_CACHE.get(value, False)
+    if cached is not False:
+        return cached  # type: ignore[return-value]
+    try:
+        moment = datetime.fromisoformat(value)
+    except ValueError:
+        result: int | None = None
+    else:
+        if moment.tzinfo is None:
+            moment = moment.replace(tzinfo=timezone.utc)
+        delta = moment.astimezone(timezone.utc) - _EPOCH
+        result = (
+            (delta.days * 86_400 + delta.seconds) * 1_000_000_000
+            + delta.microseconds * 1_000
+        )
+    if len(_NS_CACHE) >= _NS_CACHE_LIMIT:
+        _NS_CACHE.clear()
+    _NS_CACHE[value] = result
+    return result
+
+
+def _timestamp_ns(value: Any) -> int | None:
+    """``t_iso`` a nanosegundos epoch, que es lo unico que acepta Influx.
+
+    Influx rechaza RFC3339 (con ``+00:00`` y con ``Z``): pide un entero epoch.
+    Se usan nanosegundos y no segundos porque el timestamp es la clave primaria
+    y a 10 Hz varias filas caen en el mismo segundo: con precision de segundo se
+    pisarian entre si.
+    """
+    if isinstance(value, str) and value:
+        return _iso_to_ns(value)
+    number = _as_number(value)
+    if number is None:
+        return None
+    seconds = int(number)
+    return seconds * 1_000_000_000 + int(round((number - seconds) * 1_000_000_000))
+
+
 def encode_row(row: dict[str, Any]) -> str | None:
     """Una fila como linea de line protocol, o None si no se puede escribir."""
-    timestamp = row.get("t_iso")
-    if not isinstance(timestamp, str) or not timestamp:
+    timestamp = _timestamp_ns(row.get("t_iso"))
+    if timestamp is None:
         return None
 
     tags = []
@@ -49,15 +120,13 @@ def encode_row(row: dict[str, Any]) -> str | None:
 
     fields = []
     for name in FLOAT_FIELDS:
-        value = row.get(name)
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            continue
-        fields.append(f"{_escape_tag(name)}={float(value)}")
+        number = _as_number(row.get(name))
+        if number is not None:
+            fields.append(f"{_escape_tag(name)}={number}")
     for name in INT_FIELDS:
-        value = row.get(name)
-        if isinstance(value, bool) or not isinstance(value, int):
-            continue
-        fields.append(f"{_escape_tag(name)}={value}i")
+        number = _as_number(row.get(name))
+        if number is not None:
+            fields.append(f"{_escape_tag(name)}={int(number)}i")
     if not fields:
         return None
     return f"{tag_part} {','.join(fields)} {timestamp}"
