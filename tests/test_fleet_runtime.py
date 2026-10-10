@@ -33,6 +33,27 @@ def test_dockerfile_builds_on_python_312_slim():
     assert "FROM python:3.12-slim" in DOCKERFILE
 
 
+def test_websocket_transport_is_installed_next_to_uvicorn():
+    """uvicorn sin ws devuelve 404 en /ws/fleet aunque el ASGI app sea correcta.
+
+    TestClient no reproduce esto porque fala el transporte del servidor: el
+    endpoint pasaba en verde mientras el servicio en produccion no aceptaba
+    conexiones WebSocket.
+    """
+    assert re.search(r"^websockets==\S+$", REQUIREMENTS, re.MULTILINE), (
+        "backend/requirements.txt debe fijar websockets: uvicorn sin transporte "
+        "ws responde 404 en /ws/fleet"
+    )
+
+    # Lo que uvicorn comprueba al arrancar es justo que estos import funcionan;
+    # sin uno de los dos registra "No supported WebSocket library detected".
+    import websockets  # noqa: F401
+
+    import uvicorn
+
+    assert uvicorn.__version__
+
+
 def test_polars_linear_quantile_matches_hand_computed_values():
     import polars as pl
 

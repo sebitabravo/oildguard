@@ -1,5 +1,8 @@
 fastapi==0.115.6
 uvicorn==0.34.0
+# uvicorn sin transporte ws responde 404 en /ws/fleet aunque la app ASGI sea
+# correcta; TestClient no lo reproduce porque no pasa por ese transporte.
+websockets==17.2
 paho-mqtt==1.6.1
 influxdb-client==1.40.0
 polars==2.0.0
