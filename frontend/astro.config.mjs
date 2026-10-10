@@ -3,6 +3,7 @@ import preact from "@astrojs/preact";
 
 export default defineConfig({
   integrations: [preact()],
+  devToolbar: { enabled: false },
   server: {
     host: "0.0.0.0",
     port: 5173,
