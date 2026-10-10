@@ -166,3 +166,7 @@ Bilingual EN/ES is a product requirement rather than a convenience, because the 
 Committed in the existing implementation: a visible two-pixel brand-yellow focus outline on every interactive element, `prefers-reduced-motion` suppression of transitions, ARIA roles with current/pressed/expanded/selected state throughout, arrow-key navigation across the drawer tablist, charts exposed as labelled images, and tabular numerals on numeric readouts.
 
 No formal target standard is set. WCAG conformance has not been claimed and must not be asserted until it is. IEC 62443 applies to the industrial cybersecurity posture, not to accessibility, and must not be borrowed as an accessibility claim.
+
+## Honesty guard
+
+The frontend test suite scans `frontend/src` for unsupported customer, performance, certification, financial, and machine-control claims. It normalizes case and accents, respects short-token word boundaries, and reports each match with its source line and reason; the path-specific exception allowlist is intentionally empty.
