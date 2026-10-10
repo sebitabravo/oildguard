@@ -16,6 +16,7 @@ describe("navigation registry", () => {
     expect(routeRegistry.find((route) => route.path === "/calibration")?.ready).toBe(true);
     expect(routeRegistry.find((route) => route.path === "/lab/sim")?.ready).toBe(true);
     expect(routeRegistry.find((route) => route.path === "/lab/validation")?.ready).toBe(true);
+    expect(routeRegistry.find((route) => route.path === "/lab/bench")?.ready).toBe(true);
   });
 
   test("groups contain only unique navigation items", () => {
