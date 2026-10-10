@@ -233,6 +233,20 @@ Closeout pointer: S7 assumption outcome stays PARTIAL (logic proven on
 synthetic-proxy, field accuracy pending bench); this annex is the bench-ready
 anchor, not bench evidence.
 
+## 8. Telemetry evidence
+
+These rows extend the honesty register to the Rust telemetry path. They do not
+turn synthetic simulator output into field evidence.
+
+| # | Parameter | Value | Status | Source |
+|---|-----------|-------|--------|--------|
+| P22 | Rust simulator parity | Generator golden rows, signing vectors, and physics fixture pass; simulated `t_s` and `seq` remain deterministic in realtime mode | VERIFIED | [`edge-sim/tests/parity.rs`](../edge-sim/tests/parity.rs), [`docs/architecture-telemetry.md`](architecture-telemetry.md) |
+| P23 | Precision benchmark exact level mean | 93.5000234198 L for 1,000,000 readings; input resolution 1e-4 L | DERIVED | [`docs/bench/precision.md`](bench/precision.md), [`bench/precision/results/`](../bench/precision/results/) |
+| P24 | Precision benchmark leak integral | Exact cumulative integral 2.8894 L; float error 4.6946e-15 L in Python and 4.8850e-15 L in Rust | DERIVED | [`docs/bench/precision.md`](bench/precision.md) |
+| P25 | Stress baseline environment | Apple M3 development machine; committed raw reports identify arm64, macOS 15.8.1, and Python 3.11.16 | DERIVED | [`docs/bench/stress.md`](bench/stress.md), [`docs/bench/stress-baseline.json`](bench/stress-baseline.json) |
+| P26 | Stress baseline accepted throughput | 992.4646 rows/s at 100 devices, 5,149.9632 at 1,000, 2,550.0911 at 5,000, and 1,630.3284 at 10,000, with Influx enabled | DERIVED | [`docs/bench/stress.md`](bench/stress.md), [`docs/bench/stress-baseline.json`](bench/stress-baseline.json) |
+| P27 | Stress scale extrapolation | Larger fleets are expected to increase queueing and loss unless capacity is measured and the backend is optimized | ASSUMPTION | No production capacity claim; see [`docs/bench/stress.md`](bench/stress.md) |
+
 ## 7b. Historical S2 truck scene: HD465 visual-proxy mesh
 
 This subsection records the previous S2 scene, not the current `/mine` truck.
