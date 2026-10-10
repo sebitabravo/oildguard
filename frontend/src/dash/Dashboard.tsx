@@ -117,6 +117,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   const [windows, setWindows] = useState<WindowsResponse | null>(null);
   const [history, setHistory] = useState<ChartPoint[]>([]);
   const [rawRows, setRawRows] = useState<LevelSeriesPoint[]>([]);
+  const [sensorRows, setSensorRows] = useState<LevelSeriesPoint[]>([]);
   const [latestSignals, setLatestSignals] = useState<ReturnType<typeof latestSensorReadings> | null>(null);
   const [demoStage, setDemoStage] = useState<DemoStageId>("idle");
   const [demoTick, setDemoTick] = useState(0);
@@ -142,6 +143,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
       setRul(ru);
       setWindows(wi);
       setRawRows(ls.series.slice(-6));
+      setSensorRows(ls.series);
       setLatestSignals(latestSensorReadings(ls.series));
       setBackendNote({
         kind: "live",
@@ -175,6 +177,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
       setSigningStatus(undefined);
       setAnalysisAvailable(undefined);
       setLatestSignals(null);
+      setSensorRows([]);
       setBackendNote({ kind: "error" });
       setSource("demo");
     }
@@ -191,6 +194,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
       setWindows(null);
       setHistory([]);
       setRawRows([]);
+      setSensorRows([]);
       setLatestSignals(null);
     }
     void fetchAll();
@@ -280,6 +284,20 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   const shownPoints: ChartPoint[] = demoActive
     ? DEMO_SERIES.filter((p) => p.t_s <= (demoCutoff[demoStage] ?? 30)).slice(-90)
     : liveSeries ? history : trace.points;
+  const liveSignalRows = sensorRows.filter((row) =>
+    typeof row.pressure_kpa === "number" && Number.isFinite(row.pressure_kpa) &&
+    typeof row.temperature_c === "number" && Number.isFinite(row.temperature_c),
+  );
+  const sampleSignal = (key: "pressure_kpa" | "temperature_c", base: number, amplitude: number) => {
+    const liveValues = liveSignalRows.map((row) => row[key] as number);
+    if (source === "live" && liveValues.length >= 3 && shownPoints.length > 0) {
+      return shownPoints.map((_, index) => liveValues[Math.round(index * (liveValues.length - 1) / Math.max(1, shownPoints.length - 1))]);
+    }
+    return shownPoints.map((_, index) => base + Math.sin(index * 0.43) * amplitude);
+  };
+  const signalSource = source === "live" && liveSignalRows.length >= 3 ? "LIVE" : "DEMO";
+  const chartPressure = sampleSignal("pressure_kpa", wheel.pressureKpa, 1.2);
+  const chartTemperature = sampleSignal("temperature_c", wheel.temperatureC, 0.8);
   const shownAlerts = demoActive
     ? demoAlertsUpTo(demoStage)
     : analyzerUnavailable ? [] : (alerts?.data.alerts ?? []);
@@ -441,7 +459,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
             {usingTrace && live && source === "live" && (
               <p className="og-wheel-panel__warn">{t("wheel.chart.demoTrace", lang)}</p>
             )}
-            <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} variant="inline" />
+            <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} variant="inline" pressureValues={chartPressure} temperatureValues={chartTemperature} signalSource={signalSource} />
             <ChartLegend lang={lang} />
             <p className="og-wheel-panel__note">
               {t("wheel.chart.note", lang)} {t("dash.footnote", lang, { pressure: formatNumber(wheel.pressureKpa, lang, 1) })}

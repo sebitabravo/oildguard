@@ -1,4 +1,4 @@
-import { useMemo } from "preact/hooks";
+import { useMemo, useState } from "preact/hooks";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t, useLang } from "../../i18n";
 import { Button, KpiTile, Notice, PageHeader, TimeSeriesChart } from "../../ui/foundation";
@@ -7,6 +7,7 @@ import "./report.css";
 
 export default function ReportPage() {
   const [lang] = useLang();
+  const [cursorIndex, setCursorIndex] = useState<number | null>(null);
   const alertId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("alert") ?? undefined : undefined;
   const report = useMemo(() => assembleSyntheticReport(alertId), [alertId]);
   const text = localizeReport(report, lang);
@@ -45,8 +46,8 @@ export default function ReportPage() {
           </ol>
         </section>
         <section className="og-report-charts">
-          <article><h3>{t("report.levelChart", lang)}</h3><TimeSeriesChart lang={lang} values={report.levelSeries} thresholds={[{ value: 47.5, label: t("history.threshold.warning", lang) }, { value: 28.5, label: t("history.threshold.critical", lang) }]} domain={[0, 95]} yUnit="L" events={timeline} title={t("report.levelChart", lang)} xLabels={text.minuteTicks} /></article>
-          <article><h3>{t("report.pressureChart", lang)}</h3><TimeSeriesChart lang={lang} values={report.pressureSeries} yUnit="kPa" yDecimals={1} events={timeline} title={t("report.pressureChart", lang)} xLabels={text.minuteTicks} /></article>
+          <article><h3>{t("report.levelChart", lang)}</h3><TimeSeriesChart lang={lang} values={report.levelSeries} thresholds={[{ value: 47.5, label: t("history.threshold.warning", lang) }, { value: 28.5, label: t("history.threshold.critical", lang) }]} domain={[0, 95]} yUnit="L" events={timeline} title={t("report.levelChart", lang)} xLabels={text.minuteTicks} cursorIndex={cursorIndex} onCursorChange={setCursorIndex} /></article>
+          <article><h3>{t("report.pressureChart", lang)}</h3><TimeSeriesChart lang={lang} values={report.pressureSeries} yUnit="kPa" yDecimals={1} events={timeline} title={t("report.pressureChart", lang)} color="var(--og-blue)" xLabels={text.minuteTicks} cursorIndex={cursorIndex} onCursorChange={setCursorIndex} /></article>
         </section>
         <section className="og-report-section">
           <div className="og-report-section__heading"><h3>{t("report.checklist", lang)}</h3><span>{t("report.readOnly", lang)}</span></div>

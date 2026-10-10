@@ -4,7 +4,7 @@ import { getRul, type RulData } from "../../sim/api";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t, useLang } from "../../i18n";
 import {
-  FilterBar, PageHeader, SegmentedControl, Sparkline, SyntheticBadge,
+  FilterBar, PageHeader, SegmentedControl, SyntheticBadge, TimeSeriesChart,
 } from "../../ui/foundation";
 import { classifyRulHorizon } from "../../dash/rulHorizon";
 import { convertRulHours, filterProjectedRul, sortRulCards, type RulCard, type RulUnit } from "./logic";
@@ -168,7 +168,19 @@ export default function RulPage() {
               </div>
               {card.projected ? (
                 <div className="og-rul-projection">
-                  <Sparkline lang={lang} values={card.projection} label={`${t("rul.projection", lang)} ${card.wheelId}`} />
+                  <TimeSeriesChart
+                    lang={lang}
+                    values={card.projection}
+                    sigma={card.source === "DEMO" ? card.projection.map(() => card.sigma) : []}
+                    title={`${t("rul.projection", lang)} ${card.wheelId}`}
+                    domain={[0, 95]}
+                    yUnit="L"
+                    thresholds={[
+                      { value: WARNING_L, label: t("history.threshold.warning", lang) },
+                      { value: CRITICAL_L, label: t("history.threshold.critical", lang) },
+                    ]}
+                    height={112}
+                  />
                   <small>{t("rul.projection", lang)} · 30%</small>
                 </div>
               ) : (

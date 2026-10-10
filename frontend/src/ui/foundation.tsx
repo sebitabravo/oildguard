@@ -4,7 +4,7 @@ import { formatNumber } from "../i18n/numberFormat";
 import { useBackendState, backendStateLabel } from "./backendOrDemo";
 import { levelBarGeometry, severityColor, severityTone, type Tone } from "./logic";
 import { linePath, monotoneCurvePath, niceTicks, nextCursorIndex, scaledPoints } from "./chartGeometry";
-import { useState } from "preact/hooks";
+import { useId, useState } from "preact/hooks";
 
 export type Severity = "N1" | "N2" | "N3" | "N4";
 
@@ -202,6 +202,7 @@ export interface SyncChartSeries {
   dashed?: boolean;
   domain?: [number, number];
   decimals?: number;
+  axisTicks?: boolean;
 }
 
 export interface SyncChartProps {
@@ -209,8 +210,9 @@ export interface SyncChartProps {
   series: SyncChartSeries[];
   title?: string;
   xLabels?: string[];
-  thresholds?: Array<{ value: number; label: string; axis?: "left" | "right" }>;
-  events?: Array<{ index: number; label: string }>;
+  leftTicks?: number[];
+  thresholds?: Array<{ value: number; label: string; axis?: "left" | "right"; domain?: [number, number] }>;
+  events?: Array<{ index: number; label: string; color?: string }>;
   gaps?: number[];
   regimes?: Array<{ startIndex: number; endIndex: number; label: string; tone?: "rest" | "movement" }>;
   cursorIndex?: number | null;
@@ -222,7 +224,7 @@ const SERIES_COLORS = ["var(--og-blue)", "var(--og-accent)", "var(--og-temperatu
 
 function seriesDomain(series: SyncChartSeries[], axis: "left" | "right"): [number, number] {
   const items = series.filter((item) => (item.axis ?? "left") === axis);
-  const fixed = items.find((item) => item.domain)?.domain;
+  const fixed = items.find((item) => item.axisTicks)?.domain ?? items.find((item) => item.domain)?.domain;
   if (fixed) return fixed;
   const values = items.flatMap((item) => item.values.flatMap((value, index) => [value - (item.sigma?.[index] ?? 0), value + (item.sigma?.[index] ?? 0)]));
   if (!values.length) return [0, 1];
@@ -234,9 +236,10 @@ function seriesDomain(series: SyncChartSeries[], axis: "left" | "right"): [numbe
 
 export function SyncChart({
   lang, series, title = "Time series", xLabels = [], thresholds = [], events = [], gaps = [], regimes = [],
-  cursorIndex, onCursorChange, height = 200,
+  cursorIndex, onCursorChange, height = 200, leftTicks: requestedLeftTicks,
 }: SyncChartProps) {
   const [localCursor, setLocalCursor] = useState<number | null>(null);
+  const hatchId = useId();
   const count = Math.max(0, ...series.map((item) => item.values.length));
   const activeCursor = cursorIndex === undefined ? localCursor : cursorIndex;
   const chart = { width: 640, height: 220 };
@@ -245,19 +248,20 @@ export function SyncChart({
   const plotHeight = chart.height - pad.top - pad.bottom;
   const domains = { left: seriesDomain(series, "left"), right: seriesDomain(series, "right") };
   const xAt = (index: number) => pad.left + (count <= 1 ? plotWidth / 2 : index / (count - 1) * plotWidth);
-  const yAt = (value: number, axis: "left" | "right") => {
-    const [min, max] = domains[axis];
+  const yAt = (value: number, axis: "left" | "right", override?: [number, number]) => {
+    const [min, max] = override ?? domains[axis];
     return pad.top + (1 - (value - min) / (max - min || 1)) * plotHeight;
   };
-  const leftTicks = niceTicks(...domains.left, 4);
+  const leftTicks = requestedLeftTicks ?? niceTicks(...domains.left, 4);
   const rightTicks = series.some((item) => item.axis === "right") ? niceTicks(...domains.right, 4) : [];
   const setCursor = (index: number) => {
     if (cursorIndex === undefined) setLocalCursor(index);
     onCursorChange?.(index);
   };
   const onKeyDown = (event: KeyboardEvent & { currentTarget: HTMLDivElement }) => {
-    const next = nextCursorIndex(activeCursor ?? 0, event.key, count);
-    if (next !== (activeCursor ?? 0) && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    const next = activeCursor === null ? (event.key === "End" ? count - 1 : 0) : nextCursorIndex(activeCursor, event.key, count);
+    if (next >= 0 && next !== activeCursor) {
       event.preventDefault();
       setCursor(next);
     }
@@ -278,26 +282,42 @@ export function SyncChart({
       </div>
       <div className="og-sync__frame" onKeyDown={onKeyDown} tabIndex={0} role="application" aria-label={`${title}. ${t("ui.chartDescription", lang)}`}>
         <svg className="og-sync__svg" viewBox={`0 0 ${chart.width} ${chart.height}`} preserveAspectRatio="none" onPointerMove={onPointerMove} onPointerLeave={onPointerLeave} aria-hidden="true" focusable="false">
-          <defs><pattern id="og-sync-gap-hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="6" className="og-sync__hatch-line" /></pattern></defs>
+          <defs><pattern id={`${hatchId}-gap-hatch`} width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="6" className="og-sync__hatch-line" /></pattern></defs>
           {regimes.map((regime) => <g><rect x={xAt(regime.startIndex)} y={pad.top} width={Math.max(0, xAt(regime.endIndex) - xAt(regime.startIndex))} height={plotHeight} className={`og-sync__regime og-sync__regime--${regime.tone ?? "rest"}`} /><text x={xAt(regime.startIndex) + 5} y={pad.top + 12} className="og-sync__regime-label">{regime.label}</text></g>)}
           {leftTicks.map((tick) => <g><line x1={pad.left} x2={chart.width - pad.right} y1={yAt(tick, "left")} y2={yAt(tick, "left")} className="og-sync__grid" /><text x={pad.left - 8} y={yAt(tick, "left") + 4} text-anchor="end" className="og-sync__tick">{formatNumber(tick, lang, series.find((item) => (item.axis ?? "left") === "left")?.decimals ?? 1)}</text></g>)}
           {rightTicks.map((tick) => <text x={chart.width - pad.right + 8} y={yAt(tick, "right") + 4} className="og-sync__tick">{formatNumber(tick, lang, series.find((item) => item.axis === "right")?.decimals ?? 1)}</text>)}
-          {gaps.map((gap) => <rect x={xAt(gap)} y={pad.top} width={Math.max(4, plotWidth / Math.max(1, count - 1))} height={plotHeight} fill="url(#og-sync-gap-hatch)" className="og-sync__gap" />)}
-          {thresholds.map((threshold) => <g><line x1={pad.left} x2={chart.width - pad.right} y1={yAt(threshold.value, threshold.axis ?? "left")} y2={yAt(threshold.value, threshold.axis ?? "left")} className="og-sync__threshold" /><text x={pad.left + 5} y={yAt(threshold.value, threshold.axis ?? "left") - 4} className="og-sync__threshold-label">{threshold.label}</text></g>)}
-          {events.map((item) => <g><line x1={xAt(item.index)} x2={xAt(item.index)} y1={pad.top} y2={pad.top + plotHeight} className="og-sync__event" /><text x={xAt(item.index) + 4} y={pad.top + plotHeight - 5} className="og-sync__event-label">{item.label}</text></g>)}
+          {gaps.map((gap) => <rect x={xAt(gap)} y={pad.top} width={Math.max(4, plotWidth / Math.max(1, count - 1))} height={plotHeight} fill={`url(#${hatchId}-gap-hatch)`} className="og-sync__gap" />)}
+          {thresholds.map((threshold) => <g><line x1={pad.left} x2={chart.width - pad.right} y1={yAt(threshold.value, threshold.axis ?? "left", threshold.domain)} y2={yAt(threshold.value, threshold.axis ?? "left", threshold.domain)} className="og-sync__threshold" /><text x={pad.left + 5} y={yAt(threshold.value, threshold.axis ?? "left", threshold.domain) - 4} className="og-sync__threshold-label">{threshold.label}</text></g>)}
+          {events.map((item) => <g style={item.color ? `--tone: ${item.color}` : undefined}><line x1={xAt(item.index)} x2={xAt(item.index)} y1={pad.top} y2={pad.top + plotHeight} className="og-sync__event" /><text x={xAt(item.index) + 4} y={pad.top + plotHeight - 5} className="og-sync__event-label">{item.label}</text></g>)}
           {series.map((item, index) => {
             const axis = item.axis ?? "left";
             const color = item.color ?? SERIES_COLORS[index % SERIES_COLORS.length];
-            const points = item.values.map((value, sample) => ({ x: xAt(sample), y: yAt(value, axis) }));
-            const upper = item.values.map((value, sample) => ({ x: xAt(sample), y: yAt(value + (item.sigma?.[sample] ?? 0), axis) }));
-            const lower = item.values.map((value, sample) => ({ x: xAt(sample), y: yAt(value - (item.sigma?.[sample] ?? 0), axis) })).reverse();
-            const bandPath = item.sigma?.some((value) => value > 0) ? `${linePath(upper)} ${lower.map((point) => `L ${point.x} ${point.y}`).join(" ")} Z` : "";
-            return <g style={{ color }}><path d={bandPath} className="og-sync__band" /><path d={monotoneCurvePath(points)} className={`og-sync__line${item.dashed ? " is-dashed" : ""}`} /></g>;
+            const points = item.values.map((value, sample) => ({ x: xAt(sample), y: yAt(value, axis, item.domain) }));
+            const upper = item.values.map((value, sample) => ({ x: xAt(sample), y: yAt(value + (item.sigma?.[sample] ?? 0), axis, item.domain) }));
+            const segments: Array<{ points: typeof points; upper: typeof upper; lower: typeof upper }> = [];
+            let segment: number[] = [];
+            const flush = () => {
+              if (segment.length) segments.push({
+                points: segment.map((sample) => points[sample]),
+                upper: segment.map((sample) => upper[sample]),
+                lower: segment.map((sample) => ({ x: xAt(sample), y: yAt(item.values[sample] - (item.sigma?.[sample] ?? 0), axis, item.domain) })),
+              });
+              segment = [];
+            };
+            points.forEach((_, sample) => {
+              if (gaps.includes(sample)) flush();
+              else segment.push(sample);
+            });
+            flush();
+            return <g style={{ color }}>{segments.map((part) => {
+              const bandPath = item.sigma?.some((value) => value > 0) ? `${linePath(part.upper)} ${[...part.lower].reverse().map((point) => `L ${point.x} ${point.y}`).join(" ")} Z` : "";
+              return <><path d={bandPath} className="og-sync__band" /><path d={monotoneCurvePath(part.points)} className={`og-sync__line${item.dashed ? " is-dashed" : ""}`} /></>;
+            })}</g>;
           })}
           {cursorX !== null && <line x1={cursorX} x2={cursorX} y1={pad.top} y2={pad.top + plotHeight} className="og-sync__cursor" />}
-          {cursorX !== null && series.map((item, index) => item.values[activeCursor ?? -1] === undefined ? null : <circle cx={cursorX} cy={yAt(item.values[activeCursor ?? 0], item.axis ?? "left")} r="3.5" className="og-sync__cursor-point" style={{ color: item.color ?? SERIES_COLORS[index % SERIES_COLORS.length] }} />)}
+          {cursorX !== null && series.map((item, index) => item.values[activeCursor ?? -1] === undefined ? null : <circle cx={cursorX} cy={yAt(item.values[activeCursor ?? 0], item.axis ?? "left", item.domain)} r="3.5" className="og-sync__cursor-point" style={{ color: item.color ?? SERIES_COLORS[index % SERIES_COLORS.length] }} />)}
         </svg>
-        <div className="og-sync__xlabels">{xLabels.map((label, index) => <span className={index === 0 ? "is-first" : index === xLabels.length - 1 ? "is-last" : ""} style={{ left: `${count <= 1 ? 50 : index / (count - 1) * 100}%` }}>{label}</span>)}</div>
+        <div className="og-sync__xlabels">{xLabels.map((label, index) => <span className={index === 0 ? "is-first" : index === xLabels.length - 1 ? "is-last" : ""} style={{ left: `${xLabels.length <= 1 ? 50 : index / (xLabels.length - 1) * 100}%` }}>{label}</span>)}</div>
       </div>
       {activeCursor !== null && activeCursor >= 0 && count > 0 && <div className="og-sync__tooltip" role="status"><strong>{xLabels.length ? xLabels[Math.min(xLabels.length - 1, Math.round(activeCursor / Math.max(1, count - 1) * (xLabels.length - 1)))] : `#${activeCursor + 1}`}</strong>{series.map((item, index) => {
         const value = item.values[activeCursor];
@@ -308,7 +328,7 @@ export function SyncChart({
 }
 
 export function TimeSeriesChart({
-  lang, values, sigma = [], thresholds = [], events = [], gaps = [], title = "Time series", xLabels = [], yUnit, yDecimals = 0, domain,
+  lang, values, sigma = [], thresholds = [], events = [], gaps = [], title = "Time series", xLabels = [], yTicks, yUnit, yDecimals = 0, domain, color = "var(--og-accent)",
   cursorIndex, onCursorChange, height,
 }: {
   lang: Lang;
@@ -323,20 +343,21 @@ export function TimeSeriesChart({
   yUnit?: string;
   yDecimals?: number;
   domain?: [number, number];
+  color?: string;
   cursorIndex?: number | null;
   onCursorChange?: (index: number) => void;
   height?: number;
 }) {
-  return <div className="og-time-series"><SyncChart lang={lang} title={title} series={[{ name: title, values, sigma, unit: yUnit, color: "var(--og-accent)", domain, decimals: yDecimals }]} thresholds={thresholds} events={events} gaps={gaps} xLabels={xLabels} cursorIndex={cursorIndex} onCursorChange={onCursorChange} height={height ?? 180} /></div>;
+  return <div className="og-time-series"><SyncChart lang={lang} title={title} series={[{ name: title, values, sigma, unit: yUnit, color, domain, decimals: yDecimals }]} thresholds={thresholds} events={events} gaps={gaps} xLabels={xLabels} leftTicks={yTicks} cursorIndex={cursorIndex} onCursorChange={onCursorChange} height={height ?? 180} /></div>;
 }
 
-export function ScatterChart({ lang, points, title = "Scatter chart", band = 0, domain }: { lang: Lang; points: Array<[number, number]>; title?: string; band?: number; domain?: [number, number] }) {
+export function ScatterChart({ lang, points, title = "Scatter chart", band = 0, domain, pointTones = [], xLabel, yLabel }: { lang: Lang; points: Array<[number, number]>; title?: string; band?: number; domain?: [number, number]; pointTones?: string[]; xLabel?: string; yLabel?: string }) {
   const values = points.flatMap(([x, y]) => [x, y]);
   const min = domain?.[0] ?? Math.min(0, ...values);
   const max = domain?.[1] ?? Math.max(1, ...values);
   const scale = (value: number) => 8 + (value - min) / (max - min || 1) * 84;
   const bandPct = band / (max - min || 1) * 84;
-  return <svg className="og-scatter" viewBox="0 0 100 100" role="img" aria-label={title}><line x1="8" y1="92" x2="92" y2="8" className="og-identity-line" /><polygon points={`8,${92 - bandPct} 92,${8 - bandPct} 92,${8 + bandPct} 8,${92 + bandPct}`} className="og-scatter__band" />{niceTicks(min, max, 4).map((tick) => <g><line x1={scale(tick)} x2={scale(tick)} y1="8" y2="92" className="og-sync__grid" /><text x={scale(tick)} y="99" text-anchor="middle">{formatNumber(tick, lang, 0)}</text></g>)}{points.map(([x, y]) => <circle cx={scale(x)} cy={100 - scale(y)} r="1.5" className="og-scatter__point" />)}</svg>;
+  return <svg className="og-scatter" viewBox="0 0 100 100" role="img" aria-label={title}><line x1="8" y1="92" x2="92" y2="8" className="og-identity-line" /><polygon points={`8,${92 - bandPct} 92,${8 - bandPct} 92,${8 + bandPct} 8,${92 + bandPct}`} className="og-scatter__band" />{niceTicks(min, max, 4).map((tick) => <g><line x1={scale(tick)} x2={scale(tick)} y1="8" y2="92" className="og-sync__grid" /><line x1="8" x2="92" y1={100 - scale(tick)} y2={100 - scale(tick)} className="og-sync__grid" /><text x={scale(tick)} y="98" text-anchor="middle">{formatNumber(tick, lang, 0)}</text><text x="6" y={100 - scale(tick) + 2} text-anchor="end">{formatNumber(tick, lang, 0)}</text></g>)}{points.map(([x, y], index) => <circle cx={scale(x)} cy={100 - scale(y)} r="1.5" className={pointTones[index] ? `val-dot val-dot--${pointTones[index]}` : "og-scatter__point"} />)}{xLabel && <text x="50" y="99" text-anchor="middle">{xLabel}</text>}{yLabel && <text x="2" y="50" text-anchor="middle" transform="rotate(-90 2 50)">{yLabel}</text>}</svg>;
 }
 
 export function FilterBar({ children }: { children: ComponentChildren }) { return <div className="og-filterbar">{children}</div>; }

@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "preact/hooks";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t, useLang, type Lang } from "../../i18n";
 import { useBackendOrDemo } from "../../ui/backendOrDemo";
-import { DataTable, KpiTile, PageHeader, SegmentedControl, SyntheticBadge } from "../../ui/foundation";
+import { DataTable, KpiTile, PageHeader, ScatterChart, SegmentedControl, SyntheticBadge } from "../../ui/foundation";
 import { LabBanner } from "../shared/LabBanner";
 import { getValidationSeries } from "./api";
 import {
@@ -13,8 +13,6 @@ import {
   liveSeries,
   pairSeries,
   scatterDomain,
-  scatterPosition,
-  scatterTicks,
   windowRows,
   type FixtureScenario,
   type Pair,
@@ -28,37 +26,20 @@ const BENCH_ITEMS = [1, 2, 3, 4, 5, 6] as const;
 
 function ScatterPlot({ lang, pairs, bandL }: { lang: Lang; pairs: Pair[]; bandL: number | null }) {
   const domain = useMemo(() => scatterDomain(pairs), [pairs]);
-  const ticks = scatterTicks(domain);
-  const span = domain[1] - domain[0] || 1;
-  const toPercent = (value: number) => ((value - domain[0]) / span) * 100;
-  const bandPercent = bandL === null ? 0 : (bandL / span) * 100;
-  const dots = useMemo(() => pairs.map((pair) => ({ pair, ...scatterPosition(pair, domain) })), [pairs, domain]);
+  const points = pairs.map((pair) => [pair.truthL, pair.estimateL] as [number, number]);
+  const tones = pairs.map((pair) => pair.baseline ? "baseline" : pair.bandL !== null && Math.abs(pair.errorL) <= pair.bandL ? "inside" : "outside");
   return (
     <figure className="val-scatter">
       <div className="val-scatter__frame">
-        <div className="val-scatter__plot" role="img" aria-label={t("lab.validation.scatter.aria", lang)}>
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none" focusable="false" aria-hidden="true">
-            {ticks.map((tick) => <line className="og-chart-grid" x1={toPercent(tick)} x2={toPercent(tick)} y1="0" y2="100" />)}
-            {ticks.map((tick) => <line className="og-chart-grid" x1="0" x2="100" y1={100 - toPercent(tick)} y2={100 - toPercent(tick)} />)}
-            {bandL !== null && (
-              <polygon
-                className="val-scatter__band"
-                points={`0,${100 - bandPercent} 100,${-bandPercent} 100,${bandPercent} 0,${100 + bandPercent}`}
-              />
-            )}
-            <line className="og-identity-line val-scatter__identity" x1="0" y1="100" x2="100" y2="0" />
-            {dots.map(({ pair, x, y }) => {
-              const inside = pair.bandL !== null && Math.abs(pair.errorL) <= pair.bandL;
-              const kind = pair.baseline ? "baseline" : inside ? "inside" : "outside";
-              return <circle className={`val-dot val-dot--${kind}`} cx={x} cy={y} r="0.95" />;
-            })}
-          </svg>
-          {ticks.map((tick) => (
-            <span className="og-chart-ytick" style={{ top: `${100 - toPercent(tick)}%` }}>{formatNumber(tick, lang, 0)}</span>
-          ))}
-          {ticks.map((tick) => (
-            <span className="og-chart-xtick" style={{ left: `${toPercent(tick)}%` }}>{formatNumber(tick, lang, 0)}</span>
-          ))}
+        <div className="val-scatter__plot">
+          <ScatterChart
+            lang={lang}
+            points={points}
+            pointTones={tones}
+            title={t("lab.validation.scatter.aria", lang)}
+            domain={domain}
+            band={bandL ?? 0}
+          />
         </div>
         <span className="val-scatter__axis val-scatter__axis--y">{t("lab.validation.scatter.y", lang)}</span>
         <span className="val-scatter__axis val-scatter__axis--x">{t("lab.validation.scatter.x", lang)}</span>
