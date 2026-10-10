@@ -1,0 +1,26 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import {
+  AlertBanner, Button, ChannelFusion, DataTable, EmptyState, KpiTile, LevelBar,
+  Notice, PageHeader, RegimeChip, SegmentedControl, SeverityBadge, Sparkline,
+  StatusBadge, SyntheticBadge, TelemetryCard, Timeline,
+} from "../../ui/foundation";
+---
+<BaseLayout title="OilGuard · UI foundation">
+  <PageHeader eyebrow="DESIGN SYSTEM / F1" title="UI foundation">
+    <SyntheticBadge />
+  </PageHeader>
+  <Notice tone="simulation">Nordic Telemetry Precision · shared catalogue · EN / ES</Notice>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:18px">
+    <TelemetryCard label="Oil level" value="82.4" unit="L"><LevelBar value={82.4} /></TelemetryCard>
+    <KpiTile label="Confidence" value="96" unit="%" />
+    <div class="og-foundation-card"><div class="og-label">Status</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><StatusBadge label="Nominal" /><SeverityBadge severity="N2" /><RegimeChip regime="movement" /></div></div>
+    <div class="og-foundation-card"><div class="og-label">Controls</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><Button>Primary</Button><Button variant="ghost">Ghost</Button><SegmentedControl options={["250 h", "7 d", "30 d"]} value="250 h" /></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:14px">
+    <div class="og-foundation-card"><div class="og-label">Charts</div><Sparkline /><Timeline items={[{ title: "Alert acknowledged", actor: "Reliability", time: "2026-10-10 08:42" }]} /></div>
+    <div class="og-foundation-card"><div class="og-label">Fusion</div><ChannelFusion /><AlertBanner severity="N1">Pressure deviation · synthetic demo row</AlertBanner></div>
+  </div>
+  <div style="margin-top:14px"><DataTable columns={["Device", "State", "Validity"]} rows={[["OG-01-W1", <StatusBadge label="Nominal" />, <SyntheticBadge />], ["OG-06-W1", <SeverityBadge severity="N4" />, "Not validated"]]} /></div>
+  <div style="margin-top:14px"><EmptyState title="No live rows" detail="Backend unavailable · local DEMO data is labelled." /></div>
+</BaseLayout>

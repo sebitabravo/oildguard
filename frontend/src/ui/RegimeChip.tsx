@@ -1,0 +1,1 @@
+export { RegimeChip } from "./foundation";

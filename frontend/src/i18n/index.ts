@@ -3,6 +3,8 @@
 // comments stay English. Spanish uses neutral/professional register.
 
 export type Lang = "en" | "es";
+import { ops } from "./dict/ops";
+import { platform } from "./dict/platform";
 
 export const LANG_STORAGE_KEY = "oilguard-lang";
 
@@ -54,6 +56,8 @@ export function useLang(): [Lang, (l: Lang) => void] {
 }
 
 export const dict = {
+  ...ops,
+  ...platform,
   "nav.label": { en: "Primary navigation", es: "Navegación principal" },
   "nav.mine": { en: "Mine & Fleet", es: "Mina y flota" },
   "nav.wheel": { en: "GDY106 Wheel", es: "Rueda GDY106" },
