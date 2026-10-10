@@ -206,6 +206,52 @@ export interface RulResponse {
   data: RulData;
 }
 
+export interface FleetMetricSummary {
+  mean: number;
+  p50: number;
+  p95: number;
+  p99: number;
+  min: number;
+  max: number;
+  count: number;
+  devices: number;
+}
+
+export interface FleetAggregatesResponse {
+  status: "ok";
+  kind: "fleet-aggregates";
+  as_of: string;
+  window_s: number;
+  rows: number;
+  devices: number;
+  aggregates: Record<string, FleetMetricSummary>;
+  reason: string | null;
+  code: string | null;
+}
+
+export interface IngestMetricsResponse {
+  status: "ok";
+  kind: "ingest-metrics";
+  as_of: string;
+  ingest: {
+    rows: {
+      accepted_1s: number;
+      rejected_1s: number;
+      accepted_total: number;
+      rejected_total: number;
+    };
+    queue: {
+      depth: number;
+      capacity: number;
+      dropped_batches: number;
+    };
+    latency: {
+      p50_s: number | null;
+      p99_s: number | null;
+    };
+  };
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${BACKEND_URL}${path}`);
   if (!res.ok) throw new Error(`GET ${path} -> ${res.status}`);
@@ -233,3 +279,7 @@ export const getWindows = (limit = 50): Promise<WindowsResponse> =>
 export const getAlerts = (): Promise<AlertsResponse> => getJson("/alerts");
 /** T10 trend-extrapolated RUL (suppressed + anomaly-only when gated). */
 export const getRul = (): Promise<RulResponse> => getJson("/rul");
+export const getFleetAggregates = (windowS = 10): Promise<FleetAggregatesResponse> =>
+  getJson(`/fleet/aggregates?window_s=${windowS}&group=fleet`);
+export const getIngestMetrics = (): Promise<IngestMetricsResponse> =>
+  getJson("/metrics/ingest");
