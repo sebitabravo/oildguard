@@ -57,8 +57,8 @@ RED before GREEN for every new pure helper/component logic.
 | F6 | OpenCode (Playwright MCP) | Final design + functional QA, Chromium/Firefox/WebKit, 1600 and 390 px | F5 |
 
 - [x] F0 honesty guard — Codex 9c2b3f8, 56f3a1a, 6b55d74; merged; bun 247 pass (route: delegated, Codex)
-- [ ] F1 foundation
-- [ ] F2 backend additions
+- [x] F1 foundation — Copilot 2d4a1c4, 6f3fde2, 6f3f1ad (after rework F1b), chart fix 3dd4f2a; merged (route: delegated, Copilot)
+- [x] F2 backend additions — OpenCode d3ab882 (deterministic health tests), eaf1db6, b9ae594, 540e426, 104b96b, 4d93800; merged; pytest 287 on 3.11, 5x green on 3.12
 - [ ] F3 operations pages
 - [ ] F4 platform/lab pages
 - [ ] F5 integration
@@ -70,4 +70,12 @@ All 15+ routes render in the new shell in EN and ES at 1600 and 390 px on three 
 or labelled demo data.
 
 ## Progress / evidence
-(updated per task)
+- Integration branch `feat/final-design` (from `feat/rust-telemetry`).
+- Merged: F0 honesty guard, F1 foundation, `/fleet` (Copilot bd4fe5f..0d710e5), `/rul` + fleet polish (09456c0, 20a533c),
+  `/wheel/history` + `/report` (2fc71a5..5311208), landing + sign-in (Codex 98cb121, 5a44876, e367172), `/calibration`
+  (Codex 1d66863), R2b ingest performance (OpenCode 54714b7..7e4cb15), F2 backend endpoints.
+- Rejected and reassigned: Copilot a43f12b (7 stub pages, 404 screenshot). Copilot ran out of monthly quota during F3f;
+  `/monitoring` restyle continued by a Claude subagent; alerts pages built by a Claude subagent (route: delegated, Claude).
+- Stress after R2b (noisy, agents building): 1,000 devices Influx ON 3,142 rows/s, OFF 9,005 rows/s -> R2c (async Influx
+  writer) dispatched to OpenCode.
+- Frontend: 280 bun tests, build green at the calibration merge.
