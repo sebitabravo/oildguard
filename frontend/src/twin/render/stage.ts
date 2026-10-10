@@ -12,6 +12,7 @@ import {
 } from "./settings";
 import { clampLabelCenterX } from "./labelLayout";
 import { observeReducedMotion } from "./motionPreference";
+import { configureTransmissionRenderTargetMipmap } from "./transmissionTarget";
 
 // Stage compartido: renderer con tone mapping ACES, luz de entorno (IBL),
 // sol con sombras, OrbitControls, overlay CSS2D y un único bucle rAF.
@@ -126,6 +127,13 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
   camera.position.set(...(opts.cameraPosition ?? [6, 4, 8]));
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  const setRenderTarget = renderer.setRenderTarget.bind(renderer);
+  renderer.setRenderTarget = (target, activeCubeFace, activeMipmapLevel) => {
+    if (target instanceof THREE.WebGLRenderTarget) {
+      configureTransmissionRenderTargetMipmap(target);
+    }
+    setRenderTarget(target, activeCubeFace, activeMipmapLevel);
+  };
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = opts.exposure ?? defaults.exposure;
