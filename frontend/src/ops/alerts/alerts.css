@@ -160,3 +160,25 @@
   .og-alerts-charts .og-time-series { height: 190px; }
 }
 .og-alerts-head__tags .og-alerts-level { grid-auto-flow: column; align-items: center; gap: 8px; min-width: 0; }
+
+/* --- reglas --- */
+.og-alerts-source-line { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 0 0 8px; color: var(--og-text-secondary); font-size: 12px; }
+.og-alerts-rules > .og-page__inner > .og-alerts-note { margin: 0 0 20px !important; max-width: 80ch; }
+.og-alerts-table--rules { min-width: 620px; }
+.og-alerts-table--rules th[scope="row"] { color: var(--og-text-primary); font-weight: 500; }
+.og-alerts-table--rules td, .og-alerts-table--rules th { vertical-align: middle; }
+.og-alerts-table--rules td:first-child, .og-alerts-table--rules th:first-child { position: sticky; left: 0; z-index: 1; background: var(--og-surface); }
+.og-alerts-criteria { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.og-alerts-criteria li { display: grid; gap: 4px; padding: 10px 12px; background: var(--og-panel-inset); border: 1px solid var(--og-border-subtle); }
+.og-alerts-criteria strong { color: var(--og-text-primary); font: 500 12px var(--og-mono); }
+.og-alerts-criteria span { color: var(--og-text-secondary); font-size: 12px; }
+.og-alerts-section--veto { border-color: var(--og-border-strong); }
+.og-alerts-ladder { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.og-alerts-ladder__card { display: grid; gap: 10px; align-content: start; padding: 14px; background: var(--og-panel-inset); border: 1px solid var(--og-border-subtle); border-top: 2px solid var(--og-amber); }
+.og-alerts-ladder__card--N2, .og-alerts-ladder__card--N3 { border-top-color: var(--og-orange); }
+.og-alerts-ladder__card--N4 { border-top-color: var(--og-red); }
+.og-alerts-ladder__card ul { display: grid; gap: 8px; margin: 0; padding-left: 16px; color: var(--og-text-secondary); font-size: 12px; line-height: 1.5; }
+.og-alerts-ladder__card .og-alerts-level { grid-auto-flow: column; align-items: center; gap: 8px; justify-content: start; }
+@media (max-width: 1100px) { .og-alerts-ladder { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .og-alerts-ladder { grid-template-columns: minmax(0, 1fr); } }
+.og-alerts-table--rules .og-alerts-level { grid-auto-flow: column; align-items: center; gap: 8px; }

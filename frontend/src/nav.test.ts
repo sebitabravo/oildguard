@@ -15,6 +15,7 @@ describe("navigation registry", () => {
     expect(routeRegistry.find((route) => route.path === "/fleet")?.ready).toBe(true);
     expect(routeRegistry.find((route) => route.path === "/alerts")?.ready).toBe(true);
     expect(routeRegistry.find((route) => route.path === "/alerts/detail")?.ready).toBe(true);
+    expect(routeRegistry.find((route) => route.path === "/alerts/rules")?.ready).toBe(true);
     expect(routeRegistry.find((route) => route.path === "/calibration")?.ready).toBe(true);
     expect(routeRegistry.find((route) => route.path === "/lab/sim")?.ready).toBe(true);
     expect(routeRegistry.find((route) => route.path === "/lab/validation")?.ready).toBe(true);
