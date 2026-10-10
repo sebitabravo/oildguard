@@ -53,6 +53,7 @@ try:  # paquete
     from . import fleetagg as _fleetagg
     from . import ingest_mqtt as _ingest_mqtt
     from . import metrics as _metrics
+    from . import outages as _outages
     from . import pipeline as _pipeline
     from . import store as _store
 except ImportError:  # modulos sueltos
@@ -61,6 +62,7 @@ except ImportError:  # modulos sueltos
     import fleetagg as _fleetagg
     import ingest_mqtt as _ingest_mqtt
     import metrics as _metrics
+    import outages as _outages
     import pipeline as _pipeline
     import store as _store
 
@@ -412,9 +414,14 @@ def verify_rows(
 # ventana ni monta un DataFrame por tick.
 _FLEET_ROLLING = _fleetagg.RollingFleet(DEFAULT_METRICS)
 _FLEET_METRICS = list(DEFAULT_METRICS)
+
+# Rachas de corte seguidas en la ingesta (R2d), en vez de reescanear las filas
+# retenidas de cada dispositivo en cada peticion a /fleet/outages.
+_OUTAGES = _outages.OutageTracker()
 # Los agregados incrementales se vacian con el almacen; si no, un clear()
 # dejaba un tick respondiendo con datos de la sesion anterior.
 _STORE.on_clear(_FLEET_ROLLING.reset)
+_STORE.on_clear(_OUTAGES.reset)
 
 
 def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -441,12 +448,21 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
         # incrementales; el corte de ventana es por reloj de cada dispositivo.
         ts_of = _TISO.epoch
         rolling = _FLEET_ROLLING
+        outages_tracker = _OUTAGES
         for row in accepted:
             ts = row_ts(row)
+            device = row.get("device_id")
             rolling.observe(
-                row.get("device_id"),
+                device,
                 ts,
                 [as_float(row.get(name)) for name in _FLEET_METRICS],
+            )
+            outages_tracker.observe(
+                device,
+                int(row.get("seq", 0)),
+                ts,
+                row.get("t_iso"),
+                as_float(row.get("link_down")),
             )
 
     rejected_count = sum(rejected_reasons.values())
@@ -1136,8 +1152,11 @@ def fleet_outages(
         devices = [device_id] if device_id else _STORE.devices()
         runs: list[dict[str, Any]] = []
         for device in devices:
-            rows = sorted(_STORE.rows(device), key=lambda row: int(row.get("seq", 0)))
-            runs.extend(outage_runs(rows, device))
+            if _OUTAGES.is_dirty(device):
+                # Llegada fuera de orden: el incremental no puede garantizar la
+                # agrupacion por seq, asi que se reconstruye desde el almacen.
+                _OUTAGES.rebuild(device, _STORE.rows(device))
+            runs.extend(_OUTAGES.runs(device))
     runs.sort(key=lambda run: (str(run.get("start_t_iso") or ""), run["device_id"]), reverse=True)
     total = len(runs)
     return {
