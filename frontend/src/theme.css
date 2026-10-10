@@ -1,14 +1,12 @@
-/* OilGuard Mining — product theme (Komatsu yellow on graphite).
- * Viewport-first shell, glass HUD panels, status palette, accessible focus.
- * Status colors: green = rest/OK, amber = caution, red = critical, blue = moving. */
+/* OilGuard Mining product theme: amber identity accent on graphite, with explicit status cues. */
 :root {
   --og-bg: #0B0F14;
   --og-panel: #111720;
   --og-panel-2: #18202C;
   --og-panel-inset: #0B0F14;
   --og-panel-dashboard: #111720;
-  --og-line: rgba(71, 85, 105, 0.38);
-  --og-line-strong: rgba(71, 85, 105, 0.65);
+  --og-line: #1E293B;
+  --og-line-strong: #334155;
   --og-line-soft: #475569;
   --og-line-dashboard: #1E293B;
   --og-text: #F8FAFC;
@@ -24,11 +22,11 @@
   --og-on-yellow: #0B0F14;
   --og-card-active: #1E293B;
   --og-ground: #0B0F14;
-  --og-yellow-hover: #FBBF24;
+  --og-yellow-hover: #FFC174;
   --og-green-hover: #34D399;
   --og-header-gradient-start: #111720;
   --og-header-gradient-end: #0B0F14;
-  --og-brand-mark-gradient-start: #FBBF24;
+  --og-brand-mark-gradient-start: #F59E0B;
   --og-brand-mark-gradient-end: #D97706;
   --og-on-green: #052E24;
   --og-on-blue: #082F49;
@@ -36,7 +34,7 @@
   --og-on-amber: #451A03;
   --og-amber-highlight: #FCD34D;
   --og-glass: rgba(11, 15, 20, 0.92);
-  --og-glass-line: rgba(71, 85, 105, 0.65);
+  --og-glass-line: #334155;
   --og-radius: 4px;
   --og-radius-panel: 4px;
   --og-dock-gap: 12px;
@@ -50,6 +48,7 @@
   --og-border-subtle: #1E293B;
   --og-border-strong: #334155;
   --og-border-highlight: #475569;
+  --og-elevation-2-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
   --og-text-primary: #F8FAFC;
   --og-text-secondary: #94A3B8;
   --og-text-muted: #64748B;
