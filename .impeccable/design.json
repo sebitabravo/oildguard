@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-09T09:38:37Z",
+  "generatedAt": "2026-10-10T00:00:00Z",
   "title": "Design System: OilGuard Mining",
   "extensions": {
     "colorMeta": {
@@ -154,6 +154,36 @@
           "oklch(95.0% 0.0236 260.7)"
         ]
       },
+      "panel-inset": {
+        "role": "neutral",
+        "displayName": "Panel Inset",
+        "canonical": "#0e1420",
+        "tonalRamp": [
+          "oklch(15.0% 0.0262 263.7)",
+          "oklch(28.0% 0.0262 263.7)",
+          "oklch(41.0% 0.0262 263.7)",
+          "oklch(54.0% 0.0262 263.7)",
+          "oklch(66.0% 0.0262 263.7)",
+          "oklch(77.0% 0.0262 263.7)",
+          "oklch(87.0% 0.0262 263.7)",
+          "oklch(95.0% 0.0249 263.7)"
+        ]
+      },
+      "panel-dashboard": {
+        "role": "neutral",
+        "displayName": "Panel Dashboard",
+        "canonical": "#111a2c",
+        "tonalRamp": [
+          "oklch(15.0% 0.0380 263.3)",
+          "oklch(28.0% 0.0380 263.3)",
+          "oklch(41.0% 0.0380 263.3)",
+          "oklch(54.0% 0.0380 263.3)",
+          "oklch(66.0% 0.0380 263.3)",
+          "oklch(77.0% 0.0380 263.3)",
+          "oklch(87.0% 0.0380 263.3)",
+          "oklch(95.0% 0.0361 263.3)"
+        ]
+      },
       "readout": {
         "role": "neutral",
         "displayName": "Readout",
@@ -213,6 +243,21 @@
           "oklch(87.0% 0.0470 259.2)",
           "oklch(95.0% 0.0229 259.2)"
         ]
+      },
+      "dashboard-line": {
+        "role": "neutral",
+        "displayName": "Dashboard Line",
+        "canonical": "#2a3a55",
+        "tonalRamp": [
+          "oklch(15.0% 0.0520 260.5)",
+          "oklch(28.0% 0.0520 260.5)",
+          "oklch(41.0% 0.0520 260.5)",
+          "oklch(54.0% 0.0520 260.5)",
+          "oklch(66.0% 0.0520 260.5)",
+          "oklch(77.0% 0.0520 260.5)",
+          "oklch(87.0% 0.0520 260.5)",
+          "oklch(95.0% 0.0494 260.5)"
+        ]
       }
     },
     "typographyMeta": {
@@ -242,14 +287,22 @@
       },
       "micro": {
         "displayName": "Micro",
-        "purpose": "Uppercase plate text: table headers, badges, tags."
+        "purpose": "Uppercase plate text: badges and the provenance table header. Provenance tags sit at 10.5px."
+      },
+      "table": {
+        "displayName": "Table",
+        "purpose": "Dense fleet table body, 11px tabular. Fleet table only."
+      },
+      "table-head": {
+        "displayName": "Table head",
+        "purpose": "Fleet table column headers, 10px uppercase, 0.035em."
       }
     },
     "shadows": [
       {
         "name": "floating-glass",
         "value": "0 10px 30px rgba(0, 0, 0, 0.35)",
-        "purpose": "HUD panels and popovers suspended over the live 3D render, always paired with a backdrop blur."
+        "purpose": "HUD panels and popovers suspended over the live 3D render, always paired with a backdrop blur. The honesty popover deepens it to 0.4 alpha."
       },
       {
         "name": "tone-ring",
@@ -257,9 +310,19 @@
         "purpose": "Active state of a tone-carrying card. An inset hairline in the tone colour, never a glow."
       },
       {
-        "name": "label-bloom",
-        "value": "0 4px 14px rgba(0, 0, 0, 0.4)",
-        "purpose": "In-scene labels, so text stays legible against arbitrary geometry."
+        "name": "selection-ring",
+        "value": "0 0 0 1px var(--og-yellow) inset",
+        "purpose": "Selected sensor card (with a Machine Yellow border); the matching in-scene label takes a Machine Yellow outer ring."
+      },
+      {
+        "name": "label-drop",
+        "value": "0 4px 12px rgba(0, 0, 0, 0.35)",
+        "purpose": "In-scene label pills, so text stays legible against arbitrary geometry. Active labels use 0 4px 14px rgba(0, 0, 0, 0.4)."
+      },
+      {
+        "name": "status-dot-halo",
+        "value": "0 0 8px var(--tone, transparent)",
+        "purpose": "The 9px status dot only, in the tone it reports."
       },
       {
         "name": "brand-mark",
@@ -277,6 +340,11 @@
         "name": "ease-panel",
         "value": "0.2s ease",
         "purpose": "Drawer collapse and resize. The only timing function named in the system."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "@media (prefers-reduced-motion: reduce) { * { transition: none !important } }",
+        "purpose": "All CSS transitions are removed; 3D easing alphas resolve to 1 so scene motion snaps to its target."
       }
     ],
     "breakpoints": [
@@ -287,8 +355,13 @@
       },
       {
         "name": "stack",
+        "value": "1024px",
+        "purpose": "View stacks vertically; the drawer becomes a full-width band capped at 45% of view height; dashboard sheets drop to one column."
+      },
+      {
+        "name": "touch-shell",
         "value": "900px",
-        "purpose": "View stacks vertically; the drawer becomes a full-width band capped at 45% of viewport height."
+        "purpose": "Two-row 108px header with a 44px scrolling nav; 44px minimum targets on every control; wheel view scrolls as a column with the dock in flow."
       }
     ]
   },
@@ -299,7 +372,7 @@
       "refersTo": "button-primary",
       "description": "The one action on a surface. Machine Yellow on near-black text.",
       "html": "<button class=\"ds-btn-primary\">PAUSE CYCLE</button>",
-      "css": ".ds-btn-primary { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: #15110a; background: var(--og-yellow); border: 1px solid transparent; border-radius: 8px; height: 34px; padding: 0 14px; cursor: pointer; transition: background .15s, border-color .15s; } .ds-btn-primary:hover { background: var(--og-yellow-deep); } .ds-btn-primary:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; } .ds-btn-primary:active { background: var(--og-yellow-deep); }"
+      "css": ".ds-btn-primary { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: #15110a; background: var(--og-yellow); border: 1px solid transparent; border-radius: 8px; height: 34px; padding: 0 14px; cursor: pointer; transition: background .15s, border-color .15s; } .ds-btn-primary:hover { background: #ffc61f; } .ds-btn-primary:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: .45; cursor: not-allowed; }"
     },
     {
       "name": "OK Button",
@@ -307,15 +380,15 @@
       "refersTo": "button-ok",
       "description": "Advances a running simulation. Signal Green, same geometry.",
       "html": "<button class=\"ds-btn-ok\">STEP +1 s</button>",
-      "css": ".ds-btn-ok { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: var(--og-bg); background: var(--og-green); border: 1px solid transparent; border-radius: 8px; height: 34px; padding: 0 14px; cursor: pointer; transition: background .15s; } .ds-btn-ok:hover { filter: brightness(.92); } .ds-btn-ok:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; } .ds-btn-ok:disabled { background: var(--og-panel-2); color: var(--og-muted); opacity: .45; cursor: not-allowed; }"
+      "css": ".ds-btn-ok { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: #07140d; background: var(--og-green); border: 1px solid transparent; border-radius: 8px; height: 34px; padding: 0 14px; cursor: pointer; transition: background .15s, border-color .15s; } .ds-btn-ok:hover { background: #43d386; } .ds-btn-ok:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; } .ds-btn-ok:disabled { opacity: .45; cursor: not-allowed; }"
     },
     {
       "name": "Ghost Button",
       "kind": "button",
       "refersTo": "button-ghost",
-      "description": "Secondary or reversible action. Translucent wash with a hairline.",
+      "description": "Secondary or reversible action. Translucent 6% wash with a Hairline Strong border.",
       "html": "<button class=\"ds-btn-ghost\">RESTART (LOAD)</button>",
-      "css": ".ds-btn-ghost { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: var(--og-text); background: rgba(255,255,255,.05); border: 1px solid var(--og-line); border-radius: 8px; height: 34px; padding: 0 14px; cursor: pointer; transition: background .15s, border-color .15s; } .ds-btn-ghost:hover { background: rgba(255,255,255,.12); border-color: var(--og-line-strong); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
+      "css": ".ds-btn-ghost { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: var(--og-text); background: rgba(255,255,255,.06); border: 1px solid var(--og-line-strong); border-radius: 8px; height: 34px; padding: 0 14px; cursor: pointer; transition: background .15s, border-color .15s; } .ds-btn-ghost:hover { background: rgba(255,255,255,.12); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; } .ds-btn-ghost:disabled { opacity: .45; cursor: not-allowed; }"
     },
     {
       "name": "Icon Button",
@@ -329,17 +402,17 @@
       "name": "Nav Item (active)",
       "kind": "nav",
       "refersTo": "nav-item-active",
-      "description": "Section rail. Exactly one item is active, and it is machine yellow.",
-      "html": "<nav class=\"ds-nav\"><button class=\"ds-nav-item\">Mine &amp; Fleet</button><button class=\"ds-nav-item\" aria-current=\"page\" class=\"ds-nav-item ds-nav-item--on\">Monitoring</button></nav>",
-      "css": ".ds-nav { display: flex; gap: 4px; } .ds-nav-item { font-family: var(--og-font); font-size: 13px; font-weight: 600; color: var(--og-muted); background: transparent; border: 1px solid transparent; border-radius: 8px; height: 36px; padding: 0 12px; cursor: pointer; transition: background .15s, color .15s, border-color .15s; } .ds-nav-item:hover { color: var(--og-text); } .ds-nav-item--on { color: var(--og-yellow); background: rgba(242,183,5,.12); border-color: rgba(242,183,5,.38); } .ds-nav-item:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
+      "description": "Section rail of links. Exactly one item carries aria-current and it is machine yellow.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item\" href=\"#\">Mine</a><a class=\"ds-nav-item\" href=\"#\">Wheel</a><a class=\"ds-nav-item ds-nav-item--on\" aria-current=\"page\" href=\"#\">Monitoring</a></nav>",
+      "css": ".ds-nav { display: flex; gap: 4px; } .ds-nav-item { display: flex; align-items: center; font-family: var(--og-font); font-size: 14px; font-weight: 600; color: var(--og-muted); background: transparent; border: 1px solid transparent; border-radius: 8px; height: 36px; padding: 0 16px; text-decoration: none; cursor: pointer; transition: background .15s, color .15s, border-color .15s; } .ds-nav-item:hover { color: var(--og-text); background: rgba(255,255,255,.05); } .ds-nav-item--on { color: var(--og-yellow); background: rgba(242,183,5,.12); border-color: rgba(242,183,5,.38); } .ds-nav-item:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
     },
     {
       "name": "Segmented Control",
       "kind": "button",
       "refersTo": "seg-button-pressed",
-      "description": "Camera presets inside a 3D view. Compressed version of the nav idea.",
-      "html": "<div class=\"ds-seg\"><button class=\"ds-seg-btn\">pit</button><button class=\"ds-seg-btn ds-seg-btn--on\">hero</button><button class=\"ds-seg-btn\">cab</button></div>",
-      "css": ".ds-seg { display: inline-flex; gap: 4px; padding: 3px; background: var(--og-glass); border: 1px solid var(--og-glass-line); border-radius: 8px; } .ds-seg-btn { font-family: var(--og-font); font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--og-muted); background: transparent; border: 0; border-radius: 6px; height: 28px; padding: 0 10px; cursor: pointer; } .ds-seg-btn:hover { color: var(--og-text); } .ds-seg-btn--on { background: var(--og-yellow); color: #15110a; } .ds-seg-btn:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
+      "description": "Language switch and camera presets. A 28px pressed-state fill in Machine Yellow.",
+      "html": "<div class=\"ds-seg\"><button class=\"ds-seg-btn\" aria-pressed=\"false\">pit</button><button class=\"ds-seg-btn\" aria-pressed=\"true\">hero</button><button class=\"ds-seg-btn\" aria-pressed=\"false\">cab</button></div>",
+      "css": ".ds-seg { display: inline-flex; gap: 2px; padding: 2px; background: rgba(255,255,255,.06); border: 1px solid var(--og-line); border-radius: 8px; } .ds-seg-btn { font-family: var(--og-font); font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--og-muted); background: transparent; border: 0; border-radius: 6px; min-width: 36px; height: 28px; padding: 0 10px; cursor: pointer; } .ds-seg-btn:hover { color: var(--og-text); } .ds-seg-btn[aria-pressed=\"true\"] { background: var(--og-yellow); color: #15110a; } .ds-seg-btn:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
     },
     {
       "name": "Tone Card",
@@ -347,15 +420,47 @@
       "refersTo": "card",
       "description": "A machine-state card. Flat at rest; an inset tone ring when active.",
       "html": "<div class=\"ds-card\"><span class=\"ds-dot\"></span><strong>HAUL</strong><p class=\"ds-card-sub\">moving &middot; 12 s</p></div><div class=\"ds-card ds-card--on\" style=\"--tone: #4a8ef0\"><span class=\"ds-dot\"></span><strong>WAIT</strong><p class=\"ds-card-sub\">rest &middot; 5 s</p></div>",
-      "css": ".ds-card { font-family: var(--og-font); position: relative; background: var(--og-panel); border: 1px solid var(--og-line); border-radius: 8px; padding: 12px; color: var(--og-body); } .ds-card--on { background: #1d2a40; box-shadow: 0 0 0 1px var(--tone, transparent) inset; } .ds-card strong { display: block; font-size: 13px; font-weight: 700; color: var(--og-text); letter-spacing: .02em; } .ds-card-sub { margin: 4px 0 0; font-size: 12px; color: var(--og-muted); font-variant-numeric: tabular-nums; } .ds-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--tone, var(--og-muted)); box-shadow: 0 0 8px var(--tone, transparent); margin-bottom: 6px; }"
+      "css": ".ds-card { font-family: var(--og-font); position: relative; background: var(--og-panel-2); border: 1px solid var(--og-line); border-radius: 8px; padding: 10px 12px; color: var(--og-body); } .ds-card--on { background: #1d2a40; box-shadow: 0 0 0 1px var(--tone, transparent) inset; } .ds-card strong { display: block; font-size: 13px; font-weight: 700; color: var(--og-text); letter-spacing: .02em; } .ds-card-sub { margin: 4px 0 0; font-size: 12px; color: var(--og-muted); font-variant-numeric: tabular-nums; } .ds-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--tone, var(--og-muted)); box-shadow: 0 0 8px var(--tone, transparent); margin-bottom: 6px; }"
     },
     {
       "name": "Data Panel",
       "kind": "card",
       "refersTo": "data-panel",
-      "description": "The monitoring material: hairline border, 6px radius, darker than the shell.",
-      "html": "<section class=\"ds-panel\"><h3>Oil level + confidence</h3><p class=\"ds-readout\">80.0 <span>L</span></p><p class=\"ds-meta\">conf 0.925 &middot; SYNTHETIC-PROXY</p></section>",
-      "css": ".ds-panel { font-family: var(--og-font); background: #0e1420; border: 1px solid #2a3a55; border-radius: 6px; padding: 16px; } .ds-panel h3 { margin: 0 0 4px; font-size: 14px; font-weight: 700; letter-spacing: .02em; color: var(--og-text); } .ds-readout { margin: 8px 0 0; font-size: 22px; font-weight: 700; line-height: 1.1; color: var(--og-green); font-variant-numeric: tabular-nums; } .ds-readout span { font-size: 13px; font-weight: 600; color: var(--og-muted); } .ds-meta { margin: 8px 0 0; font-size: 12px; color: #9fb0c9; font-variant-numeric: tabular-nums; }"
+      "description": "The monitoring material: Dashboard Line border, 6px radius, Panel Dashboard fill, darker than the shell.",
+      "html": "<section class=\"ds-panel\"><h3>Oil level + confidence</h3><p class=\"ds-readout\">80,0 <span>L</span></p><p class=\"ds-meta\">conf 0,925 &middot; SYNTHETIC-PROXY</p></section>",
+      "css": ".ds-panel { font-family: var(--og-font); background: var(--og-panel-dashboard); border: 1px solid var(--og-line-dashboard); border-radius: 6px; padding: 10px 12px; } .ds-panel h3 { margin: 0 0 4px; font-size: 14px; font-weight: 700; letter-spacing: .02em; color: var(--og-text); } .ds-readout { margin: 8px 0 0; font-size: 22px; font-weight: 700; line-height: 1.1; color: var(--og-green); font-variant-numeric: tabular-nums; } .ds-readout span { font-size: 13px; font-weight: 600; color: var(--og-muted); } .ds-meta { margin: 8px 0 0; font-size: 12px; color: var(--og-muted); font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Fleet Table",
+      "kind": "custom",
+      "refersTo": "data-panel",
+      "description": "The monitoring page's primary sheet: one row per wheel, risk written as a word, sticky first column, tabular figures.",
+      "html": "<section class=\"ds-fleet\"><table class=\"ds-fleet-table\"><thead><tr><th>Truck</th><th>Wheel</th><th>Oil L</th><th>Risk</th><th>Detail</th></tr></thead><tbody><tr><td class=\"ds-num\">T-01</td><td class=\"ds-num\">LF</td><td class=\"ds-num\">80,5</td><td><span class=\"ds-risk\">Normal</span></td><td><a class=\"ds-link\" href=\"#\">Open wheel</a></td></tr><tr><td class=\"ds-num\">T-02</td><td class=\"ds-num\">RF</td><td class=\"ds-num\">61,2</td><td><span class=\"ds-risk ds-risk--alert\">Alert</span><span class=\"ds-channels\">Low oil</span></td><td><a class=\"ds-link\" href=\"#\">Open wheel</a></td></tr></tbody></table></section>",
+      "css": ".ds-fleet { font-family: var(--og-font); padding: 14px 16px; border: 1px solid var(--og-line-dashboard); background: var(--og-panel-dashboard); } .ds-fleet-table { width: 100%; border-collapse: collapse; font-size: 11px; color: var(--og-body); } .ds-fleet-table th, .ds-fleet-table td { padding: 7px 8px; border-bottom: 1px solid var(--og-line); text-align: left; vertical-align: middle; } .ds-fleet-table th { color: var(--og-muted); font-size: 10px; font-weight: 700; letter-spacing: .035em; text-transform: uppercase; } .ds-fleet-table tbody tr:hover { background: rgba(255,255,255,.035); } .ds-num { font-variant-numeric: tabular-nums; } .ds-risk { display: inline-block; color: var(--og-green); font-weight: 700; } .ds-risk--alert { color: var(--og-red); } .ds-channels { display: block; margin-top: 3px; color: var(--og-amber); } .ds-link { color: var(--og-yellow); font-weight: 700; text-underline-offset: 3px; } .ds-link:hover { color: var(--og-text); } .ds-link:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
+    },
+    {
+      "name": "Analyzer Notice",
+      "kind": "custom",
+      "refersTo": "analyzer-notice",
+      "description": "Analyzer outage: full critical border, red status dot and a sentence. No side stripe.",
+      "html": "<div class=\"ds-notice\" role=\"alert\">Analyzer unavailable. Alerts and RUL are not being evaluated.</div>",
+      "css": ".ds-notice { font-family: var(--og-font); display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--og-red); border-radius: 6px; background: color-mix(in srgb, var(--og-red) 9%, var(--og-panel-dashboard)); color: var(--og-text); font-size: 13px; font-weight: 700; } .ds-notice::before { content: \"\"; flex: 0 0 8px; width: 8px; height: 8px; margin-top: .42em; border-radius: 50%; background: var(--og-red); }"
+    },
+    {
+      "name": "RUL Panel",
+      "kind": "card",
+      "refersTo": "data-panel-inset",
+      "description": "Remaining-life sheet. Border and text cue follow the shift horizon: red, amber or green.",
+      "html": "<div class=\"ds-rul\"><div class=\"ds-rul-head\">RUL &middot; <span class=\"ds-rul-tone\">0,50 h to critical</span> <span class=\"ds-rul-tone ds-rul-cue\" role=\"status\">Inside the shift</span></div><p class=\"ds-rul-meta\">slope -124,795 L/h &middot; r2 0,822 &middot; SYNTHETIC-PROXY (unproven)</p></div>",
+      "css": ".ds-rul { font-family: var(--og-font); padding: 10px 12px; border: 1px solid var(--og-red); border-radius: 6px; background: var(--og-panel-inset); } .ds-rul-head { font-weight: 700; font-size: 13px; color: var(--og-text); } .ds-rul-tone { color: var(--og-red); } .ds-rul-cue { font-size: 12px; } .ds-rul-meta { margin: 8px 0 0; font-size: 12px; color: var(--og-muted); font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Sensor Identity Marker",
+      "kind": "custom",
+      "refersTo": "sensor-identity",
+      "description": "Neutral numbered ring beside a sensor card. Identity only; selection adds a Machine Yellow ring on the card.",
+      "html": "<button class=\"ds-sensor-card\" aria-pressed=\"true\"><span class=\"ds-sensor-id\" aria-hidden=\"true\">2</span><strong>Output-shaft sensor</strong></button>",
+      "css": ".ds-sensor-card { font-family: var(--og-font); width: 100%; text-align: left; cursor: pointer; color: var(--og-text); font-size: 13px; background: var(--og-panel-2); border: 1px solid var(--og-yellow); border-radius: 8px; padding: 10px 12px; box-shadow: 0 0 0 1px var(--og-yellow) inset; } .ds-sensor-id { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; margin-right: 8px; border: 1px solid var(--og-muted); border-radius: 50%; color: var(--og-muted); font-size: 9px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; } .ds-sensor-card:focus-visible { outline: 2px solid var(--og-yellow); outline-offset: 2px; }"
     },
     {
       "name": "Honesty Badge",
@@ -382,7 +487,9 @@
       "Depth by tone in the shell, by hairline border in the data surfaces: two documented materials.",
       "Provenance as a first-class visual component, alongside colour and type size.",
       "Tabular figures everywhere, so nothing jitters while it updates.",
-      "Flat at rest. Shadow is a response to state, never decoration."
+      "Flat at rest. Shadow is a response to state, never decoration.",
+      "Status never travels on colour alone: every tone ships with a word, a dot, or a numbered marker beside it.",
+      "Numbers are localised: Spanish reads with a decimal comma, English with a point, one formatter for both."
     ],
     "rules": [
       {
@@ -401,6 +508,16 @@
         "body": "Signal Green, Motion Blue, Instrument Amber, Caution Orange and Critical Red carry fixed meanings. They are never reassigned for decoration."
       },
       {
+        "name": "The Sensor Identity Rule",
+        "section": "colors",
+        "body": "Sensor identity uses neutral Annotation-colored numbered rings (24px beside a sensor card, 18px inside the in-scene label pill), never the closed status palette. Machine Yellow may indicate selection; status colors communicate machine condition only."
+      },
+      {
+        "name": "The Word-Beside-Colour Rule",
+        "section": "colors",
+        "body": "A status tone is never the only carrier of its meaning. The analyzer-outage notice pairs a full red border with a red dot and a role=\"alert\" sentence; the RUL panel pairs its horizon tone with a role=\"status\" text cue; the fleet table writes Alert or Normal and lists the offending channels in words. If a new surface can only be read by its hue, it needs a label."
+      },
+      {
         "name": "The Tabular Rule",
         "section": "typography",
         "body": "Every number that changes over time carries tabular-nums, so a figure holds its column while it updates."
@@ -409,6 +526,11 @@
         "name": "The Fixed-Pixel Rule",
         "section": "typography",
         "body": "The system is absolute pixels - no rem, no html font-size - so a readout occupies the same width at every density."
+      },
+      {
+        "name": "The Locale-Decimal Rule",
+        "section": "typography",
+        "body": "Every displayed figure goes through formatNumber(value, lang, digits): en-US for English, es-CL for Spanish (decimal comma), never grouping separators, and a fixed digit count per quantity so the column width does not move when the language switches. Do not interpolate a raw number into copy."
       },
       {
         "name": "The Flat-By-Default Rule",
@@ -426,7 +548,9 @@
       "Do use Machine Yellow for identity and selection, and Instrument Amber for caution, and keep them in their lanes.",
       "Do mark live data and demo data differently, and label which is which, even when the backend is healthy.",
       "Do let density serve the comparison being made. An engineer reading a trend against a threshold wants the pixels.",
-      "Do keep the 2px Machine Yellow focus ring on every interactive element."
+      "Do keep the 2px Machine Yellow focus ring on every interactive element.",
+      "Do put a word, dot or numbered marker beside every status tone, and format every figure with formatNumber for the active language.",
+      "Do keep a 44px minimum target for every control at 900px and below."
     ],
     "donts": [
       "Don't gamify. No celebratory progress fills, no status emojis, no green glow because a number went up.",
@@ -434,7 +558,8 @@
       "Don't build a game. No neon, no cinematic bloom, no particles, no dramatic sky.",
       "Don't invent a type scale. Fixed absolute pixels, tabular figures, and the existing steps.",
       "Don't let a shadow appear without a state to name.",
-      "Don't reuse a status colour for anything but its assigned condition.",
+      "Don't reuse a status colour for anything but its assigned condition, and never use one to tell sensors apart.",
+      "Don't mark a status with a one-sided coloured strip. Use the full border plus a dot or word.",
       "Don't quietly approximate the 980E. Validation covers the 930E and GDY106 only."
     ]
   }
