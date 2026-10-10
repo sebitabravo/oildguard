@@ -29,7 +29,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Any, Literal
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -38,10 +38,24 @@ from shared.messages import message
 from shared.signing import derive_device_key, parse_device_keys, verify_row
 
 try:  # paquete (pytest / uvicorn backend.main:app)
+    from .aggregates import (
+        QUANTILE_INTERPOLATION,
+        aggregate_by_device,
+        aggregate_fleet,
+        build_frame,
+        parse_metrics,
+    )
     from .metrics import IngestMetrics
     from .pipeline import IngestPipeline
     from .store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore
 except ImportError:  # módulo suelto (Docker copia backend/ a /app)
+    from aggregates import (  # type: ignore
+        QUANTILE_INTERPOLATION,
+        aggregate_by_device,
+        aggregate_fleet,
+        build_frame,
+        parse_metrics,
+    )
     from metrics import IngestMetrics  # type: ignore
     from pipeline import IngestPipeline  # type: ignore
     from store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore  # type: ignore
@@ -639,6 +653,67 @@ def ingest(batch: IngestBatch) -> dict:
         "kind": "ingest-ack",
         "as_of": _now_iso(),
         **result,
+    }
+
+
+@app.get("/fleet/aggregates")
+def fleet_aggregates(
+    window_s: int = Query(default=10, ge=1, le=300),
+    metrics: str | None = Query(default=None),
+    group: Literal["fleet", "device"] = Query(default="fleet"),
+    limit: int = Query(default=200, ge=1, le=2000),
+) -> dict:
+    """Percentiles por metrica sobre los ultimos ``window_s`` segundos.
+
+    ``group=fleet`` aplana toda la flota en un bloque por metrica; ``group=device``
+    devuelve un bloque por equipo. Las respuestas vacias llevan ``reason`` y
+    ``code`` ``no_rows`` en vez de ceros, que serian indistinguibles de una flota
+    en reposo real.
+    """
+    try:
+        requested = parse_metrics(metrics)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    frame = build_frame(_STORE.snapshot_window(window_s))
+    if group == "fleet":
+        blocks, rows, devices = aggregate_fleet(frame, requested)
+    else:
+        blocks, rows, devices = aggregate_by_device(frame, requested, limit)
+
+    empty = rows == 0
+    return {
+        "status": "ok",
+        "kind": "fleet-aggregates",
+        "as_of": _now_iso(),
+        "window_s": window_s,
+        "metrics": requested,
+        "group": group,
+        "limit": limit,
+        "rows": rows,
+        "devices": devices,
+        "quantile_interpolation": QUANTILE_INTERPOLATION,
+        "aggregates": [] if empty and group == "device" else blocks,
+        "reason": "no_rows" if empty else None,
+        "code": "no_rows" if empty else None,
+    }
+
+
+@app.get("/fleet/devices")
+def fleet_devices() -> dict:
+    """Retencion y estado de firmas por dispositivo."""
+    with _store_lock:
+        stats = _STORE.device_stats()
+    devices = [stats[device] for device in sorted(stats)]
+    return {
+        "status": "ok",
+        "kind": "fleet-devices",
+        "as_of": _now_iso(),
+        "count": len(devices),
+        "retention_rows": RETENTION_ROWS,
+        "devices": devices,
+        "reason": None if devices else "no_rows",
+        "code": None if devices else "no_rows",
     }
 
 

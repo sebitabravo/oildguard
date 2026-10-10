@@ -261,10 +261,20 @@ class TelemetryStore:
         """Retención y contadores por dispositivo para ``GET /fleet/devices``."""
         with self.lock:
             stats: dict[str, dict[str, Any]] = {}
-            for device, bucket in self._rows.items():
+            # Un equipo cuyas filas se rechazan todas nunca entra al almacen;
+            # sin unionarlo aqui desapareceria del reporte de flota, que es
+            # justo el equipo que mas falta por ver.
+            for device in set(self._rows) | set(self._rejected):
+                bucket = self._rows.get(device, ())
                 rejected = self._rejected.get(device, Counter())
                 latest_row = bucket[-1] if bucket else None
                 accepted = self._accepted.get(device, 0)
+                rejected_total = sum(rejected.values())
+                verified = self._verified.get(device, 0)
+                # Sobre todo lo ofrecido, no solo lo aceptado: si el denominador
+                # fuera solo lo aceptado, un equipo que manda Rows manipulados
+                # seguiria marcadas 1.0 porque sus rechazos serian invisibles.
+                offered = accepted + rejected_total
                 stats[device] = {
                     "device_id": device,
                     "rows_retained": len(bucket),
@@ -272,9 +282,10 @@ class TelemetryStore:
                     "last_t_iso": str(latest_row.get("t_iso")) if latest_row else None,
                     "last_t_s": row_ts(latest_row) if latest_row else None,
                     "rows_accepted": accepted,
-                    "rows_verified": self._verified.get(device, 0),
-                    "verified_ratio": (self._verified.get(device, 0) / accepted) if accepted else 0.0,
-                    "rows_rejected": sum(rejected.values()),
+                    "rows_verified": verified,
+                    "rows_rejected": rejected_total,
+                    "rows_offered": offered,
+                    "verified_ratio": (verified / offered) if offered else 0.0,
                     "rejected_reasons": dict(rejected),
                     "latest_level_liters": as_float(latest_row.get("level_liters")) if latest_row else None,
                     "latest_level_pct": as_float(latest_row.get("level_pct")) if latest_row else None,
