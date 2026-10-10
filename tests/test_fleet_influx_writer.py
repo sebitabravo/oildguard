@@ -10,6 +10,20 @@ from fastapi.testclient import TestClient
 
 from backend import main as backend_main
 from backend.influx_writer import InfluxWriter, encode_line_protocol, encode_row
+from backend.metrics import RateLimiter
+
+
+class Clock:
+    """Reloj controlado para no depender de esperas reales."""
+
+    def __init__(self, start: float = 1_789_628_000.0):
+        self.now = start
+
+    def __call__(self) -> float:
+        return self.now
+
+    def advance(self, seconds: float) -> None:
+        self.now += seconds
 
 
 def row(**overrides):
@@ -375,3 +389,94 @@ def _http_row(seq=0):
         "submerged_fraction_per_revolution": 1.0, "link_down": 0,
     })
     return base
+
+# --------------------------------------------------------------------------
+# Avisos de descarte sin inundar el log
+# --------------------------------------------------------------------------
+
+
+def test_rate_limiter_allows_the_first_event():
+    clock = Clock()
+    limiter = RateLimiter(interval_s=1.0, now_fn=clock)
+
+    allowed, total = limiter.should_log()
+
+    assert allowed is True
+    assert total == 1
+
+
+def test_rate_limiter_suppresses_events_inside_the_interval():
+    clock = Clock()
+    limiter = RateLimiter(interval_s=1.0, now_fn=clock)
+
+    first = limiter.should_log()
+    for _ in range(500):
+        allowed, _ = limiter.should_log()
+        assert allowed is False
+
+    assert first[0] is True
+
+
+def test_rate_limiter_allows_again_after_the_interval_and_reports_the_total():
+    clock = Clock()
+    limiter = RateLimiter(interval_s=1.0, now_fn=clock)
+    limiter.should_log()
+    for _ in range(9):
+        limiter.should_log()
+
+    clock.advance(1.0)
+    allowed, total = limiter.should_log()
+
+    assert allowed is True
+    assert total == 11, "el aviso debe decir cuantos se descartaron en total"
+
+
+def test_rate_limiter_is_thread_safe():
+    limiter = RateLimiter(interval_s=0.0)
+    allowed = []
+
+    def worker() -> None:
+        for _ in range(200):
+            allowed.append(limiter.should_log()[0])
+
+    threads = [threading.Thread(target=worker) for _ in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert len(allowed) == 1600
+
+
+def test_pipeline_drops_are_rate_limited_in_the_log(client, monkeypatch, caplog):
+    """Un aviso por lote descartado eran ~1700 lineas/s ycpu del 93%."""
+    import logging
+
+    pipeline = backend_main.IngestPipeline(
+        process=lambda rows: {"accepted": list(rows)}, max_batches=1, influx_enabled=False
+    )
+    for _ in range(200):
+        pipeline.submit([{"seq": 1}])
+
+    assert pipeline.dropped_batches() == 199
+    warnings = [
+        record for record in caplog.records
+        if record.levelno >= logging.WARNING and "dropped" in record.getMessage()
+    ]
+    assert len(warnings) <= 2, f"{len(warnings)} avisos por 199 descartes"
+
+
+def test_writer_drops_are_rate_limited(client, caplog):
+    import logging
+
+    writer = InfluxWriter(write=lambda p: None, max_batches=1)
+    for _ in range(200):
+        writer.submit([row()])
+
+    assert writer.dropped_batches() == 199
+    warnings = [
+        record for record in caplog.records
+        if record.levelno >= logging.WARNING and "dropped" in record.getMessage()
+    ]
+    assert len(warnings) <= 2, f"{len(warnings)} avisos por 199 descartes"
+    writer.stop(timeout=1)

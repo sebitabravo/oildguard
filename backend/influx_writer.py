@@ -14,10 +14,16 @@ visible; perder el estado vivo seria untrue.
 from __future__ import annotations
 
 import logging
+import os
 import queue
 import threading
 from datetime import datetime, timezone
 from typing import Any, Callable, Iterable
+
+try:  # paquete / módulo suelto (Docker copia backend/ a /app)
+    from .metrics import RateLimiter
+except ImportError:
+    from metrics import RateLimiter  # type: ignore
 
 log = logging.getLogger("oilguard-influx-writer")
 
@@ -26,6 +32,7 @@ TAGS = ("device_id", "fsm_state", "label", "sig_verified")
 FLOAT_FIELDS = ("pressure_kpa", "temperature_c", "vib_rms_g", "vib_kurtosis", "level_liters")
 INT_FIELDS = ("seq",)
 DEFAULT_MAX_BATCHES = 200
+DROP_LOG_INTERVAL_S = float(os.getenv("OILGUARD_DROP_LOG_INTERVAL_S", "1"))
 
 
 def _escape_tag(value: str) -> str:
@@ -183,6 +190,7 @@ class InfluxWriter:
         self._buffer: list[str] = []
         self._written_batches = 0
         self._written_points = 0
+        self._drop_limiter = RateLimiter(interval_s=DROP_LOG_INTERVAL_S)
         self._dropped_batches = 0
         self._dropped_points = 0
         self._failed_batches = 0
@@ -200,13 +208,15 @@ class InfluxWriter:
                 self._dropped_batches += 1
                 self._dropped_points += len(rows)
                 dropped = self._dropped_batches
-            log.warning(
-                "influx writer queue full (maxsize=%d); dropped influx batch #%d (%d rows); "
-                "memory store keeps every row",
-                self._queue.maxsize,
-                dropped,
-                len(rows),
-            )
+            allowed, total = self._drop_limiter.should_log()
+            if allowed:
+                log.warning(
+                    "influx writer queue full (maxsize=%d); %d influx batches dropped "
+                    "so far (latest has %d rows); memory store keeps every row",
+                    self._queue.maxsize,
+                    total,
+                    len(rows),
+                )
             return False
         return True
 

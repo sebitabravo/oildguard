@@ -13,13 +13,23 @@ porque pareceria una flota sana.
 from __future__ import annotations
 
 import logging
+import os
 import queue
 import threading
 from typing import Any, Callable, Iterable
 
+try:  # paquete (pytest) / módulo suelto (Docker copia backend/ a /app)
+    from .metrics import RateLimiter
+except ImportError:
+    from metrics import RateLimiter  # type: ignore
+
 log = logging.getLogger("oilguard-ingest-pipeline")
 
 DEFAULT_MAX_BATCHES = 1000
+# Avisar de cada descarte era un aviso por lote: ~1700 lineas/s en la matriz
+# de estres, con el CPU del backend al 93 %. El total exacto vive en las
+# metricas; el log solo tiene que ser visible.
+DROP_LOG_INTERVAL_S = float(os.getenv("OILGUARD_DROP_LOG_INTERVAL_S", "1"))
 DEFAULT_FLUSH_ROWS = 5000
 DEFAULT_FLUSH_SECONDS = 1.0
 
@@ -49,6 +59,7 @@ class IngestPipeline:
         self._lock = threading.Lock()
         self._stopping = threading.Event()
         self._thread: threading.Thread | None = None
+        self._drop_limiter = RateLimiter(interval_s=DROP_LOG_INTERVAL_S)
         self._dropped = 0
         self._accepted = 0
         self._failed = 0
@@ -64,12 +75,15 @@ class IngestPipeline:
             with self._lock:
                 self._dropped += 1
                 dropped = self._dropped
-            log.warning(
-                "ingest queue full (maxsize=%d); dropped batch #%d of rows=%d",
-                self._queue.maxsize,
-                dropped,
-                len(rows),
-            )
+            allowed, total = self._drop_limiter.should_log()
+            if allowed:
+                log.warning(
+                    "ingest queue full (maxsize=%d); %d batches dropped so far "
+                    "(latest has %d rows)",
+                    self._queue.maxsize,
+                    total,
+                    len(rows),
+                )
             return False
         return True
 
