@@ -1,0 +1,1439 @@
+{
+  "environment": {
+    "machine": "arm64",
+    "platform": "macOS-15.8.1-arm64-arm-64bit",
+    "python": "3.11.16"
+  },
+  "warmup_s": 5.0,
+  "cases": [
+    {
+      "devices": 1000,
+      "rate_hz": 10,
+      "seconds": 40,
+      "simulator_final": {
+        "rows_generated": 400000,
+        "rows_published": 400000,
+        "rows_per_s": 9946.511803733663,
+        "buffered": 0,
+        "dropped": 0,
+        "reconnects": 0,
+        "p50_ms": 0.000791,
+        "p99_ms": 0.027458
+      },
+      "summary": {
+        "expected_rows_per_s": 10000,
+        "accepted_rows_per_s": 6472.35294117647,
+        "accepted_ratio": 0.647235294117647,
+        "latency_p50_s_median": 1.009376347064972,
+        "latency_p99_s_max": 12.349897708892819,
+        "queue_depth_max": 416,
+        "dropped_batches_final": 0,
+        "backend_cpu_pct_median": 44.415,
+        "samples": 26
+      },
+      "samples": [
+        {
+          "t": 0.0,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 0,
+              "accepted_10s": 0,
+              "accepted_total": 0,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 0,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 0,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 0,
+              "min_s": null,
+              "max_s": null,
+              "mean_s": null,
+              "invalid_samples": 0,
+              "dropped_samples": 0,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": null,
+              "p95_s": null,
+              "p99_s": null
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 0
+          },
+          "docker": {
+            "cpu_pct": 16.67,
+            "mem": "122.2MiB / 3.894GiB"
+          }
+        },
+        {
+          "t": 2.21,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 8710,
+              "accepted_10s": 18710,
+              "accepted_total": 18710,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 108,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 1870,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 18435,
+              "min_s": 8.296966552734375e-05,
+              "max_s": 1.1479346752166748,
+              "mean_s": 0.5454071431357846,
+              "invalid_samples": 275,
+              "dropped_samples": 0,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.5427522659301758,
+              "p95_s": 1.005692648887634,
+              "p99_s": 1.110109505653381
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 3.22,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 9000,
+              "accepted_10s": 29000,
+              "accepted_total": 29000,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 62,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 2899,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 28631,
+              "min_s": 8.296966552734375e-05,
+              "max_s": 1.1479346752166748,
+              "mean_s": 0.5488441540631908,
+              "invalid_samples": 369,
+              "dropped_samples": 0,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.5471067428588867,
+              "p95_s": 1.0124797821044922,
+              "p99_s": 1.114260721206665
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 4.25,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 20,
+              "accepted_10s": 31830,
+              "accepted_total": 31830,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 77,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 3182,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 31390,
+              "min_s": 8.296966552734375e-05,
+              "max_s": 1.1611175537109375,
+              "mean_s": 0.5536742702795845,
+              "invalid_samples": 440,
+              "dropped_samples": 0,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.5515947341918945,
+              "p95_s": 1.0194645524024963,
+              "p99_s": 1.123341085910797
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 5.28,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 120,
+              "accepted_10s": 36160,
+              "accepted_total": 36160,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 92,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 3615,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 35720,
+              "min_s": 8.296966552734375e-05,
+              "max_s": 2.1927330493927,
+              "mean_s": 0.626143129789015,
+              "invalid_samples": 440,
+              "dropped_samples": 0,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.6081693172454834,
+              "p95_s": 1.2391141057014439,
+              "p99_s": 1.7614481663703905
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": {
+            "cpu_pct": 59.88,
+            "mem": "183.4MiB / 3.894GiB"
+          }
+        },
+        {
+          "t": 7.41,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 910,
+              "accepted_10s": 45560,
+              "accepted_total": 45560,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 191,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 4555,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 45120,
+              "min_s": 8.296966552734375e-05,
+              "max_s": 3.3411548137664795,
+              "mean_s": 0.9910606592523713,
+              "invalid_samples": 440,
+              "dropped_samples": 0,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.7434271574020386,
+              "p95_s": 2.6998622059822077,
+              "p99_s": 3.0626211214065537
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 8.44,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 930,
+              "accepted_10s": 53070,
+              "accepted_total": 53070,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 273,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 5306,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 52630,
+              "min_s": 8.296966552734375e-05,
+              "max_s": 3.831840991973877,
+              "mean_s": 1.2647516186962602,
+              "invalid_samples": 440,
+              "dropped_samples": 0,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.8507702350616455,
+              "p95_s": 3.1181536912918073,
+              "p99_s": 3.5189123296737668
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 9.48,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 8160,
+              "accepted_10s": 82930,
+              "accepted_total": 82930,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 0,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 8293,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 82490,
+              "min_s": 8.296966552734375e-05,
+              "max_s": 3.831840991973877,
+              "mean_s": 1.4214875460075658,
+              "invalid_samples": 440,
+              "dropped_samples": 0,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 1.0555557012557983,
+              "p95_s": 3.2152114629745485,
+              "p99_s": 3.5122300124168397
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 10.51,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 470,
+              "accepted_10s": 82930,
+              "accepted_total": 92930,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 0,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 9293,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 92374,
+              "min_s": 8.296966552734375e-05,
+              "max_s": 3.831840991973877,
+              "mean_s": 1.3275664727784418,
+              "invalid_samples": 556,
+              "dropped_samples": 0,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.9521417617797852,
+              "p95_s": 3.1749493718147273,
+              "p99_s": 3.496771214008332
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": {
+            "cpu_pct": 24.78,
+            "mem": "268.8MiB / 3.894GiB"
+          }
+        },
+        {
+          "t": 12.64,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 2260,
+              "accepted_10s": 83440,
+              "accepted_total": 112930,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 0,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 11293,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 92524,
+              "min_s": 0.0001583099365234375,
+              "max_s": 3.831840991973877,
+              "mean_s": 1.332019693238907,
+              "invalid_samples": 681,
+              "dropped_samples": 0,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.9613234996795654,
+              "p95_s": 3.1743698120117188,
+              "p99_s": 3.4966313004493723
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 13.68,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 1900,
+              "accepted_10s": 91120,
+              "accepted_total": 122930,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 0,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 12293,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 92531,
+              "min_s": 0.0001583099365234375,
+              "max_s": 3.831840991973877,
+              "mean_s": 1.333125367499935,
+              "invalid_samples": 768,
+              "dropped_samples": 0,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.9631969928741455,
+              "p95_s": 3.1743531227111816,
+              "p99_s": 3.4966105222702017
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 14.71,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 1950,
+              "accepted_10s": 96890,
+              "accepted_total": 132930,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 0,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 13293,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 98329,
+              "min_s": 0.0001583099365234375,
+              "max_s": 3.831840991973877,
+              "mean_s": 1.2789574275488,
+              "invalid_samples": 821,
+              "dropped_samples": 639,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.9129049777984619,
+              "p95_s": 3.1554335594177223,
+              "p99_s": 3.49138201713562
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 15.75,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 3660,
+              "accepted_10s": 103530,
+              "accepted_total": 142930,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 0,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 14293,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 100000,
+              "min_s": 0.0001583099365234375,
+              "max_s": 3.831840991973877,
+              "mean_s": 1.145734162583351,
+              "invalid_samples": 841,
+              "dropped_samples": 7448,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.8141350746154785,
+              "p95_s": 3.143338811397552,
+              "p99_s": 3.489603946208953
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": {
+            "cpu_pct": 35.22,
+            "mem": "345.9MiB / 3.894GiB"
+          }
+        },
+        {
+          "t": 17.94,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 4840,
+              "accepted_10s": 106980,
+              "accepted_total": 159120,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 87,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 15911,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 100000,
+              "min_s": 0.0001583099365234375,
+              "max_s": 3.5942275524139404,
+              "mean_s": 0.8097830076313018,
+              "invalid_samples": 876,
+              "dropped_samples": 23603,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.7201850414276123,
+              "p95_s": 1.9789400815963738,
+              "p99_s": 2.6984939599037165
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 19.1,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 2500,
+              "accepted_10s": 87470,
+              "accepted_total": 162240,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 53,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 16223,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 91304,
+              "min_s": 0.0001583099365234375,
+              "max_s": 2.926177501678467,
+              "mean_s": 0.7069565450514291,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.6692569255828857,
+              "p95_s": 1.486823201179504,
+              "p99_s": 2.179345781803131
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 20.19,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 0,
+              "accepted_10s": 66280,
+              "accepted_total": 165860,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 87,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 16585,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 72610,
+              "min_s": 0.0001583099365234375,
+              "max_s": 3.1646554470062256,
+              "mean_s": 0.7713103422989219,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.6856024265289307,
+              "p95_s": 2.044327807426453,
+              "p99_s": 2.639140889644623
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": {
+            "cpu_pct": 43.98,
+            "mem": "400.6MiB / 3.894GiB"
+          }
+        },
+        {
+          "t": 22.46,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 690,
+              "accepted_10s": 50640,
+              "accepted_total": 171670,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 168,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 17166,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 58545,
+              "min_s": 0.0002434253692626953,
+              "max_s": 5.301627159118652,
+              "mean_s": 1.1356547058855442,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.7959966659545898,
+              "p95_s": 3.7726389408111554,
+              "p99_s": 4.691118211746215
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 23.55,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 960,
+              "accepted_10s": 43630,
+              "accepted_total": 174610,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 275,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 17460,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 51572,
+              "min_s": 0.00035691261291503906,
+              "max_s": 5.767338752746582,
+              "mean_s": 1.458021268074039,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 0.9010436534881592,
+              "p95_s": 4.688587820529937,
+              "p99_s": 5.264069452285767
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 24.65,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 1140,
+              "accepted_10s": 37570,
+              "accepted_total": 176840,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 290,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 17683,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 43855,
+              "min_s": 0.00035691261291503906,
+              "max_s": 6.472704887390137,
+              "mean_s": 1.872652694255049,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 1.088005781173706,
+              "p95_s": 5.29949197769165,
+              "p99_s": 5.967501287460325
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 25.72,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 3480,
+              "accepted_10s": 36010,
+              "accepted_total": 181700,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 324,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 18169,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 38735,
+              "min_s": 0.0004286766052246094,
+              "max_s": 7.549050807952881,
+              "mean_s": 2.811371937736136,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 2.0636205673217773,
+              "p95_s": 6.869787859916687,
+              "p99_s": 7.340814599990841
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": {
+            "cpu_pct": 44.85,
+            "mem": "460.4MiB / 3.894GiB"
+          }
+        },
+        {
+          "t": 27.84,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 8530,
+              "accepted_10s": 49800,
+              "accepted_total": 209540,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 368,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 20953,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 50650,
+              "min_s": 0.7705707550048828,
+              "max_s": 7.69438910484314,
+              "mean_s": 5.410984605490749,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 6.090311765670776,
+              "p95_s": 7.135086548328399,
+              "p99_s": 7.444147100448609
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 28.9,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 8440,
+              "accepted_10s": 61730,
+              "accepted_total": 224270,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 382,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 22426,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 62460,
+              "min_s": 1.2932031154632568,
+              "max_s": 7.69438910484314,
+              "mean_s": 5.676788125124414,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 6.0351868867874146,
+              "p95_s": 7.07951523065567,
+              "p99_s": 7.413035125732421
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 29.97,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 8010,
+              "accepted_10s": 68960,
+              "accepted_total": 234820,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 329,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 23481,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 69390,
+              "min_s": 1.9287161827087402,
+              "max_s": 7.69438910484314,
+              "mean_s": 5.852734062262443,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 5.995706796646118,
+              "p95_s": 7.053267395496368,
+              "p99_s": 7.394726841449738
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 31.08,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 5400,
+              "accepted_10s": 73590,
+              "accepted_total": 241870,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 358,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 24186,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 73960,
+              "min_s": 3.0300345420837402,
+              "max_s": 7.69438910484314,
+              "mean_s": 5.941205459842816,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 5.989985346794128,
+              "p95_s": 7.037378501892091,
+              "p99_s": 7.386995797157288
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 32.31,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 120,
+              "accepted_10s": 72190,
+              "accepted_total": 245840,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 383,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 24583,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 74680,
+              "min_s": 3.9042270183563232,
+              "max_s": 7.69438910484314,
+              "mean_s": 6.042643779104383,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 6.040533542633057,
+              "p95_s": 7.052087676525116,
+              "p99_s": 7.385087764263155
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 33.45,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 400,
+              "accepted_10s": 72230,
+              "accepted_total": 247930,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 416,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 24792,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 73590,
+              "min_s": 4.41119909286499,
+              "max_s": 8.231724977493286,
+              "mean_s": 6.129557638703553,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 6.0941996574401855,
+              "p95_s": 7.160439646244049,
+              "p99_s": 7.5487811112403875
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 34.57,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 480,
+              "accepted_10s": 71540,
+              "accepted_total": 249760,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 414,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 24975,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 73030,
+              "min_s": 4.692430257797241,
+              "max_s": 9.356391429901123,
+              "mean_s": 6.204901424891391,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 6.135404944419861,
+              "p95_s": 7.352027106285096,
+              "p99_s": 8.441100349426279
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 35.77,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 1010,
+              "accepted_10s": 63550,
+              "accepted_total": 251660,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 415,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 25165,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 69710,
+              "min_s": 4.692430257797241,
+              "max_s": 10.53048300743103,
+              "mean_s": 6.257175518624702,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 6.108238577842712,
+              "p95_s": 7.9511916041374215,
+              "p99_s": 9.748527662754059
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": {
+            "cpu_pct": 47.66,
+            "mem": "551.6MiB / 3.894GiB"
+          }
+        },
+        {
+          "t": 38.14,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 1290,
+              "accepted_10s": 39380,
+              "accepted_total": 255210,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 383,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 25520,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 40870,
+              "min_s": 4.692430257797241,
+              "max_s": 12.027374267578125,
+              "mean_s": 6.571555981783054,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 5.9267295598983765,
+              "p95_s": 10.606616353988645,
+              "p99_s": 11.299564514160153
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        },
+        {
+          "t": 39.28,
+          "metrics": {
+            "rows": {
+              "accepted_1s": 70,
+              "accepted_10s": 19750,
+              "accepted_total": 256220,
+              "rejected_1s": 0,
+              "rejected_10s": 0,
+              "rejected_total": 0
+            },
+            "queue": {
+              "depth": 361,
+              "capacity": 1000,
+              "dropped_batches": 0,
+              "accepted_batches": 25621,
+              "failed_batches": 0,
+              "pending_influx_points": 0
+            },
+            "latency": {
+              "count": 28430,
+              "min_s": 4.747721910476685,
+              "max_s": 13.113023042678833,
+              "mean_s": 7.207747135311627,
+              "invalid_samples": 876,
+              "dropped_samples": 25643,
+              "unit": "s",
+              "definition": "receive time - t_iso",
+              "percentile_method": "linear",
+              "max_latency_s": 3600.0,
+              "p50_s": 6.228052258491516,
+              "p95_s": 11.286369967460633,
+              "p99_s": 12.349897708892819
+            },
+            "window_s": 10.0,
+            "influx": {
+              "enabled": false,
+              "flush_rows": 5000,
+              "flush_seconds": 1.0,
+              "status": "unknown (no ingest yet)"
+            },
+            "retention_rows": 36000,
+            "devices": 1000
+          },
+          "docker": null
+        }
+      ]
+    }
+  ]
+}
