@@ -47,14 +47,25 @@ button { font-family: inherit; }
 .og-num { font-variant-numeric: tabular-nums; }
 
 .og-analyzer-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   margin: 0 0 12px;
   padding: 10px 12px;
   border: 1px solid var(--og-red);
-  border-left-width: 4px;
   border-radius: 6px;
-  background: var(--og-panel-dashboard);
+  background: color-mix(in srgb, var(--og-red) 9%, var(--og-panel-dashboard));
   color: var(--og-text);
   font-weight: 700;
+}
+.og-analyzer-notice::before {
+  content: "";
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  margin-top: 0.42em;
+  border-radius: 50%;
+  background: var(--og-red);
 }
 
 /* Accessible focus: visible 2px outline on all interactive elements. */
