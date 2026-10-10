@@ -146,7 +146,7 @@ RDD outcomes: T2 slice c4a9ba6 declined; T2+T3 range lens_context_budget_exceede
 
 ## Next step
 
-The QA follow-up is complete: Q1–Q8 are closed, and T1–T10 remain complete. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
+Q1–Q8 are closed, and T1–T10 remain complete. Hand off to OpenCode for the final re-test; final suite results remain pending until its verifier report. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
 
 ## QA follow-up (2026-10-09)
 
@@ -332,3 +332,11 @@ This follow-up addresses the Playwright QA findings in `/tmp/oilguard-qa/report.
 - **Commit:** `fix(frontend): simplify wheel labels on mobile` (this work unit; exact hash recorded in the completion handoff).
 
 Engram mirror for this follow-up remains pending because memory tools and an authoritative session identity are unavailable.
+
+### Final QA handoff
+
+- **Task status:** Q1–Q8 complete; T1–T10 remain complete and unchanged.
+- **Post-capture follow-ups:** `bb856a2` localized the suppressed RUL explanation; `272a510` separated the mobile wheel status stack from the oil HUD; `f6ffc22` removed the duplicate floating badge collision; `0d39ec2` stacked wheel controls below the scene; `83b4323` kept projected labels inside mobile scene bounds; `04c16a2` simplified mobile wheel labels to non-overlapping identity markers. The six committed 1600×1000 page/language screenshots were refreshed by `d598dbd`.
+- **Final visual/DOM evidence:** ES screenshots at 390×844 and 1600×1000 are `/tmp/og-shots/qa-fix-{mine,wheel,monitoring}-{390x844,1600x1000}-es.png`. `/tmp/og-shots/qa-fix-final-dom-evidence.json` records one first `<h1>` per route, localized named canvases on `/mine` and `/wheel`, no horizontal overflow at 390 px, and mobile scene-label/control bounds. Final mobile wheel marker EN/ES captures and pairwise marker DOM proof are `/tmp/og-shots/qa-fix-wheel-marker-mobile-{en,es}.png` and `/tmp/og-shots/qa-fix-wheel-marker-mobile-dom.json`; the ES capture was also copied byte-for-byte to `/tmp/og-shots/qa-fix-wheel-390x844-es.png` as the required path.
+- **Review:** Range `83b4323..04c16a2` assessed medium / under-budget; no review was due.
+- **Next:** OpenCode performs the requested final re-test and reports results. Final suite outcomes remain pending; do not infer or carry forward earlier per-commit passes as the final verifier result.
