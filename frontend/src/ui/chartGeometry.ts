@@ -100,3 +100,37 @@ export function percentAlong(index: number, length: number): number {
 export function evenPositions(count: number): number[] {
   return Array.from({ length: count }, (_, index) => percentAlong(index, count));
 }
+
+export function monotoneCurvePath(points: readonly ChartPoint[]): string {
+  if (points.length === 0) return "";
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+  const slopes = points.slice(0, -1).map((point, index) => {
+    const next = points[index + 1];
+    return (next.y - point.y) / Math.max(Number.EPSILON, next.x - point.x);
+  });
+  const tangents = points.map((_, index) => {
+    if (index === 0) return slopes[0];
+    if (index === points.length - 1) return slopes[slopes.length - 1];
+    const before = slopes[index - 1];
+    const after = slopes[index];
+    if (before === 0 || after === 0 || Math.sign(before) !== Math.sign(after)) return 0;
+    return 2 * before * after / (before + after);
+  });
+  let path = `M ${points[0].x} ${points[0].y}`;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const start = points[index];
+    const end = points[index + 1];
+    const span = (end.x - start.x) / 3;
+    path += ` C ${start.x + span} ${start.y + tangents[index] * span} ${end.x - span} ${end.y - tangents[index + 1] * span} ${end.x} ${end.y}`;
+  }
+  return path;
+}
+
+export function nextCursorIndex(index: number, key: string, length: number): number {
+  if (length <= 0) return -1;
+  if (key === "Home") return 0;
+  if (key === "End") return length - 1;
+  if (key === "ArrowLeft") return Math.max(0, Math.min(length - 1, index - 1));
+  if (key === "ArrowRight") return Math.max(0, Math.min(length - 1, index + 1));
+  return index;
+}

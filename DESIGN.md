@@ -25,6 +25,7 @@ colors:
   "--og-card-active": "#1E293B"
   "--og-ground": "#0B0F14"
   "--og-yellow-hover": "#FFC174"
+  "--og-temperature": "#FFC174"
   "--og-green-hover": "#34D399"
   "--og-header-gradient-start": "#111720"
   "--og-header-gradient-end": "#0B0F14"

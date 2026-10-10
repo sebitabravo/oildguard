@@ -3,7 +3,8 @@ import { t, useLang, type Lang } from "../i18n";
 import { formatNumber } from "../i18n/numberFormat";
 import { useBackendState, backendStateLabel } from "./backendOrDemo";
 import { levelBarGeometry, severityColor, severityTone, type Tone } from "./logic";
-import { confidenceBand, evenPositions, linePath, niceTicks, percentAlong, percentFromTop, scaledPoints, scaledPointsInDomain } from "./chartGeometry";
+import { linePath, monotoneCurvePath, niceTicks, nextCursorIndex, scaledPoints } from "./chartGeometry";
+import { useState } from "preact/hooks";
 
 export type Severity = "N1" | "N2" | "N3" | "N4";
 
@@ -183,24 +184,132 @@ export function SegmentedControl({ options, value, onChange }: { options: string
   return <div className="og-seg">{options.map((option) => <button type="button" className="og-seg__btn" aria-pressed={option === value} onClick={() => onChange?.(option)}>{option}</button>)}</div>;
 }
 
-export function Sparkline({ lang, values, label = "Sparkline" }: { lang: Lang; values: number[]; label?: string }) {
-  const points = scaledPoints(values, 100, 60, { left: 2, right: 2, top: 3, bottom: 3 }).map((point) => `${point.x},${point.y}`).join(" ");
-  return <svg className="og-sparkline" viewBox="0 0 100 60" preserveAspectRatio="none" role="img" aria-label={label}><polyline points={points} fill="none" stroke="currentColor" stroke-width="2" /></svg>;
+export function Sparkline({ values, label = "Sparkline" }: { lang: Lang; values: number[]; label?: string }) {
+  const points = scaledPoints(values, 100, 60, { left: 2, right: 2, top: 3, bottom: 3 });
+  if (!points.length) return <svg className="og-sparkline" viewBox="0 0 100 60" role="img" aria-label={label} />;
+  const curve = monotoneCurvePath(points);
+  const area = `${curve} L ${points[points.length - 1].x} 60 L ${points[0].x} 60 Z`;
+  return <svg className="og-sparkline" viewBox="0 0 100 60" preserveAspectRatio="none" role="img" aria-label={label}><path className="og-sparkline__area" d={area} /><path className="og-sparkline__line" d={curve} /></svg>;
+}
+
+export interface SyncChartSeries {
+  name: string;
+  values: number[];
+  unit?: string;
+  color?: string;
+  axis?: "left" | "right";
+  sigma?: number[];
+  dashed?: boolean;
+  domain?: [number, number];
+  decimals?: number;
+}
+
+export interface SyncChartProps {
+  lang: Lang;
+  series: SyncChartSeries[];
+  title?: string;
+  xLabels?: string[];
+  thresholds?: Array<{ value: number; label: string; axis?: "left" | "right" }>;
+  events?: Array<{ index: number; label: string }>;
+  gaps?: number[];
+  regimes?: Array<{ startIndex: number; endIndex: number; label: string; tone?: "rest" | "movement" }>;
+  cursorIndex?: number | null;
+  onCursorChange?: (index: number) => void;
+  height?: number;
+}
+
+const SERIES_COLORS = ["var(--og-blue)", "var(--og-accent)", "var(--og-temperature)", "var(--og-green)"];
+
+function seriesDomain(series: SyncChartSeries[], axis: "left" | "right"): [number, number] {
+  const items = series.filter((item) => (item.axis ?? "left") === axis);
+  const fixed = items.find((item) => item.domain)?.domain;
+  if (fixed) return fixed;
+  const values = items.flatMap((item) => item.values.flatMap((value, index) => [value - (item.sigma?.[index] ?? 0), value + (item.sigma?.[index] ?? 0)]));
+  if (!values.length) return [0, 1];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const pad = (max - min || Math.abs(max) * 0.1 || 1) * 0.08;
+  return [min - pad, max + pad];
+}
+
+export function SyncChart({
+  lang, series, title = "Time series", xLabels = [], thresholds = [], events = [], gaps = [], regimes = [],
+  cursorIndex, onCursorChange, height = 200,
+}: SyncChartProps) {
+  const [localCursor, setLocalCursor] = useState<number | null>(null);
+  const count = Math.max(0, ...series.map((item) => item.values.length));
+  const activeCursor = cursorIndex === undefined ? localCursor : cursorIndex;
+  const chart = { width: 640, height: 220 };
+  const pad = { left: 58, right: 58, top: 22, bottom: 30 };
+  const plotWidth = chart.width - pad.left - pad.right;
+  const plotHeight = chart.height - pad.top - pad.bottom;
+  const domains = { left: seriesDomain(series, "left"), right: seriesDomain(series, "right") };
+  const xAt = (index: number) => pad.left + (count <= 1 ? plotWidth / 2 : index / (count - 1) * plotWidth);
+  const yAt = (value: number, axis: "left" | "right") => {
+    const [min, max] = domains[axis];
+    return pad.top + (1 - (value - min) / (max - min || 1)) * plotHeight;
+  };
+  const leftTicks = niceTicks(...domains.left, 4);
+  const rightTicks = series.some((item) => item.axis === "right") ? niceTicks(...domains.right, 4) : [];
+  const setCursor = (index: number) => {
+    if (cursorIndex === undefined) setLocalCursor(index);
+    onCursorChange?.(index);
+  };
+  const onKeyDown = (event: KeyboardEvent & { currentTarget: HTMLDivElement }) => {
+    const next = nextCursorIndex(activeCursor ?? 0, event.key, count);
+    if (next !== (activeCursor ?? 0) && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+      event.preventDefault();
+      setCursor(next);
+    }
+  };
+  const onPointerMove = (event: PointerEvent & { currentTarget: SVGSVGElement }) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (!count || rect.width <= 0) return;
+    const viewX = (event.clientX - rect.left) / rect.width * chart.width;
+    const ratio = Math.max(0, Math.min(1, (viewX - pad.left) / plotWidth));
+    setCursor(Math.round(ratio * (count - 1)));
+  };
+  const onPointerLeave = () => { if (cursorIndex === undefined) setLocalCursor(null); };
+  const cursorX = activeCursor === null || activeCursor < 0 ? null : xAt(activeCursor);
+  return (
+    <section className="og-sync" style={{ height: `${height}px` }} aria-label={title}>
+      <div className="og-sync__legend" aria-label={title}>
+        {series.map((item, index) => <span className="og-sync__legend-item" style={{ color: item.color ?? SERIES_COLORS[index % SERIES_COLORS.length] }}><i className={item.dashed ? "is-dashed" : ""} />{item.name}{item.unit ? ` · ${item.unit}` : ""}</span>)}
+      </div>
+      <div className="og-sync__frame" onKeyDown={onKeyDown} tabIndex={0} role="application" aria-label={`${title}. ${t("ui.chartDescription", lang)}`}>
+        <svg className="og-sync__svg" viewBox={`0 0 ${chart.width} ${chart.height}`} preserveAspectRatio="none" onPointerMove={onPointerMove} onPointerLeave={onPointerLeave} aria-hidden="true" focusable="false">
+          <defs><pattern id="og-sync-gap-hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="6" className="og-sync__hatch-line" /></pattern></defs>
+          {regimes.map((regime) => <g><rect x={xAt(regime.startIndex)} y={pad.top} width={Math.max(0, xAt(regime.endIndex) - xAt(regime.startIndex))} height={plotHeight} className={`og-sync__regime og-sync__regime--${regime.tone ?? "rest"}`} /><text x={xAt(regime.startIndex) + 5} y={pad.top + 12} className="og-sync__regime-label">{regime.label}</text></g>)}
+          {leftTicks.map((tick) => <g><line x1={pad.left} x2={chart.width - pad.right} y1={yAt(tick, "left")} y2={yAt(tick, "left")} className="og-sync__grid" /><text x={pad.left - 8} y={yAt(tick, "left") + 4} text-anchor="end" className="og-sync__tick">{formatNumber(tick, lang, series.find((item) => (item.axis ?? "left") === "left")?.decimals ?? 1)}</text></g>)}
+          {rightTicks.map((tick) => <text x={chart.width - pad.right + 8} y={yAt(tick, "right") + 4} className="og-sync__tick">{formatNumber(tick, lang, series.find((item) => item.axis === "right")?.decimals ?? 1)}</text>)}
+          {gaps.map((gap) => <rect x={xAt(gap)} y={pad.top} width={Math.max(4, plotWidth / Math.max(1, count - 1))} height={plotHeight} fill="url(#og-sync-gap-hatch)" className="og-sync__gap" />)}
+          {thresholds.map((threshold) => <g><line x1={pad.left} x2={chart.width - pad.right} y1={yAt(threshold.value, threshold.axis ?? "left")} y2={yAt(threshold.value, threshold.axis ?? "left")} className="og-sync__threshold" /><text x={pad.left + 5} y={yAt(threshold.value, threshold.axis ?? "left") - 4} className="og-sync__threshold-label">{threshold.label}</text></g>)}
+          {events.map((item) => <g><line x1={xAt(item.index)} x2={xAt(item.index)} y1={pad.top} y2={pad.top + plotHeight} className="og-sync__event" /><text x={xAt(item.index) + 4} y={pad.top + plotHeight - 5} className="og-sync__event-label">{item.label}</text></g>)}
+          {series.map((item, index) => {
+            const axis = item.axis ?? "left";
+            const color = item.color ?? SERIES_COLORS[index % SERIES_COLORS.length];
+            const points = item.values.map((value, sample) => ({ x: xAt(sample), y: yAt(value, axis) }));
+            const upper = item.values.map((value, sample) => ({ x: xAt(sample), y: yAt(value + (item.sigma?.[sample] ?? 0), axis) }));
+            const lower = item.values.map((value, sample) => ({ x: xAt(sample), y: yAt(value - (item.sigma?.[sample] ?? 0), axis) })).reverse();
+            const bandPath = item.sigma?.some((value) => value > 0) ? `${linePath(upper)} ${lower.map((point) => `L ${point.x} ${point.y}`).join(" ")} Z` : "";
+            return <g style={{ color }}><path d={bandPath} className="og-sync__band" /><path d={monotoneCurvePath(points)} className={`og-sync__line${item.dashed ? " is-dashed" : ""}`} /></g>;
+          })}
+          {cursorX !== null && <line x1={cursorX} x2={cursorX} y1={pad.top} y2={pad.top + plotHeight} className="og-sync__cursor" />}
+          {cursorX !== null && series.map((item, index) => item.values[activeCursor ?? -1] === undefined ? null : <circle cx={cursorX} cy={yAt(item.values[activeCursor ?? 0], item.axis ?? "left")} r="3.5" className="og-sync__cursor-point" style={{ color: item.color ?? SERIES_COLORS[index % SERIES_COLORS.length] }} />)}
+        </svg>
+        <div className="og-sync__xlabels">{xLabels.map((label, index) => <span className={index === 0 ? "is-first" : index === xLabels.length - 1 ? "is-last" : ""} style={{ left: `${count <= 1 ? 50 : index / (count - 1) * 100}%` }}>{label}</span>)}</div>
+      </div>
+      {activeCursor !== null && activeCursor >= 0 && count > 0 && <div className="og-sync__tooltip" role="status"><strong>{xLabels.length ? xLabels[Math.min(xLabels.length - 1, Math.round(activeCursor / Math.max(1, count - 1) * (xLabels.length - 1)))] : `#${activeCursor + 1}`}</strong>{series.map((item, index) => {
+        const value = item.values[activeCursor];
+        return value === undefined ? null : <span style={{ color: item.color ?? SERIES_COLORS[index % SERIES_COLORS.length] }}><i />{item.name}: {formatNumber(value, lang, item.decimals ?? 2)}{item.unit ? ` ${item.unit}` : ""}</span>;
+      })}</div>}
+    </section>
+  );
 }
 
 export function TimeSeriesChart({
-  lang,
-  values,
-  sigma = [],
-  thresholds = [],
-  events = [],
-  gaps = [],
-  title = "Time series",
-  xLabels = [],
-  yTicks,
-  yUnit,
-  yDecimals = 0,
-  domain,
+  lang, values, sigma = [], thresholds = [], events = [], gaps = [], title = "Time series", xLabels = [], yUnit, yDecimals = 0, domain,
+  cursorIndex, onCursorChange, height,
 }: {
   lang: Lang;
   values: number[];
@@ -214,42 +323,20 @@ export function TimeSeriesChart({
   yUnit?: string;
   yDecimals?: number;
   domain?: [number, number];
+  cursorIndex?: number | null;
+  onCursorChange?: (index: number) => void;
+  height?: number;
 }) {
-  // El trazo se estira con preserveAspectRatio="none"; todo el texto va en HTML
-  // sobre la misma caja para que las etiquetas nunca se deformen.
-  const plot = { width: 300, height: 100 };
-  const zero = { left: 0, right: 0, top: 0, bottom: 0 };
-  const upperValues = values.map((value, index) => value + (sigma[index] ?? 0));
-  const lowerValues = values.map((value, index) => value - (sigma[index] ?? 0));
-  const min = domain?.[0] ?? Math.min(...lowerValues);
-  const max = domain?.[1] ?? Math.max(...upperValues);
-  const points = scaledPointsInDomain(values, plot.width, plot.height, zero, min, max);
-  const band = confidenceBand(values, sigma, plot.width, plot.height, zero, [min, max]);
-  const ticks = yTicks ?? niceTicks(min, max, 4);
-  const yPct = (value: number) => percentFromTop(value, min, max);
-  const gapWidth = plot.width / Math.max(1, values.length - 1);
-  return (
-    <div className="og-time-series" role="img" aria-label={`${title}. ${t("ui.chartDescription", lang)}`}>
-      <div className="og-time-series__plot">
-        <svg viewBox={`0 0 ${plot.width} ${plot.height}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
-          {ticks.map((tick) => <line x1="0" x2={plot.width} y1={(yPct(tick) / 100) * plot.height} y2={(yPct(tick) / 100) * plot.height} className="og-chart-grid" />)}
-          {gaps.map((gap) => <rect x={points[gap]?.x ?? 0} y="0" width={gapWidth} height={plot.height} className="og-chart-gap" />)}
-          <polygon points={band.map((point) => `${point.x},${point.y}`).join(" ")} className="og-chart-band" />
-          {thresholds.map((threshold) => <line x1="0" x2={plot.width} y1={(yPct(threshold.value) / 100) * plot.height} y2={(yPct(threshold.value) / 100) * plot.height} className="og-chart-threshold" />)}
-          {events.map((event) => <line x1={points[event.index]?.x ?? 0} x2={points[event.index]?.x ?? 0} y1="0" y2={plot.height} className="og-chart-event" />)}
-          <path d={linePath(points)} className="og-chart-line" />
-        </svg>
-        {ticks.map((tick) => <span className="og-chart-ytick" style={{ top: `${yPct(tick)}%` }}>{formatNumber(tick, lang, yDecimals)}{yUnit ? ` ${yUnit}` : ""}</span>)}
-        {thresholds.map((threshold) => <span className="og-chart-threshold-label" style={{ top: `${yPct(threshold.value)}%` }}>{threshold.label}</span>)}
-        {events.map((event) => <span className="og-chart-event-label" style={{ left: `${percentAlong(event.index, values.length)}%` }}>{event.label}</span>)}
-        {xLabels.map((label, index) => <span className={`og-chart-xtick${index === 0 ? " is-first" : index === xLabels.length - 1 ? " is-last" : ""}`} style={{ left: `${evenPositions(xLabels.length)[index]}%` }}>{label}</span>)}
-      </div>
-    </div>
-  );
+  return <div className="og-time-series"><SyncChart lang={lang} title={title} series={[{ name: title, values, sigma, unit: yUnit, color: "var(--og-accent)", domain, decimals: yDecimals }]} thresholds={thresholds} events={events} gaps={gaps} xLabels={xLabels} cursorIndex={cursorIndex} onCursorChange={onCursorChange} height={height ?? 180} /></div>;
 }
 
-export function ScatterChart({ lang, points, title = "Scatter chart" }: { lang: Lang; points: Array<[number, number]>; title?: string }) {
-  return <svg className="og-scatter" viewBox="0 0 100 80" role="img" aria-label={title}><line x1="5" y1="75" x2="95" y2="5" className="og-identity-line" />{points.map(([x, y]) => <circle cx={x} cy={75 - y} r="2" />)}<text x="4" y="79">{formatNumber(0, lang, 0)}</text><text x="82" y="79">{formatNumber(100, lang, 0)}</text></svg>;
+export function ScatterChart({ lang, points, title = "Scatter chart", band = 0, domain }: { lang: Lang; points: Array<[number, number]>; title?: string; band?: number; domain?: [number, number] }) {
+  const values = points.flatMap(([x, y]) => [x, y]);
+  const min = domain?.[0] ?? Math.min(0, ...values);
+  const max = domain?.[1] ?? Math.max(1, ...values);
+  const scale = (value: number) => 8 + (value - min) / (max - min || 1) * 84;
+  const bandPct = band / (max - min || 1) * 84;
+  return <svg className="og-scatter" viewBox="0 0 100 100" role="img" aria-label={title}><line x1="8" y1="92" x2="92" y2="8" className="og-identity-line" /><polygon points={`8,${92 - bandPct} 92,${8 - bandPct} 92,${8 + bandPct} 8,${92 + bandPct}`} className="og-scatter__band" />{niceTicks(min, max, 4).map((tick) => <g><line x1={scale(tick)} x2={scale(tick)} y1="8" y2="92" className="og-sync__grid" /><text x={scale(tick)} y="99" text-anchor="middle">{formatNumber(tick, lang, 0)}</text></g>)}{points.map(([x, y]) => <circle cx={scale(x)} cy={100 - scale(y)} r="1.5" className="og-scatter__point" />)}</svg>;
 }
 
 export function FilterBar({ children }: { children: ComponentChildren }) { return <div className="og-filterbar">{children}</div>; }
