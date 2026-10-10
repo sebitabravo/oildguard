@@ -1,0 +1,11 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { t } from "../../i18n";
+import AlertRulesPage from "../../ops/alerts/AlertRulesPage";
+---
+<BaseLayout breadcrumb={["nav.group.alerts", "nav.alertRules"]}>
+  <h1 class="og-visually-hidden" data-i18n-en={t("alerts.rules.title", "en")} data-i18n-es={t("alerts.rules.title", "es")}>
+    {t("alerts.rules.title", "en")}
+  </h1>
+  <AlertRulesPage client:only="preact" />
+</BaseLayout>
