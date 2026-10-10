@@ -7,7 +7,7 @@
 import type { CSSProperties } from "preact";
 import type { RulData } from "../sim/api";
 import { t, useLang } from "../i18n";
-import { localizeDashboardBackendText } from "./backendNotes";
+import { localizeBackendMessage } from "./backendNotes";
 import { localizeUnevaluatedReason } from "./evaluationReason";
 
 const panel: CSSProperties = {
@@ -28,12 +28,20 @@ export default function RulPanel({
 }) {
   const [lang] = useLang();
   const reasonCopy = localizeUnevaluatedReason(evaluationReason, lang);
+  const noteCopy = rul
+    ? localizeBackendMessage(rul.note_message, rul.note, lang)
+    : undefined;
+  const detailCopy = rul?.reason_message
+    ? localizeBackendMessage(rul.reason_message, rul.reason ?? "", lang)
+    : undefined;
   if (analyzerUnavailable || rul?.status === "unavailable") {
     return (
       <div style={{ ...panel, borderColor: "var(--og-red)" }}>
         <strong>{t("rul.title", lang)}</strong>
         <p style={{ margin: "6px 0 0", color: "var(--og-body)", fontSize: 13 }}>
-          {reasonCopy ?? t("dash.analyzer.unavailable", lang)}
+          {rul?.note_message
+            ? noteCopy
+            : reasonCopy ?? t("dash.analyzer.unavailable", lang)}
         </p>
       </div>
     );
@@ -55,8 +63,15 @@ export default function RulPanel({
           {t("rul.suppressed", lang)}
         </div>
         <p style={{ margin: "6px 0", color: "var(--og-body)", fontSize: 13 }}>
-          {reasonCopy ?? (rul.note.trim() ? localizeDashboardBackendText(rul.note, lang) : t("rul.suppressedNote", lang))}
+          {rul.note_message
+            ? noteCopy
+            : reasonCopy ?? (noteCopy?.trim() ? noteCopy : t("rul.suppressedNote", lang))}
         </p>
+        {detailCopy && (
+          <p style={{ margin: "0 0 6px", color: "var(--og-body)", fontSize: 13 }}>
+            {detailCopy}
+          </p>
+        )}
         <p style={{ margin: 0, color: "var(--og-muted)", fontSize: 12 }}>
           {t("rul.panel.suppressedDetail", lang, {
             model: rul.model === "synthetic-proxy" ? t("rul.model.syntheticProxy", lang) : rul.model,

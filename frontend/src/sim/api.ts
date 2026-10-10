@@ -14,6 +14,11 @@ export interface SigningStatus {
   rejected_reasons: Record<string, number>;
 }
 
+export interface BackendMessage {
+  code: string;
+  params: Record<string, unknown>;
+}
+
 export const BACKEND_URL: string =
   (import.meta.env?.PUBLIC_BACKEND_URL as string | undefined) ??
   "http://localhost:8000";
@@ -26,6 +31,7 @@ export interface HealthResponse {
   store_rows: number;
   influx_points: number | null;
   influx: string;
+  influx_message?: BackendMessage;
   mqtt: { host: string; port: number; topic: string };
   signing?: SigningStatus;
 }
@@ -38,6 +44,7 @@ export interface IngestAck {
   latest_seq: number;
   store_rows: number;
   influx: string;
+  influx_message?: BackendMessage;
   rejected?: number;
   rejected_reasons?: Record<string, number>;
 }
@@ -52,6 +59,8 @@ export interface LevelData {
   seq?: number;
   device_id?: string;
   source: string;
+  source_message?: BackendMessage;
+  note_message?: BackendMessage;
 }
 
 export interface LevelResponse {
@@ -78,6 +87,7 @@ export interface DashAlert {
   window_id: number;
   zone: string;
   reason: string;
+  reason_message?: BackendMessage;
   model: string;
   inputs: Record<string, number | string | null>;
   thresholds: Record<string, number>;
@@ -100,7 +110,9 @@ export interface AlertsData {
   rul_status?: string;
   model: string;
   note: string;
+  note_message?: BackendMessage;
   fallback: string;
+  fallback_message?: BackendMessage;
 }
 
 export interface AlertsResponse {
@@ -121,12 +133,16 @@ export interface RulDataOk {
   confidence: number;
   status: "ok";
   anomaly_only: false;
+  reason?: string;
   slope_L_per_h: number;
   r2: number;
   current_level_L: number;
   model: string;
   note: string;
+  note_message?: BackendMessage;
+  reason_message?: BackendMessage;
   fallback: string;
+  fallback_message?: BackendMessage;
 }
 
 export interface RulDataSuppressed {
@@ -138,7 +154,10 @@ export interface RulDataSuppressed {
   anomaly_only: true;
   model: string;
   note: string;
+  note_message?: BackendMessage;
+  reason_message?: BackendMessage;
   fallback: string;
+  fallback_message?: BackendMessage;
   hours_to_warning?: number | null;
   reason?: string;
 }
@@ -150,9 +169,13 @@ export interface RulDataUnavailable {
   confidence: number;
   status: "unavailable";
   anomaly_only: true;
+  reason?: string;
   model: string;
   note: string;
+  note_message?: BackendMessage;
+  reason_message?: BackendMessage;
   fallback: string;
+  fallback_message?: BackendMessage;
 }
 
 export type RulData = RulDataOk | RulDataSuppressed | RulDataUnavailable;

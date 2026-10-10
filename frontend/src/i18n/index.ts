@@ -142,6 +142,138 @@ export const dict = {
     en: "RUL unavailable: no rows ingested yet; POST SignalRow batches to /ingest, then GET /alerts walks the N1–N4 ladder. Surface anomaly-only alerts instead.",
     es: "RUL no disponible: aún no se han ingerido filas; envía lotes de SignalRow a /ingest y luego GET /alerts recorre la escalera N1–N4. En su lugar, muestra solo alertas de anomalías.",
   },
+  alerts_analyzer_unavailable_fallback: {
+    en: "The analyzer is unavailable; alerts and RUL were not evaluated. Rebuild the backend image with its runtime packages included.",
+    es: "El analizador no está disponible; no se evaluaron las alertas ni el RUL. Reconstruye la imagen del backend con sus paquetes de ejecución.",
+  },
+  alerts_evaluation_failed_fallback: {
+    en: "Alert evaluation failed; anomaly-only alerts remain available.",
+    es: "Falló la evaluación de alertas; las alertas de anomalía siguen disponibles.",
+  },
+  alerts_memory_fallback: {
+    en: "Memory-store grouping by recalibration flags; the full detector is sim/detect.py. This rest-gated model remains unproven until bench calibration.",
+    es: "Agrupación del almacenamiento en memoria según las marcas de recalibración; el detector completo está en sim/detect.py. Este modelo condicionado al reposo sigue NO PROBADO hasta completar la calibración en banco.",
+  },
+  alerts_no_evaluation_note: {
+    en: "No alert evaluation is available for the current data store.",
+    es: "No hay una evaluación de alertas disponible para el almacenamiento de datos actual.",
+  },
+  alerts_no_rows_fallback: {
+    en: "No rows ingested yet; POST SignalRow batches to /ingest, then GET /alerts walks the N1–N4 ladder.",
+    es: "Aún no se han ingerido filas; envía lotes SignalRow a /ingest y luego GET /alerts recorre la escalera N1–N4.",
+  },
+  influx_client_missing: {
+    en: "InfluxDB client unavailable; rows remain in memory.",
+    es: "Cliente de InfluxDB no disponible; las filas se conservan en memoria.",
+  },
+  influx_unknown_no_ingest: {
+    en: "unknown (no ingest yet)",
+    es: "desconocido (aún no hay ingestión)",
+  },
+  influx_unreachable: {
+    en: "InfluxDB unreachable; rows remain in memory.",
+    es: "InfluxDB no está disponible; las filas se conservan en memoria.",
+  },
+  influx_written: {
+    en: "written ({points} points)",
+    es: "escrito ({points} puntos)",
+  },
+  ladder_model_note: {
+    en: "Model=synthetic-proxy (UNPROVEN until bench calibration). Rest-gated and auditable; temperature drift vetoes N2 through the exclusion channel instead of confirming it.",
+    es: "Modelo=sustituto sintético (NO PROBADO hasta la calibración en banco). Condicionado al reposo y auditable; la deriva de temperatura bloquea N2 mediante el canal de exclusión en vez de confirmarlo.",
+  },
+  ladder_n1_trend_persistence: {
+    en: "N1 trend (persistence entry): evidence in window {window}, zone {zone}.",
+    es: "N1 tendencia (entrada por persistencia): evidencia en la ventana {window}, zona {zone}.",
+  },
+  ladder_n2_confirmed_persistence: {
+    en: "N2 confirmed leak: evidence persisted across consecutive windows {windows}.",
+    es: "N2 fuga confirmada: la evidencia persistió en las ventanas consecutivas {windows}.",
+  },
+  ladder_n2_same_window_confirmation: {
+    en: "N2 confirmed leak: {votes} of 3 channels agreed in window {window}.",
+    es: "N2 fuga confirmada: {votes} de 3 canales coincidieron en la ventana {window}.",
+  },
+  ladder_n3_shift_window: {
+    en: "N3 shift window: RUL to warning is {warning_hours} h, below the {shift_hours} h maintenance shift.",
+    es: "N3 ventana de turno: faltan {warning_hours} h para la advertencia, menos que el turno de mantenimiento de {shift_hours} h.",
+  },
+  ladder_n4_abrupt_drop: {
+    en: "N4 critical: abrupt window-to-window drop from {from_l} L to {to_l} L (over {threshold_l} L).",
+    es: "N4 crítico: caída abrupta entre ventanas, de {from_l} L a {to_l} L (más de {threshold_l} L).",
+  },
+  ladder_n4_critical_level: {
+    en: "N4 critical: level {level_pct}% is below the critical threshold of {critical_pct}%.",
+    es: "N4 crítico: el nivel {level_pct}% está bajo el umbral crítico de {critical_pct}%.",
+  },
+  ladder_n4_extreme_collapse: {
+    en: "N4 critical: extreme collapse z={z} with a kurtosis spike of {kurtosis} (impact transient).",
+    es: "N4 crítico: caída extrema con z={z} y un aumento de curtosis de {kurtosis} (transitorio de impacto).",
+  },
+  level_memory_store_note: {
+    en: "Level echoes ingested ground truth; the fused estimate and confidence are future work.",
+    es: "El nivel refleja los datos de referencia ingeridos; la estimación fusionada y su confianza quedan para trabajo futuro.",
+  },
+  level_no_rows_note: {
+    en: "POST SignalRow batches to /ingest; confidence is future work.",
+    es: "Envía lotes SignalRow a /ingest; la confianza queda para trabajo futuro.",
+  },
+  rul_analyzer_unavailable_note: {
+    en: "RUL is unavailable because the analyzer could not be loaded.",
+    es: "El RUL no está disponible porque no se pudo cargar el analizador.",
+  },
+  rul_analyzer_unavailable_reason: {
+    en: "The analyzer is unavailable; no RUL estimate was produced.",
+    es: "El analizador no está disponible; no se generó una estimación de RUL.",
+  },
+  rul_baseline_precision_insufficient: {
+    en: "Baseline precision is insufficient: sigma is {sigma_l} L, above the {max_sigma_l} L limit; anomaly-only output.",
+    es: "La precisión de referencia es insuficiente: sigma es {sigma_l} L, sobre el límite de {max_sigma_l} L; solo se emiten anomalías.",
+  },
+  rul_model_note: {
+    en: "Model=synthetic-proxy (UNPROVEN until bench calibration). Linear extrapolation uses the rest-gated level trend; abrupt steps invalidate it and trigger N4 instead.",
+    es: "Modelo=sustituto sintético (NO PROBADO hasta la calibración en banco). La extrapolación lineal usa la tendencia del nivel en reposo; los cambios bruscos la invalidan y activan N4.",
+  },
+  rul_no_leak_trend: {
+    en: "No leak trend: slope is {slope_l_per_h} L/h (not below zero); anomaly-only output.",
+    es: "Sin tendencia de fuga: la pendiente es {slope_l_per_h} L/h (no es menor que cero); solo se emiten anomalías.",
+  },
+  rul_no_rows_note: {
+    en: "RUL is unavailable until rows are ingested; anomaly-only alerts remain available.",
+    es: "El RUL no está disponible hasta ingerir filas; las alertas de anomalía siguen disponibles.",
+  },
+  rul_no_rows_reason: {
+    en: "No rows have been ingested yet.",
+    es: "Aún no se han ingerido filas.",
+  },
+  rul_significant_leak_trend: {
+    en: "Leak trend is significant; RUL was extrapolated.",
+    es: "La tendencia de fuga es significativa; se extrapoló el RUL.",
+  },
+  rul_suppressed_note: {
+    en: "RUL suppressed (lubrication/precision gate); surface anomaly-only alerts instead. See reason.",
+    es: "RUL suprimido (filtro de lubricación o precisión); se muestran solo alertas de anomalía. Consulta el motivo.",
+  },
+  rul_suppressed_summary: {
+    en: "RUL is suppressed; anomaly-only alerts remain available.",
+    es: "El RUL está suprimido; las alertas de anomalía siguen disponibles.",
+  },
+  rul_trend_too_weak: {
+    en: "Trend is too weak: R² is {r2}, below the minimum of {minimum_r2}; anomaly-only output.",
+    es: "La tendencia es demasiado débil: R² es {r2}, bajo el mínimo de {minimum_r2}; solo se emiten anomalías.",
+  },
+  rul_insufficient_rest_samples: {
+    en: "Insufficient rest samples: {count} scored, below the minimum of {minimum}; anomaly-only output.",
+    es: "Muestras de reposo insuficientes: {count} evaluadas, bajo el mínimo de {minimum}; solo se emiten anomalías.",
+  },
+  source_memory_store: {
+    en: "memory store (InfluxDB when reachable)",
+    es: "almacenamiento en memoria de esta sesión (InfluxDB cuando esté disponible)",
+  },
+  source_no_rows: {
+    en: "default (no rows ingested yet)",
+    es: "predeterminado (aún no se han ingerido filas)",
+  },
   "dash.backend.source.defaultEmpty": {
     en: "default (no rows ingested yet)",
     es: "predeterminado (aún no se han ingerido filas)",

@@ -89,4 +89,41 @@ describe("RUL suppression explanation", () => {
       else Reflect.deleteProperty(globalThis, "localStorage");
     }
   });
+
+  test("renders structured RUL note and reason messages in both languages", () => {
+    const defaultStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+    const rul: RulDataSuppressed = {
+      hours: null,
+      haul_cycles: null,
+      shifts: null,
+      confidence: 0,
+      status: "suppressed",
+      anomaly_only: true,
+      model: "synthetic-proxy",
+      reason: "insufficient rest samples (n=6 < 10); anomaly-only",
+      reason_message: {
+        code: "rul_insufficient_rest_samples",
+        params: { count: 6, minimum: 10 },
+      },
+      note: "Raw legacy note that must not render when structured copy exists.",
+      note_message: { code: "rul_suppressed_summary", params: {} },
+      fallback: "Raw fallback text.",
+    };
+
+    try {
+      for (const lang of ["en", "es"] as const) {
+        Object.defineProperty(globalThis, "localStorage", {
+          configurable: true,
+          value: { getItem: () => lang },
+        });
+        const html = renderToString(h(RulPanel, { rul }));
+        expect(html).toContain(lang === "en" ? "RUL is suppressed" : "El RUL está suprimido");
+        expect(html).toContain(lang === "en" ? "Insufficient rest samples: 6" : "Muestras de reposo insuficientes: 6");
+        expect(html.includes("Raw legacy note")).toBe(false);
+      }
+    } finally {
+      if (defaultStorage) Object.defineProperty(globalThis, "localStorage", defaultStorage);
+      else Reflect.deleteProperty(globalThis, "localStorage");
+    }
+  });
 });

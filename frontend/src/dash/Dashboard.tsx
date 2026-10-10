@@ -15,6 +15,7 @@ import {
   getRul,
   getWindows,
   type AlertsResponse,
+  type BackendMessage,
   type LevelResponse,
   type RulResponse,
   type SigningStatus,
@@ -37,13 +38,13 @@ import { emitDemoOil, type DemoStageId } from "./demoBus";
 import { t, type DictKey, type Lang, useLang } from "../i18n";
 import { buildWheelDetailHref } from "../sim/bench/wheelUrl";
 import { DEMO_FLEET_WHEELS, evaluateCombinedRisk, latestWheelMetrics } from "./fleetRisk";
-import { localizeDashboardBackendText } from "./backendNotes";
+import { localizeBackendMessage, localizeBackendZone } from "./backendNotes";
 import { signingBadgeState } from "./signingBadge";
 import { analyzerUnavailableNotice } from "./analyzerAvailability";
 
 type Source = "loading" | "live" | "demo";
 type BackendNote =
-  | { kind: "live"; rows: number; influx: string }
+  | { kind: "live"; rows: number; influx: string; influxMessage?: BackendMessage }
   | { kind: "error" }
   | null;
 
@@ -114,7 +115,12 @@ export default function Dashboard() {
       setAlerts(al);
       setRul(ru);
       setWindows(wi);
-      setBackendNote({ kind: "live", rows: h.store_rows, influx: h.influx });
+      setBackendNote({
+        kind: "live",
+        rows: h.store_rows,
+        influx: h.influx,
+        influxMessage: h.influx_message,
+      });
       setSource("live");
       const unavailable = h.analysis.available === false ||
         al.status === "unavailable" || ru.status === "unavailable";
@@ -331,7 +337,7 @@ export default function Dashboard() {
           {source === "live" && backendNote?.kind === "live"
             ? t("dash.backend.summary", lang, {
                 rows: backendNote.rows,
-                influx: localizeDashboardBackendText(backendNote.influx, lang),
+                influx: localizeBackendMessage(backendNote.influxMessage, backendNote.influx, lang),
               })
             : t(
                   source === "loading"
@@ -462,7 +468,7 @@ export default function Dashboard() {
             <span style={{ color: "var(--og-muted)" }}>
               {demoActive
                 ? t("dash.demo.labNote", lang)
-                : `${t("dash.source.label", lang)}: ${localizeDashboardBackendText(level?.data.source ?? t("dash.backend.noPayload", lang), lang)}`}
+                : `${t("dash.source.label", lang)}: ${localizeBackendMessage(level?.data.source_message, level?.data.source ?? t("dash.backend.noPayload", lang), lang)}`}
             </span>
           </div>
         </div>
@@ -514,16 +520,18 @@ export default function Dashboard() {
                       {a.level}
                     </span>
                     <strong style={{ fontSize: 13 }}>{a.alert_id}</strong>
-                    <span style={{ fontSize: 12, color: "var(--og-muted)" }}> · t {a.t_s} s · {a.zone}</span>
+                    <span style={{ fontSize: 12, color: "var(--og-muted)" }}> · t {a.t_s} s · {localizeBackendZone(a.zone, lang)}</span>
                     <br />
-                    <span style={{ fontSize: 13, color: "var(--og-body)" }}>{a.reason}</span>
+                    <span style={{ fontSize: 13, color: "var(--og-body)" }}>
+                      {localizeBackendMessage(a.reason_message, a.reason, lang)}
+                    </span>
                   </li>
                 ))}
               </ul>
             )}
             {alerts && !demoActive && !analyzerUnavailable && (
               <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--og-muted)" }}>
-                {localizeDashboardBackendText(alerts.data.note, lang)} · {localizeDashboardBackendText(alerts.data.fallback, lang)}
+                {localizeBackendMessage(alerts.data.note_message, alerts.data.note, lang)} · {localizeBackendMessage(alerts.data.fallback_message, alerts.data.fallback, lang)}
               </p>
             )}
           </div>
