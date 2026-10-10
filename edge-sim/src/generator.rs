@@ -147,6 +147,10 @@ impl Generator {
         }
     }
     pub fn next_row(&mut self) -> Option<Row> {
+        self.next_row_with_time(None)
+    }
+
+    pub fn next_row_with_time(&mut self, timestamp: Option<OffsetDateTime>) -> Option<Row> {
         if self.i >= self.n {
             return None;
         }
@@ -207,7 +211,10 @@ impl Generator {
             kurt += 2.5;
         }
         Some(Row {
-            t_iso: iso_at(self.start, i),
+            t_iso: match timestamp {
+                Some(timestamp) => iso_at(timestamp, 0),
+                None => iso_at(self.start, i),
+            },
             t_s: format!("{t:.1}"),
             seq: i,
             device_id: self.device_id.clone(),
