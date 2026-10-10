@@ -66,7 +66,13 @@ def _pct(value: str | None) -> float | None:
 def summarize(samples: list[dict[str, Any]], expected_rows_per_s: float) -> dict[str, Any]:
     """Resume las muestras del régimen estable (después del calentamiento)."""
     steady = [s for s in samples if s["t"] >= WARMUP_S and s.get("metrics")]
-    rates = [s["metrics"]["rows"]["accepted_1s"] for s in steady if "rows" in s["metrics"]]
+    # El contador de 1 s del backend depende de cuándo cae el muestreo respecto de
+    # los lotes; la pendiente del total acumulado es la medida robusta.
+    totals = [(s["t"], s["metrics"]["rows"].get("accepted_total")) for s in steady if "rows" in s["metrics"]]
+    totals = [(t, v) for t, v in totals if v is not None]
+    rate = None
+    if len(totals) >= 2 and totals[-1][0] > totals[0][0]:
+        rate = (totals[-1][1] - totals[0][1]) / (totals[-1][0] - totals[0][0])
     lat = [s["metrics"].get("latency", {}) for s in steady]
     p50 = [x["p50_s"] for x in lat if x.get("p50_s") is not None]
     p99 = [x["p99_s"] for x in lat if x.get("p99_s") is not None]
@@ -75,8 +81,8 @@ def summarize(samples: list[dict[str, Any]], expected_rows_per_s: float) -> dict
     dropped = [s["metrics"].get("queue", {}).get("dropped_batches", 0) for s in steady]
     return {
         "expected_rows_per_s": expected_rows_per_s,
-        "accepted_rows_per_s_median": statistics.median(rates) if rates else None,
-        "accepted_ratio": (statistics.median(rates) / expected_rows_per_s) if rates else None,
+        "accepted_rows_per_s": rate,
+        "accepted_ratio": (rate / expected_rows_per_s) if rate is not None else None,
         "latency_p50_s_median": statistics.median(p50) if p50 else None,
         "latency_p99_s_max": max(p99) if p99 else None,
         "queue_depth_max": max(queue_depth) if queue_depth else None,
