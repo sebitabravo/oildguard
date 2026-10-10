@@ -1,0 +1,80 @@
+{
+  "language": "python",
+  "n": 1000000,
+  "seed": "0x0123456789ABCDEF",
+  "exact": {
+    "level_sum_scaled": "-549998775802",
+    "level_mean_l": "-54.9998775802",
+    "level_population_variance_l2": "7499.99682208690271256796",
+    "leak_integral_l": "299.8892",
+    "pressure_sum_scaled": "11500104847"
+  },
+  "mean_methods": {
+    "naive": {
+      "value": "-54.999877580200376",
+      "absolute_error": "3.763146785786375403404235840E-13",
+      "relative_error": "6.842100294312493636673310669E-15",
+      "mean_ulp_distance": 53,
+      "seconds_median_5": 0.0067791250185109675
+    },
+    "neumaier": {
+      "value": "-54.9998775802",
+      "absolute_error": "2.729713742155581712722778320E-16",
+      "relative_error": "4.963126941828468445909441574E-18",
+      "mean_ulp_distance": 0,
+      "seconds_median_5": 0.20811712500290014
+    },
+    "pairwise": {
+      "value": "-54.999877580199986",
+      "absolute_error": "1.448382608941756188869476318E-14",
+      "relative_error": "2.633428786872745856202196344E-16",
+      "mean_ulp_distance": 2,
+      "seconds_median_5": 0.15911379098542966
+    },
+    "math_fsum": {
+      "value": "-54.9998775802",
+      "absolute_error": "2.729713742155581712722778320E-16",
+      "relative_error": "4.963126941828468445909441574E-18",
+      "mean_ulp_distance": 0,
+      "seconds_median_5": 0.03874550000182353
+    }
+  },
+  "variance_methods": {
+    "one_pass_naive": {
+      "value": "7499.996822086928",
+      "absolute_error": "2.503763812678460121154785156E-11",
+      "relative_error": "3.338353164770779587674262203E-15",
+      "seconds_median_5": 0.06975387499551289
+    },
+    "two_pass": {
+      "value": "7499.996822086902",
+      "absolute_error": "4.282135228573894500732421875E-13",
+      "relative_error": "5.709516057344640375434367783E-17",
+      "seconds_median_5": 0.2621202500013169
+    },
+    "welford": {
+      "value": "7499.996822086948",
+      "absolute_error": "4.504652156578902244567871094E-11",
+      "relative_error": "6.006205420398385723796738253E-15",
+      "seconds_median_5": 0.2023018340114504
+    }
+  },
+  "leak_integral": {
+    "naive_float": {
+      "value": "299.88919999999604",
+      "absolute_error": "3.962395567214116454124450684E-12",
+      "relative_error": "1.321286517558523766152449199E-14",
+      "seconds_median_5": 0.15780799998901784
+    },
+    "decimal_default_context": {
+      "value": "299.8892000000000000000000000",
+      "absolute_error": "0E-25",
+      "seconds_median_5": 1.636936416005483
+    }
+  },
+  "decimal_mean_default_context": {
+    "value": "-54.9998775801999999945781926",
+    "absolute_error": "5.4218074E-18",
+    "seconds_median_5": 1.408165041997563
+  }
+}

@@ -78,16 +78,18 @@ def _pairwise_sum(values) -> float:
     return _pairwise_sum(values[:middle]) + _pairwise_sum(values[middle:])
 
 
-def _float_metrics(value: float, exact: Decimal, exact_mean: Decimal) -> dict:
+def _float_metrics(value: float, exact: Decimal, exact_mean: Decimal, *, include_mean_ulp: bool = True) -> dict:
     exact_float = float(exact)
     absolute = abs(Decimal.from_float(value) - exact)
     relative = absolute / abs(exact) if exact else Decimal(0)
-    return {
+    result = {
         "value": repr(value),
         "absolute_error": str(absolute),
         "relative_error": str(relative),
-        "mean_ulp_distance": abs(_ordered_float_bits(value) - _ordered_float_bits(float(exact_mean))),
     }
+    if include_mean_ulp:
+        result["mean_ulp_distance"] = abs(_ordered_float_bits(value) - _ordered_float_bits(float(exact_mean)))
+    return result
 
 
 def _ordered_float_bits(value: float) -> int:
@@ -133,7 +135,7 @@ def run_benchmark(n: int) -> dict:
         ("welford", lambda: welford_variance(floats)),
     ):
         value, seconds = _timed(fn)
-        variance_methods[label] = {**_float_metrics(value, exact_variance, exact_mean), "seconds_median_5": seconds}
+        variance_methods[label] = {**_float_metrics(value, exact_variance, exact_mean, include_mean_ulp=False), "seconds_median_5": seconds}
 
     def integrate_float():
         total = 0.0
@@ -146,8 +148,8 @@ def run_benchmark(n: int) -> dict:
         return total
 
     integral, integral_seconds = _timed(integrate_float)
-    decimal_value, decimal_seconds = _timed(lambda: sum((Decimal(value) / Decimal(10000) for value in levels), Decimal(0)) / Decimal(n))
-    # Decimal division rounds the hourly conversion to the active context, matching typical Decimal use.
+    decimal_value, decimal_seconds = _timed(lambda: sum((Decimal.from_float(value / 10000) for value in levels), Decimal(0)) / Decimal(n))
+    # La conversión desde binario conserva el efecto del redondeo de contexto de Decimal.
     decimal_integral, decimal_integral_seconds = _timed(
         lambda: _decimal_integral(levels)
     )
@@ -165,7 +167,7 @@ def run_benchmark(n: int) -> dict:
         "mean_methods": sums,
         "variance_methods": variance_methods,
         "leak_integral": {
-            "naive_float": {**_float_metrics(integral, exact_integral, exact_mean), "seconds_median_5": integral_seconds},
+            "naive_float": {**_float_metrics(integral, exact_integral, exact_mean, include_mean_ulp=False), "seconds_median_5": integral_seconds},
             "decimal_default_context": {"value": str(decimal_integral), "absolute_error": str(abs(decimal_integral - exact_integral)), "seconds_median_5": decimal_integral_seconds},
         },
         "decimal_mean_default_context": {"value": str(decimal_value), "absolute_error": str(abs(decimal_value - exact_mean)), "seconds_median_5": decimal_seconds},
