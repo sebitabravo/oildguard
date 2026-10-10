@@ -592,6 +592,9 @@ export const dict = {
   "rul.panel.confidenceValue": { en: "confidence {confidence}", es: "confianza {confidence}" },
   "rul.model.syntheticProxy": { en: "synthetic-proxy", es: "sustituto sintético" },
   "rul.panel.hoursToCritical": { en: "{hours} h to critical", es: "{hours} h hasta crítico" },
+  "rul.panel.horizon.critical": { en: "Critical horizon within shift", es: "Horizonte crítico dentro del turno" },
+  "rul.panel.horizon.warning": { en: "Warning horizon within shift", es: "Horizonte de advertencia dentro del turno" },
+  "rul.panel.horizon.beyond": { en: "Beyond shift horizon", es: "Fuera del horizonte del turno" },
   "rul.panel.suppressedDetail": {
     en: "Model={model} ({qualifier}) · surface N1/N2/N4 anomaly alerts instead of a countdown.",
     es: "Modelo={model} ({qualifier}) · mostrar alertas de anomalía N1/N2/N4 en lugar de una cuenta regresiva.",

@@ -30,7 +30,10 @@ function renderSuppressedNote(lang: Lang, note: string, evaluationReason?: strin
   }
 }
 
-function renderOkRul(lang: Lang): string {
+function renderOkRul(
+  lang: Lang,
+  horizons: Partial<Pick<RulDataOk, "hours_to_warning" | "hours_to_critical">> = {},
+): string {
   const defaultStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
@@ -38,8 +41,8 @@ function renderOkRul(lang: Lang): string {
   });
   const rul: RulDataOk = {
     hours: 0.51,
-    hours_to_warning: 0.36,
-    hours_to_critical: 0.51,
+    hours_to_warning: horizons.hours_to_warning ?? 0.36,
+    hours_to_critical: horizons.hours_to_critical ?? 0.51,
     haul_cycles: 62.2,
     shifts: 0.06,
     confidence: 0.822,
@@ -77,6 +80,20 @@ describe("RUL suppression explanation", () => {
     expect(spanish).toContain("0,06 turnos");
     expect(spanish).toContain("confianza 0,822");
     expect(spanish).toContain("pendiente -1,235 L/h · R² 0,369 · nivel 92,102 L");
+  });
+
+  test("uses critical, warning, then normal colors by the eight-hour horizon with localized text", () => {
+    const critical = renderOkRul("es", { hours_to_warning: 0.04, hours_to_critical: 0.07 });
+    expect(critical).toContain("var(--og-red)");
+    expect(critical).toContain("Horizonte crítico dentro del turno");
+
+    const warning = renderOkRul("en", { hours_to_warning: 7.99, hours_to_critical: 8 });
+    expect(warning).toContain("var(--og-amber)");
+    expect(warning).toContain("Warning horizon within shift");
+
+    const normal = renderOkRul("es", { hours_to_warning: 8, hours_to_critical: 9 });
+    expect(normal).toContain("var(--og-green)");
+    expect(normal.includes("dentro del turno")).toBe(false);
   });
 
   test("renders the clean-baseline reason in English and Spanish", () => {

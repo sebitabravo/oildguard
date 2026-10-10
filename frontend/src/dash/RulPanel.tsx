@@ -10,6 +10,7 @@ import { t, useLang } from "../i18n";
 import { formatNumber } from "../i18n/numberFormat";
 import { localizeBackendMessage } from "./backendNotes";
 import { localizeUnevaluatedReason } from "./evaluationReason";
+import { classifyRulHorizon } from "./rulHorizon";
 
 const panel: CSSProperties = {
   border: "1px solid var(--og-line-dashboard)",
@@ -84,12 +85,21 @@ export default function RulPanel({
       </div>
     );
   }
+  const horizon = ({
+    critical: { color: "var(--og-red)", copy: "rul.panel.horizon.critical" },
+    warning: { color: "var(--og-amber)", copy: "rul.panel.horizon.warning" },
+    beyond: { color: "var(--og-green)", copy: "rul.panel.horizon.beyond" },
+  } as const)[classifyRulHorizon(rul.hours_to_critical, rul.hours_to_warning)];
+
   return (
-    <div style={{ ...panel, borderColor: "var(--og-green)" }}>
+    <div style={{ ...panel, borderColor: horizon.color }}>
       <div style={{ fontWeight: 700 }}>
         {t("rul.title", lang)} ·{" "}
-        <span style={{ color: "var(--og-green)" }}>
+        <span style={{ color: horizon.color }}>
           {t("rul.panel.hoursToCritical", lang, { hours: formatNumber(rul.hours, lang, 2) })}
+        </span>{" "}
+        <span role="status" style={{ color: horizon.color, fontSize: 12 }}>
+          {t(horizon.copy, lang)}
         </span>
       </div>
       <div
