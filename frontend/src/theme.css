@@ -104,7 +104,7 @@ button { font-family: inherit; }
 .og-num, .og-value, .og-sensor-id { font-variant-numeric: tabular-nums; }
 
 .og-app { min-height: 100%; background: var(--og-bg); }
-.og-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 10; width: 256px; display: flex; flex-direction: column; background: var(--og-surface); border-right: 1px solid var(--og-border-subtle); }
+.og-sidebar { position: fixed; top: 0; left: 0; z-index: 10; width: 256px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; background: var(--og-surface); border-right: 1px solid var(--og-border-subtle); }
 .og-sidebar__brand { display: flex; gap: 10px; align-items: center; height: 72px; padding: 0 20px; color: var(--og-text-primary); text-decoration: none; border-bottom: 1px solid var(--og-border-subtle); }
 .og-sidebar__brand strong, .og-sidebar__brand small { display: block; }
 .og-sidebar__brand strong { font-family: var(--og-mono); font-size: 13px; letter-spacing: .08em; }
