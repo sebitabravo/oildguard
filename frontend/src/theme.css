@@ -596,6 +596,27 @@ button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og
 .og-fleet-channels { display: block; max-width: 160px; margin-top: 3px; color: var(--og-amber); white-space: normal; }
 .og-fleet-link { color: var(--og-yellow); font-weight: 700; text-underline-offset: 3px; }
 .og-fleet-link:hover { color: var(--og-text); }
+.og-fleet-live { margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--og-line-dashboard); border-radius: var(--og-radius-panel); background: var(--og-panel-dashboard); }
+.og-fleet-live__heading { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.og-fleet-live__heading h2 { margin: 0; }
+.og-fleet-live__heading p { margin: 5px 0 0; color: var(--og-muted); font-size: 12px; }
+.og-fleet-live__status { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; }
+.og-fleet-live__status--green { color: var(--og-green); }
+.og-fleet-live__status--amber { color: var(--og-amber); }
+.og-fleet-live__waiting { margin: 16px 0 2px; color: var(--og-muted); font-size: 13px; }
+.og-fleet-live__meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; color: var(--og-muted); font-size: 11px; }
+.og-fleet-live__overview { display: grid; grid-template-columns: repeat(7, minmax(100px, 1fr)); gap: 8px; margin-top: 12px; }
+.og-fleet-live__overview > div { min-width: 0; padding: 9px 10px; border: 1px solid var(--og-line); border-radius: var(--og-radius); background: var(--og-panel-inset); }
+.og-fleet-live__overview strong { display: block; color: var(--og-text); font-size: 16px; }
+.og-fleet-live__overview span { display: block; margin-top: 3px; color: var(--og-muted); font-size: 10px; line-height: 1.3; }
+.og-fleet-live__metrics { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+.og-fleet-live__metric { padding: 9px 10px; border: 1px solid var(--og-line); border-radius: var(--og-radius); background: var(--og-panel-inset); }
+.og-fleet-live__metric h3 { margin: 0 0 8px; color: var(--og-body); font-size: 12px; }
+.og-fleet-live__metric h3 span { color: var(--og-muted); font-weight: 400; }
+.og-fleet-live__metric > div { display: flex; justify-content: space-between; gap: 8px; }
+.og-fleet-live__metric > div span { min-width: 0; }
+.og-fleet-live__metric strong { display: block; color: var(--og-text); font-size: 14px; }
+.og-fleet-live__metric small { display: block; margin-top: 2px; color: var(--og-muted); font-size: 10px; }
 
 @media (max-width: 1100px) {
   .og-brand__tag { display: none; }
@@ -732,6 +753,13 @@ button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og
   .og-dock { flex-wrap: wrap; align-items: flex-end; }
   .og-dock > .og-hud { max-width: 100%; flex-wrap: wrap; justify-content: flex-end; }
   .og-page { padding: 12px 14px 20px; }
+  .og-fleet-live__overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .og-fleet-live__metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .og-fleet-live { padding: 12px; }
+  .og-fleet-live__overview, .og-fleet-live__metrics { grid-template-columns: 1fr; }
+  .og-fleet-live__metric > div { justify-content: flex-start; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
