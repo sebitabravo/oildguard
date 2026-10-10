@@ -42,6 +42,7 @@ from shared.messages import message
 from shared.signing import derive_device_key, parse_device_keys, verify_row
 
 try:  # paquete (pytest / uvicorn backend.main:app)
+    from .influx_writer import InfluxWriter
     from .aggregates import (
         DEFAULT_METRICS,
         QUANTILE_INTERPOLATION,
@@ -61,6 +62,7 @@ try:  # paquete (pytest / uvicorn backend.main:app)
         outage_runs,
     )
 except ImportError:  # módulo suelto (Docker copia backend/ a /app)
+    from influx_writer import InfluxWriter  # type: ignore
     from aggregates import (  # type: ignore
         DEFAULT_METRICS,
         QUANTILE_INTERPOLATION,
@@ -100,6 +102,7 @@ _INFLUX_WRITE = os.getenv("OILGUARD_INFLUX_WRITE", "1") == "1"
 INGEST_QUEUE_BATCHES = int(os.getenv("OILGUARD_INGEST_QUEUE", "1000"))
 INGEST_FLUSH_ROWS = int(os.getenv("OILGUARD_INFLUX_FLUSH_ROWS", "5000"))
 INGEST_FLUSH_SECONDS = float(os.getenv("OILGUARD_INFLUX_FLUSH_SECONDS", "1"))
+INGEST_INFLUX_QUEUE_BATCHES = int(os.getenv("OILGUARD_INFLUX_QUEUE", "200"))
 # Con el bucket lleno por las pruebas de carga, contar los puntos persistidos
 # tardaba segundos. /health responde siempre en el plazo de espera; la sonda
 # sigue en vuelo y rellena el cache cuando termina.
@@ -422,6 +425,10 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
         _verified_total += sum(1 for row in accepted if row.get("sig_verified"))
 
     rejected_count = sum(rejected_reasons.values())
+    # El almacenamiento va primero y completo; Influx se encola despues y no
+    # puede hacer fallar ni retrasar la ingesta.
+    if accepted:
+        _INFLUX_WRITER.submit(accepted)
     _INGEST_METRICS.record(accepted=len(accepted), rejected=rejected_count, now=received_at)
     # Una sola pasada: los generadores anidados y la llamada por fila costaban
     # mas que la propia medicion de latencia.
@@ -439,7 +446,7 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
         seq = int(row.get("seq", 0))
         if seq > latest_seq:
             latest_seq = seq
-    log.info(
+    log.debug(
         "ingest accepted=%d rejected=%d reasons=%s latest_seq=%d store_rows=%d",
         len(accepted),
         rejected_count,
@@ -457,10 +464,70 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _write_line_protocol_raw(protocol: str) -> tuple[str, dict[str, Any]]:
+    """Escribe un lote de line protocol. Nunca lanza; degrada a memoria."""
+    if not _INFLUX_WRITE:
+        msg = "disabled (OILGUARD_INFLUX_WRITE=0); rows kept in memory"
+        log.info("InfluxDB %s", msg)
+        return msg, message("influx_client_missing")
+    try:
+        from influxdb_client import InfluxDBClient  # type: ignore
+        from influxdb_client.client.write_api import SYNCHRONOUS  # type: ignore
+    except ImportError:
+        msg = "disabled (influxdb-client not installed); rows kept in memory"
+        log.warning("InfluxDB %s", msg)
+        return msg, message("influx_client_missing")
+    points = protocol.count("\n") + 1
+    client = None
+    try:
+        client = InfluxDBClient(
+            url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG, timeout=3000
+        )
+        write_api = client.write_api(write_options=SYNCHRONOUS)
+        write_api.write(
+            bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=protocol
+        )
+        return (
+            f"written ({points} points -> {INFLUXDB_URL} bucket={INFLUXDB_BUCKET})",
+            message("influx_written", points=points),
+        )
+    except Exception as exc:  # noqa: BLE001 - best-effort; las filas ya estan en memoria
+        msg = f"fallback-memory (unreachable {INFLUXDB_URL}: {exc}); rows kept in memory"
+        log.warning("InfluxDB write failed; %s", msg)
+        return msg, message("influx_unreachable")
+    finally:
+        if client is not None:
+            try:
+                client.close()
+            except Exception:  # noqa: BLE001 - el cierre es complementario a la escritura
+                log.debug("influx write client close failed")
+
+
 def flush_influx(rows: list[dict[str, Any]]) -> None:
-    """Vuelca puntos a Influx y publica el estado para /health."""
+    """Vuelca puntos a Influx y publica el estado para /health.
+
+    Esta es la via SINCRONA que conserva el contrato de POST /ingest: la
+    respuesta sigue diciendo si el lote se escribio. El camino MQTT no la usa;
+    ese va al escritor asincrono.
+    """
     global _influx_status, _influx_message
     _influx_status, _influx_message = _write_to_influx(rows)
+
+
+def _write_line_protocol(protocol: str) -> None:
+    """Escritura real desde el hilo dedicado (una llamada por lote armado)."""
+    global _influx_status, _influx_message
+    status, message = _write_line_protocol_raw(protocol)
+    _influx_status, _influx_message = status, message
+
+
+# El ingest solo encola; este hilo es el unico que habla con Influx desde la
+# via MQTT. El CPU del worker estaba por debajo del 50 % esperando I/O.
+_INFLUX_WRITER = InfluxWriter(
+    write=_write_line_protocol,
+    max_batches=INGEST_INFLUX_QUEUE_BATCHES,
+    enabled=_INFLUX_WRITE,
+)
 
 
 def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -489,7 +556,8 @@ _PIPELINE = IngestPipeline(
     max_batches=INGEST_QUEUE_BATCHES,
     flush_rows=INGEST_FLUSH_ROWS,
     flush_seconds=INGEST_FLUSH_SECONDS,
-    influx_enabled=_INFLUX_WRITE,
+    # Influx ya no pasa por el worker: lo lleva InfluxWriter en su propio hilo.
+    influx_enabled=False,
 )
 
 _INGEST_METRICS = IngestMetrics(window_s=10.0)
@@ -541,11 +609,14 @@ def queue_state() -> dict[str, Any]:
 
 
 def influx_state() -> dict[str, Any]:
+    """Estado de la persistencia: la del escritor dedicado mas la via sincrona."""
     return {
         "enabled": _INFLUX_WRITE,
+        "async": True,
         "flush_rows": INGEST_FLUSH_ROWS,
         "flush_seconds": INGEST_FLUSH_SECONDS,
         "status": _influx_status,
+        **_INFLUX_WRITER.state(),
     }
 
 
@@ -1447,8 +1518,23 @@ def _start_mqtt_bridge() -> None:
 @app.on_event("startup")
 def on_startup() -> None:
     _probe_influx()
+    _INFLUX_WRITER.start()
     _PIPELINE.start()
     _start_mqtt_bridge()
+
+
+@app.on_event("shutdown")
+def on_shutdown() -> None:
+    # Vaciar el pipeline y despues el escritor: lo que este en la cola del
+    # pipeline todavia puede encolar en la del escritor.
+    _PIPELINE.stop(timeout=5.0)
+    drained = _INFLUX_WRITER.stop(timeout=5.0)
+    log.info(
+        "shutdown complete: influx drained=%d batches, written=%d, dropped=%d",
+        drained,
+        _INFLUX_WRITER.written_batches(),
+        _INFLUX_WRITER.dropped_batches(),
+    )
 
 
 def load_rows_from_csv(path: str, limit: int = 0) -> list[dict[str, Any]]:
