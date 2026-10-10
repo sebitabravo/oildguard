@@ -69,13 +69,13 @@ A neighbouring product cannot truthfully copy that claim without re-deriving the
 
 **Confirmed functionality**
 
-- The frontend route inventory is documented in [README.md](README.md#route-map), including data class and the three registered alert routes that currently return 404 because no frontend pages exist.
+- The frontend route inventory is documented in [README.md](README.md#route-map), including data class for the implemented alert inbox, detail, and read-only rules pages.
 - Operational pages (`/fleet`, `/monitoring`, `/rul`, `/calibration`, `/devices`, `/link`) query the backend where supported and use visibly labeled deterministic demo or synthetic-model fallbacks. A healthy backend connection is not evidence of field calibration.
 - `/mine` runs the local five-truck visual fleet with an eight-state PLM III FSM. `/lab/sim` uses a separate synthetic signal fixture with a four-state `LOAD | HAUL | DUMP | WAIT` loop; generated rows may be submitted to the local backend, but remain synthetic.
 - In the signal generator, the mode gate is `MOVING` over HAUL and WAIT, and `REST` over LOAD and DUMP. Recalibration is permitted only when stopped, level, and engine on.
-- Wheel level from pressure fusion, confidence bands, rest-window shading, N1–N4 ladder, and RUL are available as backend analysis when populated; otherwise the interface labels deterministic demo data. The `/monitoring` local leak walkthrough is an explicitly synthetic demo, not a backend or field event.
+- Wheel level from pressure fusion, confidence bands, rest-window shading, N1–N4 ladder, and RUL are available as backend analysis when populated; otherwise the interface labels deterministic demo data. The `/monitoring` leak walkthrough is an explicitly synthetic demo, not a backend or field event. `/alerts` merges backend records with deterministic demo records; demo lifecycle actions persist only in browser-local storage, while backend lifecycle actions are unavailable.
 - Combined dashboard risk is a `SYNTHETIC-PROXY` rule requiring at least two `ASSUMPTION` thresholds: oil ≤ 47.5 L, temperature ≥ 90 °C, or vibration ≥ 7 mm/s. Current is displayed but is not an input. This is separate from backend N1–N4 leak analysis and is not a field-validated risk estimate.
-- The `/wheel` cutaway and `/report` reconstruction are read-only synthetic demonstrations. There is no telemetry from a field machine, no field calibration, and no physical or logical truck-control action.
+- The `/wheel` cutaway and `/report` reconstruction are read-only synthetic demonstrations. The report link carries an alert ID for display, but its report measurements are the canonical synthetic scenario, not a reconstruction of alert-specific evidence. There is no telemetry from a field machine, no field calibration, and no physical or logical truck-control action.
 - Manual inspection reference chain for the GDY106, with fixed manual item numbers that must never be renumbered.
 
 **Instrumentation defined in the proposal**

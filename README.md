@@ -41,7 +41,7 @@ rebuilding, so it does not mask dependencies in the image.
 
 ## Route map
 
-“Live backend” means data returned by the local API; pages label deterministic demo fallback as `DEMO`. `SYNTHETIC-PROXY` means modeled values, not field measurements. Three reserved alert routes are currently registered but have no frontend page (HTTP 404).
+“Live backend” means data returned by the local API; pages label deterministic demo fallback as `DEMO`. `SYNTHETIC-PROXY` means modeled values, not field measurements. The alert inbox and detail pages can merge live backend records with deterministic local demo alerts; the alert-rules page is read-only. Demo lifecycle changes stay in this browser, and no alert lifecycle API is available.
 
 | Route | What it shows | Data class |
 |---|---|---|
@@ -54,15 +54,15 @@ rebuilding, so it does not mask dependencies in the image.
 | `/calibration` | Pause-window status and settling-curve model | Live backend windows when available + synthetic model/demo fallback |
 | `/mine` | Procedural mine scene and simulated truck cycles | Deterministic demo |
 | `/wheel` | GDY106 cutaway and interactive oil-pool model | Synthetic-proxy demo |
-| `/alerts` | Reserved alert inbox; no frontend page is implemented (HTTP 404) | No page/data |
-| `/alerts/detail` | Reserved alert detail; no frontend page is implemented (HTTP 404) | No page/data |
-| `/alerts/rules` | Reserved read-only rules page; no frontend page is implemented (HTTP 404) | No page/data |
+| `/alerts` | Alert inbox with level, lifecycle, truck, role, and text filters | Live backend records + deterministic demo alerts |
+| `/alerts/detail` | Selected alert, trigger evidence, timeline, and report link; demo actions stay local | Live record when available; otherwise deterministic demo evidence |
+| `/alerts/rules` | Read-only explanation of alert thresholds and voting rules | Static rule configuration; no field data |
 | `/devices` | Device inventory and signing/link context | Live backend + deterministic demo fallback |
 | `/link` | Ingest, availability, outage, and link-health view | Live backend + deterministic demo fallback |
 | `/lab/sim` | Generated scenario fixture and playback controls | Synthetic lab |
 | `/lab/validation` | Estimate-versus-generator-truth comparison; optional live rows are labeled | Synthetic lab; backend rows only when available |
 | `/lab/bench` | Parameterized bench protocol calculations | Synthetic lab |
-| `/report` | Read-only post-incident example | Deterministic synthetic demo |
+| `/report` | Read-only canonical synthetic leak reconstruction; the alert query parameter supplies an ID, not alert-specific measurements | Deterministic synthetic demo |
 | `/dev/ui` | Shared component catalogue and states | Synthetic catalogue |
 
 ## Load simulation
