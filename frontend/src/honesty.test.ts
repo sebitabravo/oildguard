@@ -55,7 +55,7 @@ const bannedTerms: BannedTerm[] = [
 const allowlist = new Map<string, string>();
 
 function normalizeForMatching(value: string): string {
-  return value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+  return value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 }
 
 function escapeRegExp(value: string): string {
@@ -67,10 +67,9 @@ function findBannedMatches(text: string, terms: readonly BannedTerm[]): BannedMa
   const matches: BannedMatch[] = [];
   for (const banned of terms) {
     const normalizedTerm = normalizeForMatching(banned.term);
-    const startsWithWord = /^[\p{L}\p{N}_]/u.test(normalizedTerm);
-    const endsWithWord = /[\p{L}\p{N}_]$/u.test(normalizedTerm);
+    const requiresBoundary = ["ROI", "USD", "SIL-2", "SIL 2"].includes(banned.term);
     const pattern = new RegExp(
-      `${startsWithWord ? "\\b" : ""}${escapeRegExp(normalizedTerm)}${endsWithWord ? "\\b" : ""}`,
+      `${requiresBoundary ? "\\b" : ""}${escapeRegExp(normalizedTerm)}${requiresBoundary ? "\\b" : ""}`,
       "g",
     );
     for (const match of normalizedText.matchAll(pattern)) {
@@ -106,11 +105,17 @@ describe("honesty matcher", () => {
       "ROI",
     ]);
     expect(findBannedMatches("broiler inventory", [terms[1]])).toEqual([]);
+    expect(findBannedMatches("WeibullModel TRIGGER_HAUL_STOP_NOW", bannedTerms).map(({ term }) => term)).toEqual([
+      "Weibull",
+      "TRIGGER_HAUL_STOP",
+    ]);
+    expect(findBannedMatches("usdCode", [{ term: "USD", reason: "short token" }])).toEqual([]);
   });
 });
 
 describe("frontend honesty guard", () => {
   test("contains no unsupported claims or machine-control actions", async () => {
-    expect(await findSourceViolations()).toEqual([]);
+    const violations = await findSourceViolations();
+    if (violations.length > 0) throw new Error(violations.join("\n"));
   });
 });
