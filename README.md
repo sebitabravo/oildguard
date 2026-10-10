@@ -99,9 +99,10 @@ parity evidence, and benchmark method are documented in
 Follow [`docs/demo-script.md`](docs/demo-script.md) for the exact five-minute
 navigation and the simulator option. The walkthrough distinguishes backend
 `LIVE` values from deterministic `DEMO` data and synthetic lab fixtures. The
-alert inbox routes are reserved but not implemented; use the alert ladder on
-`/monitoring` instead. Nothing in this prototype is field-calibrated or able
-to control a truck.
+alert inbox, detail, and read-only rules pages are available; the detail page's
+Generate report link opens a canonical synthetic report, not alert-specific
+measurements. Nothing in this prototype is field-calibrated or able to control
+a truck.
 
 ### Current screenshots (1600 × 1000)
 
