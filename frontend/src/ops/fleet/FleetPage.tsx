@@ -95,7 +95,11 @@ export default function FleetPage() {
         </section>
 
         <FilterBar>
-          <SegmentedControl options={["all", "930E", "980E"]} value={model} onChange={setModel} />
+          <SegmentedControl
+            options={["all", "930E", "980E"].map((option) => option === "all" ? t("fleet.modelAll", lang) : option)}
+            value={model === "all" ? t("fleet.modelAll", lang) : model}
+            onChange={(value) => setModel(value === t("fleet.modelAll", lang) ? "all" : value)}
+          />
           <div className="og-fleet-state-filters" role="group" aria-label={t("fleet.stateFilter", lang)}>
             {(["all", "alert", "no-link", "out-of-service"] as const).map((item) => (
               <button type="button" className={`og-fleet-filter-chip ${state === item ? "is-active" : ""}`} aria-pressed={state === item} onClick={() => setState(item)}>
