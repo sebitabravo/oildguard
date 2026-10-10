@@ -29,8 +29,24 @@ DEFAULT_MAX_BATCHES = 200
 
 
 def _escape_tag(value: str) -> str:
-    """Comas, espacios y signos iguales separan campos: hay que escaparlos."""
+    """Comas, espacios y signos iguales separan campos: hay que escaparlos.
+
+    El caso comun es un valor sin nada que escapar, y una cadena de cuatro
+    ``replace`` por fila son millones de llamadas: se comprueba primero si hay
+    algo que escapar.
+    """
+    if _ESCAPE_CHARS.isdisjoint(value):
+        return value
     return value.replace("\\", "\\\\").replace(",", "\\,").replace(" ", "\\ ").replace("=", "\\=")
+
+
+_ESCAPE_CHARS = frozenset(", =\\")
+_MEASUREMENT = _escape_tag(MEASUREMENT)
+# Los nombres de campo y de tag son constantes: se escapan una vez aqui y no
+# en cada fila.
+_FIELDS_FLOAT = tuple(_escape_tag(name) for name in FLOAT_FIELDS)
+_FIELDS_INT = tuple(_escape_tag(name) for name in INT_FIELDS)
+_TAG_NAMES = tuple(_escape_tag(name) for name in TAGS)
 
 
 def _as_number(value: Any) -> float | None:
@@ -110,23 +126,23 @@ def encode_row(row: dict[str, Any]) -> str | None:
         return None
 
     tags = []
-    for name in TAGS:
+    for name, escaped_name in zip(TAGS, _TAG_NAMES):
         value = row.get(name)
         if value is None:
             continue
         rendered = str(value).lower() if isinstance(value, bool) else str(value)
-        tags.append(f"{_escape_tag(name)}={_escape_tag(rendered)}")
-    tag_part = f"{_escape_tag(MEASUREMENT)}" + ("," + ",".join(tags) if tags else "")
+        tags.append(f"{escaped_name}={_escape_tag(rendered)}")
+    tag_part = _MEASUREMENT + ("," + ",".join(tags) if tags else "")
 
     fields = []
-    for name in FLOAT_FIELDS:
+    for name, escaped_name in zip(FLOAT_FIELDS, _FIELDS_FLOAT):
         number = _as_number(row.get(name))
         if number is not None:
-            fields.append(f"{_escape_tag(name)}={number}")
-    for name in INT_FIELDS:
+            fields.append(f"{escaped_name}={number}")
+    for name, escaped_name in zip(INT_FIELDS, _FIELDS_INT):
         number = _as_number(row.get(name))
         if number is not None:
-            fields.append(f"{_escape_tag(name)}={int(number)}i")
+            fields.append(f"{escaped_name}={int(number)}i")
     if not fields:
         return None
     return f"{tag_part} {','.join(fields)} {timestamp}"
@@ -156,7 +172,7 @@ class InfluxWriter:
         name: str = "influx-writer",
     ) -> None:
         self._write = write
-        self._queue: queue.Queue[str] = queue.Queue(maxsize=max(1, int(max_batches)))
+        self._queue: "queue.Queue[list[dict[str, Any]]]" = queue.Queue(maxsize=max(1, int(max_batches)))
         self.flush_rows = max(1, int(flush_rows))
         self.flush_seconds = max(0.01, float(flush_seconds))
         self.enabled = bool(enabled)
@@ -177,11 +193,8 @@ class InfluxWriter:
         """Encola un lote. False significa que se descarto (cola del escritor llena)."""
         if not self.enabled or not rows:
             return True
-        protocol = encode_line_protocol(rows)
-        if not protocol:
-            return True
         try:
-            self._queue.put_nowait(protocol)
+            self._queue.put_nowait(rows)
         except queue.Full:
             with self._lock:
                 self._dropped_batches += 1
@@ -202,19 +215,19 @@ class InfluxWriter:
     def run_forever(self) -> None:
         while not self._stopping.is_set():
             try:
-                protocol = self._queue.get(timeout=self.flush_seconds)
+                rows = self._queue.get(timeout=self.flush_seconds)
             except queue.Empty:
                 self.flush_buffer()
                 continue
             # El simulador publica un mensaje por dispositivo y por tick: sin
             # agrupar serian 1000 escrituras de 10 puntos por segundo, y cada
             # ida y vuelta a Influx cuesta mas que las 10 filas que lleva.
-            self._buffer.append(protocol)
+            self._buffer.append(rows)
             if self._pending_points() >= self.flush_rows:
                 self.flush_buffer()
 
     def _pending_points(self) -> int:
-        return sum(part.count("\n") + 1 for part in self._buffer)
+        return sum(len(rows) for rows in self._buffer)
 
     def _absorb_queue(self) -> None:
         """Pasa lo encolado al buffer sin escribir todavia."""
@@ -232,7 +245,11 @@ class InfluxWriter:
             pending, self._buffer = self._buffer, []
         if not pending:
             return 0
-        return self._consume("\n".join(pending))
+        rows = [row for chunk in pending for row in chunk]
+        protocol = encode_line_protocol(rows)
+        if not protocol:
+            return 0
+        return self._consume(protocol)
 
     def drain_and_flush(self) -> int:
         """Vuelca cola y buffer en una sola escritura (fin de vida del escritor)."""
