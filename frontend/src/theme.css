@@ -558,6 +558,11 @@ button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og
   .og-seg { order: 1; flex: 0 0 auto; }
   .og-hud--tl { width: calc(100% - 28px) !important; }
   .og-scene--wheel .og-stack--tr { display: none; }
+  .og-scene--wheel .og-label--sensor .og-label__pill {
+    font-size: 0;
+    gap: 0;
+    padding-inline: 0;
+  }
   .og-view--wheel { overflow-y: auto; }
   .og-viewport--wheel { display: flex; flex: 0 0 auto; flex-direction: column; height: auto; min-height: 0; }
   .og-viewport--wheel .og-viewport__scene {

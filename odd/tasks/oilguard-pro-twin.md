@@ -322,4 +322,13 @@ This follow-up addresses the Playwright QA findings in `/tmp/oilguard-qa/report.
 - **GREEN, build:** `cd frontend && bun run build` → pass; Astro check 0 errors, 0 warnings, 4 hints; 4 static pages built; existing >500 kB chunk-size warning.
 - **Commit:** `fix(frontend): keep mobile scene labels in bounds` (this work unit; exact hash recorded in the completion handoff).
 
+### Q4 mobile wheel marker readability — follow-up
+
+- **Finding:** After the scene-boundary fix, multiple long projected CSS2D sensor pills still overlapped each other in the 390 px wheel viewport (notably vibration/current), reducing readability.
+- **Fix:** At the existing ≤900 px breakpoint, wheel sensor pills suppress only their long floating text suffix (`font-size: 0`, no gap or inline padding). The existing neutral identity marker remains distinct (`56`, `41`, `39`, `A`); complete localized sensor names remain in the stacked sidebar and scene accessibility description. Desktop labels are unchanged.
+- **DOM proof:** Chromium 154 at 390×844, EN and ES: every sensor marker is 20×20 px with its 18×18 px neutral ring, and all pairwise marker rectangle intersections are empty. The page stays 390 px wide. EN/ES CSS2D label text and full sidebar names remain present and localized; accessibility-tree text remains available. DOM evidence: `/tmp/og-shots/qa-fix-wheel-marker-mobile-dom.json`.
+- **Captures inspected:** `/tmp/og-shots/qa-fix-wheel-marker-mobile-en.png` and `/tmp/og-shots/qa-fix-wheel-marker-mobile-es.png`; both show separated identity rings with no long-label collisions, while the sidebar retains complete names.
+- **GREEN:** `cd frontend && bun test src` → 193 pass, 0 fail, 114,068 expectations across 37 files. `cd frontend && bun run build` → pass; Astro check 0 errors, 0 warnings, 4 hints; 4 static routes built; existing >500 kB chunk-size warning. CSS-only change; no logic test added.
+- **Commit:** `fix(frontend): simplify wheel labels on mobile` (this work unit; exact hash recorded in the completion handoff).
+
 Engram mirror for this follow-up remains pending because memory tools and an authoritative session identity are unavailable.
