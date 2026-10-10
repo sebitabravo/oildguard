@@ -37,6 +37,8 @@ not. The `analysis` object includes a boolean `available` and a diagnostic
   "analysis": {"available": true, "reason": null},
   "store_rows": 600,
   "influx_points": 1200,
+  "influx": "unknown (no ingest yet)",
+  "influx_message": {"code": "influx_unknown_no_ingest", "params": {}},
   "signing": {
     "enforced": false,
     "devices": 0,
@@ -60,6 +62,14 @@ range. A successful empty query returns `0`. The count query has a 1,200 ms
 client timeout and runs outside the in-memory store lock. If configuration,
 the SDK, or the query is unavailable, `influx_points` is `null`; `/health`
 still responds with HTTP 200.
+
+Backend-generated prose/status fields retain their legacy English string and
+add a sibling `<field>_message` object for clients that localize the text:
+`{"code": "stable_snake_case", "params": {...}}`. Parameter values are
+typed JSON scalars/lists; they are the values used by the corresponding
+message template, not preformatted strings. The single code/parameter-name
+catalog is `shared/message_codes.json`. `/level` is read from the in-memory
+session store only; it does not read from InfluxDB.
 
 ## POST /ingest
 
@@ -107,6 +117,7 @@ Ack:
   "latest_seq": 4,
   "store_rows": 5,
   "influx": "fallback-memory (unreachable ...); rows kept in memory",
+  "influx_message": {"code": "influx_unreachable", "params": {}},
   "rejected": 0,
   "rejected_reasons": {}
 }
@@ -197,7 +208,9 @@ returns placeholder `confidence: 0.0`):
     "t_iso": "...",
     "seq": 4,
     "device_id": "wheel-RH-01",
-    "source": "memory store (InfluxDB when reachable)"
+    "source": "memory store (InfluxDB when reachable)",
+    "source_message": {"code": "source_memory_store", "params": {}},
+    "note_message": {"code": "level_memory_store_note", "params": {}}
   }
 }
 ```
@@ -208,7 +221,8 @@ available under `/alerts` data, and RUL confidence is returned by `/rul`
 (`backend/main.py:429-487`).
 
 Empty store: returns the 95 L default with
-`"source": "default (no rows ingested yet)"`.
+`"source": "default (no rows ingested yet)"`, `source_message.code` set to
+`source_no_rows`, and `note_message.code` set to `level_no_rows_note`.
 
 ## GET /windows
 
@@ -285,14 +299,61 @@ gates suppress the RUL estimate, `evaluated` remains true and the endpoint
 does not include a top-level `reason`.
 
 `GET /alerts` returns `{status, kind, as_of, evaluated, reason?, data}` where
-`reason` is present only when `evaluated` is false. Its `data` contains
-`{alerts, escalation, ladder: [N1..N4], level, rul_status, model, note,
-fallback}` when evaluated. `GET /rul` returns the same envelope around the RUL
-data (`hours`, `hours_to_warning`, `hours_to_critical`, `haul_cycles`,
-`shifts`, `confidence`, and related fields). Analyzer diagnostics may remain
-in API data for operators; the frontend presents localized reason-code copy
-instead of rendering raw diagnostics. Full method, thresholds, and real log
-excerpts: `docs/t10-rul-ladder.md`.
+`reason` is present only when `evaluated` is false. The `data` object retains
+its English `note` and `fallback` and adds `note_message` and
+`fallback_message`. Every alert's existing English `reason` has a sibling
+`reason_message`. `/rul` retains the English `reason`, `note`, and `fallback`
+fields and adds `reason_message`, `note_message`, and `fallback_message` to
+the data object. Analyzer diagnostics remain available in those legacy fields
+for compatibility; clients should localize from message codes rather than
+trying to parse or exact-match the prose. Full method, thresholds, and real
+log excerpts: `docs/t10-rul-ladder.md`.
+
+### Structured backend message catalog
+
+Every backend-emitted message code is declared once in
+`shared/message_codes.json`; each row lists the exact parameter names emitted
+with that code. Empty parameters are shown as `—`.
+
+| Code | Parameters |
+|---|---|
+| `alerts_analyzer_unavailable_fallback` | — |
+| `alerts_evaluation_failed_fallback` | — |
+| `alerts_memory_fallback` | — |
+| `alerts_no_evaluation_note` | — |
+| `alerts_no_rows_fallback` | — |
+| `influx_client_missing` | — |
+| `influx_unknown_no_ingest` | — |
+| `influx_unreachable` | — |
+| `influx_written` | `points` |
+| `ladder_model_note` | — |
+| `ladder_n1_trend_persistence` | `window`, `zone` |
+| `ladder_n2_confirmed_persistence` | `windows` |
+| `ladder_n2_same_window_confirmation` | `votes`, `window` |
+| `ladder_n3_shift_window` | `warning_hours`, `shift_hours` |
+| `ladder_n4_abrupt_drop` | `from_l`, `to_l`, `threshold_l` |
+| `ladder_n4_critical_level` | `level_pct`, `critical_pct` |
+| `ladder_n4_extreme_collapse` | `z`, `kurtosis` |
+| `level_memory_store_note` | — |
+| `level_no_rows_note` | — |
+| `rul_analyzer_unavailable_note` | — |
+| `rul_analyzer_unavailable_reason` | — |
+| `rul_baseline_precision_insufficient` | `sigma_l`, `max_sigma_l` |
+| `rul_model_note` | — |
+| `rul_no_leak_trend` | `slope_l_per_h` |
+| `rul_no_rows_note` | — |
+| `rul_no_rows_reason` | — |
+| `rul_significant_leak_trend` | — |
+| `rul_suppressed_note` | — |
+| `rul_suppressed_summary` | — |
+| `rul_trend_too_weak` | `r2`, `minimum_r2` |
+| `rul_insufficient_rest_samples` | `count`, `minimum` |
+| `source_memory_store` | — |
+| `source_no_rows` | — |
+
+The backend verifies code membership and parameter names when creating a
+message object. The Python regression test also compares every literal code
+emission in `ai/ladder.py`, `ai/rul.py`, and `backend/main.py` with this table.
 
 ## Round-trip (generator -> MQTT -> backend -> query)
 

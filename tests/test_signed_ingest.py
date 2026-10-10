@@ -14,7 +14,14 @@ KEY = secrets.token_bytes(32)
 
 @pytest.fixture()
 def client(monkeypatch):
-    monkeypatch.setattr(backend_main, "_write_to_influx", lambda _rows: "test-memory")
+    monkeypatch.setattr(
+        backend_main,
+        "_write_to_influx",
+        lambda rows: (
+            "test-memory",
+            {"code": "influx_written", "params": {"points": len(rows)}},
+        ),
+    )
     monkeypatch.setattr(backend_main, "_DEVICE_KEYS", {"wheel-RH-01": KEY}, raising=False)
     monkeypatch.setattr(backend_main, "_REQUIRE_SIGNATURE", True, raising=False)
     with backend_main._store_lock:
@@ -141,7 +148,10 @@ def test_only_verified_rows_are_written_to_influx(client, monkeypatch):
     monkeypatch.setattr(
         backend_main,
         "_write_to_influx",
-        lambda rows: written.extend(rows) or "test-memory",
+        lambda rows: (
+            written.extend(rows) or "test-memory",
+            {"code": "influx_written", "params": {"points": len(rows)}},
+        ),
     )
 
     backend_main.ingest_rows([sign_row(generated_row(), KEY), generated_row()])

@@ -46,6 +46,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 from ai import level as level_mod  # noqa: E402
 from ai import rul as rul_mod  # noqa: E402
+from shared.messages import message  # noqa: E402
 
 MODEL_LABEL = "synthetic-proxy"  # NOT proven until S7 bench proof
 Z_THR = 3.0
@@ -151,22 +152,43 @@ def channels(win: dict, trend_slope_per_h: float | None) -> dict:
     return ch
 
 
-def _abrupt(win: dict, prev: dict | None) -> tuple[bool, str]:
+def _abrupt(win: dict, prev: dict | None) -> tuple[bool, str, dict | None]:
     if win["level_med_pct"] is not None and win["level_med_pct"] < CRIT_PCT:
-        return True, f"level {win['level_med_pct']}% < critical {CRIT_PCT}%"
+        return (
+            True,
+            f"level {win['level_med_pct']}% < critical {CRIT_PCT}%",
+            message(
+                "ladder_n4_critical_level",
+                level_pct=win["level_med_pct"],
+                critical_pct=CRIT_PCT,
+            ),
+        )
     if (prev is not None and win["level_med_L"] is not None
             and prev["level_med_L"] is not None
             and prev["level_med_L"] - win["level_med_L"] > ABRUPT_STEP_L):
+        from_l = round(prev["level_med_L"], 1)
+        to_l = round(win["level_med_L"], 1)
         return True, (
             f"abrupt window-to-window drop "
-            f"{prev['level_med_L']:.1f}->{win['level_med_L']:.1f} L "
-            f"(>{ABRUPT_STEP_L} L)")
+            f"{from_l:.1f}->{to_l:.1f} L "
+            f"(>{ABRUPT_STEP_L} L)"), message(
+                "ladder_n4_abrupt_drop",
+                from_l=from_l,
+                to_l=to_l,
+                threshold_l=ABRUPT_STEP_L,
+            )
     if (win["z_min"] is not None and win["z_min"] < -Z_EXTREME
             and win["kurt_max"] is not None and win["kurt_max"] > KURT_SPIKE):
+        z = round(win["z_min"], 1)
+        kurtosis = round(win["kurt_max"], 1)
         return True, (
-            f"extreme collapse z={win['z_min']:.1f} with kurtosis spike "
-            f"{win['kurt_max']:.1f} (impact transient)")
-    return False, ""
+            f"extreme collapse z={z:.1f} with kurtosis spike "
+            f"{kurtosis:.1f} (impact transient)"), message(
+                "ladder_n4_extreme_collapse",
+                z=z,
+                kurtosis=kurtosis,
+            )
+    return False, "", None
 
 
 def evaluate(samples: list[dict]) -> dict:
@@ -184,6 +206,7 @@ def evaluate(samples: list[dict]) -> dict:
     leak_active_from: int | None = None
 
     def raise_alert(lv: str, win: dict, ch: dict | None, reason: str,
+                    reason_message: dict,
                     extra_inputs: dict | None = None) -> None:
         if lv in seen:
             return
@@ -224,6 +247,7 @@ def evaluate(samples: list[dict]) -> dict:
             "baseline": lev.get("baseline", {}).get("source"),
             "model": MODEL_LABEL,
             "reason": reason,
+            "reason_message": reason_message,
         })
 
     prev: dict | None = None
@@ -231,33 +255,48 @@ def evaluate(samples: list[dict]) -> dict:
         ch = channels(win, slope)
         confirm_votes = sum([ch["pressure_drop"], ch["level_trend"], ch["vib_impact"]])
         # N4 first: critical preempts everything in this window.
-        is_abrupt, why = _abrupt(win, prev)
+        is_abrupt, why, why_message = _abrupt(win, prev)
         if is_abrupt:
-            raise_alert("N4", win, ch, f"N4 critical: {why}")
+            raise_alert("N4", win, ch, f"N4 critical: {why}", why_message)
             leak_active_from = leak_active_from if leak_active_from is not None else win["window_id"]
         # N1: trend entry — any leak-evidence channel in one window.
         evidence = ch["pressure_drop"] or ch["level_trend"] or ch["vib_impact"]
         if evidence and "N1" not in seen:
             raise_alert("N1", win, ch,
                         f"N1 trend (persistence entry): evidence in window "
-                        f"{win['window_id']} zone={win['zone']}")
+                        f"{win['window_id']} zone={win['zone']}",
+                        message(
+                            "ladder_n1_trend_persistence",
+                            window=win["window_id"],
+                            zone=win["zone"],
+                        ))
             leak_active_from = win["window_id"]
         # N2: confirmation — 2-of-3 channels same window, or evidence in
         # two consecutive windows (persistence counts as confirmation).
         confirmed = False
         how = ""
+        n2_message = None
         if evidence and not ch["temp_drift_veto"]:
             if confirm_votes >= 2:
                 confirmed = True
                 how = (f"{confirm_votes}-of-3 channels same window "
                        f"{win['window_id']}")
+                n2_message = message(
+                    "ladder_n2_same_window_confirmation",
+                    votes=confirm_votes,
+                    window=win["window_id"],
+                )
             elif (prev is not None and prev.get("_evidence")
                     and win["window_id"] == prev["window_id"] + 1):
                 confirmed = True
                 how = (f"persistence: evidence in consecutive windows "
                        f"{prev['window_id']}+{win['window_id']}")
+                n2_message = message(
+                    "ladder_n2_confirmed_persistence",
+                    windows=[prev["window_id"], win["window_id"]],
+                )
         if confirmed and "N2" not in seen:
-            raise_alert("N2", win, ch, f"N2 confirmed leak: {how}")
+            raise_alert("N2", win, ch, f"N2 confirmed leak: {how}", n2_message)
         elif (evidence and ch["temp_drift_veto"] and "N2" not in seen
                 and win.get("_veto_noted") is None):
             win["_veto_noted"] = True  # audit trace on the window, not an alert
@@ -269,6 +308,11 @@ def evaluate(samples: list[dict]) -> dict:
             raise_alert("N3", win, ch,
                         f"N3 shift-window: RUL-to-warning "
                         f"{rul['hours_to_warning']} h < {SHIFT_H} h shift",
+                        message(
+                            "ladder_n3_shift_window",
+                            warning_hours=rul["hours_to_warning"],
+                            shift_hours=SHIFT_H,
+                        ),
                         extra_inputs={"rul_confidence": rul.get("confidence")})
         win["_evidence"] = evidence
         prev = win
@@ -297,4 +341,5 @@ def evaluate(samples: list[dict]) -> dict:
             f"Rest-gated, auditable; temp drift vetoes N2 (exclusion "
             f"channel) instead of confirming."
         ),
+        "note_message": message("ladder_model_note"),
     }

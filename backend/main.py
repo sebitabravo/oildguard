@@ -33,6 +33,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from shared.messages import message
 from shared.signing import parse_device_keys, verify_row
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -124,14 +125,15 @@ _verified_total = 0
 _rejected_total = 0
 _rejected_reasons: Counter[str] = Counter()
 _influx_status = "unknown (no ingest yet)"
+_influx_message = message("influx_unknown_no_ingest")
 
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _write_to_influx(rows: list[dict[str, Any]]) -> str:
-    """Best-effort InfluxDB write. Returns a short status string.
+def _write_to_influx(rows: list[dict[str, Any]]) -> tuple[str, dict[str, Any]]:
+    """Best-effort InfluxDB write. Returns legacy text and a message code.
 
     Never raises: every failure degrades to the memory store and is
     logged clearly so a missing/unreachable InfluxDB is visible, not silent.
@@ -142,7 +144,7 @@ def _write_to_influx(rows: list[dict[str, Any]]) -> str:
     except ImportError:
         msg = "disabled (influxdb-client not installed); rows kept in memory"
         log.warning("InfluxDB %s", msg)
-        return msg
+        return msg, message("influx_client_missing")
     try:
         client = InfluxDBClient(
             url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG, timeout=3000
@@ -166,11 +168,14 @@ def _write_to_influx(rows: list[dict[str, Any]]) -> str:
             )
         write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=points)
         client.close()
-        return f"written ({len(points)} points -> {INFLUXDB_URL} bucket={INFLUXDB_BUCKET})"
+        return (
+            f"written ({len(points)} points -> {INFLUXDB_URL} bucket={INFLUXDB_BUCKET})",
+            message("influx_written", points=len(points)),
+        )
     except Exception as exc:  # noqa: BLE001 - best-effort boundary, must not fail ingest
         msg = f"fallback-memory (unreachable {INFLUXDB_URL}: {exc}); rows kept in memory"
         log.warning("InfluxDB write failed; %s", msg)
-        return msg
+        return msg, message("influx_unreachable")
 
 
 def _count_influx_points() -> int | None:
@@ -213,7 +218,7 @@ def _count_influx_points() -> int | None:
 
 def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Core ingestion used by POST /ingest and the MQTT bridge thread."""
-    global _influx_status, _verified_total, _rejected_total
+    global _influx_status, _influx_message, _verified_total, _rejected_total
     accepted: list[dict[str, Any]] = []
     rejected_reasons: Counter[str] = Counter()
     with _store_lock:
@@ -253,8 +258,12 @@ def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         _rejected_total += sum(rejected_reasons.values())
         _rejected_reasons.update(rejected_reasons)
 
-    influx = _write_to_influx(accepted) if accepted else _influx_status
+    if accepted:
+        influx, influx_message = _write_to_influx(accepted)
+    else:
+        influx, influx_message = _influx_status, _influx_message
     _influx_status = influx
+    _influx_message = influx_message
     with _store_lock:
         _store_rows.extend(accepted)
         total = len(_store_rows)
@@ -273,6 +282,7 @@ def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "latest_seq": latest_seq,
         "store_rows": total,
         "influx": influx,
+        "influx_message": influx_message,
         "rejected": sum(rejected_reasons.values()),
         "rejected_reasons": dict(rejected_reasons),
     }
@@ -298,7 +308,7 @@ def _analysis_status() -> dict[str, Any]:
     return {"available": evaluator is not None, "reason": reason}
 
 
-def _t10_bundle() -> tuple[dict[str, Any] | None, str, bool, bool]:
+def _t10_bundle() -> tuple[dict[str, Any] | None, str, dict[str, Any], bool, bool]:
     """Evaluate the T10 ladder/RUL over the in-memory store.
 
     Returns (bundle, fallback_note, available, evaluated). Empty stores
@@ -312,7 +322,7 @@ def _t10_bundle() -> tuple[dict[str, Any] | None, str, bool, bool]:
             f"T10 analyzer unavailable ({import_reason}); rows remain stored, "
             "but alerts and RUL were not evaluated. Rebuild the backend image "
             "with its runtime packages included."
-        ), False, False
+        ), message("alerts_analyzer_unavailable_fallback"), False, False
 
     with _store_lock:
         rows = sorted(_store_rows, key=lambda r: int(r.get("seq", 0)))
@@ -320,7 +330,7 @@ def _t10_bundle() -> tuple[dict[str, Any] | None, str, bool, bool]:
         return None, (
             "no rows ingested yet; POST SignalRow batches to /ingest, "
             "then GET /alerts walks the N1–N4 ladder."
-        ), True, False
+        ), message("alerts_no_rows_fallback"), True, False
     samples = []
     for r in rows:
         s = dict(r)
@@ -336,7 +346,7 @@ def _t10_bundle() -> tuple[dict[str, Any] | None, str, bool, bool]:
         return None, (
             f"T10 evaluation failed ({exc}); surface anomaly-only "
             f"(ai/flags.jsonl path) instead."
-        ), False, False
+        ), message("alerts_evaluation_failed_fallback"), False, False
     fallback = (
         "memory-store grouping by recal_window flags (full T7 detector: "
         "sim/detect.py); rest-gated synthetic-proxy model, UNPROVEN until "
@@ -344,8 +354,8 @@ def _t10_bundle() -> tuple[dict[str, Any] | None, str, bool, bool]:
     )
     rul_reason = str(bundle.get("rul", {}).get("reason", ""))
     if rul_reason.startswith("insufficient rest samples"):
-        return bundle, fallback, True, False
-    return bundle, fallback, True, True
+        return bundle, fallback, message("alerts_memory_fallback"), True, False
+    return bundle, fallback, message("alerts_memory_fallback"), True, True
 
 
 def _unevaluated_reason(
@@ -392,6 +402,7 @@ def health() -> dict:
         "store_rows": n,
         "influx_points": influx_points,
         "influx": _influx_status,
+        "influx_message": _influx_message,
         "mqtt": {"host": MQTT_HOST, "port": MQTT_PORT, "topic": MQTT_TOPIC},
         "signing": signing,
     }
@@ -431,8 +442,10 @@ def level() -> dict:
             "confidence": 0.0,
             "unit": "L",
             "source": "default (no rows ingested yet)",
+            "source_message": message("source_no_rows"),
             "reference": "GDY106 nominal 95 L SAE 85W-140",
             "note": "POST SignalRow batches to /ingest; confidence lands in S5 (T10).",
+            "note_message": message("level_no_rows_note"),
         }
     else:
         data = {
@@ -447,8 +460,10 @@ def level() -> dict:
             "pressure_kpa": latest.get("pressure_kpa"),
             "temperature_c": latest.get("temperature_c"),
             "source": "memory store (InfluxDB when reachable)",
+            "source_message": message("source_memory_store"),
             "reference": "GDY106 nominal 95 L SAE 85W-140",
             "note": "Level echoes ingested ground truth; fused estimate + confidence land in S5 (T10).",
+            "note_message": message("level_memory_store_note"),
         }
     return {"status": "ok", "kind": "oil-level", "as_of": _now_iso(), "data": data}
 
@@ -504,7 +519,7 @@ def windows(limit: int = 50) -> dict:
 
 @app.get("/alerts")
 def alerts() -> dict:
-    bundle, fallback, analysis_available, evaluated = _t10_bundle()
+    bundle, fallback, fallback_message, analysis_available, evaluated = _t10_bundle()
     reason = _unevaluated_reason(bundle, analysis_available, evaluated)
     if bundle is None:
         data: dict[str, Any] = {
@@ -513,7 +528,9 @@ def alerts() -> dict:
             "ladder": ["N1", "N2", "N3", "N4"],
             "model": "synthetic-proxy",
             "note": "No T10 evaluation available for the current store.",
+            "note_message": message("alerts_no_evaluation_note"),
             "fallback": fallback,
+            "fallback_message": fallback_message,
         }
     else:
         data = {
@@ -524,7 +541,9 @@ def alerts() -> dict:
             "rul_status": bundle["rul"].get("status"),
             "model": bundle["model"],
             "note": bundle["note"],
+            "note_message": bundle["note_message"],
             "fallback": fallback,
+            "fallback_message": fallback_message,
         }
     response = {
         "status": "ok" if analysis_available else "unavailable",
@@ -540,7 +559,7 @@ def alerts() -> dict:
 
 @app.get("/rul")
 def rul() -> dict:
-    bundle, fallback, analysis_available, evaluated = _t10_bundle()
+    bundle, fallback, fallback_message, analysis_available, evaluated = _t10_bundle()
     response_reason = _unevaluated_reason(bundle, analysis_available, evaluated)
     if not analysis_available:
         reason = fallback
@@ -553,10 +572,13 @@ def rul() -> dict:
             "anomaly_only": True,
             "model": "synthetic-proxy",
             "note": f"RUL unavailable: {reason}",
+            "reason_message": message("rul_analyzer_unavailable_reason"),
+            "note_message": message("rul_analyzer_unavailable_note"),
             "fallback": fallback,
+            "fallback_message": fallback_message,
         }
-    elif bundle is None or bundle["rul"].get("status") != "ok":
-        reason = fallback if bundle is None else bundle["rul"].get("reason", "")
+    elif bundle is None:
+        reason = fallback
         data = {
             "hours": None,
             "haul_cycles": None,
@@ -566,7 +588,29 @@ def rul() -> dict:
             "anomaly_only": True,
             "model": "synthetic-proxy",
             "note": f"RUL unavailable: {reason} Surface anomaly-only alerts instead.",
+            "reason": "no rows ingested yet",
+            "reason_message": message("rul_no_rows_reason"),
+            "note_message": message("rul_no_rows_note"),
             "fallback": fallback,
+            "fallback_message": fallback_message,
+        }
+    elif bundle["rul"].get("status") != "ok":
+        r = bundle["rul"]
+        reason = r.get("reason", "")
+        data = {
+            "hours": None,
+            "haul_cycles": None,
+            "shifts": None,
+            "confidence": 0.0,
+            "status": "suppressed",
+            "anomaly_only": True,
+            "model": "synthetic-proxy",
+            "note": f"RUL unavailable: {reason} Surface anomaly-only alerts instead.",
+            "reason": reason,
+            "reason_message": r["reason_message"],
+            "note_message": message("rul_suppressed_summary"),
+            "fallback": fallback,
+            "fallback_message": fallback_message,
         }
     else:
         r = bundle["rul"]
@@ -583,8 +627,12 @@ def rul() -> dict:
             "r2": r["r2"],
             "current_level_L": r["current_level_L"],
             "model": r["model"],
+            "reason": r["reason"],
+            "reason_message": r["reason_message"],
             "note": r["note"],
+            "note_message": r["note_message"],
             "fallback": fallback,
+            "fallback_message": fallback_message,
         }
     response = {
         "status": "ok" if analysis_available else "unavailable",

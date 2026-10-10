@@ -31,6 +31,8 @@ Stdlib only.
 
 from __future__ import annotations
 
+from shared.messages import message
+
 MODEL_LABEL = "synthetic-proxy"  # NOT proven until S7 bench proof
 CAPACITY_L = 95.0
 WARN_L = CAPACITY_L * 0.50  # 47.5 L
@@ -69,11 +71,12 @@ def fit_trend(points: list[tuple[float, float]]) -> dict:
     }
 
 
-def _suppressed(reason: str, trend: dict, sigma_l) -> dict:
+def _suppressed(reason: str, reason_message: dict, trend: dict, sigma_l) -> dict:
     return {
         "model": MODEL_LABEL,
         "status": "suppressed",
         "reason": reason,
+        "reason_message": reason_message,
         "anomaly_only": True,
         "hours": None,
         "hours_to_warning": None,
@@ -90,6 +93,7 @@ def _suppressed(reason: str, trend: dict, sigma_l) -> dict:
             "RUL suppressed (lubrication/precision gate); surface "
             "anomaly-only alerts instead. See reason."
         ),
+        "note_message": message("rul_suppressed_note"),
     }
 
 
@@ -104,19 +108,49 @@ def extrapolate(level_out: dict) -> dict:
     if trend["n"] < MIN_SCORED_N:
         return _suppressed(
             f"insufficient rest samples (n={trend['n']} < {MIN_SCORED_N}); "
-            f"anomaly-only", trend, sigma_l)
+            f"anomaly-only",
+            message(
+                "rul_insufficient_rest_samples",
+                count=trend["n"],
+                minimum=MIN_SCORED_N,
+            ),
+            trend,
+            sigma_l,
+        )
     if sigma_l is not None and sigma_l > MAX_SIGMA_L:
         return _suppressed(
             f"baseline precision insufficient (sigma_L={sigma_l} L > "
-            f"{MAX_SIGMA_L} L); anomaly-only", trend, sigma_l)
+            f"{MAX_SIGMA_L} L); anomaly-only",
+            message(
+                "rul_baseline_precision_insufficient",
+                sigma_l=sigma_l,
+                max_sigma_l=MAX_SIGMA_L,
+            ),
+            trend,
+            sigma_l,
+        )
     if not trend["slope_per_h"] < 0:
         return _suppressed(
             f"no leak trend (slope={trend['slope_per_h']:.4f} L/h >= 0); "
-            f"anomaly-only", trend, sigma_l)
+            f"anomaly-only",
+            message(
+                "rul_no_leak_trend",
+                slope_l_per_h=trend["slope_per_h"],
+            ),
+            trend,
+            sigma_l,
+        )
     if trend["r2"] < MIN_R2:
         return _suppressed(
-            f"trend too weak (R2={trend['r2']:.3f} < {MIN_R2}); "
-            f"anomaly-only", trend, sigma_l)
+            f"trend too weak (R2={trend['r2']:.3f} < {MIN_R2}); anomaly-only",
+            message(
+                "rul_trend_too_weak",
+                r2=trend["r2"],
+                minimum_r2=MIN_R2,
+            ),
+            trend,
+            sigma_l,
+        )
     rate = -trend["slope_per_h"]
     current = estimates[-1]["level_liters"]
     h_warn = (current - WARN_L) / rate
@@ -129,6 +163,7 @@ def extrapolate(level_out: dict) -> dict:
         "model": MODEL_LABEL,
         "status": "ok",
         "reason": "leak trend significant; RUL extrapolated",
+        "reason_message": message("rul_significant_leak_trend"),
         "anomaly_only": False,
         "hours": round(h_crit, 2),
         "hours_to_warning": round(h_warn, 2),
@@ -151,4 +186,5 @@ def extrapolate(level_out: dict) -> dict:
             f"extrapolation of the rest-gated level trend; abrupt steps "
             f"invalidate it (N4 fires instead of rescaling RUL)."
         ),
+        "note_message": message("rul_model_note"),
     }

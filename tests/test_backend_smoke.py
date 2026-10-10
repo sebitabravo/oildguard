@@ -156,7 +156,14 @@ def test_legacy_four_field_payload_is_rejected(client):
 
 
 def test_generated_t10_fields_survive_http_ingest(client, monkeypatch):
-    monkeypatch.setattr(backend_main, "_write_to_influx", lambda _rows: "test-memory")
+    monkeypatch.setattr(
+        backend_main,
+        "_write_to_influx",
+        lambda rows: (
+            "test-memory",
+            {"code": "influx_written", "params": {"points": len(rows)}},
+        ),
+    )
     generated = next(iter_rows("clean", 0.1, "wheel-RH-01", 7, start=T0))
     response = client.post("/ingest", json={"rows": [generated]})
     assert response.status_code == 200
