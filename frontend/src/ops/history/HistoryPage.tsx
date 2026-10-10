@@ -22,6 +22,7 @@ export default function HistoryPage() {
     : "wheel-LH-01";
   const [wheelId, setWheelId] = useState(initialWheel);
   const [windowKey, setWindowKey] = useState<HistoryWindow>("250h");
+  const [cursorIndex, setCursorIndex] = useState<number | null>(null);
   const wheel = demoDataset.wheels.find((item) => item.id === wheelId) ?? demoDataset.wheels[0];
   const points = useMemo(() => sliceHistory(wheel, windowKey), [wheel, windowKey]);
   const kpis = useMemo(() => historyKpis({ points, hoursPerWindow: windowHours[windowKey] }), [points, windowKey]);
@@ -72,9 +73,9 @@ export default function HistoryPage() {
           <KpiTile lang={lang} label={t("history.completeness", lang)} value={`${formatNumber(kpis.completeness, lang, 0)}%`} />
         </section>
         <section className="og-history-charts">
-          <article><h3>{t("history.level", lang)}</h3><TimeSeriesChart lang={lang} values={levelValues} sigma={points.map((point) => point.sigma ?? 0)} thresholds={[{ value: 47.5, label: t("history.threshold.warning", lang) }, { value: 28.5, label: t("history.threshold.critical", lang) }]} domain={[0, 95]} yUnit="L" xLabels={xLabels} events={chartEvents} gaps={chartGaps} title={t("history.level", lang)} /></article>
-          <article><h3>{t("history.temperature", lang)}</h3><TimeSeriesChart lang={lang} values={temperatureValues} domain={[55, 90]} yUnit="°C" xLabels={xLabels} events={chartEvents} gaps={chartGaps} title={t("history.temperature", lang)} /></article>
-          <article><h3>{t("history.vibration", lang)}</h3><TimeSeriesChart lang={lang} values={vibrationValues} yUnit="g" yDecimals={2} xLabels={xLabels} events={chartEvents} gaps={chartGaps} title={t("history.vibration", lang)} /></article>
+          <article><h3>{t("history.level", lang)}</h3><TimeSeriesChart lang={lang} values={levelValues} sigma={points.map((point) => point.sigma ?? 0)} thresholds={[{ value: 47.5, label: t("history.threshold.warning", lang) }, { value: 28.5, label: t("history.threshold.critical", lang) }]} domain={[0, 95]} yUnit="L" xLabels={xLabels} events={chartEvents} gaps={chartGaps} title={t("history.level", lang)} cursorIndex={cursorIndex} onCursorChange={setCursorIndex} /></article>
+          <article><h3>{t("history.temperature", lang)}</h3><TimeSeriesChart lang={lang} values={temperatureValues} domain={[55, 90]} yUnit="°C" xLabels={xLabels} events={chartEvents} gaps={chartGaps} title={t("history.temperature", lang)} color="var(--og-temperature)" cursorIndex={cursorIndex} onCursorChange={setCursorIndex} /></article>
+          <article><h3>{t("history.vibration", lang)}</h3><TimeSeriesChart lang={lang} values={vibrationValues} yUnit="g" yDecimals={2} xLabels={xLabels} events={chartEvents} gaps={chartGaps} title={t("history.vibration", lang)} color="var(--og-blue)" cursorIndex={cursorIndex} onCursorChange={setCursorIndex} /></article>
         </section>
         <section className="og-history-events">
           <h3>{t("history.event", lang)}</h3>

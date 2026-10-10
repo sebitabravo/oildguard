@@ -38,6 +38,7 @@ function axisLabels(window: SignalWindow, lang: Lang): string[] {
 }
 
 function SignalCharts({ lang, record, window, live }: { lang: Lang; record: AlertRecord; window: SignalWindow | null; live: boolean }) {
+  const [cursorIndex, setCursorIndex] = useState<number | null>(null);
   if (!window) return <p className="og-alerts-note">{t("alerts.signal.liveMissing", lang)}</p>;
   const labels = axisLabels(window, lang);
   const events = [{ index: window.triggerIndex, label: t("alerts.signal.trigger", lang) }];
@@ -58,6 +59,8 @@ function SignalCharts({ lang, record, window, live }: { lang: Lang; record: Aler
             events={events}
             xLabels={labels}
             title={t("alerts.signal.level", lang)}
+            cursorIndex={cursorIndex}
+            onCursorChange={setCursorIndex}
             thresholds={[
               { value: RULES.warnL, label: t("alerts.signal.warning", lang, { value: formatNumber(RULES.warnL, lang, 1) }) },
               { value: RULES.critL, label: t("alerts.signal.critical", lang, { value: formatNumber(RULES.critL, lang, 1) }) },
@@ -80,6 +83,9 @@ function SignalCharts({ lang, record, window, live }: { lang: Lang; record: Aler
               events={events}
               xLabels={labels}
               title={t("alerts.signal.pressure", lang)}
+              color="var(--og-blue)"
+              cursorIndex={cursorIndex}
+              onCursorChange={setCursorIndex}
               thresholds={[{ value: -RULES.zThr, label: t("alerts.signal.zLine", lang, { value: formatNumber(-RULES.zThr, lang, 1) }) }]}
             />
             <dl className="og-alerts-stats">

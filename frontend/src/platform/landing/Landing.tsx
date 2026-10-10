@@ -1,7 +1,7 @@
 import { useEffect } from "preact/hooks";
 import { t, useLang } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
-import { ProvenanceTag, SyntheticBadge } from "../../ui/foundation";
+import { ProvenanceTag, SyntheticBadge, SyncChart } from "../../ui/foundation";
 import scenarios from "../../lab/fixtures/scenarios.json";
 import { makeTelemetrySeries, resolveLandingLang, type TelemetryReading } from "./logic";
 import "./landing.css";
@@ -23,28 +23,22 @@ function key(value: string) {
 function TelemetryChart({ lang }: { lang: "en" | "es" }) {
   const levelValues = chartReadings.map((reading) => reading.level_liters);
   const pressureValues = chartReadings.map((reading) => reading.pressure_kpa);
-  const mapY = (value: number, values: number[]) => {
-    const low = Math.min(...values);
-    const high = Math.max(...values);
-    return 146 - ((value - low) / (high - low || 1)) * 88;
-  };
-  const pointX = (index: number) => 24 + index * (312 / Math.max(1, chartReadings.length - 1));
-  const levelCoordinates = chartReadings.map((reading, index) => [pointX(index), mapY(reading.level_liters, levelValues)] as const);
-  const pressurePoints = chartReadings.map((reading, index) => `${pointX(index)},${mapY(reading.pressure_kpa, pressureValues)}`).join(" ");
-  const levelPoints = levelCoordinates.map(([x, y]) => `${x},${y}`).join(" ");
-  const bandPoints = `${levelCoordinates.map(([x, y]) => `${x},${y - 6}`).join(" ")} ${levelCoordinates.slice().reverse().map(([x, y]) => `${x},${y + 6}`).join(" ")}`;
-  const latest = fixtureRows[fixtureRows.length - 1];
+  const latest = chartReadings[chartReadings.length - 1];
+  const pressureDomain: [number, number] = [Math.min(...pressureValues) - 3, Math.max(...pressureValues) + 3];
+  const levelDomain: [number, number] = [0, 95];
   return <article className="landing__chart" aria-label={t("landing.chartAlt", lang)}>
     <header className="landing__chart-head"><div><span className="landing__micro">{t("landing.chartTitle", lang)}</span><strong>{t("landing.chartWheel", lang)} · {t("landing.chartScenario", lang)}</strong></div><SyntheticBadge lang={lang} /></header>
     <div className="landing__chart-legend"><span><i className="landing__legend-level" />{t("landing.legendLevel", lang)}</span><span><i className="landing__legend-pressure" />{t("landing.legendPressure", lang)}</span><span><i className="landing__legend-band" />± {t("landing.legendBand", lang)}</span></div>
-    <svg className="landing__plot" viewBox="0 0 360 190" role="img" aria-label={t("landing.chartPlotAlt", lang)}>
-      <g className="landing__plot-grid"><path d="M24 30H336M24 70H336M24 110H336M24 150H336M24 30V158M102 30V158M180 30V158M258 30V158M336 30V158" /></g>
-      <path className="landing__threshold" d="M24 82H336" />
-      <polygon className="landing__uncertainty" points={bandPoints} />
-      <polyline className="landing__line-pressure" points={pressurePoints} />
-      <polyline className="landing__line-level" points={levelPoints} />
-      <text x="26" y="176">0 s</text><text x="298" y="176">{formatNumber(30, lang, 0)} s</text><text x="27" y="25">{t("landing.chartUnit", lang)}</text>
-    </svg>
+    <SyncChart
+      lang={lang}
+      title={t("landing.chartPlotAlt", lang)}
+      height={190}
+      xLabels={["0 s", `${formatNumber(15, lang, 0)} s`, `${formatNumber(30, lang, 0)} s`]}
+      series={[
+        { name: t("landing.legendPressure", lang), values: pressureValues, unit: "kPa", domain: pressureDomain, color: "var(--og-blue)", decimals: 1 },
+        { name: t("landing.legendLevel", lang), values: levelValues, unit: "L", sigma: levelValues.map(() => 0.8), axis: "right", domain: levelDomain, color: "var(--og-accent)", decimals: 1 },
+      ]}
+    />
     <div className="landing__chart-readouts">
       <div><span>{t("landing.temperatureReadout", lang)}</span><strong>{formatNumber(latest.temperature_c, lang, 1)} °C</strong></div>
       <div><span>{t("landing.vibrationReadout", lang)}</span><strong>{formatNumber(latest.vib_rms_g, lang, 3)} g</strong></div>

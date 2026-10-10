@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { chartFrame, confidenceBand, evenPositions, niceTicks, percentAlong, percentFromTop, scaledPoints } from "./chartGeometry";
+import { chartFrame, confidenceBand, evenPositions, niceTicks, percentAlong, percentFromTop, scaledPoints, monotoneCurvePath, nextCursorIndex, collisionLabelOffsets } from "./chartGeometry";
 
 describe("chart geometry", () => {
   test("keeps axes inside a padded frame", () => {
@@ -37,5 +37,46 @@ describe("axis ticks", () => {
   test("keeps the band on the same domain as the line", () => {
     const band = confidenceBand([10, 20], [1, 1], 100, 100, { left: 0, right: 0, top: 0, bottom: 0 }, [0, 40]);
     expect(Math.max(...band.map((point) => point.y))).toBeCloseTo(100 - 9 / 40 * 100);
+  });
+});
+
+describe("synchronized chart interaction geometry", () => {
+  test("creates monotone cubic paths without changing sample order", () => {
+    const path = monotoneCurvePath([
+      { x: 0, y: 10 },
+      { x: 1, y: 8 },
+      { x: 2, y: 9 },
+      { x: 3, y: 5 },
+    ]);
+    expect(path.startsWith("M 0 10")).toBe(true);
+    expect(path).toContain(" C ");
+    expect(path.endsWith("3 5")).toBe(true);
+  });
+
+  test("moves an accessible cursor within the sample range", () => {
+    expect(nextCursorIndex(1, "ArrowRight", 4)).toBe(2);
+    expect(nextCursorIndex(1, "ArrowLeft", 4)).toBe(0);
+    expect(nextCursorIndex(1, "Home", 4)).toBe(0);
+    expect(nextCursorIndex(1, "End", 4)).toBe(3);
+    expect(nextCursorIndex(3, "ArrowRight", 4)).toBe(3);
+    expect(nextCursorIndex(2, "Escape", 4)).toBe(2);
+    expect(nextCursorIndex(0, "ArrowRight", 0)).toBe(-1);
+  });
+});
+
+describe("chart label collision layout", () => {
+  test("stacks overlapping event labels into separate vertical lanes", () => {
+    expect(collisionLabelOffsets([
+      { left: 20, width: 48 },
+      { left: 22, width: 70 },
+      { left: 25, width: 35 },
+    ])).toEqual([0, 12, 24]);
+  });
+
+  test("keeps separated event labels on the baseline", () => {
+    expect(collisionLabelOffsets([
+      { left: 20, width: 30 },
+      { left: 70, width: 30 },
+    ])).toEqual([0, 0]);
   });
 });
