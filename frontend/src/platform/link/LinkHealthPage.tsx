@@ -5,7 +5,7 @@ import { demoDataset } from "../../demo/dataset";
 import { DataTable, KpiTile, PageHeader, SyntheticBadge } from "../../ui/foundation";
 import { useBackendOrDemo } from "../../ui/backendOrDemo";
 import { getFleetDevices, getFleetOutages, getIngestMetrics, getPlatformHealth, fleetWebSocketUrl, type PlatformHealthResponse } from "../api";
-import { deriveAvailabilitySegments, deriveLinkKpis, paginateLinkItems, type LinkMetrics, type OutageRecord } from "./logic";
+import { deriveAvailabilitySegments, deriveDemoLinkKpis, deriveLinkKpis, paginateLinkItems, type LinkMetrics, type OutageRecord } from "./logic";
 import "./link.css";
 
 interface LinkData {
@@ -15,22 +15,26 @@ interface LinkData {
   health: PlatformHealthResponse | null;
   asOf: number;
   kpis: ReturnType<typeof deriveLinkKpis> | null;
+  demoKpis?: ReturnType<typeof deriveDemoLinkKpis>;
 }
 
 function demoLinkData(): LinkData {
+  const devices = demoDataset.devices.map((device) => device.id);
+  const outages = demoDataset.outages.map((outage) => ({
+    deviceId: outage.deviceId,
+    startMs: outage.start,
+    endMs: outage.end,
+    rowsBuffered: null,
+    forwarded: null,
+  }));
   return {
     metrics: null,
-    devices: demoDataset.devices.map((device) => device.id),
-    outages: demoDataset.outages.map((outage) => ({
-      deviceId: outage.deviceId,
-      startMs: outage.start,
-      endMs: outage.end,
-      rowsBuffered: null,
-      forwarded: null,
-    })),
+    devices,
+    outages,
     health: null,
     asOf: demoDataset.referenceMs,
     kpis: null,
+    demoKpis: deriveDemoLinkKpis(devices, outages, demoDataset.referenceMs),
   };
 }
 const DEMO_LINK_DATA = demoLinkData();
@@ -58,7 +62,7 @@ export default function LinkHealthPage() {
   const [timelinePageIndex, setTimelinePageIndex] = useState(1);
   const [outagePageIndex, setOutagePageIndex] = useState(1);
   const previousDroppedBatches = useRef<number | null>(null);
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<LinkData> => {
     const [metrics, devices, outages, health] = await Promise.all([
       getIngestMetrics(), getFleetDevices(), getFleetOutages(), getPlatformHealth(),
     ]);
@@ -79,7 +83,7 @@ export default function LinkHealthPage() {
       kpis,
     } satisfies LinkData;
   }, []);
-  const data = useBackendOrDemo(load, DEMO_LINK_DATA, 2_000);
+  const data = useBackendOrDemo<LinkData>(load, DEMO_LINK_DATA, 2_000);
 
   useEffect(() => {
     let active = true;
@@ -125,12 +129,19 @@ export default function LinkHealthPage() {
   const outages = payload?.outages ?? [];
   const timelinePage = useMemo(() => paginateLinkItems(devices, timelinePageIndex, 12), [devices, timelinePageIndex]);
   const segments = useMemo(() => deriveAvailabilitySegments(outages, nowMs, 3_600_000, timelinePage.items), [outages, nowMs, timelinePage.items]);
-  const labels = [
-    { key: "latency", value: payload?.kpis ? `${numberOrDash(payload.kpis.p50Ms, lang)} / ${numberOrDash(payload.kpis.p99Ms, lang)} ms` : "—" },
-    { key: "acceptedRate", value: payload?.kpis ? numberOrDash(payload.kpis.acceptedRowsPerS, lang, 0) : "—", unit: payload?.kpis ? "rows/s" : undefined },
-    { key: "droppedBatches", value: payload?.kpis ? numberOrDash(payload.kpis.droppedBatches, lang, 0) : "—" },
-    { key: "queue", value: payload?.kpis ? `${numberOrDash(payload.kpis.queueDepth, lang, 0)} / ${numberOrDash(payload.kpis.queueCapacity, lang, 0)}` : "—" },
-  ];
+  const labels = data.source === "demo" && payload?.demoKpis
+    ? [
+      { key: "demoDevices", value: numberOrDash(payload.demoKpis.devices, lang, 0) },
+      { key: "demoOutages", value: numberOrDash(payload.demoKpis.outages, lang, 0) },
+      { key: "demoAffected", value: numberOrDash(payload.demoKpis.affectedDevices, lang, 0) },
+      { key: "demoDuration", value: numberOrDash(payload.demoKpis.outageSeconds / 60, lang, 1), unit: "min" },
+    ]
+    : [
+      { key: "latency", value: payload?.kpis ? `${numberOrDash(payload.kpis.p50Ms, lang)} / ${numberOrDash(payload.kpis.p99Ms, lang)} ms` : "—" },
+      { key: "acceptedRate", value: payload?.kpis ? numberOrDash(payload.kpis.acceptedRowsPerS, lang, 0) : "—", unit: payload?.kpis ? "rows/s" : undefined },
+      { key: "droppedBatches", value: payload?.kpis ? numberOrDash(payload.kpis.droppedBatches, lang, 0) : "—" },
+      { key: "queue", value: payload?.kpis ? `${numberOrDash(payload.kpis.queueDepth, lang, 0)} / ${numberOrDash(payload.kpis.queueCapacity, lang, 0)}` : "—" },
+    ];
   const tableRows = outages.map((outage, index) => {
     const end = outage.endMs;
     const duration = Math.max(0, (Math.min(end ?? nowMs, nowMs) - outage.startMs) / 1000);
@@ -152,9 +163,9 @@ export default function LinkHealthPage() {
   const liveStatus = payload?.kpis ? statusLabel(payload.kpis.status, lang) : t("link.demoMetrics", lang);
 
   return <main className="link-health">
-    <PageHeader title={t("link.title", lang)} description={t("link.description", lang)} meta={data.source === "demo" ? <SyntheticBadge lang={lang} /> : <span className="link-health__source">{t(data.source === "live" ? "devices.liveSource" : "link.loading", lang)}</span>} />
+    <PageHeader eyebrow={t("link.eyebrow", lang)} title={t("link.title", lang)} description={t("link.description", lang)} meta={data.source === "demo" ? <SyntheticBadge lang={lang} /> : <span className="link-health__source">{t(data.source === "live" ? "devices.liveSource" : "link.loading", lang)}</span>} />
     <section className="link-health__kpis" aria-label={t("link.title", lang)}>
-      {labels.map(({ key, value, unit }) => <KpiTile lang={lang} label={t(`link.${key}` as "link.latency", lang)} value={value} unit={unit} meta={key === "queue" && payload?.kpis ? liveStatus : undefined} tone={payload?.kpis?.status === "lagging" ? "warning" : payload?.kpis?.status === "backpressure" ? "critical" : "nominal"} />)}
+      {labels.map(({ key, value, unit }) => <KpiTile lang={lang} label={t(`link.${key}` as "link.latency", lang)} value={value} unit={unit} meta={key.startsWith("demo") ? t("link.demoProvenance", lang) : key === "queue" && payload?.kpis ? liveStatus : undefined} tone={payload?.kpis?.status === "lagging" ? "warning" : payload?.kpis?.status === "backpressure" ? "critical" : "nominal"} />)}
     </section>
     <section className="link-health__feed" aria-live="polite">
       <div><span className={`link-health__dot link-health__dot--${data.source === "demo" ? "demo" : connection}`} /><strong>{t("link.liveStrip", lang)}</strong><span>{t(connectionKey, lang)}</span></div>

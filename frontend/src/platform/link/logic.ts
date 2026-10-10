@@ -35,6 +35,19 @@ export interface LinkMetrics {
   queue?: { depth?: number; capacity?: number; dropped_batches?: number };
 }
 
+export function deriveDemoLinkKpis(deviceIds: string[], outages: OutageRecord[], nowMs: number) {
+  const outageSeconds = outages.reduce((sum, outage) => {
+    const end = Math.min(outage.endMs ?? nowMs, nowMs);
+    return sum + Math.max(0, (end - outage.startMs) / 1000);
+  }, 0);
+  return {
+    devices: deviceIds.length,
+    outages: outages.length,
+    affectedDevices: new Set(outages.map((outage) => outage.deviceId)).size,
+    outageSeconds,
+  };
+}
+
 export function paginateLinkItems<T>(items: T[], requestedPage: number, pageSize: number) {
   const size = Math.max(1, Math.floor(pageSize));
   const pageCount = Math.max(1, Math.ceil(items.length / size));

@@ -35,6 +35,15 @@ export function deriveDeviceKpis(devices: InventoryDevice[], nowMs: number) {
   };
 }
 
+export function deriveSignedRowsRatio(devices: InventoryDevice[]): number | null {
+  const totalVerified = devices.reduce((sum, device) => sum + device.rowsVerified, 0);
+  const totalOffered = devices.reduce((sum, device) => sum + device.rowsOffered, 0);
+  if (totalOffered > 0) return totalVerified / totalOffered;
+
+  const ratios = devices.map((device) => device.signedRatio).filter((ratio): ratio is number => ratio !== null && ratio !== undefined && Number.isFinite(ratio));
+  return ratios.length ? ratios.reduce((sum, ratio) => sum + ratio, 0) / ratios.length : null;
+}
+
 export function filterDevices(devices: InventoryDevice[], filter: DeviceFilter, query: string, nowMs: number): InventoryDevice[] {
   const needle = query.trim().toLocaleLowerCase();
   return devices.filter((device) => {

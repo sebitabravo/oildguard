@@ -5,7 +5,7 @@ import { demoDataset } from "../../demo/dataset";
 import { DataTable, FilterBar, KpiTile, PageHeader, SyntheticBadge } from "../../ui/foundation";
 import { useBackendOrDemo } from "../../ui/backendOrDemo";
 import { getFleetDevices, getPlatformHealth, type BackendDevice, type PlatformHealthResponse } from "../api";
-import { deriveDeviceKpis, filterDevices, mapDeviceToWheel, paginateDevices, type DeviceFilter, type InventoryDevice } from "./logic";
+import { deriveDeviceKpis, deriveSignedRowsRatio, filterDevices, mapDeviceToWheel, paginateDevices, type DeviceFilter, type InventoryDevice } from "./logic";
 import "./devices.css";
 
 interface PageData {
@@ -93,6 +93,7 @@ export default function DeviceInventoryPage() {
   const devices = data.data?.devices ?? [];
   const kpis = useMemo(() => deriveDeviceKpis(devices, nowMs), [devices, nowMs]);
   const visible = useMemo(() => filterDevices(devices, filter, query, nowMs), [devices, filter, query, nowMs]);
+  const displayedSignedRatio = useMemo(() => deriveSignedRowsRatio(visible), [visible]);
   const page = useMemo(() => paginateDevices(visible, pageIndex, 20), [visible, pageIndex]);
   const health = data.data?.health ?? null;
   const configuredKeys = Boolean(health?.device_keys?.master_key_configured || (health?.signing?.devices ?? 0) > 0);
@@ -148,10 +149,10 @@ export default function DeviceInventoryPage() {
   });
 
   return <main className="device-inventory">
-    <PageHeader title={t("devices.title", lang)} description={t("devices.description", lang)} meta={data.source === "demo" ? <SyntheticBadge lang={lang} /> : <span className="device-inventory__source">{t(data.source === "live" ? "devices.liveSource" : "devices.loading", lang)}</span>} />
+    <PageHeader eyebrow={t("devices.eyebrow", lang)} title={t("devices.title", lang)} description={t("devices.description", lang)} meta={data.source === "demo" ? <SyntheticBadge lang={lang} /> : <span className="device-inventory__source">{t(data.source === "live" ? "devices.liveSource" : "devices.loading", lang)}</span>} />
     <section className="device-inventory__kpis" aria-label={t("devices.title", lang)}>
       <KpiTile lang={lang} label={t("devices.reporting", lang)} value={data.source === "loading" ? "—" : formatNumber(kpis.reporting, lang, 0)} />
-      <KpiTile lang={lang} label={t("devices.signedRatio", lang)} value={data.source === "loading" || kpis.signedRatio === null ? "—" : formatNumber(kpis.signedRatio * 100, lang, 1)} unit={data.source === "loading" || kpis.signedRatio === null ? undefined : "%"} />
+      <KpiTile lang={lang} label={t("devices.signedRatio", lang)} value={data.source === "loading" || displayedSignedRatio === null ? "—" : formatNumber(displayedSignedRatio * 100, lang, 1)} unit={data.source === "loading" || displayedSignedRatio === null ? undefined : "%"} meta={displayedSignedRatio === null || data.source === "loading" ? undefined : t(data.source === "demo" ? "devices.demoSource" : "devices.liveSource", lang)} />
       <KpiTile lang={lang} label={t("devices.rejected", lang)} value={data.source === "loading" ? "—" : formatNumber(kpis.rejected, lang, 0)} />
       <KpiTile lang={lang} label={t("devices.stale", lang)} value={data.source === "loading" ? "—" : formatNumber(kpis.stale, lang, 0)} />
     </section>
