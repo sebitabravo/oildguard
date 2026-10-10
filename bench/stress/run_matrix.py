@@ -143,7 +143,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", default="docs/bench/stress-results.json")
     args = p.parse_args(argv)
 
-    if _get_json(f"{args.backend}/health") is None:
+    if _get_json(f"{args.backend}/metrics/ingest") is None:
         print("backend not reachable", file=sys.stderr)
         return 2
     results = []
