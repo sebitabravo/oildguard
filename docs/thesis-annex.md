@@ -263,3 +263,17 @@ The current mine scene uses the procedural 930E model assembled by
 `frontend/src/sim/truck/TruckScene.tsx:8-13`. Its parametric geometry is still
 a visual reconstruction, not CAD-exact; manual-derived specification values
 remain separate from model geometry and are not field measurements.
+
+## 9. Final-design evidence
+
+These rows reconcile the final product map with the committed implementation.
+Synthetic fixture and local benchmark results are not bench or field evidence.
+
+| # | Parameter | Value | Status | Source |
+|---|-----------|-------|--------|--------|
+| P28 | Frontend route inventory | `routeRegistry` contains 18 routes; the documented map lists 19 paths because `/dev/ui` is a standalone Astro page outside that registry | VERIFIED (source inventory) | [`README.md` route map](../README.md#route-map), [`frontend/src/routes.ts`](../frontend/src/routes.ts), [`frontend/src/pages/dev/ui.astro`](../frontend/src/pages/dev/ui.astro) |
+| P29 | Design identity and honesty labels | Design name: OilGuard Mining. Provenance component exposes VERIFIED, DERIVED, and ASSUMPTION; synthetic data has a separate Synthetic proxy badge. The DESIGN description “calibrated instrument” is not calibration evidence | VERIFIED (source labels only); calibration status remains PENDING | [`DESIGN.md`](../DESIGN.md), [`frontend/src/ui/foundation.tsx`](../frontend/src/ui/foundation.tsx), [`frontend/src/i18n/index.ts`](../frontend/src/i18n/index.ts), [`frontend/src/honesty.test.ts`](../frontend/src/honesty.test.ts), [`docs/calibration.md`](calibration.md) |
+| P30 | `/lab/validation` pooled fixture metrics | MAE 1.80 L; bias −0.19 L; maximum absolute error 6.80 L; 350 out-of-sample points; 48.6% within each point’s ±2σ band | DERIVED — synthetic generator fixtures, not bench measurements | [`validation.json`](../frontend/src/lab/fixtures/validation.json), [`derive_fixtures.py`](../frontend/src/lab/fixtures/derive_fixtures.py), [`logic.ts`](../frontend/src/lab/validation/logic.ts), [`logic.test.ts`](../frontend/src/lab/validation/logic.test.ts) |
+| P31 | In-process ingest throughput after R2b | Unsigned: 136,038 rows/s at 100 devices, 115,260 at 1,000, and 91,373 at 5,000; signed: 29,855 rows/s at 1,000 devices. Medians of 5 passes over 300,000 rows/configuration, Influx disabled | DERIVED — local in-process benchmark; not a deployment capacity guarantee | [`backend/API.md`, Ingest performance](../backend/API.md#ingest-performance) |
+| P32 | Alert rule mirror | Frontend rule constants and selected decision guards are tested against `ai/level.py`, `ai/ladder.py`, and `ai/rul.py`; this verifies implementation parity, not detection accuracy | VERIFIED (code/test parity only); analyzer remains synthetic-proxy | [`rules.test.ts`](../frontend/src/ops/alerts/rules.test.ts), [`rules.ts`](../frontend/src/ops/alerts/rules.ts), [`ai/level.py`](../ai/level.py), [`ai/ladder.py`](../ai/ladder.py), [`ai/rul.py`](../ai/rul.py) |
+| P33 | Evidence and safety limits | No field dataset or completed physical bench calibration; no HTTP caller authentication; prototype pages and alert workflow are read-only with respect to truck control | GAP / PENDING — no field-validation claim | [`docs/calibration.md`](calibration.md), [`docs/demo-script.md`](demo-script.md), [`PRODUCT.md`](../PRODUCT.md#capabilities-and-constraints), [`backend/API.md`](../backend/API.md), [`README.md`](../README.md#route-map) |
