@@ -10,6 +10,7 @@ import { t, useLang } from "../i18n";
 import { formatNumber } from "../i18n/numberFormat";
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { BASE_WIDTH, chartLayoutForWidth } from "./chartLayout";
+import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
 
 export interface ChartPoint {
   t_s: number;
@@ -26,13 +27,6 @@ interface LevelChartProps {
 const WARN_L = 47.5;
 const CRIT_L = 28.5;
 const CAP_L = 95;
-
-const ALERT_CSS: Record<string, string> = {
-  N1: "var(--og-amber)",
-  N2: "var(--og-orange)",
-  N3: "var(--og-orange)",
-  N4: "var(--og-red)",
-};
 
 export default function LevelChart({
   points,
@@ -139,14 +133,14 @@ export default function LevelChart({
               cx={x(a.t_s)}
               cy={cy}
               r={6 * scale}
-              fill={ALERT_CSS[a.level] ?? "var(--og-text)"}
+              fill={ALERT_SEVERITY_COLORS[a.level] ?? "var(--og-text)"}
               stroke="var(--og-panel-inset)"
               stroke-width={1.5 * scale}
             />
             <text
               x={x(a.t_s)}
               y={cy - 9}
-              fill={ALERT_CSS[a.level] ?? "var(--og-text)"}
+              fill={ALERT_SEVERITY_COLORS[a.level] ?? "var(--og-text)"}
               font-size={11}
               font-weight={700}
               text-anchor="middle"

@@ -45,6 +45,7 @@ import { signingBadgeState } from "./signingBadge";
 import { analyzerUnavailableNotice } from "./analyzerAvailability";
 import { mergeLevelSeries } from "./levelSeries";
 import { formatDemoLabNote } from "./demoCopy";
+import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
 
 type Source = "loading" | "live" | "demo";
 type BackendNote =
@@ -78,13 +79,6 @@ function stageBlurb(stage: DemoStageId, lang: Lang): string {
 function stageLabel(stage: DemoStageId, lang: Lang): string {
   return t(DEMO_LABEL_KEYS[stage], lang);
 }
-
-const ALERT_CSS: Record<string, string> = {
-  N1: "var(--og-amber)",
-  N2: "var(--og-orange)",
-  N3: "var(--og-orange)",
-  N4: "var(--og-red)",
-};
 
 export default function Dashboard() {
   const [lang] = useLang();
@@ -480,7 +474,7 @@ export default function Dashboard() {
             ) : (
               <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
                 {shownAlerts.map((a) => (
-                  <li key={a.alert_id} style={{ marginBottom: 8, border: `1px solid ${ALERT_CSS[a.level] ?? "var(--og-line-dashboard)"}`, borderRadius: "var(--og-radius-panel)", padding: "6px 8px" }}>
+                  <li key={a.alert_id} style={{ marginBottom: 8, border: `1px solid ${ALERT_SEVERITY_COLORS[a.level] ?? "var(--og-line-dashboard)"}`, borderRadius: "var(--og-radius-panel)", padding: "6px 8px" }}>
                     <span className={`og-badge og-badge--alert og-badge--${a.level.toLowerCase()}`}>
                       {a.level}
                     </span>
