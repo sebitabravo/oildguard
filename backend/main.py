@@ -50,6 +50,7 @@ from shared.signing import derive_device_key, parse_device_keys, verify_row
 try:  # paquete
     from . import influx_writer as _influx_writer
     from . import aggregates as _aggregates
+    from . import fleetagg as _fleetagg
     from . import ingest_mqtt as _ingest_mqtt
     from . import metrics as _metrics
     from . import pipeline as _pipeline
@@ -57,6 +58,7 @@ try:  # paquete
 except ImportError:  # modulos sueltos
     import influx_writer as _influx_writer
     import aggregates as _aggregates
+    import fleetagg as _fleetagg
     import ingest_mqtt as _ingest_mqtt
     import metrics as _metrics
     import pipeline as _pipeline
@@ -81,6 +83,7 @@ RETENTION_ROWS = _store.RETENTION_ROWS
 StoreView = _store.StoreView
 TelemetryStore = _store.TelemetryStore
 as_float = _store.as_float
+row_ts = _store.row_ts
 outage_runs = _store.outage_runs
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -404,6 +407,16 @@ def verify_rows(
     return prepared, rejections
 
 
+# Agregados incrementales de flota (R2d). Se alimentan en verify_and_store, de
+# modo que fleet_tick responde en O(dispositivos) y no relee las filas de la
+# ventana ni monta un DataFrame por tick.
+_FLEET_ROLLING = _fleetagg.RollingFleet(DEFAULT_METRICS)
+_FLEET_METRICS = list(DEFAULT_METRICS)
+# Los agregados incrementales se vacian con el almacen; si no, un clear()
+# dejaba un tick respondiendo con datos de la sesion anterior.
+_STORE.on_clear(_FLEET_ROLLING.reset)
+
+
 def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Núcleo de ingesta: verifica firmas y escribe en el almacén. Sin Influx.
 
@@ -424,6 +437,17 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
         _rejected_total += sum(rejected_reasons.values())
         _rejected_reasons.update(rejected_reasons)
         _verified_total += sum(1 for row in accepted if row.get("sig_verified"))
+        # Un solo recorrido de las filas aceptadas alimenta los agregados
+        # incrementales; el corte de ventana es por reloj de cada dispositivo.
+        ts_of = _TISO.epoch
+        rolling = _FLEET_ROLLING
+        for row in accepted:
+            ts = row_ts(row)
+            rolling.observe(
+                row.get("device_id"),
+                ts,
+                [as_float(row.get(name)) for name in _FLEET_METRICS],
+            )
 
     rejected_count = sum(rejected_reasons.values())
     # El almacenamiento va primero y completo; Influx se encola despues y no
@@ -835,8 +859,13 @@ def ingest(batch: IngestBatch) -> dict:
 
 def fleet_tick(window_s: int) -> dict[str, Any]:
     """Un tick del stream: agregados de flota en grupo fleet + estado de ingesta."""
-    frame = build_frame(_STORE.snapshot_window(window_s))
-    blocks, rows, devices = aggregate_fleet(frame, list(DEFAULT_METRICS))
+    if _FLEET_ROLLING.covers(window_s):
+        blocks, rows, devices = _FLEET_ROLLING.snapshot(window_s)
+    else:
+        # Fuera del horizonte lo incremental no puede responder sin inventarse
+        # un cero, asi que se cae a la ruta exacta.
+        frame = build_frame(_STORE.snapshot_window(window_s))
+        blocks, rows, devices = aggregate_fleet(frame, list(DEFAULT_METRICS))
     return {
         "type": "fleet_tick",
         "as_of": _now_iso(),
