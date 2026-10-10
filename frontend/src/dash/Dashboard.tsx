@@ -38,16 +38,12 @@ import {
 import { emitDemoOil, type DemoStageId } from "./demoBus";
 import { t, type DictKey, type Lang, useLang } from "../i18n";
 import { formatNumber } from "../i18n/numberFormat";
-import { buildWheelDetailHref } from "../sim/bench/wheelUrl";
-import { DEMO_FLEET_WHEELS, evaluateCombinedRisk, latestWheelMetrics } from "./fleetRisk";
 import { localizeBackendMessage, localizeBackendZone } from "./backendNotes";
 import { signingBadgeState } from "./signingBadge";
 import { analyzerUnavailableNotice } from "./analyzerAvailability";
 import { mergeLevelSeries } from "./levelSeries";
 import { formatDemoLabNote } from "./demoCopy";
 import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
-import FleetLivePanel from "./fleetLive/FleetLivePanel";
-import FleetLivePanelBoundary from "./fleetLive/FleetLivePanelBoundary";
 
 type Source = "loading" | "live" | "demo";
 type BackendNote =
@@ -255,70 +251,6 @@ export default function Dashboard() {
       </p>
 
       {analyzerNotice && <div className="og-analyzer-notice" role="alert">{analyzerNotice}</div>}
-
-      <section className="og-fleet-panel" aria-labelledby="og-fleet-title">
-        <div className="og-fleet-panel__heading">
-          <div>
-            <h2 id="og-fleet-title" className="og-dashboard-sheet-title">{t("dash.fleet.title", lang)}</h2>
-            <p>{t("dash.fleet.proxy", lang)}</p>
-          </div>
-          <span className="og-fleet-panel__risk-title">{t("dash.fleet.risk", lang)}</span>
-        </div>
-        <p className="og-fleet-panel__assumption">{t("dash.fleet.assumptions", lang)}</p>
-        <div className="og-fleet-wrap">
-          <table className="og-fleet-table">
-            <thead>
-              <tr>
-                <th>{t("dash.fleet.truck", lang)}</th>
-                <th>{t("dash.fleet.wheel", lang)}</th>
-                <th>{t("dash.fleet.oil", lang)}</th>
-                <th>{t("dash.fleet.temp", lang)}</th>
-                <th>{t("dash.fleet.vibration", lang)}</th>
-                <th>{t("dash.fleet.current", lang)}</th>
-                <th>{t("dash.fleet.risk", lang)}</th>
-                <th>{t("dash.fleet.detailColumn", lang)}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {DEMO_FLEET_WHEELS.map((wheel) => {
-                const metrics = latestWheelMetrics(wheel);
-                const risk = evaluateCombinedRisk(metrics);
-                return (
-                  <tr key={`${wheel.truckId}-${wheel.wheelId}`}>
-                    <td className="og-num">{wheel.truckId}</td>
-                    <td className="og-num">
-                      {wheel.wheelId}
-                      {wheel.instrumented && <span className="og-fleet-instrumented">{t("dash.fleet.instrumented", lang)}</span>}
-                    </td>
-                    <td className="og-num">{formatNumber(wheel.oilLitres, lang, 1)}</td>
-                    <td className="og-num">{wheel.temperatureC.map((value) => formatNumber(value, lang, 0)).join(" · ")}</td>
-                    <td className="og-num">{wheel.vibrationMmS.map((value) => formatNumber(value, lang, 1)).join(" · ")}</td>
-                    <td className="og-num">{wheel.currentA.map((value) => formatNumber(value, lang, 0)).join(" · ")}</td>
-                    <td>
-                      <span className={`og-fleet-risk${risk.alert ? " og-fleet-risk--alert" : ""}`}>
-                        {risk.alert ? t("dash.fleet.alert", lang) : t("dash.fleet.normal", lang)}
-                      </span>
-                      {risk.channels.length > 0 && (
-                        <span className="og-fleet-channels">
-                          {risk.channels.map((channel) => t(`dash.fleet.${channel === "low-oil" ? "lowOil" : channel === "high-temperature" ? "highTemperature" : "highVibration"}`, lang)).join(" · ")}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      <a className="og-fleet-link" href={buildWheelDetailHref(wheel.truckId, wheel.wheelId)}>
-                        {t("dash.fleet.detail", lang)}
-                      </a>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
-      <FleetLivePanelBoundary lang={lang}>
-        <FleetLivePanel lang={lang} />
-      </FleetLivePanelBoundary>
 
       {/* source + backend row */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12, alignItems: "center" }}>

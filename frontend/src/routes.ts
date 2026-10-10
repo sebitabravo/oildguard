@@ -15,7 +15,7 @@ export interface RouteDefinition {
 export const routeRegistry: RouteDefinition[] = [
   { id: "home", path: "/", ready: true },
   { id: "login", path: "/login", ready: false },
-  { id: "fleet", path: "/fleet", ready: false },
+  { id: "fleet", path: "/fleet", ready: true },
   { id: "monitoring", path: "/monitoring", ready: true },
   { id: "wheel-history", path: "/wheel/history", ready: false },
   { id: "rul", path: "/rul", ready: false },

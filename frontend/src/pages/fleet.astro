@@ -1,0 +1,9 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { t } from "../i18n";
+import FleetPage from "../ops/fleet/FleetPage";
+---
+<BaseLayout breadcrumb={["nav.group.operation", "nav.fleet"]}>
+  <h1 class="og-visually-hidden">{t("fleet.title", "en")}</h1>
+  <FleetPage client:load />
+</BaseLayout>
