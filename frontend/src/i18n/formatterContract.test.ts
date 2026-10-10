@@ -49,6 +49,8 @@ const exampleValues: Readonly<Record<string, string | number>> = {
   r2: 0.8,
   level: 80,
   points: 300,
+  pressure: 2.6,
+  liters: 47.5,
   window: 2,
   zone: "Dumping",
   windows: "0+1",
