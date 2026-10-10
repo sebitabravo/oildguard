@@ -414,7 +414,7 @@ export default function Dashboard() {
         <div className="og-dashboard-chart" style={{ flex: "2 1 560px", minWidth: 320, border: "1px solid var(--og-line-dashboard)", borderRadius: "var(--og-radius-panel)", padding: 16, background: "var(--og-panel-dashboard)" }}>
           <h2 style={{ margin: "0 0 4px", fontSize: 16 }}>
             {t("dash.chart.title", lang)}{" "}
-            <span style={{ fontSize: 12, fontWeight: 500, color: "var(--og-muted)" }}>
+            <span style={{ fontSize: 12, fontWeight: 400, color: "var(--og-muted)" }}>
               ±{formatNumber(sigmaL, lang, 2)} L · conf {formatNumber(Number(confidence), lang, 3)} · {t("dash.chart.restWindows", lang)}
             </span>
           </h2>
@@ -469,7 +469,7 @@ export default function Dashboard() {
           <div style={{ border: "1px solid var(--og-line-dashboard)", borderRadius: "var(--og-radius-panel)", padding: "10px 12px", background: "var(--og-panel-dashboard)" }}>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>
               {t("dash.alerts.title", lang)}{" "}
-              <span style={{ fontSize: 12, fontWeight: 500, color: "var(--og-muted)" }}>
+              <span style={{ fontSize: 12, fontWeight: 400, color: "var(--og-muted)" }}>
                 {(analyzerUnavailable && !demoActive ? [] : alerts?.data.escalation ?? shownAlerts.map((a) => a.level)).join(" → ") || t("dash.alerts.none", lang)}
               </span>
             </div>
