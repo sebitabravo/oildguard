@@ -12,7 +12,7 @@ describe("navigation registry", () => {
     ];
     expect(required.every((path) => paths.includes(path))).toBe(true);
     expect(routeRegistry.find((route) => route.path === "/monitoring")?.ready).toBe(true);
-    expect(routeRegistry.find((route) => route.path === "/fleet")?.ready).toBe(false);
+    expect(routeRegistry.find((route) => route.path === "/fleet")?.ready).toBe(true);
   });
 
   test("groups contain only unique navigation items", () => {

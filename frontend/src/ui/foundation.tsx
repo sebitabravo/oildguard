@@ -2,8 +2,8 @@ import type { ComponentChildren, JSX } from "preact";
 import { t, useLang, type Lang } from "../i18n";
 import { formatNumber } from "../i18n/numberFormat";
 import { useBackendState, backendStateLabel } from "./backendOrDemo";
-import { chartPoints, levelBarGeometry, severityColor, severityTone, type Tone } from "./logic";
-import { confidenceBand, linePath } from "./chartGeometry";
+import { levelBarGeometry, severityColor, severityTone, type Tone } from "./logic";
+import { chartFrame, confidenceBand, linePath, scaledPoints } from "./chartGeometry";
 
 export type Severity = "N1" | "N2" | "N3" | "N4";
 
@@ -185,8 +185,8 @@ export function SegmentedControl({ options, value, onChange }: { options: string
 }
 
 export function Sparkline({ lang, values, label = "Sparkline" }: { lang: Lang; values: number[]; label?: string }) {
-  const points = chartPoints(values, 100, 60).map((point) => `${point?.x ?? 0},${point?.y ?? 60}`).join(" ");
-  return <svg className="og-sparkline" viewBox="0 0 100 60" role="img" aria-label={label}><polyline points={points} fill="none" stroke="currentColor" stroke-width="2" /></svg>;
+  const points = scaledPoints(values, 100, 60, { left: 2, right: 2, top: 3, bottom: 3 }).map((point) => `${point.x},${point.y}`).join(" ");
+  return <svg className="og-sparkline" viewBox="0 0 100 60" preserveAspectRatio="none" role="img" aria-label={label}><polyline points={points} fill="none" stroke="currentColor" stroke-width="2" /></svg>;
 }
 
 export function TimeSeriesChart({
@@ -206,20 +206,21 @@ export function TimeSeriesChart({
   gaps?: number[];
   title?: string;
 }) {
-  const points = chartPoints(values, 360, 140);
-  const band = confidenceBand(values, sigma, 360, 140);
+  const frame = chartFrame(360, 180);
+  const points = scaledPoints(values, frame.width, frame.height, frame.padding);
+  const band = confidenceBand(values, sigma, frame.width, frame.height);
   return (
-    <svg className="og-time-series" viewBox="0 0 360 180" role="img" aria-labelledby="chart-title chart-desc">
+    <svg className="og-time-series" viewBox="0 0 360 180" preserveAspectRatio="none" role="img" aria-labelledby="chart-title chart-desc">
       <defs><pattern id="gap-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="1" /></pattern></defs>
       <title id="chart-title">{title}</title>
       <desc id="chart-desc">{t("ui.chartDescription", lang)}</desc>
       <polygon points={band.map((point) => `${point.x},${point.y}`).join(" ")} className="og-chart-band" />
-      <rect x="0" y="0" width="360" height="140" className="og-chart-regime" />
+      <rect x={frame.padding.left} y={frame.padding.top} width={frame.width - frame.padding.left - frame.padding.right} height={frame.height - frame.padding.top - frame.padding.bottom} className="og-chart-regime" />
       {thresholds.map((threshold) => <g><line x1="0" x2="360" y1={140 - threshold.value} y2={140 - threshold.value} className="og-chart-threshold" /><text x="4" y={136 - threshold.value}>{threshold.label}</text></g>)}
       {gaps.map((gap) => <rect x={gap} y="0" width="12" height="140" className="og-chart-gap" />)}
       <path d={linePath(points.filter((point): point is { x: number; y: number } => point !== null))} className="og-chart-line" />
       {events.map((event) => <g><line x1={points[event.index]?.x ?? 0} x2={points[event.index]?.x ?? 0} y1="0" y2="140" className="og-chart-event" /><title>{event.label}</title></g>)}
-      <text x="4" y="158">{formatNumber(0, lang, 0)}</text><text x="320" y="158">{formatNumber(values.length, lang, 0)}</text>
+      <text x={frame.padding.left} y={frame.height - 4}>{formatNumber(0, lang, 0)}</text><text x={frame.width - frame.padding.right - 18} y={frame.height - 4}>{formatNumber(values.length, lang, 0)}</text>
     </svg>
   );
 }

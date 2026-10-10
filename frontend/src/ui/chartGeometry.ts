@@ -1,13 +1,34 @@
 export interface ChartPoint { x: number; y: number; }
 
-export function scaledPoints(values: readonly number[], width: number, height: number): ChartPoint[] {
+export interface ChartFrame {
+  width: number;
+  height: number;
+  padding: { left: number; right: number; top: number; bottom: number };
+}
+
+export function chartFrame(width: number, height: number): ChartFrame {
+  return {
+    width,
+    height,
+    padding: { left: 38, right: 14, top: 12, bottom: 24 },
+  };
+}
+
+export function scaledPoints(
+  values: readonly number[],
+  width: number,
+  height: number,
+  padding = { left: 0, right: 0, top: 0, bottom: 0 },
+): ChartPoint[] {
   if (!values.length) return [];
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
+  const innerWidth = Math.max(1, width - padding.left - padding.right);
+  const innerHeight = Math.max(1, height - padding.top - padding.bottom);
   return values.map((value, index) => ({
-    x: values.length === 1 ? width / 2 : (index / (values.length - 1)) * width,
-    y: height - ((value - min) / span) * height,
+    x: padding.left + (values.length === 1 ? innerWidth / 2 : (index / (values.length - 1)) * innerWidth),
+    y: padding.top + innerHeight - ((value - min) / span) * innerHeight,
   }));
 }
 
