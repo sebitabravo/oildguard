@@ -5,7 +5,7 @@ import { demoDataset } from "../../demo/dataset";
 import { DataTable, FilterBar, KpiTile, PageHeader, SyntheticBadge } from "../../ui/foundation";
 import { useBackendOrDemo } from "../../ui/backendOrDemo";
 import { getFleetDevices, getPlatformHealth, type BackendDevice, type PlatformHealthResponse } from "../api";
-import { deriveDeviceKpis, filterDevices, mapDeviceToWheel, type DeviceFilter, type InventoryDevice } from "./logic";
+import { deriveDeviceKpis, filterDevices, mapDeviceToWheel, paginateDevices, type DeviceFilter, type InventoryDevice } from "./logic";
 import "./devices.css";
 
 interface PageData {
@@ -40,6 +40,7 @@ function demoInventory(): PageData {
   });
   return { devices, health: null };
 }
+const DEMO_INVENTORY_DATA = demoInventory();
 
 function mapBackendDevice(device: BackendDevice): InventoryDevice {
   return {
@@ -82,15 +83,17 @@ export default function DeviceInventoryPage() {
   const [lang] = useLang();
   const [filter, setFilter] = useState<DeviceFilter>("all");
   const [query, setQuery] = useState("");
+  const [pageIndex, setPageIndex] = useState(1);
   const load = useCallback(async (signal?: AbortSignal) => {
     const [deviceResponse, health] = await Promise.all([getFleetDevices(signal), getPlatformHealth(signal)]);
     return { devices: deviceResponse.devices.map(mapBackendDevice), health };
   }, []);
-  const data = useBackendOrDemo(load, demoInventory(), 10_000);
+  const data = useBackendOrDemo(load, DEMO_INVENTORY_DATA, 10_000);
   const nowMs = data.source === "demo" ? demoDataset.referenceMs : Date.now();
   const devices = data.data?.devices ?? [];
   const kpis = useMemo(() => deriveDeviceKpis(devices, nowMs), [devices, nowMs]);
   const visible = useMemo(() => filterDevices(devices, filter, query, nowMs), [devices, filter, query, nowMs]);
+  const page = useMemo(() => paginateDevices(visible, pageIndex, 20), [visible, pageIndex]);
   const health = data.data?.health ?? null;
   const configuredKeys = Boolean(health?.device_keys?.master_key_configured || (health?.signing?.devices ?? 0) > 0);
   const signingLabel = data.source !== "live"
@@ -117,7 +120,7 @@ export default function DeviceInventoryPage() {
     { key: "firmware", label: t("devices.firmware", lang) },
     { key: "certificate", label: t("devices.certificate", lang) },
   ];
-  const rows = visible.map((device) => {
+  const rows = page.items.map((device) => {
     const mapping = mapDeviceToWheel(device.id, demoDataset.wheels.map((wheel) => ({ id: wheel.id, truckId: wheel.truckId, position: wheel.position })));
     const ratio = data.source === "demo" ? device.signedRatio ?? null : device.signedRatio ?? null;
     const ratioText = ratio === null ? t("devices.notReported", lang) : `${formatNumber(ratio * 100, lang, 1)}%`;
@@ -145,20 +148,24 @@ export default function DeviceInventoryPage() {
   });
 
   return <main className="device-inventory">
-    <PageHeader title={t("devices.title", lang)} description={t("devices.description", lang)} meta={data.source === "demo" ? <SyntheticBadge lang={lang} /> : <span className="device-inventory__source">{t("devices.liveSource", lang)}</span>} />
+    <PageHeader title={t("devices.title", lang)} description={t("devices.description", lang)} meta={data.source === "demo" ? <SyntheticBadge lang={lang} /> : <span className="device-inventory__source">{t(data.source === "live" ? "devices.liveSource" : "devices.loading", lang)}</span>} />
     <section className="device-inventory__kpis" aria-label={t("devices.title", lang)}>
-      <KpiTile lang={lang} label={t("devices.reporting", lang)} value={formatNumber(kpis.reporting, lang, 0)} />
-      <KpiTile lang={lang} label={t("devices.signedRatio", lang)} value={kpis.signedRatio === null ? "—" : formatNumber(kpis.signedRatio * 100, lang, 1)} unit={kpis.signedRatio === null ? undefined : "%"} />
-      <KpiTile lang={lang} label={t("devices.rejected", lang)} value={formatNumber(kpis.rejected, lang, 0)} />
-      <KpiTile lang={lang} label={t("devices.stale", lang)} value={formatNumber(kpis.stale, lang, 0)} />
+      <KpiTile lang={lang} label={t("devices.reporting", lang)} value={data.source === "loading" ? "—" : formatNumber(kpis.reporting, lang, 0)} />
+      <KpiTile lang={lang} label={t("devices.signedRatio", lang)} value={data.source === "loading" || kpis.signedRatio === null ? "—" : formatNumber(kpis.signedRatio * 100, lang, 1)} unit={data.source === "loading" || kpis.signedRatio === null ? undefined : "%"} />
+      <KpiTile lang={lang} label={t("devices.rejected", lang)} value={data.source === "loading" ? "—" : formatNumber(kpis.rejected, lang, 0)} />
+      <KpiTile lang={lang} label={t("devices.stale", lang)} value={data.source === "loading" ? "—" : formatNumber(kpis.stale, lang, 0)} />
     </section>
     <FilterBar><div className="device-inventory__filters" aria-label={t("devices.filterLabel", lang)}>
-      <label><span>{t("devices.filterLabel", lang)}</span><select value={filter} onChange={(event) => setFilter((event.currentTarget as HTMLSelectElement).value as DeviceFilter)}>{filterOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select></label>
-      <label><span>{t("devices.search", lang)}</span><input type="search" value={query} onInput={(event) => setQuery((event.currentTarget as HTMLInputElement).value)} placeholder={t("devices.search", lang)} /></label>
+      <label><span>{t("devices.filterLabel", lang)}</span><select value={filter} onChange={(event) => { setFilter((event.currentTarget as HTMLSelectElement).value as DeviceFilter); setPageIndex(1); }}>{filterOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select></label>
+      <label><span>{t("devices.search", lang)}</span><input type="search" value={query} onInput={(event) => { setQuery((event.currentTarget as HTMLInputElement).value); setPageIndex(1); }} placeholder={t("devices.search", lang)} /></label>
     </div></FilterBar>
     {data.source === "demo" && <div className="device-inventory__demo-note"><SyntheticBadge lang={lang} /><span>{t("devices.demoSigning", lang)}</span></div>}
     <DataTable lang={lang} caption={t("devices.title", lang)} columns={columns} rows={rows} />
-    {rows.length === 0 && <p className="device-inventory__empty">{t("devices.empty", lang)}</p>}
+    {rows.length === 0 && <p className="device-inventory__empty">{t(data.source === "loading" ? "devices.loadingNote" : "devices.empty", lang)}</p>}
+    {page.pageCount > 1 && <nav className="device-inventory__pagination" aria-label={t("devices.filterLabel", lang)}>
+      <span>{t("devices.pagination", lang)} {formatNumber((page.page - 1) * 20 + 1, lang, 0)}–{formatNumber(Math.min(page.page * 20, page.total), lang, 0)} / {formatNumber(page.total, lang, 0)}</span>
+      <div><button type="button" disabled={page.page === 1} onClick={() => setPageIndex(page.page - 1)}>{t("devices.previous", lang)}</button><span>{formatNumber(page.page, lang, 0)} / {formatNumber(page.pageCount, lang, 0)}</span><button type="button" disabled={page.page === page.pageCount} onClick={() => setPageIndex(page.page + 1)}>{t("devices.next", lang)}</button></div>
+    </nav>}
     <aside className="device-inventory__note"><strong>{t("devices.rowSigning", lang)}</strong><p>{t("devices.signingNote", lang)}</p></aside>
   </main>;
 }

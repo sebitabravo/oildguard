@@ -26,7 +26,7 @@ export const routeRegistry: RouteDefinition[] = [
   { id: "alert-detail", path: "/alerts/detail", ready: false },
   { id: "alert-rules", path: "/alerts/rules", ready: false },
   { id: "devices", path: "/devices", ready: true },
-  { id: "link", path: "/link", ready: false },
+  { id: "link", path: "/link", ready: true },
   { id: "lab-sim", path: "/lab/sim", ready: false },
   { id: "lab-validation", path: "/lab/validation", ready: false },
   { id: "lab-bench", path: "/lab/bench", ready: false },

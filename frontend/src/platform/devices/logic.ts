@@ -49,3 +49,10 @@ export function mapDeviceToWheel(deviceId: string, mapping: WheelMapping[]): { t
   const wheel = mapping.find((item) => item.id === deviceId);
   return wheel ? { truckId: wheel.truckId, position: wheel.position } : null;
 }
+
+export function paginateDevices<T>(devices: T[], requestedPage: number, pageSize: number) {
+  const size = Math.max(1, Math.floor(pageSize));
+  const pageCount = Math.max(1, Math.ceil(devices.length / size));
+  const page = Math.min(pageCount, Math.max(1, Math.floor(requestedPage)));
+  return { items: devices.slice((page - 1) * size, page * size), page, pageCount, total: devices.length };
+}

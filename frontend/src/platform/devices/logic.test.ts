@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { deriveDeviceKpis, filterDevices, mapDeviceToWheel, type InventoryDevice, type WheelMapping } from "./logic";
+import { deriveDeviceKpis, filterDevices, mapDeviceToWheel, paginateDevices, type InventoryDevice, type WheelMapping } from "./logic";
 
 const devices: InventoryDevice[] = [
   { id: "wheel-RH-01", lastSeenMs: 199_950, rowsRetained: 40, rowsVerified: 38, rowsOffered: 40, rejectedRows: 2, rejectedReasons: { bad_signature: 2 }, latest: null, alertLevel: "N1", alertLevelReason: null },
@@ -22,5 +22,12 @@ describe("device inventory logic", () => {
     const mapping: WheelMapping[] = [{ id: "wheel-RH-01", truckId: "OG-01", position: "RH" }];
     expect(mapDeviceToWheel("wheel-RH-01", mapping)).toEqual({ truckId: "OG-01", position: "RH" });
     expect(mapDeviceToWheel("edge-02", mapping)).toBe(null);
+  });
+
+  test("paginates the filtered inventory without dropping the total count", () => {
+    const page = paginateDevices(devices, 2, 2);
+    expect(page.items.map((device) => device.id)).toEqual(["edge-03"]);
+    expect(page.total).toBe(3);
+    expect(page.pageCount).toBe(2);
   });
 });
