@@ -1,0 +1,9 @@
+---
+import { getEntry } from "astro:content";
+import DocView from "../docs/DocView.astro";
+
+const entry = await getEntry("docs", "demo-script.md");
+if (!entry) throw new Error("docs/demo-script.md is missing from the docs collection");
+---
+
+<DocView entry={entry} />

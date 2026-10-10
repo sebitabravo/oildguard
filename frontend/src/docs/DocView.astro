@@ -1,0 +1,26 @@
+---
+import { render } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+import PublicLayout from "../layouts/PublicLayout.astro";
+import "../styles/docs.css";
+import DocBody from "./DocBody.astro";
+import DocsTopBar from "./DocsTopBar";
+import { docTitle } from "./links";
+
+interface Props {
+  entry: CollectionEntry<"docs">;
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const title = docTitle(entry.body, entry.id);
+---
+
+<PublicLayout title={`${title} · OilGuard Mining`}>
+  <div class="docs">
+    <DocsTopBar client:load title={title} path={`docs/${entry.id}`} />
+    <article class="docs-prose">
+      <DocBody slug={entry.id}><Content /></DocBody>
+    </article>
+  </div>
+</PublicLayout>

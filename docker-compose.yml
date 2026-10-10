@@ -81,6 +81,8 @@ services:
       # COPY baked in at build time. The anonymous volume preserves the image's
       # node_modules, so dependencies stay image-managed rather than host-managed.
       - ./frontend:/app
+      # La colección de docs del sitio lee ../docs (raíz del repo) desde /app.
+      - ./docs:/docs:ro
       - /app/node_modules
     depends_on:
       - backend

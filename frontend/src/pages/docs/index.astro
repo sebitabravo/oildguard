@@ -1,0 +1,19 @@
+---
+import { getCollection } from "astro:content";
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import "../../styles/docs.css";
+import DocsIndex from "../../docs/DocsIndex";
+import DocsTopBar from "../../docs/DocsTopBar";
+import { docRoute, docTitle } from "../../docs/links";
+
+const entries = (await getCollection("docs"))
+  .map((entry) => ({ slug: entry.id, title: docTitle(entry.body, entry.id), href: docRoute(entry.id) }))
+  .sort((a, b) => a.slug.localeCompare(b.slug));
+---
+
+<PublicLayout title="Documentation · OilGuard Mining">
+  <div class="docs">
+    <DocsTopBar client:load title="OilGuard Mining" />
+    <DocsIndex client:load entries={entries} />
+  </div>
+</PublicLayout>
