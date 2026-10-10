@@ -21,6 +21,20 @@
   --og-red: #ff4d42;
   --og-orange: #ff8c42;
   --og-amber: #f5a623;
+  --og-on-yellow: #15110a;
+  --og-card-active: #1d2a40;
+  --og-ground: #0b0f17;
+  --og-yellow-hover: #ffc61f;
+  --og-green-hover: #43d386;
+  --og-header-gradient-start: #0f1521;
+  --og-header-gradient-end: #0b1019;
+  --og-brand-mark-gradient-start: #ffd23d;
+  --og-brand-mark-gradient-end: var(--og-yellow-deep);
+  --og-on-green: #07140d;
+  --og-on-blue: #06101f;
+  --og-on-red: #1c0503;
+  --og-on-amber: #1c1203;
+  --og-amber-highlight: #ffd27a;
   --og-glass: rgba(9, 13, 21, 0.64);
   --og-glass-line: rgba(255, 255, 255, 0.13);
   --og-radius: 8px;
@@ -93,7 +107,7 @@ input:focus-visible,
   align-items: center;
   gap: 24px;
   padding: 0 20px;
-  background: linear-gradient(180deg, #0f1521, #0b1019);
+  background: linear-gradient(180deg, var(--og-header-gradient-start), var(--og-header-gradient-end));
   border-bottom: 1px solid var(--og-line);
 }
 
@@ -107,8 +121,8 @@ input:focus-visible,
   font-weight: 800;
   font-size: 13px;
   letter-spacing: -0.02em;
-  color: #15110a;
-  background: linear-gradient(135deg, #ffd23d, var(--og-yellow-deep));
+  color: var(--og-on-yellow);
+  background: linear-gradient(135deg, var(--og-brand-mark-gradient-start), var(--og-brand-mark-gradient-end));
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset, 0 4px 14px rgba(242, 183, 5, 0.25);
 }
 .og-brand__name { font-size: 16px; font-weight: 700; line-height: 1.15; letter-spacing: 0.01em; }
@@ -166,7 +180,7 @@ input:focus-visible,
 .og-seg__btn:hover { color: var(--og-text); }
 .og-seg__btn[aria-pressed="true"] {
   background: var(--og-yellow);
-  color: #15110a;
+  color: var(--og-on-yellow);
 }
 .og-seg--sm .og-seg__btn { height: 24px; font-size: 11px; padding: 0 8px; min-width: 0; }
 
@@ -181,7 +195,7 @@ input:focus-visible,
   min-width: 0;
   min-height: 480px;
   overflow: hidden;
-  background: #0b0f17;
+  background: var(--og-ground);
 }
 .og-viewport__scene { position: absolute; inset: 0; }
 
@@ -293,10 +307,10 @@ input:focus-visible,
   white-space: nowrap;
   font-family: inherit;
 }
-.og-badge--ok { background: var(--og-green); color: #07140d; }
-.og-badge--move { background: var(--og-blue); color: #06101f; }
-.og-badge--crit { background: var(--og-red); color: #1c0503; }
-.og-badge--warn { background: var(--og-amber); color: #1c1203; }
+.og-badge--ok { background: var(--og-green); color: var(--og-on-green); }
+.og-badge--move { background: var(--og-blue); color: var(--og-on-blue); }
+.og-badge--crit { background: var(--og-red); color: var(--og-on-red); }
+.og-badge--warn { background: var(--og-amber); color: var(--og-on-amber); }
 .og-badge--ghost {
   background: var(--og-glass);
   border-color: var(--og-glass-line);
@@ -308,7 +322,7 @@ input:focus-visible,
   cursor: pointer;
   background: rgba(30, 22, 8, 0.8);
   border-color: rgba(245, 166, 35, 0.7);
-  color: #ffd27a;
+  color: var(--og-amber-highlight);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
@@ -344,10 +358,10 @@ input:focus-visible,
 }
 .og-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); }
 .og-btn:disabled { cursor: not-allowed; opacity: 0.45; }
-.og-btn--primary { background: var(--og-yellow); border-color: transparent; color: #15110a; }
-.og-btn--primary:hover:not(:disabled) { background: #ffc61f; }
-.og-btn--ok { background: var(--og-green); border-color: transparent; color: #07140d; }
-.og-btn--ok:hover:not(:disabled) { background: #43d386; }
+.og-btn--primary { background: var(--og-yellow); border-color: transparent; color: var(--og-on-yellow); }
+.og-btn--primary:hover:not(:disabled) { background: var(--og-yellow-hover); }
+.og-btn--ok { background: var(--og-green); border-color: transparent; color: var(--og-on-green); }
+.og-btn--ok:hover:not(:disabled) { background: var(--og-green-hover); }
 .og-btn--sm { height: 28px; padding: 0 10px; font-size: 12px; }
 
 .og-icon-btn {
@@ -483,7 +497,7 @@ input:focus-visible,
   padding: 10px 12px;
 }
 .og-card--tone { border-color: var(--tone, var(--og-line)); }
-.og-card--active { background: #1d2a40; box-shadow: 0 0 0 1px var(--tone, transparent) inset; }
+.og-card--active { background: var(--og-card-active); box-shadow: 0 0 0 1px var(--tone, transparent) inset; }
 .og-card + .og-card { margin-top: 8px; }
 button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og-text); font-size: 13px; }
 
