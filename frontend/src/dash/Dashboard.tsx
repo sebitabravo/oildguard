@@ -323,17 +323,7 @@ export default function Dashboard() {
 
       {/* source + backend row */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12, alignItems: "center" }}>
-        <span
-          style={{
-            fontSize: 12,
-            fontWeight: 800,
-            letterSpacing: 0.5,
-            color: "var(--og-panel-inset)",
-            background: source === "live" ? "var(--og-green)" : "var(--og-amber)",
-            borderRadius: 4,
-            padding: "4px 10px",
-          }}
-        >
+        <span className={`og-badge og-badge--source og-badge--source-${source}`}>
           {t(
             source === "loading"
               ? "dash.source.badge.loading"
@@ -369,16 +359,7 @@ export default function Dashboard() {
         <button
           type="button"
           onClick={() => void fetchAll()}
-          style={{
-            cursor: "pointer",
-            color: "var(--og-text)",
-            background: "transparent",
-            border: "1px solid var(--og-amber)",
-            borderRadius: 6,
-            padding: "5px 12px",
-            fontWeight: 600,
-            fontSize: 12,
-          }}
+          className="og-btn og-btn--compact og-btn--outline-amber"
         >
           {t("dash.action.refresh", lang)}
         </button>
@@ -386,16 +367,7 @@ export default function Dashboard() {
           <button
             type="button"
             onClick={startDemo}
-            style={{
-              cursor: "pointer",
-              color: "var(--og-panel-inset)",
-              background: "var(--og-amber)",
-              border: "1px solid transparent",
-              borderRadius: 6,
-              padding: "5px 12px",
-              fontWeight: 700,
-              fontSize: 12,
-            }}
+            className="og-btn og-btn--compact og-btn--amber"
           >
             {t("demo.run", lang)}
           </button>
@@ -403,16 +375,7 @@ export default function Dashboard() {
           <button
             type="button"
             onClick={resetDemo}
-            style={{
-              cursor: "pointer",
-              color: "var(--og-text)",
-              background: "transparent",
-              border: "1px solid var(--og-line-soft)",
-              borderRadius: 6,
-              padding: "5px 12px",
-              fontWeight: 600,
-              fontSize: 12,
-            }}
+            className="og-btn og-btn--compact og-btn--outline"
           >
             {t("demo.reset", lang)}
           </button>
@@ -434,15 +397,7 @@ export default function Dashboard() {
             {DEMO_STAGES.map((s) => (
               <span
                 key={s}
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: s === demoStage ? "var(--og-panel-inset)" : "var(--og-text)",
-                  background: s === demoStage ? "var(--og-amber)" : "transparent",
-                  border: `1px solid ${s === demoStage ? "var(--og-amber)" : "var(--og-line-soft)"}`,
-                  borderRadius: 4,
-                  padding: "3px 10px",
-                }}
+                className={`og-badge og-badge--step${s === demoStage ? " og-badge--step-active" : ""}`}
               >
                 {stageLabel(s, lang)}
               </span>
@@ -526,7 +481,7 @@ export default function Dashboard() {
               <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
                 {shownAlerts.map((a) => (
                   <li key={a.alert_id} style={{ marginBottom: 8, border: `1px solid ${ALERT_CSS[a.level] ?? "var(--og-line-dashboard)"}`, borderRadius: 6, padding: "6px 8px" }}>
-                    <span style={{ display: "inline-block", fontSize: 12, fontWeight: 800, color: "var(--og-panel-inset)", background: ALERT_CSS[a.level] ?? "var(--og-text)", borderRadius: 4, padding: "1px 8px", marginRight: 8 }}>
+                    <span className={`og-badge og-badge--alert og-badge--${a.level.toLowerCase()}`}>
                       {a.level}
                     </span>
                     <strong style={{ fontSize: 13 }}>{a.alert_id}</strong>
