@@ -30,10 +30,13 @@ The library separates the pure parity-critical components:
 - `publisher.rs` provides rumqttc batching with an explicitly configured
   packet limit.
 
-The executable currently uses the offline path directly; MQTT connection and
-batch helpers are exposed by the library for the process-level publisher
-integration. Fleet scheduling should shard devices rather than create one
-Tokio task per device when the MQTT path is enabled.
+The runtime creates one Tokio task per shard (default:
+`available_parallelism() * 4`, configurable with `--shards`). Each task owns
+the generators for its devices and advances them on a shared interval with
+`MissedTickBehavior::Delay`. MQTT connections are pooled and devices are
+assigned to connections by a stable round-robin hash. Each device has a
+bounded FIFO buffer; failed batches are retained, flushed before live rows
+after recovery, and counted when drop-oldest overflow occurs.
 
 ## CLI
 
@@ -62,6 +65,11 @@ Important options:
 | `--mqtt-url` | `mqtt://localhost:1883` | MQTT endpoint for publisher integration |
 | `--qos` | `0` | MQTT QoS |
 | `--batch-rows` | `10` | Rows per MQTT batch |
+| `--shards` | CPU × 4 | Tokio device shards |
+| `--connections` | `1` | MQTT connection pool size |
+| `--buffer-capacity` | `10000` | Per-device buffered rows |
+| `--jitter-ms` | `0` | Uniform pre-publish delay; separate deterministic RNG |
+| `--stats-interval` | `0` | JSON stats lines on stderr, in seconds |
 
 Keys are never printed. The signed topic convention is
 `oilguard/signals/<device_id>`.
@@ -82,16 +90,37 @@ The generator is byte-compatible for canonical signing input and row values.
 Timestamp formatting uses Python's `isoformat()` shape: `+00:00`, with no
 fraction when microseconds are zero and six digits otherwise.
 
-## Performance and limitations
+`--mode simulated` uses the configured `--start` timestamp and remains covered
+by the golden fixtures. `--mode realtime` preserves the same simulated `t_s`
+and sequence values but stamps each row with the UTC wall clock at creation.
+Jitter never consumes the generator RNG, so simulated row values are unchanged
+when `--jitter-ms` changes.
 
-The parity/offline path has been validated at 1,000 devices × 10 Hz on the
-development laptop; benchmark output is intentionally not committed. Run the
-release benchmark with `/usr/bin/time -l` and record rows/s, CPU, and peak RSS
-in the orchestration report.
+## Measurements
 
-The current checked-in executable is the deterministic offline generator.
-The rumqttc connection, packet sizing, and batch serialization are implemented
-as library helpers; production MQTT scheduling, reconnect backoff, jitter,
-statistics, and full shard lifecycle remain integration work for the process
-runner. MQTT QoS 0 is the intended default because the backend subscriber is
-QoS 0.
+Release measurements on the shared Apple M3/macOS development machine:
+
+| Run | Generated rows | Approx. throughput | Peak RSS |
+| --- | ---: | ---: | ---: |
+| Offline, 10,000 devices × 10 Hz × 10 s | 1,000,000 | 8.6k rows/s | 3.4 MB |
+| MQTT, 1,000 devices × 10 Hz × 30 s | 300,000 | 10.0k generated rows/s | 21.5 MB |
+| MQTT, 5,000 devices × 10 Hz × 30 s | 1,500,000 | 50.0k generated rows/s | 64.0 MB |
+
+The MQTT runs used `localhost:1883`, QoS 0, ten rows per batch, and one
+connection. Final p50/p99 send latency was 0.000625/14.37 ms for 1,000
+devices and 0.000542/3.46 ms for 5,000 devices. `/usr/bin/time -l` reported
+the peak RSS above; CPU was shared with other builds, so these are throughput
+measurements rather than isolated capacity guarantees.
+
+Stats intentionally omit RSS from the JSON line because the crate does not
+add a platform-specific libc dependency. Peak RSS is measured externally with
+`/usr/bin/time -l`. MQTT QoS 0 remains the intended default because the
+backend subscriber is QoS 0.
+
+## Limitations
+
+The MQTT event loop relies on rumqttc's reconnect behavior; failed publishes
+are handled by the edge buffer and retried on subsequent batches. The current
+stats latency sample is capped at 100,000 observations to avoid per-row
+allocation. `--seconds 0` runs indefinitely in realtime mode; offline mode
+uses a one-second smoke horizon when no finite horizon is supplied.
