@@ -34,7 +34,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from shared.messages import message
-from shared.signing import parse_device_keys, verify_row
+from shared.signing import derive_device_key, parse_device_keys, verify_row
 
 try:  # paquete (pytest / uvicorn backend.main:app)
     from .store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore
@@ -56,6 +56,23 @@ MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "oilguard/signals")
 _DEVICE_KEYS = parse_device_keys(os.getenv("OILGUARD_DEVICE_KEYS", ""))
+
+
+def parse_master_key(spec: str) -> bytes | None:
+    """Llave maestra en hex; None si no se configuro. Nunca incluye el valor en el error."""
+    spec = spec.strip()
+    if not spec:
+        return None
+    try:
+        key = bytes.fromhex(spec)
+    except ValueError:
+        raise ValueError("OILGUARD_DEVICE_MASTER_KEY must be a hex string") from None
+    if not key:
+        raise ValueError("OILGUARD_DEVICE_MASTER_KEY must not be empty")
+    return key
+
+
+_DEVICE_MASTER_KEY = parse_master_key(os.getenv("OILGUARD_DEVICE_MASTER_KEY", ""))
 _REQUIRE_SIGNATURE = os.getenv("OILGUARD_REQUIRE_SIGNATURE", "0") == "1"
 
 CAPACITY_L = 95.0  # GDY106 nominal, SAE 85W-140 (physics anchor)
@@ -149,6 +166,21 @@ _rejected_total = 0
 _rejected_reasons: Counter[str] = Counter()
 _influx_status = "unknown (no ingest yet)"
 _influx_message = message("influx_unknown_no_ingest")
+
+
+def device_key(device_id: str) -> bytes | None:
+    """Llave de un dispositivo: la explicita si existe, si no la derivada de la maestra.
+
+    Listar una llave por equipo no escala a miles de dispositivos, asi que
+    ``OILGUARD_DEVICE_MASTER_KEY`` permite derivarlas. La entrada explicita
+    siempre gana: sirve para puentear un equipo durante una rotacion.
+    """
+    key = _DEVICE_KEYS.get(device_id)
+    if key is not None:
+        return key
+    if _DEVICE_MASTER_KEY and device_id:
+        return derive_device_key(_DEVICE_MASTER_KEY, device_id)
+    return None
 
 
 def _now_iso() -> str:
@@ -258,7 +290,7 @@ def verify_rows(
         reason: str | None = None
         identity: tuple | None = None
         if has_signature:
-            key = _DEVICE_KEYS.get(device_id)
+            key = device_key(device_id)
             if key is None:
                 reason = "unknown_device"
             else:
@@ -485,6 +517,10 @@ def health() -> dict:
         "influx_message": _influx_message,
         "mqtt": {"host": MQTT_HOST, "port": MQTT_PORT, "topic": MQTT_TOPIC},
         "signing": signing,
+        "device_keys": {
+            "explicit": len(_DEVICE_KEYS),
+            "master_key_configured": bool(_DEVICE_MASTER_KEY),
+        },
     }
 
 

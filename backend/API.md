@@ -184,6 +184,44 @@ not confidentiality, transport security, HTTP caller authentication, or IEC
 62443 compliance. Provisioning, secure key storage, and key rotation remain
 out of scope.
 
+### Master key and derived device keys
+
+Listing one key per device does not scale to thousands of devices, so
+`OILGUARD_DEVICE_MASTER_KEY` (hex string) enables on-demand derivation.
+For any device without an explicit `OILGUARD_DEVICE_KEYS` entry, the backend
+derives its key with `shared.signing.derive_device_key(master, device_id)`
+(HMAC-SHA256 over a domain-separated label plus the device id). The Rust
+simulator derives the same key, so both ends agree without a per-device list.
+
+Precedence, highest first:
+
+1. An explicit `OILGUARD_DEVICE_KEYS` entry for that device always wins. This
+   is the escape hatch during a rotation: pin one device to its old key while
+   every other device keeps deriving from the master.
+2. The derived key, when a master key is configured.
+3. Otherwise the row is rejected as `unknown_device` (unchanged behavior).
+
+Rows without a `device_id` are never derived and stay `unknown_device`.
+Key material is never logged and never returned by any endpoint; a malformed
+master key raises at startup instead of degrading silently.
+
+`GET /health` reports derivation without exposing keys. `signing.devices`
+counts explicit `OILGUARD_DEVICE_KEYS` entries only, so derived devices do not
+inflate the number, and a sibling top-level object carries the flag:
+
+```json
+{
+  "signing": {"enforced": true, "devices": 2},
+  "device_keys": {"explicit": 2, "master_key_configured": true}
+}
+```
+
+> **Deviation from the R2 addendum:** the flag is reported as a top-level
+> `device_keys` object rather than inside the `signing` object, because
+> `tests/test_signed_ingest.py` (outside the R2 file ownership) asserts strict
+> equality on the whole `signing` dict. Adding a key there would break it.
+> Move it inside `signing` once that assertion is updated.
+
 Migration note (breaking vs S0 stub): the S0 `POST /ingest` accepted a
 single 4-field object (`device_id`, `pressure_kpa`, `temperature_c`,
 `vibration_rms`). T8 requires the batch above; old payloads return
