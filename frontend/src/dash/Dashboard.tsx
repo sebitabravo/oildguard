@@ -42,12 +42,12 @@ import { t, type DictKey, type Lang, useLang } from "../i18n";
 import { formatNumber } from "../i18n/numberFormat";
 import { localizeBackendMessage, localizeBackendZone } from "./backendNotes";
 import { signingBadgeState } from "./signingBadge";
-import { analyzerUnavailableNotice } from "./analyzerAvailability";
+import { analyzerUnavailableNotice, isBackendOutage } from "./analyzerAvailability";
 import { mergeLevelSeries } from "./levelSeries";
 import { formatDemoLabNote } from "./demoCopy";
 import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
 import { DEMO_REFERENCE_MS, demoDataset } from "../demo/dataset";
-import { AlertBanner, Button, Notice, PageHeader, SyntheticBadge } from "../ui/foundation";
+import { AlertBanner, Button, Notice, PageHeader, SyntheticBadge, type Severity } from "../ui/foundation";
 import {
   ChartLegend, FusionPanel, LadderPanel, TelemetryRow, WheelContext,
 } from "../ops/wheel/WheelPanels";
@@ -99,6 +99,44 @@ function stageBlurb(stage: DemoStageId, lang: Lang): string {
 
 function stageLabel(stage: DemoStageId, lang: Lang): string {
   return t(DEMO_LABEL_KEYS[stage], lang);
+}
+
+// La caída total del backend nunca debe leerse como flota sana: este aviso
+// ocupa el lugar del mensaje de calma y exige rol de alerta.
+// El título y el detalle van en un único hijo para que el flex de Notice no
+// los parta en dos columnas a 390px: así envuelven como un aviso coherente.
+export function BackendOutageBanner() {
+  const [lang] = useLang();
+  return (
+    <div className="og-analyzer-notice" role="alert">
+      <Notice lang={lang} kind="error">
+        <span>
+          <strong>{t("dash.backend.outage.title", lang)}</strong>{" "}
+          {t("dash.backend.outage.detail", lang)}
+        </span>
+      </Notice>
+    </div>
+  );
+}
+
+// Tramo de avisos de disponibilidad de Dashboard en un componente renderizable:
+// la misma rama que pinta la página en producción (apagón, analizador y
+// escalera), para cubrirla con prueba de integración sin leer cadenas fuente.
+export function DashboardStatusNotices({ activeLevel, backendOutage, analyzerNotice }: {
+  activeLevel: Severity | null;
+  backendOutage: boolean;
+  analyzerNotice: string | null;
+}) {
+  const [lang] = useLang();
+  return (
+    <>
+      {backendOutage && <BackendOutageBanner />}
+      {analyzerNotice && <div className="og-analyzer-notice" role="alert">{analyzerNotice}</div>}
+      {activeLevel
+        ? <AlertBanner lang={lang} severity={activeLevel}>{t(alertBannerKey(activeLevel), lang)}</AlertBanner>
+        : backendOutage ? null : <Notice lang={lang} kind="info">{t("wheel.banner.none", lang)}</Notice>}
+    </>
+  );
 }
 
 export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: string | null }) {
@@ -266,6 +304,9 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
     rulStatus: rul?.status,
   }, lang);
   const analyzerUnavailable = analyzerNotice !== null;
+  // Solo la rueda en vivo con el backend caído es una caída total: las ruedas
+  // DEMO ya declaran su procedencia y la sonda inicial aún no falló.
+  const backendOutage = isBackendOutage(live, backendNote?.kind);
   const fsm = stateAt(fsmTick);
   const moving = isMovingState(fsm.state);
   const recal = isRecalState(fsm.state);
@@ -390,11 +431,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
         {t("dash.honesty", lang)}
       </Notice>
 
-      {analyzerNotice && <div className="og-analyzer-notice" role="alert">{analyzerNotice}</div>}
-
-      {activeLevel
-        ? <AlertBanner lang={lang} severity={activeLevel}>{t(alertBannerKey(activeLevel), lang)}</AlertBanner>
-        : <Notice lang={lang} kind="info">{t("wheel.banner.none", lang)}</Notice>}
+      <DashboardStatusNotices activeLevel={activeLevel} backendOutage={backendOutage} analyzerNotice={analyzerNotice} />
 
       <TelemetryRow
         lang={lang}
