@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { deriveAvailabilitySegments, deriveLinkKpis, paginateLinkItems, type OutageRecord } from "./logic";
+import { deriveAvailabilitySegments, deriveDemoLinkKpis, deriveLinkKpis, paginateLinkItems, type OutageRecord } from "./logic";
 
 const hour = 3_600_000;
 
@@ -29,5 +29,12 @@ describe("link health logic", () => {
 
   test("paginates device timelines so large fleets stay navigable", () => {
     expect(paginateLinkItems(["a", "b", "c"], 2, 2)).toEqual({ items: ["c"], page: 2, pageCount: 2, total: 3 });
+  });
+
+  test("derives demo KPIs only from the supplied device and outage records", () => {
+    expect(deriveDemoLinkKpis(["a", "b"], [
+      { deviceId: "a", startMs: 1_000, endMs: null, rowsBuffered: null, forwarded: null },
+      { deviceId: "b", startMs: 4_000, endMs: 5_000, rowsBuffered: null, forwarded: null },
+    ], 61_000)).toEqual({ devices: 2, outages: 2, affectedDevices: 2, outageSeconds: 61 });
   });
 });

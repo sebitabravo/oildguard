@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { deriveDeviceKpis, filterDevices, mapDeviceToWheel, paginateDevices, type InventoryDevice, type WheelMapping } from "./logic";
+import { deriveDeviceKpis, deriveSignedRowsRatio, filterDevices, mapDeviceToWheel, paginateDevices, type InventoryDevice, type WheelMapping } from "./logic";
 
 const devices: InventoryDevice[] = [
   { id: "wheel-RH-01", lastSeenMs: 199_950, rowsRetained: 40, rowsVerified: 38, rowsOffered: 40, rejectedRows: 2, rejectedReasons: { bad_signature: 2 }, latest: null, alertLevel: "N1", alertLevelReason: null },
@@ -10,6 +10,15 @@ const devices: InventoryDevice[] = [
 describe("device inventory logic", () => {
   test("derives reporting, weighted signing, rejected and stale KPIs", () => {
     expect(deriveDeviceKpis(devices, 200_000)).toEqual({ reporting: 1, signedRatio: 58 / 64, rejected: 2, stale: 2 });
+  });
+
+  test("aggregates current rows and falls back to available demo row ratios", () => {
+    expect(deriveSignedRowsRatio(devices.slice(0, 2))).toBe(58 / 60);
+    expect(deriveSignedRowsRatio([
+      { ...devices[0], rowsVerified: 0, rowsOffered: 0, signedRatio: 0.998 },
+      { ...devices[1], rowsVerified: 0, rowsOffered: 0, signedRatio: 0.75 },
+    ])).toBeCloseTo(0.874, 12);
+    expect(deriveSignedRowsRatio([])).toBe(null);
   });
 
   test("filters by state and case-insensitive device identifier", () => {
