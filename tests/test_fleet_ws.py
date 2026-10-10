@@ -40,6 +40,9 @@ def client():
     with backend_main._store_lock:
         backend_main._store_rows.clear()
     backend_main._INGEST_METRICS.reset()
+    # El tick es cacheado 1 s para todos los clientes: sin resetearlo, un
+    # test veria el tick calculado con el almacen del test anterior.
+    backend_main._FLEET_TICK_CACHE.reset()
     # Sin context manager: no dispara el startup (sondeo de Influx / puente MQTT).
     return TestClient(backend_main.app)
 
@@ -112,3 +115,56 @@ def test_tick_payload_is_json_serialisable_for_every_metric(seeded):
     json.dumps(tick)  # no debe haber nan/inf rompejson
     for block in tick["aggregates"].values():
         assert set(block) == {"mean", "p50", "p95", "p99", "min", "max", "count", "devices"}
+
+def test_fleet_tick_is_shared_across_clients(seeded):
+    """Un tick por segundo para TODOS los clientes, no uno por cliente.
+
+    Con la ventana completa de la flota, cada tick es O(filas del almacen).
+    Calcularlo por cliente convertia una推送 por segundo por conexion en N
+    recomputos completos por segundo.
+    """
+    import time as _time
+
+    calls = []
+    real = backend_main.fleet_tick
+
+    def counting(window_s):
+        calls.append(window_s)
+        return real(window_s)
+
+    backend_main._FLEET_TICK_CACHE.reset()
+    backend_main.fleet_tick = counting
+    try:
+        with seeded.websocket_connect("/ws/fleet") as first:
+            assert first.receive_json()["type"] == "fleet_tick"
+            with seeded.websocket_connect("/ws/fleet") as second:
+                assert second.receive_json()["type"] == "fleet_tick"
+        _time.sleep(0.05)
+    finally:
+        backend_main.fleet_tick = real
+        backend_main._FLEET_TICK_CACHE.reset()
+
+    assert len(calls) == 1, f"se recalculo el tick {len(calls)} veces para 2 clientes"
+
+
+def test_fleet_tick_cache_refreshes_after_the_interval(seeded):
+    backend_main._FLEET_TICK_CACHE.reset()
+    first = backend_main.cached_fleet_tick(10)
+    second = backend_main.cached_fleet_tick(10)
+
+    assert first is second, "dentro del intervalo debe reutilizarse"
+
+    backend_main._FLEET_TICK_CACHE.advance(backend_main.FLEET_TICK_SECONDS + 1)
+    third = backend_main.cached_fleet_tick(10)
+
+    assert third is not first
+    assert third["window_s"] == 10
+
+
+def test_fleet_tick_cache_is_invalidated_when_the_window_changes(seeded):
+    backend_main._FLEET_TICK_CACHE.reset()
+    backend_main.cached_fleet_tick(10)
+    other = backend_main.cached_fleet_tick(30)
+
+    assert other is not None
+    assert other["window_s"] == 30

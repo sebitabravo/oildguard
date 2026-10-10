@@ -43,6 +43,7 @@ from shared.signing import derive_device_key, parse_device_keys, verify_row
 
 try:  # paquete (pytest / uvicorn backend.main:app)
     from .influx_writer import InfluxWriter
+    from .ingest_mqtt import bridge_state, bridge_timing_enabled
     from .aggregates import (
         DEFAULT_METRICS,
         QUANTILE_INTERPOLATION,
@@ -63,6 +64,7 @@ try:  # paquete (pytest / uvicorn backend.main:app)
     )
 except ImportError:  # módulo suelto (Docker copia backend/ a /app)
     from influx_writer import InfluxWriter  # type: ignore
+    from ingest_mqtt import bridge_state, bridge_timing_enabled  # type: ignore
     from aggregates import (  # type: ignore
         DEFAULT_METRICS,
         QUANTILE_INTERPOLATION,
@@ -526,6 +528,8 @@ def _write_line_protocol(protocol: str) -> None:
 _INFLUX_WRITER = InfluxWriter(
     write=_write_line_protocol,
     max_batches=INGEST_INFLUX_QUEUE_BATCHES,
+    flush_rows=INGEST_FLUSH_ROWS,
+    flush_seconds=INGEST_FLUSH_SECONDS,
     enabled=_INFLUX_WRITE,
 )
 
@@ -846,6 +850,50 @@ def fleet_tick(window_s: int) -> dict[str, Any]:
     }
 
 
+class TickCache:
+    """Un solo tick por intervalo para todos los clientes del WebSocket.
+
+    ``fleet_tick`` es O(filas retenidas): leer la ventana completa de la flota
+    para cada conexion convertia una推送 por segundo por cliente en N
+    recomputos completos por segundo. Medido con py-spy en la matriz de estres:
+    el tick era el 49 % del CPU del contenedor.
+    """
+
+    def __init__(self, interval_s: float, now_fn: Any = time.monotonic) -> None:
+        self.interval_s = float(interval_s)
+        self._now_fn = now_fn
+        self._lock = threading.Lock()
+        self._payload: dict[str, Any] | None = None
+        self._window: int | None = None
+        self._at = 0.0
+
+    def get(self, window_s: int) -> dict[str, Any] | None:
+        now = self._now_fn()
+        with self._lock:
+            fresh = self._payload is not None and (now - self._at) < self.interval_s
+            if fresh and self._window == window_s:
+                return self._payload
+        payload = fleet_tick(window_s)
+        with self._lock:
+            self._payload, self._window, self._at = payload, window_s, self._now_fn()
+        return payload
+
+    def advance(self, seconds: float) -> None:
+        with self._lock:
+            self._at -= seconds
+
+    def reset(self) -> None:
+        with self._lock:
+            self._payload, self._window, self._at = None, None, 0.0
+
+
+_FLEET_TICK_CACHE = TickCache(FLEET_TICK_SECONDS)
+
+
+def cached_fleet_tick(window_s: int) -> dict[str, Any]:
+    return _FLEET_TICK_CACHE.get(window_s)
+
+
 def _parse_tick_window(raw: str, current: int) -> int:
     """Ventana pedida por el cliente, o la actual si el mensaje no es valido."""
     try:
@@ -893,7 +941,7 @@ async def fleet_stream(websocket: WebSocket) -> None:
         while not closed.is_set():
             # El calculo de percentiles es CPU-bound; en el hilo de eventos
             # congelaria cada ruta HTTP durante cada tick.
-            payload = await run_in_threadpool(fleet_tick, window_s)
+            payload = await run_in_threadpool(cached_fleet_tick, window_s)
             await websocket.send_json(payload)
             try:
                 raw = await asyncio.wait_for(commands.get(), timeout=FLEET_TICK_SECONDS)
@@ -1135,6 +1183,11 @@ def metrics_ingest() -> dict:
         "ingest": {
             **_INGEST_METRICS.snapshot(queue=queue_state()),
             "influx": influx_state(),
+            **(
+                {"mqtt_bridge": bridge_state()}
+                if bridge_timing_enabled()
+                else {}
+            ),
             "retention_rows": RETENTION_ROWS,
             "devices": len(_STORE.devices()),
         },
