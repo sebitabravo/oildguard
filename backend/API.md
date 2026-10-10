@@ -20,6 +20,7 @@ The frontend reads `PUBLIC_BACKEND_URL`; Compose sets it to
 | GET | `/health` | `ok` or `degraded` (session store, persisted Influx count, MQTT, signing, and analyzer availability diagnostics) |
 | POST | `/ingest` | `ok` — accepted rows stored; per-row signature rejections returned in the ack |
 | GET | `/level` | `ok` — latest ingested ground-truth row echoed; `confidence` remains the `0.0` placeholder on this endpoint (`backend/main.py:346-377`) |
+| GET | `/level/series?limit=300` | `ok` — rest-gated fused level series from the session store, evenly downsampled when needed |
 | GET | `/windows?limit=50` | `ok` — rest windows grouped from `recal_window` flags |
 | GET | `/alerts` | `ok` — T10 N1–N4 ladder over the memory store; `unavailable` when the analyzer cannot load |
 | GET | `/rul` | `ok` — T10 trend-extrapolated RUL or a precision-gated `suppressed` result; `unavailable` when the analyzer cannot load |
@@ -223,6 +224,27 @@ available under `/alerts` data, and RUL confidence is returned by `/rul`
 Empty store: returns the 95 L default with
 `"source": "default (no rows ingested yet)"`, `source_message.code` set to
 `source_no_rows`, and `note_message.code` set to `level_no_rows_note`.
+
+## GET /level/series
+
+Returns the fused level estimates from the process-local session store. The
+route uses the same `ai.level.estimate()` calculation and `recal_window` rest
+flag as the T10 analysis; it does not read from InfluxDB or echo the raw
+ground-truth `level_liters` field. Results are sorted by input `seq` before
+downsampling. The `limit` query parameter defaults to 300 and accepts values
+from 1 through 2000. If the series is longer than the limit, evenly spaced
+entries are selected with the first and last entry retained.
+
+Each returned `series` item has `t_s`, fused `level_l` in liters, fitted
+baseline uncertainty `sigma_l` in liters, and the source `moving` and
+`recal_window` flags. Moving or otherwise gated samples keep their time and
+flags but have `level_l: null`. The response `count` is the number of returned
+items after downsampling.
+
+An empty session store returns HTTP 200, an empty `series`, and
+`reason: "no_rows"`. If rows exist but the estimator has no rest sample to
+score, the route returns an empty series with
+`reason: "insufficient_rest_samples"`.
 
 ## GET /windows
 

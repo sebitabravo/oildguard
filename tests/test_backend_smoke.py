@@ -52,6 +52,56 @@ def test_ingest_then_query_endpoints_return_200_with_expected_keys(client):
     assert rul_data["anomaly_only"] is True
 
 
+def test_level_series_empty_store_reports_no_rows(client):
+    response = client.get("/level/series")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["kind"] == "oil-level-series"
+    assert payload["series"] == []
+    assert payload["reason"] == "no_rows"
+
+
+def test_level_series_returns_fused_fields_sorted_by_sequence(client):
+    rows = batch(seconds=60)["rows"]
+    assert client.post("/ingest", json={"rows": rows}).status_code == 200
+
+    with backend_main._store_lock:
+        backend_main._store_rows.reverse()
+
+    response = client.get("/level/series?limit=2000")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["reason"] is None
+    series = payload["series"]
+    assert len(series) == len(rows)
+    assert set(series[0]) == {"t_s", "level_l", "sigma_l", "moving", "recal_window"}
+    assert [point["t_s"] for point in series] == sorted(point["t_s"] for point in series)
+    assert all(point["sigma_l"] is not None for point in series)
+    assert any(point["level_l"] is not None for point in series)
+    assert any(point["moving"] == 1 and point["level_l"] is None for point in series)
+
+
+def test_level_series_downsamples_evenly_and_enforces_limit_bounds(client):
+    rows = batch(seconds=120)["rows"]
+    assert client.post("/ingest", json={"rows": rows}).status_code == 200
+
+    default = client.get("/level/series").json()["series"]
+    limited = client.get("/level/series?limit=23").json()["series"]
+    maximum = client.get("/level/series?limit=2000").json()["series"]
+
+    assert len(default) == 300
+    assert len(limited) == 23
+    assert len(maximum) == len(rows)
+    assert limited[0]["t_s"] == maximum[0]["t_s"]
+    assert limited[-1]["t_s"] == maximum[-1]["t_s"]
+    gaps = [right["t_s"] - left["t_s"] for left, right in zip(limited, limited[1:])]
+    assert max(gaps) - min(gaps) <= 0.11
+    assert client.get("/level/series?limit=2001").status_code == 422
+
+
 def test_slow_leak_batch_produces_an_rul_through_the_api(client):
     rate = 128.5  # %/h acelerado de laboratorio, ~4 L en 120 s
     rows = []

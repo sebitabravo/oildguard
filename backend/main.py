@@ -28,7 +28,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Any, Literal
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -308,6 +308,28 @@ def _analysis_status() -> dict[str, Any]:
     return {"available": evaluator is not None, "reason": reason}
 
 
+def _samples_from_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Prepara muestras con la misma marca de reposo usada por el análisis T10."""
+    samples = []
+    for row in rows:
+        sample = dict(row)
+        try:
+            sample["rest"] = int(float(row.get("recal_window", 0))) == 1
+        except (ValueError, TypeError):
+            sample["rest"] = False
+        samples.append(sample)
+    return samples
+
+
+def _downsample_evenly(points: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
+    if len(points) <= limit:
+        return points
+    if limit == 1:
+        return [points[-1]]
+    last_index = len(points) - 1
+    return [points[(index * last_index) // (limit - 1)] for index in range(limit)]
+
+
 def _t10_bundle() -> tuple[dict[str, Any] | None, str, dict[str, Any], bool, bool]:
     """Evaluate the T10 ladder/RUL over the in-memory store.
 
@@ -331,14 +353,7 @@ def _t10_bundle() -> tuple[dict[str, Any] | None, str, dict[str, Any], bool, boo
             "no rows ingested yet; POST SignalRow batches to /ingest, "
             "then GET /alerts walks the N1–N4 ladder."
         ), message("alerts_no_rows_fallback"), True, False
-    samples = []
-    for r in rows:
-        s = dict(r)
-        try:
-            s["rest"] = int(float(r.get("recal_window", 0))) == 1
-        except (ValueError, TypeError):
-            s["rest"] = False
-        samples.append(s)
+    samples = _samples_from_rows(rows)
     try:
         bundle = evaluator(samples)
     except Exception as exc:  # noqa: BLE001 - scoring must never 500 queries
@@ -476,6 +491,48 @@ def level() -> dict:
             "note_message": message("level_memory_store_note"),
         }
     return {"status": "ok", "kind": "oil-level", "as_of": _now_iso(), "data": data}
+
+
+@app.get("/level/series")
+def level_series(limit: int = Query(default=300, ge=1, le=2000)) -> dict:
+    """Sirve la serie fusionada y limitada de nivel del almacenamiento de sesión."""
+    with _store_lock:
+        rows = sorted(
+            (dict(row) for row in _store_rows),
+            key=lambda row: int(row.get("seq", 0)),
+        )
+    if not rows:
+        return {
+            "status": "ok",
+            "kind": "oil-level-series",
+            "as_of": _now_iso(),
+            "count": 0,
+            "reason": "no_rows",
+            "series": [],
+        }
+
+    from ai import level as level_estimator
+
+    estimate = level_estimator.estimate(_samples_from_rows(rows))
+    sigma_l = estimate.get("sigma_liters")
+    series = []
+    for row, point in zip(rows, estimate["estimates"]):
+        series.append({
+            "t_s": point["t_s"],
+            "level_l": point["level_liters"],
+            "sigma_l": sigma_l,
+            "moving": int(float(row.get("moving", 0))),
+            "recal_window": int(float(row.get("recal_window", 0))),
+        })
+    series = _downsample_evenly(series, limit)
+    return {
+        "status": "ok",
+        "kind": "oil-level-series",
+        "as_of": _now_iso(),
+        "count": len(series),
+        "reason": None if estimate["estimates"] else "insufficient_rest_samples",
+        "series": series,
+    }
 
 
 @app.get("/windows")

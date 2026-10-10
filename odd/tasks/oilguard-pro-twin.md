@@ -146,7 +146,7 @@ RDD outcomes: T2 slice c4a9ba6 declined; T2+T3 range lens_context_budget_exceede
 
 ## Next step
 
-Q1–Q17 and T1–T10 implementation work is complete. Q16's backend and frontend message-code slices are committed and approved/acknowledged. Its frontend review recorded the separate non-blocking advisory R3-001 at `frontend/src/dash/RulPanel.tsx:42-44`; the approved candidate was not reopened or corrected. Q17's suppression-note fix, tests, live analysis screenshots, and default-state restoration are recorded below; its RDD assessment and the requested OpenCode final re-test remain pending. Q9's backend image, analysis availability contract, localized outage UI, bounded slow-leak E2E, default-state restoration, and persisted-point count are verified below. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
+Q1–Q17 and T1–T10 implementation work is complete. Q16's backend and frontend message-code slices are committed and approved/acknowledged. Its frontend review recorded the separate non-blocking advisory R3-001 at `frontend/src/dash/RulPanel.tsx:42-44`; Q20 addresses it. Q17's suppression-note fix, tests, live analysis screenshots, and default-state restoration are recorded below; its RDD assessment was medium/under-budget with no review due. The requested OpenCode final re-test remains pending. Q9's backend image, analysis availability contract, localized outage UI, bounded slow-leak E2E, default-state restoration, and persisted-point count are verified below. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
 
 ## QA follow-up (2026-10-09)
 
@@ -304,6 +304,27 @@ The wheel checkbox input hitbox is 44×44 in EN and ES; its separately measured 
 - **Default-state restoration:** `docker compose up -d --build --force-recreate backend` restarted only the backend; no volumes were reset or removed. Across five health reads, final health remained `status=ok`, `analysis.available=true`, `store_rows=0`, `influx_points=10007`, and signing `enforced=false/devices=0`; the final point count is the prior 8,807 plus the 1,200 retained fixture points. `/alerts` and `/rul` returned HTTP 200, `status=ok`, `evaluated=false`, `reason=no_rows`. Backend, frontend, InfluxDB, and MQTT remained running.
 - **RDD:** Parent assessment of `c938f98..875e8b0` returned medium / `review_due=false` / `under_budget` (77 changed lines, 3 paths); no review was due. The slice remains pending against the `c938f98` reviewed boundary. Q15's scoped `/level` `source_influx` discrepancy remains as documented under Q16; no Influx read path was added.
 - **Commit:** `fix(backend): compose rul suppression note once` (exact hash recorded in the completion handoff).
+
+### QA-FIX4 follow-up (2026-10-10)
+
+- **Source of truth:** `/tmp/oilguard-briefs/QA-FIX4.md`; visual evidence: `/tmp/og-shots/qa-fix4-monitoring-es.png`.
+- **Route:** delegated direct after a read-only code map; mapping trigger is met because the backend endpoint/fusion, frontend chart/types/tests, cross-component number formatting, and RulPanel advisory span more than four files. Use one writer for the coordinated non-trivial changes. Keep the four requested behavior work units separate: Q18 backend endpoint, Q18 frontend live chart, Q19 shared locale number formatting, and Q20 R3-001 advisory fix.
+- **TDD:** on, per project rule. Add and observe failing tests before implementation for the series endpoint contract/downsampling, pure frontend series merge/dedupe, shared number formatter and display-callsite guard, and RUL unavailable-note precedence.
+- **Checks:** focused RED→GREEN tests, then `python3 -m pytest -q`, `cd frontend && bun test src`, `cd frontend && bun run build`, bounded backend rebuild/unsigned slow-leak ingest, fresh EN/ES monitoring screenshots (`/tmp/og-shots/qa-fix5-monitoring-es.png`, `/tmp/og-shots/qa-fix5-monitoring-en.png`), visual inspection, and backend default-state restoration.
+- **Safety:** no dependencies or push; comments in Spanish. Never stage `.codex/hooks.json` or the existing `BaseLayout.astro` live.js hunk. Do not reset volumes or unrelated service data; rebuild only backend and restore backend defaults.
+
+#### QA-FIX4 tasks
+
+- [ ] **Q18 — live `/level/series` chart:** add a sorted, evenly downsampled fused-level endpoint (`limit` default 300, max 2000; empty response includes `reason: no_rows`), contract tests and API docs; then load it for LIVE Dashboard initialization/refresh and merge later polled points by `t_s` without changing DEMO mode. Commits: `feat(backend): serve fused level series`; `fix(frontend): plot live level history`.
+- [ ] **Q19 — locale-consistent displayed numbers:** add/test shared `formatNumber(value, lang, digits)`, use decimal commas in ES and points in EN across user-visible dashboard, RUL, alerts, wheel, HUD and chart axes, and add the direct-`toFixed()` display guard. Commit: `fix(frontend): format numbers per language`.
+- [ ] **Q20 — acknowledged R3-001 advisory:** ensure `analyzerUnavailable=true` takes precedence over a structured RUL note, with a regression test in EN/ES; record the finding text and fix commit. The committed task record describes the finding as a structured note potentially overriding the analyzer-unavailable explanation; verify behavior against source and test.
+
+#### Q18 backend series endpoint work unit
+
+- **RED:** `python3 -m pytest tests/test_backend_smoke.py -k level_series -q` → 3 failed, 11 deselected. The empty-store and populated-store requests returned HTTP 404 because `/level/series` did not exist; the downsampling test could not find the response's `series` field.
+- **GREEN:** `python3 -m pytest tests/test_backend_smoke.py -k level_series -q` → 3 passed, 11 deselected, 3 existing deprecation warnings.
+- **Implementation:** Added `GET /level/series` with a default limit of 300 and bounds 1–2000. It snapshots rows sorted by `seq`, uses `ai.level.estimate()` with the same `recal_window` rest mapping as T10, emits the requested fused fields, preserves null levels for gated/moving rows, and evenly downsamples while retaining endpoints. Empty sessions return `reason: no_rows`; sessions without estimable rest samples return `insufficient_rest_samples`. Documented the response and limit behavior in `backend/API.md`.
+- **Commit:** `feat(backend): serve fused level series` (hash recorded in the completion handoff). Q18 remains open pending the frontend live-chart work unit.
 
 ### Q2 interim evidence — first copy migration work unit
 
