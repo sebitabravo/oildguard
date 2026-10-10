@@ -6,6 +6,9 @@
 
 web
 
+**Stack:** Astro + Preact dashboard, FastAPI with Python 3.12 and Polars,
+InfluxDB, Mosquitto, and a Rust/Tokio edge simulator.
+
 ## Users
 
 The primary user is a mine maintenance / reliability engineer. Their situation is a decision about equipment they are accountable for: a Komatsu 930E haul truck whose GDY106 motorized-wheel final drives are inspected on a 250 h manual cycle. Their job is to decide whether continuous oil-level monitoring can supplement the drain-plug and magnetic-plug check, and to know when a wheel warrants intervention before a traction-motor failure.
@@ -50,6 +53,8 @@ A neighbouring product cannot truthfully copy that claim without re-deriving the
 ## Operating Context
 
 - Four-service local Docker Compose stack: InfluxDB 2.7.6, Eclipse Mosquitto 2.0.18 as an anonymous local mock broker, FastAPI ingest/query, Astro dev server (Bun).
+- The Rust edge simulator is a synthetic fleet-load tool; it is not a field
+  gateway or a production device implementation.
 - Transports and identities: MQTT topic `oilguard/signals`, InfluxDB org and bucket `oilguard`, device id `wheel-RH-01`, measurement `oilguard_signals`.
 - Local only for the prototype. No remote steps, no hardware, no push required.
 - No HTTP caller authentication, authorization, or multi-tenancy in the current build — explicit non-scope, though the proposal commits to role-based access in the backend as part of the industrial design. Per-device row signatures protect signed measurements under a shared key; they do not authenticate HTTP clients.
@@ -101,6 +106,9 @@ Edge node is an ESP32-S3 acquiring vibration at 1 kHz and pressure and temperatu
 - Dashboard technology. The proposal names Grafana; the repository deliberately chose a custom Astro + Preact dashboard (React until the 2026-10-09 migration) with Grafana recorded as an alternative.
 - CI. `.github/workflows/ci.yml` runs the Python tests, frozen-lockfile frontend tests and build, and Compose configuration validation on pushes and pull requests.
 - Performance. The ≥ 30 fps target has no recorded benchmark.
+- The simulator load and telemetry are synthetic. Throughput and latency
+  figures are lab measurements from one Apple M3/macOS workstation, not fleet
+  capacity guarantees; see [`docs/bench/stress.md`](docs/bench/stress.md).
 
 ## Brand Commitments
 

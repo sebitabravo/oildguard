@@ -10,7 +10,7 @@ Feature plan: [`odd/tasks/oilguard-pro-twin.md`](odd/tasks/oilguard-pro-twin.md)
 ## Prerequisites
 
 - Docker with Compose (Docker Desktop or Engine 24+)
-- Python 3.11+ and Bun 1.4+ to run checks or services outside Docker
+- Python 3.12 and Bun 1.4+ to run checks or services outside Docker
 
 Install the Python runtime and test dependencies from the repository root:
 
@@ -37,6 +37,35 @@ docker compose up -d --build -V
 
 The `-V` option renews the frontend's anonymous `node_modules` volume when
 rebuilding, so it does not mask dependencies in the image.
+
+## Load simulation
+
+The Rust edge simulator emits the existing signal schema over MQTT. Build it
+locally from the repository root:
+
+```bash
+cd edge-sim
+cargo build --release
+./target/release/oilguard-edge \
+  --devices 100 --rate-hz 10 --mode realtime \
+  --mqtt-url mqtt://localhost:1883 --batch-rows 10 \
+  --seconds 60
+```
+
+With the Compose broker and backend, start the simulator profile instead:
+
+```bash
+EDGE_SIM_DEVICES=100 OILGUARD_DEVICE_MASTER_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')" \
+  docker compose --profile sim up edge-sim
+```
+
+`EDGE_SIM_DEVICES` controls the fleet size. `OILGUARD_DEVICE_MASTER_KEY`
+enables the same derived per-device signing keys in the Rust simulator and
+backend; keep it local and do not commit it. The simulator architecture,
+parity evidence, and benchmark method are documented in
+[`docs/architecture-telemetry.md`](docs/architecture-telemetry.md),
+[`docs/bench/README.md`](docs/bench/README.md), and
+[`docs/edge-sim.md`](docs/edge-sim.md).
 
 ## Judge path (< 5 minutes)
 
