@@ -61,6 +61,8 @@ services:
       BACKEND_URL: http://backend:8000
       OILGUARD_DEVICE_KEYS: ${OILGUARD_DEVICE_KEYS:-}
       OILGUARD_REQUIRE_SIGNATURE: ${OILGUARD_REQUIRE_SIGNATURE:-0}
+      OILGUARD_DEVICE_MASTER_KEY: ${OILGUARD_DEVICE_MASTER_KEY:-}
+      OILGUARD_INFLUX_WRITE: ${OILGUARD_INFLUX_WRITE:-1}
     healthcheck:
       # stdlib-only probe (python:3.11-slim has no curl).
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)\" || exit 1"]
