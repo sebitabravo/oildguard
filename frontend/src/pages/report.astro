@@ -1,0 +1,8 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ReportPage from "../ops/report/ReportPage";
+---
+
+<BaseLayout breadcrumb={["nav.group.alerts", "report.title"]}>
+  <ReportPage client:only="preact" />
+</BaseLayout>
