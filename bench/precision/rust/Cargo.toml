@@ -1,0 +1,12 @@
+[package]
+name = "precision-drift"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "precision_drift"
+path = "src/lib.rs"
+
+[[bin]]
+name = "precision-drift"
+path = "src/main.rs"
