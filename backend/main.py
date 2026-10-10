@@ -376,6 +376,16 @@ def _unevaluated_reason(
     return "analysis_unavailable"
 
 
+def _compose_rul_suppression_note(reason: str) -> str:
+    detail = reason.strip()
+    marker = "anomaly-only"
+    if detail.lower().endswith(marker):
+        detail = detail[: -len(marker)].rstrip(" ;,")
+    if detail:
+        return f"RUL unavailable: {detail}; anomaly-only alerts remain available."
+    return "RUL unavailable; anomaly-only alerts remain available."
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -605,7 +615,7 @@ def rul() -> dict:
             "status": "suppressed",
             "anomaly_only": True,
             "model": "synthetic-proxy",
-            "note": f"RUL unavailable: {reason} Surface anomaly-only alerts instead.",
+            "note": _compose_rul_suppression_note(reason),
             "reason": reason,
             "reason_message": r["reason_message"],
             "note_message": message("rul_suppressed_summary"),

@@ -63,6 +63,43 @@ def test_slow_leak_batch_produces_an_rul_through_the_api(client):
     assert data["hours"] is not None
 
 
+def test_rul_suppression_note_composes_reason_and_anomaly_fallback_once(client, monkeypatch):
+    assert client.post("/ingest", json=batch(seconds=0.1)).status_code == 200
+    reason = "trend too weak (R2=0.001 < 0.3); anomaly-only"
+    reason_message = {
+        "code": "rul_trend_too_weak",
+        "params": {"r2": 0.001, "minimum_r2": 0.3},
+    }
+
+    def evaluate(_samples):
+        return {
+            "rul": {
+                "status": "suppressed",
+                "reason": reason,
+                "reason_message": reason_message,
+            }
+        }
+
+    monkeypatch.setattr(
+        backend_main,
+        "_load_t10_evaluator",
+        lambda: (evaluate, None),
+    )
+    response = client.get("/rul")
+    assert response.status_code == 200
+    data = response.json()["data"]
+
+    assert data["note"] == (
+        "RUL unavailable: trend too weak (R2=0.001 < 0.3); "
+        "anomaly-only alerts remain available."
+    )
+    assert data["reason_message"] == reason_message
+    assert data["note_message"] == {
+        "code": "rul_suppressed_summary",
+        "params": {},
+    }
+
+
 def test_health_reports_memory_fallback(client):
     h = client.get("/health")
     assert h.status_code == 200
