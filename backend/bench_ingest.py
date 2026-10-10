@@ -18,6 +18,7 @@ import argparse
 import cProfile
 import io
 import json
+import logging
 import os
 import pstats
 import sys
@@ -91,6 +92,9 @@ def _sign(rows: list[dict]) -> list[dict]:
 def _configure(signed: bool):
     from backend import main as backend_main
 
+    # El log por lote es I/O real: dejarlo a INFO medimos el logger, no la
+    # ingesta, y la salida inunda la medicion.
+    logging.getLogger("oilguard-backend").setLevel(logging.CRITICAL)
     backend_main._STORE.clear()
     backend_main._INGEST_METRICS.reset()
     backend_main._rejected_total = 0
