@@ -1,0 +1,29 @@
+[package]
+name = "oilguard-edge"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "oilguard_edge"
+path = "src/lib.rs"
+
+[[bin]]
+name = "oilguard-edge"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "=1.0.104"
+bytes = "=1.12.1"
+clap = { version = "=4.6.7", features = ["derive"] }
+hex = "=0.4.3"
+hmac = "=0.12.1"
+rumqttc = "=0.25.1"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+sha2 = "=0.10.9"
+thiserror = "=2.0.21"
+time = { version = "=0.3.55", features = ["formatting", "macros", "parsing"] }
+tokio = { version = "=1.53.2", features = ["macros", "rt-multi-thread", "time", "sync", "net", "test-util"] }
+
+[dev-dependencies]
+tempfile = "=3.27.0"
