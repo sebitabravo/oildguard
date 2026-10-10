@@ -27,11 +27,11 @@
 .og-fleet-source { width: max-content; padding: 2px 4px; border: 1px solid var(--og-border-strong); font: 9px var(--og-mono); }
 .og-fleet-source--live { color: var(--og-green); }
 .og-fleet-source--demo { color: var(--og-accent); }
-.og-fleet-level { min-width: 150px; }
+.og-fleet-level { min-width: 190px; }
 .og-fleet-level .og-levelbar { width: 120px; height: 7px; margin-top: 0; }
 .og-fleet-level .og-mono { display: block; margin-top: 6px; white-space: nowrap; }
 .og-fleet-level .og-mono b { font-weight: 600; }
-.og-fleet-table .og-sparkline { width: 90px; height: 34px; }
+.og-fleet-col-trend { width: 96px; }.og-fleet-table td:nth-child(3) { width: 96px; overflow: hidden; }.og-fleet-table .og-sparkline { display: block; width: 90px; height: 34px; overflow: hidden; }
 .og-fleet-last { display: grid; gap: 3px; white-space: nowrap; }
 .og-fleet-row--stale, .og-fleet-row--link-down, .og-fleet-row--out-of-service { color: var(--og-text-muted); }
 .og-fleet-row--N4 { background: rgba(255,77,66,.06); }
