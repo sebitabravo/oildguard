@@ -42,3 +42,10 @@ def test_summary_handles_unreachable_backend_samples():
     assert summary["samples"] == 0
     assert summary["accepted_rows_per_s_median"] is None
     assert summary["accepted_ratio"] is None
+
+
+def test_unwrap_metrics_accepts_backend_envelope():
+    envelope = {"status": "ok", "kind": "metrics", "ingest": {"rows": {"accepted_1s": 5}}}
+    assert run_matrix.unwrap_metrics(envelope) == {"rows": {"accepted_1s": 5}}
+    assert run_matrix.unwrap_metrics({"rows": {"accepted_1s": 5}}) == {"rows": {"accepted_1s": 5}}
+    assert run_matrix.unwrap_metrics(None) is None

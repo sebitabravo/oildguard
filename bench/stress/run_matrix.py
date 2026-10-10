@@ -34,6 +34,13 @@ def _get_json(url: str, timeout: float = 2.0) -> dict[str, Any] | None:
         return None
 
 
+def unwrap_metrics(payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    """El backend envuelve las métricas en {"ingest": {...}}; acepta ambas formas."""
+    if payload is None:
+        return None
+    return payload.get("ingest", payload)
+
+
 def _docker_stats(container: str) -> dict[str, Any] | None:
     try:
         out = subprocess.run(
@@ -99,7 +106,7 @@ def run_case(args: argparse.Namespace, devices: int) -> dict[str, Any]:
         samples.append(
             {
                 "t": round(now, 2),
-                "metrics": _get_json(f"{args.backend}/metrics/ingest"),
+                "metrics": unwrap_metrics(_get_json(f"{args.backend}/metrics/ingest")),
                 "docker": _docker_stats(args.backend_container) if int(now) % 5 == 0 else None,
             }
         )
