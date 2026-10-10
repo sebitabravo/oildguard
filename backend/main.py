@@ -20,7 +20,9 @@ OpenAPI docs are served at /docs and /openapi.json.
 
 from __future__ import annotations
 
+import asyncio
 import csv
+import json
 import logging
 import os
 import threading
@@ -29,16 +31,18 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 from shared.messages import message
 from shared.signing import derive_device_key, parse_device_keys, verify_row
 
 try:  # paquete (pytest / uvicorn backend.main:app)
     from .aggregates import (
+        DEFAULT_METRICS,
         QUANTILE_INTERPOLATION,
         aggregate_by_device,
         aggregate_fleet,
@@ -50,6 +54,7 @@ try:  # paquete (pytest / uvicorn backend.main:app)
     from .store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore
 except ImportError:  # módulo suelto (Docker copia backend/ a /app)
     from aggregates import (  # type: ignore
+        DEFAULT_METRICS,
         QUANTILE_INTERPOLATION,
         aggregate_by_device,
         aggregate_fleet,
@@ -80,6 +85,10 @@ _INFLUX_WRITE = os.getenv("OILGUARD_INFLUX_WRITE", "1") == "1"
 INGEST_QUEUE_BATCHES = int(os.getenv("OILGUARD_INGEST_QUEUE", "1000"))
 INGEST_FLUSH_ROWS = int(os.getenv("OILGUARD_INFLUX_FLUSH_ROWS", "5000"))
 INGEST_FLUSH_SECONDS = float(os.getenv("OILGUARD_INFLUX_FLUSH_SECONDS", "1"))
+FLEET_TICK_SECONDS = float(os.getenv("OILGUARD_FLEET_TICK_SECONDS", "1"))
+FLEET_WINDOW_MIN = 1
+FLEET_WINDOW_MAX = 300
+FLEET_DEFAULT_WINDOW = 10
 _DEVICE_KEYS = parse_device_keys(os.getenv("OILGUARD_DEVICE_KEYS", ""))
 
 
@@ -654,6 +663,85 @@ def ingest(batch: IngestBatch) -> dict:
         "as_of": _now_iso(),
         **result,
     }
+
+
+def fleet_tick(window_s: int) -> dict[str, Any]:
+    """Un tick del stream: agregados de flota en grupo fleet + estado de ingesta."""
+    frame = build_frame(_STORE.snapshot_window(window_s))
+    blocks, rows, devices = aggregate_fleet(frame, list(DEFAULT_METRICS))
+    return {
+        "type": "fleet_tick",
+        "as_of": _now_iso(),
+        "window_s": window_s,
+        "rows": rows,
+        "devices": devices,
+        "quantile_interpolation": QUANTILE_INTERPOLATION,
+        "aggregates": blocks,
+        "ingest": _INGEST_METRICS.compact(queue=queue_state()),
+    }
+
+
+def _parse_tick_window(raw: str, current: int) -> int:
+    """Ventana pedida por el cliente, o la actual si el mensaje no es valido."""
+    try:
+        message_in = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return current
+    if not isinstance(message_in, dict):
+        return current
+    value = message_in.get("window_s")
+    if isinstance(value, bool) or not isinstance(value, int):
+        return current
+    return value if FLEET_WINDOW_MIN <= value <= FLEET_WINDOW_MAX else current
+
+
+@app.websocket("/ws/fleet")
+async def fleet_stream(websocket: WebSocket) -> None:
+    """Emite un tick por segundo; el cliente puede pedir otra ventana.
+
+    Nunca se acumulan ticks: hay uno en vuelo como maximo, asi que un cliente
+    lento pierde muestras en vez de acumular memoria en el servidor. La lectura
+    corre en una tarea aparte para no perder un ``window_s`` que llega justo en
+    el limite del timeout, que es lo que pasaria al cancelar un ``receive``.
+    """
+    await websocket.accept()
+    window_s = FLEET_DEFAULT_WINDOW
+    commands: asyncio.Queue[str] = asyncio.Queue(maxsize=8)
+    closed = asyncio.Event()
+
+    async def _reader() -> None:
+        try:
+            while True:
+                raw = await websocket.receive_text()
+                if commands.full():
+                    commands.get_nowait()  # el comando mas viejo cede el paso
+                commands.put_nowait(raw)
+        except WebSocketDisconnect:
+            pass
+        except Exception as exc:  # noqa: BLE001 - el cierre del socket es normal
+            log.debug("fleet ws reader stopped: %s", exc)
+        finally:
+            closed.set()
+
+    reader = asyncio.create_task(_reader())
+    try:
+        while not closed.is_set():
+            # El calculo de percentiles es CPU-bound; en el hilo de eventos
+            # congelaria cada ruta HTTP durante cada tick.
+            payload = await run_in_threadpool(fleet_tick, window_s)
+            await websocket.send_json(payload)
+            try:
+                raw = await asyncio.wait_for(commands.get(), timeout=FLEET_TICK_SECONDS)
+            except asyncio.TimeoutError:
+                continue
+            window_s = _parse_tick_window(raw, window_s)
+    except WebSocketDisconnect:
+        pass
+    except Exception as exc:  # noqa: BLE001 - una conexion rota no es un 500
+        log.info("fleet ws closed (%s)", exc)
+    finally:
+        reader.cancel()
+        log.info("fleet ws disconnected (window_s=%d)", window_s)
 
 
 @app.get("/fleet/aggregates")
