@@ -1,0 +1,11 @@
+---
+import { rewriteDocHtml } from "./links";
+
+interface Props {
+  slug: string;
+}
+
+const html = rewriteDocHtml(await Astro.slots.render("default"), Astro.props.slug);
+---
+
+<Fragment set:html={html} />

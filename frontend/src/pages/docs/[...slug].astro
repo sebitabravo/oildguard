@@ -1,0 +1,13 @@
+---
+import { getCollection } from "astro:content";
+import DocView from "../../docs/DocView.astro";
+
+export async function getStaticPaths() {
+  const entries = await getCollection("docs");
+  return entries.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+---
+
+<DocView entry={entry} />
