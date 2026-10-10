@@ -23,9 +23,6 @@
 .og-alerts-row { cursor: pointer; }
 .og-alerts-row:hover td, .og-alerts-row:focus td { background: var(--og-elevated); }
 .og-alerts-row:focus { outline: 1px solid var(--og-accent); outline-offset: -1px; }
-.og-alerts-row--N4 td:first-child { box-shadow: inset 3px 0 0 var(--og-red); }
-.og-alerts-row--N2 td:first-child, .og-alerts-row--N3 td:first-child { box-shadow: inset 3px 0 0 var(--og-orange); }
-.og-alerts-row--N1 td:first-child { box-shadow: inset 3px 0 0 var(--og-amber); }
 .og-alerts-row--closed td { color: var(--og-text-muted); }
 .og-alerts-row--closed .og-alerts-reason { color: var(--og-text-muted); }
 .og-alerts-idcell { display: grid; gap: 4px; min-width: 200px; }
