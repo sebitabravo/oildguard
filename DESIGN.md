@@ -24,51 +24,22 @@ colors:
   glass: "rgba(9, 13, 21, 0.64)"
   glass-line: "rgba(255, 255, 255, 0.13)"
 typography:
-  brand:
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "16px"
-    fontWeight: 700
-    lineHeight: 1.15
-    letterSpacing: "0.01em"
-  readout:
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "22px"
-    fontWeight: 700
-    lineHeight: 1.1
-    fontFeature: "'tnum' 1"
-  headline:
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "14px"
-    fontWeight: 700
-    lineHeight: 1.3
-    letterSpacing: "0.02em"
-  title:
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "13px"
-    fontWeight: 600
-  body:
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "13px"
-    lineHeight: 1.55
-  label:
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "12px"
-    fontWeight: 600
-    letterSpacing: "0.05em"
-  micro:
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "11px"
-    fontWeight: 700
-    letterSpacing: "0.04em"
-  table:
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "11px"
-    fontFeature: "'tnum' 1"
-  table-head:
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "10px"
-    fontWeight: 700
-    letterSpacing: "0.035em"
+  prose:
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    usage: "Body copy and headings"
+  technical:
+    fontFamily: "'JetBrains Mono', ui-monospace, monospace"
+    usage: "Identifiers, timestamps, raw telemetry, table figures, and micro-labels"
+    fontVariantNumeric: "tabular-nums"
+fonts:
+  selfHosted: true
+  format: "woff2"
+  files:
+    - "/fonts/Geist[wght].woff2"
+    - "/fonts/JetBrainsMono[wght].woff2"
+colorSemantics:
+  accent: "Machine Yellow identifies the product and marks actions or selection; amber caution use is semantic, never decorative."
+  status: "Amber, green, blue, orange, and red indicate operating states and are paired with explicit status cues."
 rounded:
   hairline-sm: "2px"
   data-sm: "6px"
@@ -254,11 +225,11 @@ Komatsu yellow on graphite, with a fixed semantic status ramp that means the sam
 
 ## Typography
 
-**Display Font:** Inter (with `ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial` fallback)
-**Body Font:** Inter (same stack)
-**Label/Mono Font:** none distinct — labels are Inter at small size and weight, not a separate family
+**Prose and headings:** Geist (`Geist, ui-sans-serif, system-ui, sans-serif`).
+**Technical data:** JetBrains Mono (`"JetBrains Mono", ui-monospace, monospace`) for identifiers, timestamps, raw telemetry, table figures, and micro-labels; numeric figures use `tabular-nums`.
+**Self-hosting:** Geist and JetBrains Mono variable fonts are served locally as WOFF2 from `/fonts/Geist[wght].woff2` and `/fonts/JetBrainsMono[wght].woff2`.
 
-**Character:** One family doing every job, which is what an instrument does. There is no display face competing with the readout and no mono for figures — the numeric discipline comes from `tabular-nums`, not from a typeface swap. Small, tight, and slightly letterspaced when uppercased, so labels read as engraved plate text rather than as UI chrome.
+**Character:** Geist keeps prose and headings legible; JetBrains Mono makes dense measurements and identifiers align. Machine Yellow is the product accent for identity, actions, and selection. Its amber status use means caution and must be paired with an explicit status cue; neither role is decorative.
 
 ### Hierarchy
 
@@ -409,9 +380,10 @@ No unresolved known debt remains. The later test-only Astro/Bun typing compatibi
 ## Nordic Telemetry Precision foundation
 
 The final UI foundation uses a carbon ground (`#0B0F14`) with layered telemetry
-surfaces (`#111720`, `#18202C`, `#1E293B`). Machine Amber (`#F59E0B`) is
-reserved for action and selection; green, blue, orange and red remain semantic
-status lanes. Borders are visible and square-edged: 2/4/6/8 px radii only.
+surfaces (`#111720`, `#18202C`, `#1E293B`). Machine Yellow (`#F59E0B`) identifies
+the product and marks actions or selection; amber use of that same hue means
+caution, while green, blue, orange, and red remain semantic status lanes.
+Status cues are explicit rather than decorative. Borders are visible and square-edged: 2/4/6/8 px radii only.
 
 Geist is the prose and heading face. JetBrains Mono is used for identifiers,
 timestamps, telemetry figures and micro-labels, with tabular numerals. Every
