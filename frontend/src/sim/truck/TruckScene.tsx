@@ -11,7 +11,7 @@ import { wheelOmega } from "../../twin/truck930e/spec";
 import { buildPit, type PitBuild } from "../../twin/pit/buildPit";
 import { buildShovel } from "../../twin/pit/shovel";
 import { createDust } from "../../twin/pit/dust";
-import { stepDustFrame } from "../../twin/pit/dustParticles";
+import { stepDustFrame, stepSceneFrame } from "../../twin/pit/dustParticles";
 import { getFleetStore, getPitWorld, normalizeMineCam, readMineUrl } from "./mineWorld";
 import { HAUL_STATE_CSS, type HaulState } from "./cycle";
 import type { PlmState, TruckTick } from "../../twin/fleet/fleetSim";
@@ -219,7 +219,7 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
         truck.model.setSteer(tick.steer);
         truck.model.setWheelSpin(wheelOmega(tick.speedMps));
         truck.model.setModeTint(tick.recal ? "rest" : "moving");
-        truck.model.advance(dt);
+        stepSceneFrame(pausedRef.current, () => truck.model.advance(dt));
         truck.ring.material.color.setHex(tick.recal ? 0x2fbf71 : tick.onGrade ? 0xf5a623 : 0x3a7bd5);
       }
       stepDustFrame(

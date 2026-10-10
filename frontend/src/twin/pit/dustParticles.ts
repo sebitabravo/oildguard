@@ -15,10 +15,15 @@ export function shouldAdvanceDust(paused: boolean): boolean {
   return !paused;
 }
 
+export function stepSceneFrame(paused: boolean, advanceMotion: () => void): void {
+  if (shouldAdvanceDust(paused)) advanceMotion();
+}
+
 export function stepDustFrame(paused: boolean, emitDust: () => void, updateDust: () => void): void {
-  if (!shouldAdvanceDust(paused)) return;
-  emitDust();
-  updateDust();
+  stepSceneFrame(paused, () => {
+    emitDust();
+    updateDust();
+  });
 }
 
 export function normalizeDustParameters(

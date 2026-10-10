@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
-import { normalizeDustParameters, shouldAdvanceDust, stepDustFrame, stepDustParticle } from "./dustParticles";
+import { normalizeDustParameters, shouldAdvanceDust, stepDustFrame, stepDustParticle, stepSceneFrame } from "./dustParticles";
 
 describe("dust particle logic", () => {
   test("clamps emitter and frame parameters to the simulation bounds", () => {
@@ -54,5 +54,20 @@ describe("dust particle logic", () => {
 
     expect(emitDust).toHaveBeenCalledTimes(1);
     expect(updateDust).toHaveBeenCalledTimes(1);
+  });
+
+  test("shared scene pause gate freezes wheel motion and advances it while active", () => {
+    let wheelAngle = 0.5;
+    const wheelOmega = 2;
+    const dt = 0.1;
+    const advanceModel = () => {
+      wheelAngle += wheelOmega * dt;
+    };
+
+    stepSceneFrame(true, advanceModel);
+    expect(wheelAngle).toBe(0.5);
+
+    stepSceneFrame(false, advanceModel);
+    expect(wheelAngle).toBeCloseTo(0.7);
   });
 });
