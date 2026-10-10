@@ -519,7 +519,7 @@ The wheel checkbox input hitbox is 44×44 in EN and ES; its separately measured 
 - **Frontend tests:** `cd frontend && bun test src` → 236 passed, 0 failed, 114,575 expectations across 50 files.
 - **Build:** `cd frontend && bun run build` → pass; Astro check 0 errors, 0 warnings, 4 hints; Astro built 4 pages. Vite emitted its existing non-blocking large-chunk warning (>500 kB).
 - **Impeccable detector:** `.opencode/skills/impeccable/scripts/impeccable detect --json frontend/src/sim/truck/TruckSheet.tsx frontend/src/sim/truck/ProvenanceTable.tsx frontend/src/sim/bench/BenchView.tsx frontend/src/sim/truck/TruckScene.tsx frontend/src/i18n/index.ts` → `[]`, no findings or ignores. The only subsequent edit was test-only Bun typing compatibility; these UI targets were unchanged.
-- **RDD:** final cumulative range from `09c898d` assessed medium, 270 changed lines across 11 paths, `review_due=false`, reason `under_budget`; no review was due.
+- **RDD:** the implementation and test-typing range from `09c898d` assessed medium, 270 changed lines across 11 paths. Including this documentation closeout, the final range assessed medium, 323 changed lines across 12 paths, `review_due=false`, reason `under_budget`; no review was due.
 - **Safety:** no push. Protected `.codex/hooks.json` and `frontend/src/layouts/BaseLayout.astro` live.js changes remain unstaged; the user-owned changes were preserved.
 
 ### Q2 interim evidence — first copy migration work unit
