@@ -530,7 +530,10 @@ export const dict = {
   "bench.viscosity.state.dilute": { en: "dilute", es: "diluido" },
   "bench.viscosity.state.nominal": { en: "nominal", es: "nominal" },
   "bench.viscosity.state.degraded": { en: "degraded", es: "degradado" },
-  "dash.demo.labNote": { en: "LAB-ACCELERATED leak ~128.5 %/h x257 vs spec 0.5 %/h (~4.0 L over 120 s)", es: "Fuga LAB-ACELERADA ~128.5 %/h x257 vs espec 0.5 %/h (~4.0 L en 120 s)" },
+  "dash.demo.labNote": {
+    en: "LAB-ACCELERATED leak ~{leakRate} %/h x{rateMultiplier} vs spec {specRate} %/h (~{lossLiters} L over {durationSeconds} s)",
+    es: "Fuga LAB-ACELERADA ~{leakRate} %/h x{rateMultiplier} vs espec {specRate} %/h (~{lossLiters} L en {durationSeconds} s)",
+  },
   "dash.demo.rul.cleanNote": {
     en: "RUL suppressed: no leak trend (slope >= 0); anomaly-only. Clean baseline holds 95 L.",
     es: "RUL suprimido: no hay tendencia de fuga (pendiente >= 0); solo anomalías. La línea base limpia se mantiene en 95 L.",

@@ -44,6 +44,7 @@ import { localizeBackendMessage, localizeBackendZone } from "./backendNotes";
 import { signingBadgeState } from "./signingBadge";
 import { analyzerUnavailableNotice } from "./analyzerAvailability";
 import { mergeLevelSeries } from "./levelSeries";
+import { formatDemoLabNote } from "./demoCopy";
 
 type Source = "loading" | "live" | "demo";
 type BackendNote =
@@ -70,7 +71,7 @@ const DEMO_LABEL_KEYS: Record<DemoStageId, DictKey> = {
 };
 
 function stageBlurb(stage: DemoStageId, lang: Lang): string {
-  const params = stage === "slow-leak" ? { labNote: t("dash.demo.labNote", lang) } : undefined;
+  const params = stage === "slow-leak" ? { labNote: formatDemoLabNote(lang) } : undefined;
   return t(DEMO_BLURB_KEYS[stage], lang, params);
 }
 
@@ -476,7 +477,7 @@ export default function Dashboard() {
             </span>
             <span style={{ color: "var(--og-muted)" }}>
               {demoActive
-                ? t("dash.demo.labNote", lang)
+                ? formatDemoLabNote(lang)
                 : `${t("dash.source.label", lang)}: ${localizeBackendMessage(level?.data.source_message, level?.data.source ?? t("dash.backend.noPayload", lang), lang)}`}
             </span>
           </div>
@@ -582,7 +583,7 @@ function demoRulFor(stage: DemoStageId, lang: Lang) {
       note: t("dash.demo.rul.slowNote", lang, {
         model: t("rul.model.syntheticProxy", lang),
         qualifier: t("rul.unproven", lang),
-        labNote: t("dash.demo.labNote", lang),
+        labNote: formatDemoLabNote(lang),
       }),
       fallback: "local DEMO fallback (backend down or demo override)",
     };

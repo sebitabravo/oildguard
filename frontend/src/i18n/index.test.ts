@@ -1,6 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import { dict, dictKeys, t } from "./index";
+import { dict, dictKeys, t, type DictKey } from "./index";
 import { formatNumber } from "./numberFormat";
+
+// Son medidas y relaciones técnicas citadas literalmente, no números de estado de la interfaz.
+const factualSpanishDecimalExceptions: Partial<Record<DictKey, readonly string[]>> = {
+  "app.scope": ["32.62"],
+  "truck.sheet.dimensions": ["15.60", "8.69", "7.37", "14.02"],
+  "truck.sheet.powertrain": ["12.92", "9.40", "6.5", "0.7"],
+  "bench.inspection.step.5": ["0.869", "0.824"],
+  "bench.inspection.step.6": ["0.558", "0.513"],
+  "bench.inspection.step.7": ["0.100", "0.125"],
+};
 
 function collectSpanishStrings(value: unknown): string[] {
   if (typeof value === "string") return [value];
@@ -48,6 +58,35 @@ describe("i18n dictionary", () => {
     );
 
     expect(violations).toEqual([]);
+  });
+
+  test("Spanish dictionary copy uses decimal commas outside factual specifications", () => {
+    const violations = dictKeys().flatMap((key) => {
+      const copy = t(key, "es");
+      const allowed = factualSpanishDecimalExceptions[key] ?? [];
+      return [...copy.matchAll(/\d+\.\d+/g)]
+        .map((match) => match[0])
+        .filter((decimal) => !allowed.includes(decimal))
+        .map((decimal) => `${key}: ${decimal}`);
+    });
+
+    expect(violations).toEqual([]);
+  });
+
+  test("the demo lab note formats every displayed number for the selected language", () => {
+    for (const lang of ["en", "es"] as const) {
+      const note = t("dash.demo.labNote", lang, {
+        leakRate: formatNumber(128.5, lang, 1),
+        rateMultiplier: formatNumber(257, lang, 0),
+        specRate: formatNumber(0.5, lang, 1),
+        lossLiters: formatNumber(4, lang, 1),
+        durationSeconds: formatNumber(120, lang, 0),
+      });
+
+      expect(note).toBe(lang === "en"
+        ? "LAB-ACCELERATED leak ~128.5 %/h x257 vs spec 0.5 %/h (~4.0 L over 120 s)"
+        : "Fuga LAB-ACELERADA ~128,5 %/h x257 vs espec 0,5 %/h (~4,0 L en 120 s)");
+    }
   });
 
   test("the dashboard footnote reflects the geometry-derived pressure", () => {
