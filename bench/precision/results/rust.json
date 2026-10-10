@@ -3,23 +3,23 @@
   "n": 1000000,
   "seed": "0x0123456789ABCDEF",
   "exact": {
-    "level_sum_scaled": "-549998775802",
-    "level_mean_l": "-54.9998775802",
-    "level_population_variance_l2": "7499.99682208690271256796",
-    "leak_integral_l": "299.8892",
+    "level_sum_scaled": "935000234198",
+    "level_mean_l": "93.5000234198",
+    "level_population_variance_l2": "0.75326842077753296796",
+    "leak_integral_l": "2.8894",
     "pressure_sum_scaled": "11500104847"
   },
   "mean_methods": {
-    "naive": {"value":"-54.99987758020037631","absolute_error":"3.76314678578637544e-13","relative_error":"6.84210029431249395e-15","mean_ulp_distance":53,"seconds_median_5":0.001773333,"seconds_median_5":0.001773333},
-    "neumaier": {"value":"-54.99987758019999973","absolute_error":"2.72971374215558170e-16","relative_error":"4.96312694182846866e-18","mean_ulp_distance":0,"seconds_median_5":0.002446792,"seconds_median_5":0.002446792},
-    "pairwise": {"value":"-54.99987758019998552","absolute_error":"1.44838260894175611e-14","relative_error":"2.63342878687274593e-16","mean_ulp_distance":2,"seconds_median_5":0.000627375,"seconds_median_5":0.000627375}
+    "naive": {"value":"93.50002341980095366","absolute_error":"9.53661251696757980e-13","relative_error":"1.01995830248616403e-14","mean_ulp_distance":67,"seconds_median_5":0.001802750,"seconds_median_5":0.001802750},
+    "neumaier": {"value":"93.50002341980000153","absolute_error":"1.53398577822372316e-15","relative_error":"1.64062608983141631e-17","mean_ulp_distance":0,"seconds_median_5":0.002172750,"seconds_median_5":0.002172750},
+    "pairwise": {"value":"93.50002341979998732","absolute_error":"1.26768689369782808e-14","relative_error":"1.35581451996660876e-16","mean_ulp_distance":1,"seconds_median_5":0.001629209,"seconds_median_5":0.001629209}
   },
   "variance_methods": {
-    "one_pass_naive": {"value":"7499.99682208692775021","absolute_error":"2.45563569478690624e-11","relative_error":"3.27418231372478925e-15","seconds_median_5":0.003432375},
-    "two_pass": {"value":"7499.99682208699960029","absolute_error":"9.64064383879303932e-11","relative_error":"1.28541972316602826e-14","seconds_median_5":0.003478708},
-    "welford": {"value":"7499.99682208694775909","absolute_error":"4.45652403868734837e-11","relative_error":"5.94203456935239490e-15","seconds_median_5":0.009168125}
+    "one_pass_naive": {"value":"0.75326841930291266","absolute_error":"1.47462031474532296e-9","relative_error":"1.95762927805097893e-9","seconds_median_5":0.003686125},
+    "two_pass": {"value":"0.75326842077750922","absolute_error":"2.37587727269783500e-14","relative_error":"3.15409116745585231e-14","seconds_median_5":0.003790667},
+    "welford": {"value":"0.75326842077809142","absolute_error":"5.58442181386453740e-13","relative_error":"7.41358811789856866e-13","seconds_median_5":0.009965625}
   },
   "leak_integral": {
-    "naive_float": {"value":"299.88919999999603760","absolute_error":"3.97903932025656104e-12","relative_error":"1.32683648502732370e-14","seconds_median_5":0.001862333}
+    "naive_float": {"value":"2.88939999999999531","absolute_error":"4.88498130835068878e-15","relative_error":"1.69065595222215282e-15","seconds_median_5":0.002029875}
   }
 }

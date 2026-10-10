@@ -34,7 +34,8 @@ def generate_readings(n: int) -> tuple[list[int], list[int]]:
     for i in range(n):
         u_level = rng.next_u64()
         u_pressure = rng.next_u64()
-        levels.append(950000 - i * 3 + (u_level % 2001) - 1000)
+        # Fuga lineal de ~3 L en 1e6 lecturas sobre un cárter de 95 L; el piso en 0 evita niveles negativos.
+        levels.append(max(0, 950000 - (i * 3) // 100 + int(u_level % 2001) - 1000))
         pressures.append(10000 + (u_pressure % 3001))
     return levels, pressures
 
@@ -65,6 +66,20 @@ def welford_variance(values) -> float:
 
 
 def two_pass_variance(values) -> float:
+    # Sumas secuenciales de izquierda a derecha, igual que Rust: sin fsum, para que ambos lenguajes midan el mismo algoritmo.
+    if not values:
+        return 0.0
+    total = 0.0
+    for value in values:
+        total += value
+    mean = total / len(values)
+    squares = 0.0
+    for value in values:
+        squares += (value - mean) ** 2
+    return squares / len(values)
+
+
+def two_pass_variance_fsum(values) -> float:
     if not values:
         return 0.0
     mean = math.fsum(values) / len(values)
@@ -73,7 +88,11 @@ def two_pass_variance(values) -> float:
 
 def _pairwise_sum(values) -> float:
     if len(values) <= 32:
-        return math.fsum(values)
+        # Bloque secuencial, igual que Rust: fsum en las hojas haría al pairwise de Python más exacto que el de Rust.
+        total = 0.0
+        for value in values:
+            total += value
+        return total
     middle = len(values) // 2
     return _pairwise_sum(values[:middle]) + _pairwise_sum(values[middle:])
 
@@ -132,6 +151,7 @@ def run_benchmark(n: int) -> dict:
     for label, fn in (
         ("one_pass_naive", lambda: sum(value * value for value in floats) / n - (sum(floats) / n) ** 2),
         ("two_pass", lambda: two_pass_variance(floats)),
+        ("two_pass_fsum_python_only", lambda: two_pass_variance_fsum(floats)),
         ("welford", lambda: welford_variance(floats)),
     ):
         value, seconds = _timed(fn)

@@ -1,5 +1,6 @@
 from bench.precision.python.precision_drift import (
     SplitMix64,
+    _pairwise_sum,
     generate_readings,
     neumaier_sum,
     welford_variance,
@@ -29,7 +30,41 @@ def test_welford_matches_two_pass_for_small_data():
 
 def test_python_parity_constants_from_readme():
     levels, pressures = generate_readings(1000)
-    assert levels[:5] == [949126, 949062, 950079, 950580, 950964]
+    assert levels[:5] == [949126, 949065, 950085, 950589, 950976]
     assert pressures[:5] == [11979, 10436, 12703, 12104, 12991]
-    assert sum(levels) == 948498855
+    assert sum(levels) == 949982865
     assert sum(pressures) == 11526832
+
+
+def test_level_series_stays_physical_over_full_run():
+    levels, _ = generate_readings(1_000_000)
+    assert min(levels) > 0
+    assert 920_000 <= sum(levels) // len(levels) <= 950_000
+    assert 27_000 <= levels[0] - levels[-1] <= 33_000
+
+
+
+def test_two_pass_variance_uses_sequential_summation():
+    values = [level / 10000 for level in generate_readings(2000)[0]]
+    mean = 0.0
+    for value in values:
+        mean += value
+    mean /= len(values)
+    expected = 0.0
+    for value in values:
+        expected += (value - mean) ** 2
+    assert two_pass_variance(values) == expected / len(values)
+
+
+def test_pairwise_sum_uses_sequential_leaf_blocks():
+    def reference(values):
+        if len(values) <= 32:
+            total = 0.0
+            for value in values:
+                total += value
+            return total
+        middle = len(values) // 2
+        return reference(values[:middle]) + reference(values[middle:])
+
+    values = [level / 10000 for level in generate_readings(100_000)[0]]
+    assert _pairwise_sum(values) == reference(values)

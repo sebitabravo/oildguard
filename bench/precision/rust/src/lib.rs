@@ -25,7 +25,9 @@ pub fn generate_readings(n: usize) -> (Vec<i64>, Vec<i64>) {
     for i in 0..n {
         let u_level = rng.next_u64();
         let u_pressure = rng.next_u64();
-        levels.push(950_000 - (i as i64 * 3) + (u_level % 2001) as i64 - 1000);
+        // Fuga lineal de ~3 L en 1e6 lecturas sobre un cárter de 95 L; el piso en 0 evita niveles negativos.
+        let leak = i as i64 * 3 / 100;
+        levels.push((950_000 - leak + (u_level % 2001) as i64 - 1000).max(0));
         pressures.push(10_000 + (u_pressure % 3001) as i64);
     }
     (levels, pressures)
@@ -126,9 +128,38 @@ mod tests {
     #[test]
     fn rust_parity_constants_from_readme() {
         let (levels, pressures) = generate_readings(1000);
-        assert_eq!(&levels[..5], &[949126, 949062, 950079, 950580, 950964]);
+        assert_eq!(&levels[..5], &[949126, 949065, 950085, 950589, 950976]);
         assert_eq!(&pressures[..5], &[11979, 10436, 12703, 12104, 12991]);
-        assert_eq!(levels.iter().map(|&v| v as i128).sum::<i128>(), 948498855);
+        assert_eq!(levels.iter().map(|&v| v as i128).sum::<i128>(), 949982865);
         assert_eq!(pressures.iter().map(|&v| v as i128).sum::<i128>(), 11526832);
+    }
+
+    #[test]
+    fn level_series_stays_physical_over_full_run() {
+        let (levels, _) = generate_readings(1_000_000);
+        assert!(*levels.iter().min().unwrap() > 0);
+        let mean = levels.iter().sum::<i64>() / levels.len() as i64;
+        assert!((920_000..=950_000).contains(&mean));
+        let drop = levels[0] - levels[levels.len() - 1];
+        assert!((27_000..=33_000).contains(&drop));
+    }
+
+    #[test]
+    fn two_pass_variance_uses_sequential_summation() {
+        let values: Vec<f64> = generate_readings(2000)
+            .0
+            .iter()
+            .map(|&level| level as f64 / 10_000.0)
+            .collect();
+        let mut mean = 0.0;
+        for &value in &values {
+            mean += value;
+        }
+        mean /= values.len() as f64;
+        let mut expected = 0.0;
+        for &value in &values {
+            expected += (value - mean).powi(2);
+        }
+        assert_eq!(two_pass_variance(&values), expected / values.len() as f64);
     }
 }
