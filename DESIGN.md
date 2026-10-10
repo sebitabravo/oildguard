@@ -1,28 +1,53 @@
 ---
 name: OilGuard Mining
-description: A calibrated instrument for haulage lubrication — machine yellow on graphite, quiet until something is wrong.
+description: A calibrated instrument for haulage lubrication — amber accent on graphite, quiet until something is wrong.
 colors:
-  machine-yellow: "#f2b705"
-  machine-yellow-deep: "#d9a200"
-  instrument-amber: "#f5a623"
-  caution-orange: "#ff8c42"
-  signal-green: "#2fbf71"
-  motion-blue: "#4a8ef0"
-  critical-red: "#ff4d42"
-  graphite-base: "#0a0e16"
-  panel: "#111823"
-  panel-raised: "#182233"
-  panel-inset: "#0e1420"
-  panel-dashboard: "#111a2c"
-  readout: "#e9eef7"
-  body-copy: "#c9d5e8"
-  annotation: "#9db0cc"
-  rule-line: "#3a4a63"
-  dashboard-line: "#2a3a55"
-  hairline: "rgba(255, 255, 255, 0.09)"
-  hairline-strong: "rgba(255, 255, 255, 0.18)"
-  glass: "rgba(9, 13, 21, 0.64)"
-  glass-line: "rgba(255, 255, 255, 0.13)"
+  "--og-bg": "#0B0F14"
+  "--og-panel": "#111720"
+  "--og-panel-2": "#18202C"
+  "--og-panel-inset": "#0B0F14"
+  "--og-panel-dashboard": "#111720"
+  "--og-line": "rgba(71, 85, 105, 0.38)"
+  "--og-line-strong": "rgba(71, 85, 105, 0.65)"
+  "--og-line-soft": "#475569"
+  "--og-line-dashboard": "#1E293B"
+  "--og-text": "#F8FAFC"
+  "--og-muted": "#64748B"
+  "--og-body": "#94A3B8"
+  "--og-yellow": "#F59E0B"
+  "--og-yellow-deep": "#D97706"
+  "--og-green": "#10B981"
+  "--og-blue": "#38BDF8"
+  "--og-red": "#EF4444"
+  "--og-orange": "#F97316"
+  "--og-amber": "#F59E0B"
+  "--og-on-yellow": "#0B0F14"
+  "--og-card-active": "#1E293B"
+  "--og-ground": "#0B0F14"
+  "--og-yellow-hover": "#FBBF24"
+  "--og-green-hover": "#34D399"
+  "--og-header-gradient-start": "#111720"
+  "--og-header-gradient-end": "#0B0F14"
+  "--og-brand-mark-gradient-start": "#FBBF24"
+  "--og-brand-mark-gradient-end": "#D97706"
+  "--og-on-green": "#052E24"
+  "--og-on-blue": "#082F49"
+  "--og-on-red": "#450A0A"
+  "--og-on-amber": "#451A03"
+  "--og-amber-highlight": "#FCD34D"
+  "--og-glass": "rgba(11, 15, 20, 0.92)"
+  "--og-glass-line": "rgba(71, 85, 105, 0.65)"
+  "--og-surface": "#111720"
+  "--og-elevated": "#18202C"
+  "--og-overlay": "#1E293B"
+  "--og-border-subtle": "#1E293B"
+  "--og-border-strong": "#334155"
+  "--og-border-highlight": "#475569"
+  "--og-text-primary": "#F8FAFC"
+  "--og-text-secondary": "#94A3B8"
+  "--og-text-muted": "#64748B"
+  "--og-accent": "#F59E0B"
+  "--og-accent-active": "#D97706"
 typography:
   prose:
     fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
@@ -38,7 +63,7 @@ fonts:
     - "/fonts/Geist[wght].woff2"
     - "/fonts/JetBrainsMono[wght].woff2"
 colorSemantics:
-  accent: "Machine Yellow identifies the product and marks actions or selection; amber caution use is semantic, never decorative."
+  accent: "The --og-accent token in frontend/src/theme.css marks identity, actions, and selection; its shared amber hue must carry explicit status cues when used semantically."
   status: "Amber, green, blue, orange, and red indicate operating states and are paired with explicit status cues."
 rounded:
   hairline-sm: "2px"
@@ -55,7 +80,7 @@ spacing:
   xxl: "24px"
 components:
   button-primary:
-    backgroundColor: "{colors.machine-yellow}"
+    backgroundColor: "{colors.--og-accent}"
     textColor: "#15110a"
     rounded: "{rounded.control}"
     padding: "10px 14px"
@@ -63,41 +88,41 @@ components:
   button-primary-hover:
     backgroundColor: "#ffc61f"
   button-ok:
-    backgroundColor: "{colors.signal-green}"
+    backgroundColor: "{colors.--og-green}"
     textColor: "#07140d"
     rounded: "{rounded.control}"
     padding: "10px 14px"
     height: "34px"
   button-ghost:
     backgroundColor: "rgba(255, 255, 255, 0.06)"
-    textColor: "{colors.readout}"
+    textColor: "{colors.--og-text}"
     rounded: "{rounded.control}"
     padding: "10px 14px"
     height: "34px"
   card:
-    backgroundColor: "{colors.panel-raised}"
-    textColor: "{colors.body-copy}"
+    backgroundColor: "{colors.--og-panel-2}"
+    textColor: "{colors.--og-body}"
     rounded: "{rounded.control}"
     padding: "10px 12px"
   card-active:
     backgroundColor: "#1d2a40"
     rounded: "{rounded.control}"
   data-panel:
-    backgroundColor: "{colors.panel-dashboard}"
-    textColor: "{colors.body-copy}"
+    backgroundColor: "{colors.--og-panel-dashboard}"
+    textColor: "{colors.--og-body}"
     rounded: "{rounded.data-sm}"
     padding: "10px 12px"
   data-panel-inset:
-    backgroundColor: "{colors.panel-inset}"
-    textColor: "{colors.body-copy}"
+    backgroundColor: "{colors.--og-panel-inset}"
+    textColor: "{colors.--og-body}"
     rounded: "{rounded.data-sm}"
     padding: "10px 12px"
   analyzer-notice:
-    textColor: "{colors.readout}"
+    textColor: "{colors.--og-text}"
     rounded: "{rounded.data-sm}"
     padding: "10px 12px"
   sensor-identity:
-    textColor: "{colors.annotation}"
+    textColor: "{colors.--og-muted}"
     rounded: "50%"
     height: "24px"
     width: "24px"
@@ -114,41 +139,41 @@ components:
     backgroundColor: "rgba(60, 42, 8, 0.88)"
   icon-button:
     backgroundColor: "rgba(255, 255, 255, 0.05)"
-    textColor: "{colors.readout}"
+    textColor: "{colors.--og-text}"
     rounded: "{rounded.control}"
     height: "32px"
     width: "32px"
   nav-item:
     backgroundColor: "transparent"
-    textColor: "{colors.annotation}"
+    textColor: "{colors.--og-muted}"
     rounded: "{rounded.control}"
     padding: "0 16px"
     height: "36px"
   nav-item-active:
     backgroundColor: "rgba(242, 183, 5, 0.12)"
-    textColor: "{colors.machine-yellow}"
+    textColor: "{colors.--og-accent}"
   seg-button-pressed:
-    backgroundColor: "{colors.machine-yellow}"
+    backgroundColor: "{colors.--og-accent}"
     textColor: "#15110a"
     rounded: "{rounded.data-sm}"
     height: "28px"
   drawer-tab-active:
-    textColor: "{colors.machine-yellow}"
+    textColor: "{colors.--og-accent}"
     typography: "{typography.title}"
     height: "34px"
   tag-verified:
     backgroundColor: "transparent"
-    textColor: "{colors.signal-green}"
+    textColor: "{colors.--og-green}"
     rounded: "{rounded.pill}"
     padding: "1px 6px"
   tag-derived:
     backgroundColor: "transparent"
-    textColor: "{colors.motion-blue}"
+    textColor: "{colors.--og-blue}"
     rounded: "{rounded.pill}"
     padding: "1px 6px"
   tag-assumption:
     backgroundColor: "transparent"
-    textColor: "{colors.machine-yellow}"
+    textColor: "{colors.--og-accent}"
     rounded: "{rounded.pill}"
     padding: "1px 6px"
 ---
@@ -161,13 +186,13 @@ components:
 
 Every surface in this product behaves like a measuring instrument, not like an application. A gauge does not decorate its reading; it declares its uncertainty. That is the whole thesis. The oil level arrives wrapped in a confidence band because the reading has one. Every figure carries a provenance tag — VERIFIED, DERIVED, ASSUMPTION — because a number without a source is a liability on equipment a person is accountable for. The synthetic-proxy badge is not a disclaimer bolted onto the corner; it is the instrument's accuracy class, rendered.
 
-Machine yellow on graphite carries that idea physically. The yellow is Komatsu's own paint — `komatsuYellow` in the 3D palette is the same value as the brand token — so the interface and the machine are literally the same colour. Graphite is the unlit pit the instrument sits in. The chassis is dark because a pit at night is dark, and because a dark ground lets a caution amber read as a caution amber instead of as decoration.
+The graphite instrument is grounded in the shared tokens in `frontend/src/theme.css`. Its product accent is `--og-accent` (`#F59E0B`), used for identity, actions, and selection; the same hue is also the amber status color, so semantic status always has an explicit cue alongside color.
 
 Density is deliberate and high. This is read by an engineer comparing a trend against a threshold, so information per square centimetre outranks whitespace. Type is small, tabular, and unmoving. What the system refuses is the entire vocabulary of reassurance: no progress theatre, no celebratory motion, no shadow that lifts a surface for the sake of looking lifted, no soft-card dashboard idiom. The instrument is quiet at rest. Its job is to be believed when it speaks.
 
 **Key Characteristics:**
 
-- Machine yellow as identity, Instrument amber as caution — two near-identical yellows that never trade roles.
+- The theme-defined accent marks identity, actions, and selection; status colors retain their semantic roles and always carry an explicit cue.
 - Depth by tone in the shell, by hairline border in the data surfaces: two documented materials, not one accident.
 - Provenance as a first-class visual component, alongside colour and type size.
 - Tabular figures everywhere, so nothing jitters while it updates.
@@ -177,51 +202,26 @@ Density is deliberate and high. This is read by an engineer comparing a trend ag
 
 ## Colors
 
-Komatsu yellow on graphite, with a fixed semantic status ramp that means the same thing on every screen. Supporting shell colors, contrast colors, active surfaces, gradient stops, hover colors, radii and the simulation dock gap are named in `frontend/src/theme.css` root tokens so component rules consume shared values rather than repeat literals.
+The palette is defined by the first `:root` block in `frontend/src/theme.css`; the front matter above mirrors its color-valued custom properties. `--og-accent` (`#F59E0B`) is the product accent for identity, actions, and selection. `--og-amber` shares that hue, so use it for caution only with an explicit status cue. Accent usage follows the theme tokens rather than a manufacturer paint color.
 
-### Primary
+### Accent and Status
 
-- **Machine Yellow** (`#f2b705`): identity and selection. The brand mark, the active nav item, the pressed segmented control, the selected sensor card and scene label, the focus ring, the favicon, and links into wheel detail. It is also the machine's paint in the 3D scene, from the same value.
-- **Machine Yellow Deep** (`#d9a200`): the shadow end of the brand mark's gradient. Never a standalone colour. Primary-button hover uses the named `--og-yellow-hover` theme token.
+- **Accent** (`--og-accent`, `#F59E0B`): identity, actions, and selection. `--og-accent-active` (`#D97706`) is the active shade; the theme also defines hover and brand-mark gradient stops.
+- **Status**: `--og-green` (`#10B981`), `--og-blue` (`#38BDF8`), `--og-orange` (`#F97316`), `--og-red` (`#EF4444`), and `--og-amber` (`#F59E0B`) retain their operating-state meanings. Status always includes text, a dot, or another explicit cue.
 
-### Secondary
+### Neutrals
 
-- **Instrument Amber** (`#f5a623`): caution. N1 alert, the warning threshold line, the RUL panel when the horizon is a warning or the estimate is suppressed, the fleet table's flagged-channel list, the honesty badge border, the dashboard's active accent. It is visually adjacent to Machine Yellow and must never be confused with it — see the Two-Yellow Rule.
-- **Caution Orange** (`#ff8c42`): N2 and N3 escalation. Shares one value across both levels; they are separated by lane position in the chart, not by hue.
-
-### Tertiary
-
-- **Signal Green** (`#2fbf71`): rest, OK, the normal oil band, rest-window shading, a normal fleet risk, the RUL panel when the critical horizon lies beyond the shift, VERIFIED tags.
-- **Motion Blue** (`#4a8ef0`): the MOVING state, the confidence band, the "instrumented" fleet marker, and DERIVED tags.
-- **Critical Red** (`#ff4d42`): critical threshold, STOP, N4, an alerting fleet row, the RUL panel inside the critical horizon, and the analyzer-outage notice. The shared alert severity map assigns N1 to Instrument Amber, N2/N3 to Caution Orange, and N4 to Critical Red.
-
-### Neutral
-
-- **Graphite Base** (`#0a0e16`): the page. Unlit pit.
-- **Panel** (`#111823`): the drawer surface.
-- **Panel Raised** (`#182233`): the second surface step, used by drawer cards.
-- **Panel Inset** (`#0e1420`): the darkest data surface — the chart canvas, the RUL panel, and the checkbox box on touch viewports.
-- **Panel Dashboard** (`#111a2c`): the monitoring page's sheet fill, paired with Dashboard Line.
-- **Readout** (`#e9eef7`): primary text and the level trace itself.
-- **Body Copy** (`#c9d5e8`): running prose in the drawer.
-- **Annotation** (`#9db0cc`): secondary text, axis labels, timestamps — anything that qualifies another value.
-- **Rule Line** (`#3a4a63`): soft borders, dashed empty states, and the outline of inactive stepper chips.
-- **Dashboard Line** (`#2a3a55`): the one-pixel border of monitoring sheets; one step stronger than Hairline so a sheet reads against Panel Dashboard.
-- **Hairline** (`rgba(255, 255, 255, 0.09)`): the default separator on dark surfaces.
-- **Hairline Strong** (`rgba(255, 255, 255, 0.18)`): the separator that must survive on top of a 3D render.
-- **Glass** (`rgba(9, 13, 21, 0.64)`) and **Glass Line** (`rgba(255, 255, 255, 0.13)`): HUD panels floating over the 3D scene.
+Backgrounds and surfaces use `--og-bg`, `--og-panel`, `--og-panel-2`, `--og-panel-inset`, and `--og-panel-dashboard`. Text uses `--og-text`, `--og-body`, and `--og-muted`; borders and overlays use the corresponding `--og-line-*`, `--og-border-*`, and `--og-glass*` tokens. Their exact values remain in the front matter and are sourced from `theme.css`.
 
 ### Named Rules
 
-**The Two-Yellow Rule.** Machine Yellow is who we are; Instrument Amber is what we warn about. Neither ever takes the other's job. If a state can only be distinguished by swapping which yellow it uses, the state needs a second signal — a label, a ring, or a position.
+**The Accent-and-Status Rule.** The accent may share a hue with amber caution, but color alone never communicates status. Pair every status tone with a word, dot, or other explicit cue.
 
-**The Machine-Wears-Its-Own-Paint Rule.** Machine Yellow is simultaneously the brand colour and the machine's paint in the 3D scene, and that overlap is intentional, not a coincidence to be normalised away. The interface and the asset share one colour because they are one system.
+**The Status Palette Is Closed.** Green, blue, amber, orange, and red retain their semantic operating-state meanings. They are not reassigned for decoration.
 
-**The Status Palette Is Closed.** Signal Green, Motion Blue, Instrument Amber, Caution Orange and Critical Red carry fixed meanings. They are never reassigned for decoration, never introduced as accents, and never used to signal anything other than the machine condition they were assigned to. The shared alert-severity map assigns N1 to Instrument Amber, N2 and N3 to Caution Orange, and N4 to Critical Red.
+**The Sensor Identity Rule.** Sensor identity uses neutral numbered rings, never the status palette. Selection is expressed separately through the theme-defined accent.
 
-**The Sensor Identity Rule.** Sensor identity uses neutral Annotation-colored numbered rings (24px beside a sensor card, 18px inside the in-scene label pill), never the closed status palette. Machine Yellow may indicate selection; status colors communicate machine condition only.
-
-**The Word-Beside-Colour Rule.** A status tone is never the only carrier of its meaning. The analyzer-outage notice pairs a full red border with a red dot and a `role="alert"` sentence; the RUL panel pairs its horizon tone with a `role="status"` text cue; the fleet table writes Alert or Normal and lists the offending channels in words. If a new surface can only be read by its hue, it needs a label.
+**The Word-Beside-Colour Rule.** A status tone is never the only carrier of its meaning. The analyzer-outage notice pairs a red border with a red dot and a `role="alert"` sentence; the RUL panel pairs its horizon tone with a `role="status"` text cue; the fleet table writes Alert or Normal and lists offending channels in words.
 
 ## Typography
 
@@ -229,7 +229,7 @@ Komatsu yellow on graphite, with a fixed semantic status ramp that means the sam
 **Technical data:** JetBrains Mono (`"JetBrains Mono", ui-monospace, monospace`) for identifiers, timestamps, raw telemetry, table figures, and micro-labels; numeric figures use `tabular-nums`.
 **Self-hosting:** Geist and JetBrains Mono variable fonts are served locally as WOFF2 from `/fonts/Geist[wght].woff2` and `/fonts/JetBrainsMono[wght].woff2`.
 
-**Character:** Geist keeps prose and headings legible; JetBrains Mono makes dense measurements and identifiers align. Machine Yellow is the product accent for identity, actions, and selection. Its amber status use means caution and must be paired with an explicit status cue; neither role is decorative.
+**Character:** Geist keeps prose and headings legible; JetBrains Mono makes dense measurements and identifiers align. The theme-defined `--og-accent` token marks identity, actions, and selection. Its shared amber status hue means caution only alongside an explicit status cue.
 
 ### Hierarchy
 
@@ -281,7 +281,7 @@ Shadow in this system is never structural. The nine `box-shadow` declarations in
 
 - **Floating glass** (`0 10px 30px rgba(0, 0, 0, 0.35)`): HUD panels and popovers suspended over the 3D scene, always paired with a backdrop blur. The honesty popover deepens it to 0.4 alpha.
 - **Tone ring** (`0 0 0 1px var(--tone, transparent) inset`): the active state of a tone-carrying card. An inset hairline in the tone colour, never a glow.
-- **Selection ring** (`0 0 0 1px var(--og-yellow) inset`, with a Machine Yellow border): the selected sensor card. The matching in-scene label takes a Machine Yellow outer ring over its label drop.
+- **Selection ring** (`0 0 0 1px var(--og-yellow) inset`, with a theme-defined accent border): the selected sensor card. The matching in-scene label takes a theme-defined accent outer ring over its label drop.
 - **Label drop** (`0 4px 12px rgba(0, 0, 0, 0.35)`, `0 4px 14px rgba(0, 0, 0, 0.4)` when active): in-scene label pills, so text stays legible against arbitrary geometry.
 - **Status dot halo** (`0 0 8px var(--tone, transparent)`): the 9px status dot only, in the tone it reports.
 
@@ -306,10 +306,10 @@ Quiet and read-only. The instrument does not perform. It states, and only Critic
 ### Buttons
 
 - **Shape:** gently rounded (8px), 34px tall, 28px in the small variant. At 900px and below every button, tab, label and link-as-button reaches 44px minimum height and width.
-- **Primary:** Machine Yellow fill with near-black text — the one action on a surface, if there is one.
+- **Primary:** theme-defined accent fill with dark text — the one action on a surface, if there is one.
 - **OK variant:** Signal Green fill, for actions that advance a running simulation.
 - **Ghost:** the default `.og-btn`: a translucent white wash at 6% with a Hairline Strong border, for secondary and reversible actions.
-- **Hover / Focus:** background and border fade over 0.15s (primary uses `--og-yellow-hover`, OK uses `--og-green-hover`, ghost brightens its wash to 12%). Focus is a 2px Machine Yellow outline at 2px offset on every interactive element — the single strongest accessibility commitment in the system.
+- **Hover / Focus:** background and border fade over 0.15s (primary uses `--og-yellow-hover`, OK uses `--og-green-hover`, ghost brightens its wash to 12%). Focus is a 2px theme-defined accent outline at 2px offset on every interactive element — the single strongest accessibility commitment in the system.
 - **Disabled:** the variant's own fill at 45% opacity with a not-allowed cursor.
 - **Reduced motion:** under `prefers-reduced-motion: reduce` every CSS transition is removed, and 3D easing (gearbox spread, cutaway, marker scale) snaps to its target instead of interpolating.
 
@@ -322,31 +322,31 @@ Quiet and read-only. The instrument does not perform. It states, and only Critic
 
 - **Corner Style:** 8px for shell cards, 6px for dashboard data panels.
 - **Background:** Panel Raised for drawer cards; Panel Dashboard with a Dashboard Line border for monitoring sheets; Panel Inset for the RUL panel and the chart canvas.
-- **Shadow Strategy:** none at rest. Active tone-bearing cards gain only the inset tone ring; the selected sensor card gains a Machine Yellow border and ring.
+- **Shadow Strategy:** none at rest. Active tone-bearing cards gain only the inset tone ring; the selected sensor card gains a theme-defined accent border and ring.
 - **Border:** Hairline in the shell. Cards inside 3D views may need Hairline Strong to survive over the render.
 - **Internal Padding:** 10px 12px on shell cards and side sheets, 16px on the chart sheet, 14px 16px on the fleet sheet.
 
 ### Inputs / Fields
 
-- **Style:** hairline border, transparent fill, 8px radius, native `accent-color` set to Machine Yellow so the slider thumb is on-brand. At 900px and below the checkbox is redrawn: a 44px hit area around an 18px box that fills Machine Yellow with a checkmark when set.
-- **Focus:** the global 2px Machine Yellow outline (on the drawn box for touch checkboxes).
+- **Style:** hairline border, transparent fill, 8px radius, native `accent-color` set to theme-defined accent so the slider thumb is on-brand. At 900px and below the checkbox is redrawn: a 44px hit area around an 18px box that fills theme-defined accent with a checkmark when set.
+- **Focus:** the global 2px theme-defined accent outline (on the drawn box for touch checkboxes).
 - **Labels:** 12px at weight 600, with the current value right-aligned in tabular figures.
 
 ### Navigation
 
-A single fixed header rail of real links to `/mine`, `/wheel` and `/monitoring`. Items are 36px pills of Annotation text at 14px/600; the active item (`aria-current="page"`) takes Machine Yellow text over a 12%-alpha yellow wash with a 38%-alpha yellow border. Section changes are the primary navigation gesture and the state is never ambiguous — there is one active item and it is yellow. At 900px and below the rail becomes a second row of 44px, horizontally scrolling items under the brand and the EN/ES segmented control.
+A single fixed header rail of real links to `/mine`, `/wheel` and `/monitoring`. Items are 36px pills of Annotation text at 14px/600; the active item (`aria-current="page"`) takes theme-defined accent text over a 12%-alpha accent wash with a 38%-alpha accent border. Section changes are the primary navigation gesture and the state is never ambiguous — there is one active item and it uses the theme accent. At 900px and below the rail becomes a second row of 44px, horizontally scrolling items under the brand and the EN/ES segmented control.
 
-The segmented control inside a 3D view (camera presets) is the same idea compressed: 28px buttons on a 6px track, pressed state fills Machine Yellow with near-black text.
+The segmented control inside a 3D view (camera presets) is the same idea compressed: 28px buttons on a 6px track, pressed state fills theme-defined accent with dark text.
 
 ### Provenance Tags
 
 The signature component, and the one that most distinguishes this product.
 
-Pills at 1px/6px padding, 10.5px, outlined in `currentColor` with no fill. Three variants and exactly three meanings: Signal Green for VERIFIED, Motion Blue for DERIVED, Machine Yellow for ASSUMPTION. They appear in tables of technical values and in the honesty badge. There is deliberately no GAP tag yet, because nothing in the system currently renders one — when it does, it must be added as a fourth variant rather than reusing a colour.
+Pills at 1px/6px padding, 10.5px, outlined in `currentColor` with no fill. Three variants and exactly three meanings: Signal Green for VERIFIED, Motion Blue for DERIVED, theme-defined accent for ASSUMPTION. They appear in tables of technical values and in the honesty badge. There is deliberately no GAP tag yet, because nothing in the system currently renders one — when it does, it must be added as a fourth variant rather than reusing a colour.
 
 ### Fleet Table
 
-The monitoring page's primary sheet: one row per wheel, seven data columns (truck, wheel, oil, temperature, vibration, current, risk) plus a detail link. Table and Table head type, a Hairline rule under every row, a faint white wash on row hover, and a sticky first column on Panel Dashboard. Figures are tabular and localised; multi-sensor cells join values with a middle dot. Risk is a word, never a swatch alone: Normal in Signal Green, Alert in Critical Red, with the offending channels listed beneath in Instrument Amber. Instrumented wheels carry a small Motion Blue tag. The link into wheel detail is Machine Yellow, bold, underlined, and turns Readout on hover. The sheet header repeats the SYNTHETIC-PROXY qualifier in Machine Yellow beside the title; the figures are demo values and the sheet says so.
+The monitoring page's primary sheet: one row per wheel, seven data columns (truck, wheel, oil, temperature, vibration, current, risk) plus a detail link. Table and Table head type, a Hairline rule under every row, a faint white wash on row hover, and a sticky first column on Panel Dashboard. Figures are tabular and localised; multi-sensor cells join values with a middle dot. Risk is a word, never a swatch alone: Normal in Signal Green, Alert in Critical Red, with the offending channels listed beneath in Instrument Amber. Instrumented wheels carry a small Motion Blue tag. The link into wheel detail is theme-defined accent, bold, underlined, and turns Readout on hover. The sheet header repeats the SYNTHETIC-PROXY qualifier in theme-defined accent beside the title; the figures are demo values and the sheet says so.
 
 ### RUL Panel
 
@@ -358,7 +358,7 @@ An analyzer outage is a full-width, `role="alert"` bar on the dashboard: one-pix
 
 ### Sensor Identity Marker
 
-A neutral Annotation-coloured ring carrying the sensor's number: 24px beside the sensor card in the drawer, 18px inside the in-scene label pill, 9px tabular numerals, no fill. It identifies which sensor, never what condition it reports; selection is expressed separately by the Machine Yellow ring on the card and the label.
+A neutral Annotation-coloured ring carrying the sensor's number: 24px beside the sensor card in the drawer, 18px inside the in-scene label pill, 9px tabular numerals, no fill. It identifies which sensor, never what condition it reports; selection is expressed separately by the theme-defined accent ring on the card and the label.
 
 ## Known Debt
 
@@ -380,9 +380,9 @@ No unresolved known debt remains. The later test-only Astro/Bun typing compatibi
 ## Nordic Telemetry Precision foundation
 
 The final UI foundation uses a carbon ground (`#0B0F14`) with layered telemetry
-surfaces (`#111720`, `#18202C`, `#1E293B`). Machine Yellow (`#F59E0B`) identifies
-the product and marks actions or selection; amber use of that same hue means
-caution, while green, blue, orange, and red remain semantic status lanes.
+surfaces (`#111720`, `#18202C`, `#1E293B`). The `--og-accent` token (`#F59E0B`)
+marks identity, actions, and selection; its shared amber hue means caution only
+with an explicit status cue, while green, blue, orange, and red remain semantic status lanes.
 Status cues are explicit rather than decorative. Borders are visible and square-edged: 2/4/6/8 px radii only.
 
 Geist is the prose and heading face. JetBrains Mono is used for identifiers,
@@ -394,10 +394,10 @@ prototype does not provide.
 ### Do:
 
 - **Do** carry the provenance of every figure into the layout — a tag, a badge, a footnote naming the source file and the assumption it rests on.
-- **Do** use Machine Yellow for identity and selection, and Instrument Amber for caution, and keep them in their lanes.
+- **Do** use the theme-defined accent for identity and selection; pair amber caution with an explicit status cue.
 - **Do** mark live data and demo data differently, and label which is which, even when the backend is healthy.
 - **Do** let density serve the comparison being made. An engineer reading a trend against a threshold wants the pixels.
-- **Do** keep the 2px Machine Yellow focus ring on every interactive element.
+- **Do** keep the 2px theme-accent focus ring on every interactive element.
 - **Do** put a word, dot or numbered marker beside every status tone, and format every figure with `formatNumber` for the active language.
 - **Do** keep a 44px minimum target for every control at 900px and below.
 
