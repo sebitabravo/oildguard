@@ -3,7 +3,7 @@ import { t, useLang, type Lang } from "../i18n";
 import { formatNumber } from "../i18n/numberFormat";
 import { useBackendState, backendStateLabel } from "./backendOrDemo";
 import { levelBarGeometry, severityColor, severityTone, type Tone } from "./logic";
-import { linePath, monotoneCurvePath, niceTicks, nextCursorIndex, scaledPoints } from "./chartGeometry";
+import { collisionLabelOffsets, linePath, monotoneCurvePath, niceTicks, nextCursorIndex, scaledPoints } from "./chartGeometry";
 import { useId, useState } from "preact/hooks";
 
 export type Severity = "N1" | "N2" | "N3" | "N4";
@@ -254,6 +254,10 @@ export function SyncChart({
   };
   const leftTicks = requestedLeftTicks ?? niceTicks(...domains.left, 4);
   const rightTicks = series.some((item) => item.axis === "right") ? niceTicks(...domains.right, 4) : [];
+  const eventOffsets = collisionLabelOffsets(events.map((item) => {
+    const width = item.label.length * 5.5 + 4;
+    return { left: Math.max(pad.left, Math.min(chart.width - pad.right - width, xAt(item.index) + 4)), width };
+  }));
   const setCursor = (index: number) => {
     if (cursorIndex === undefined) setLocalCursor(index);
     onCursorChange?.(index);
@@ -283,12 +287,11 @@ export function SyncChart({
       <div className="og-sync__frame" onKeyDown={onKeyDown} tabIndex={0} role="application" aria-label={`${title}. ${t("ui.chartDescription", lang)}`}>
         <svg className="og-sync__svg" viewBox={`0 0 ${chart.width} ${chart.height}`} preserveAspectRatio="none" onPointerMove={onPointerMove} onPointerLeave={onPointerLeave} aria-hidden="true" focusable="false">
           <defs><pattern id={`${hatchId}-gap-hatch`} width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="6" className="og-sync__hatch-line" /></pattern></defs>
-          {regimes.map((regime) => <g><rect x={xAt(regime.startIndex)} y={pad.top} width={Math.max(0, xAt(regime.endIndex) - xAt(regime.startIndex))} height={plotHeight} className={`og-sync__regime og-sync__regime--${regime.tone ?? "rest"}`} /><text x={xAt(regime.startIndex) + 5} y={pad.top + 12} className="og-sync__regime-label">{regime.label}</text></g>)}
-          {leftTicks.map((tick) => <g><line x1={pad.left} x2={chart.width - pad.right} y1={yAt(tick, "left")} y2={yAt(tick, "left")} className="og-sync__grid" /><text x={pad.left - 8} y={yAt(tick, "left") + 4} text-anchor="end" className="og-sync__tick">{formatNumber(tick, lang, series.find((item) => (item.axis ?? "left") === "left")?.decimals ?? 1)}</text></g>)}
-          {rightTicks.map((tick) => <text x={chart.width - pad.right + 8} y={yAt(tick, "right") + 4} className="og-sync__tick">{formatNumber(tick, lang, series.find((item) => item.axis === "right")?.decimals ?? 1)}</text>)}
+          {regimes.map((regime) => <rect x={xAt(regime.startIndex)} y={pad.top} width={Math.max(0, xAt(regime.endIndex) - xAt(regime.startIndex))} height={plotHeight} className={`og-sync__regime og-sync__regime--${regime.tone ?? "rest"}`} />)}
+          {leftTicks.map((tick) => <line x1={pad.left} x2={chart.width - pad.right} y1={yAt(tick, "left")} y2={yAt(tick, "left")} className="og-sync__grid" />)}
           {gaps.map((gap) => <rect x={xAt(gap)} y={pad.top} width={Math.max(4, plotWidth / Math.max(1, count - 1))} height={plotHeight} fill={`url(#${hatchId}-gap-hatch)`} className="og-sync__gap" />)}
-          {thresholds.map((threshold) => <g><line x1={pad.left} x2={chart.width - pad.right} y1={yAt(threshold.value, threshold.axis ?? "left", threshold.domain)} y2={yAt(threshold.value, threshold.axis ?? "left", threshold.domain)} className="og-sync__threshold" /><text x={pad.left + 5} y={yAt(threshold.value, threshold.axis ?? "left", threshold.domain) - 4} className="og-sync__threshold-label">{threshold.label}</text></g>)}
-          {events.map((item) => <g style={item.color ? `--tone: ${item.color}` : undefined}><line x1={xAt(item.index)} x2={xAt(item.index)} y1={pad.top} y2={pad.top + plotHeight} className="og-sync__event" /><text x={xAt(item.index) + 4} y={pad.top + plotHeight - 5} className="og-sync__event-label">{item.label}</text></g>)}
+          {thresholds.map((threshold) => <line x1={pad.left} x2={chart.width - pad.right} y1={yAt(threshold.value, threshold.axis ?? "left", threshold.domain)} y2={yAt(threshold.value, threshold.axis ?? "left", threshold.domain)} className="og-sync__threshold" />)}
+          {events.map((item) => <g style={item.color ? `--tone: ${item.color}` : undefined}><line x1={xAt(item.index)} x2={xAt(item.index)} y1={pad.top} y2={pad.top + plotHeight} className="og-sync__event" /></g>)}
           {series.map((item, index) => {
             const axis = item.axis ?? "left";
             const color = item.color ?? SERIES_COLORS[index % SERIES_COLORS.length];
@@ -317,6 +320,18 @@ export function SyncChart({
           {cursorX !== null && <line x1={cursorX} x2={cursorX} y1={pad.top} y2={pad.top + plotHeight} className="og-sync__cursor" />}
           {cursorX !== null && series.map((item, index) => item.values[activeCursor ?? -1] === undefined ? null : <circle cx={cursorX} cy={yAt(item.values[activeCursor ?? 0], item.axis ?? "left", item.domain)} r="3.5" className="og-sync__cursor-point" style={{ color: item.color ?? SERIES_COLORS[index % SERIES_COLORS.length] }} />)}
         </svg>
+        <div className="og-sync__labels" aria-hidden="true">
+          {leftTicks.map((tick) => <span className="og-sync__tick og-sync__tick--left" style={{ left: `${(pad.left - 8) / chart.width * 100}%`, top: `${yAt(tick, "left") / chart.height * 100}%` }}>{formatNumber(tick, lang, series.find((item) => (item.axis ?? "left") === "left")?.decimals ?? 1)}</span>)}
+          {rightTicks.map((tick) => <span className="og-sync__tick og-sync__tick--right" style={{ left: `${(chart.width - pad.right + 8) / chart.width * 100}%`, top: `${yAt(tick, "right") / chart.height * 100}%` }}>{formatNumber(tick, lang, series.find((item) => item.axis === "right")?.decimals ?? 1)}</span>)}
+          {regimes.map((regime) => <span className="og-sync__regime-label" style={{ left: `${(xAt(regime.startIndex) + 5) / chart.width * 100}%`, top: `${(pad.top + 12) / chart.height * 100}%` }}>{regime.label}</span>)}
+          {thresholds.map((threshold) => <span className="og-sync__threshold-label" style={{ left: `${(pad.left + 5) / chart.width * 100}%`, top: `${(yAt(threshold.value, threshold.axis ?? "left", threshold.domain) - 4) / chart.height * 100}%` }}>{threshold.label}</span>)}
+          {events.map((item, index) => {
+            const width = item.label.length * 5.5 + 4;
+            const left = Math.max(pad.left, Math.min(chart.width - pad.right - width, xAt(item.index) + 4));
+            const top = pad.top + plotHeight - 5 - (eventOffsets[index] ?? 0);
+            return <span className="og-sync__event-label" style={`left: ${left / chart.width * 100}%; top: ${top / chart.height * 100}%; --tone: ${item.color ?? "var(--og-blue)"}`}>{item.label}</span>;
+          })}
+        </div>
         <div className="og-sync__xlabels">{xLabels.map((label, index) => <span className={index === 0 ? "is-first" : index === xLabels.length - 1 ? "is-last" : ""} style={{ left: `${xLabels.length <= 1 ? 50 : index / (xLabels.length - 1) * 100}%` }}>{label}</span>)}</div>
       </div>
       {activeCursor !== null && activeCursor >= 0 && count > 0 && <div className="og-sync__tooltip" role="status"><strong>{xLabels.length ? xLabels[Math.min(xLabels.length - 1, Math.round(activeCursor / Math.max(1, count - 1) * (xLabels.length - 1)))] : `#${activeCursor + 1}`}</strong>{series.map((item, index) => {

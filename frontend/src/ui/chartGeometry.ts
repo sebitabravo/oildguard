@@ -134,3 +134,20 @@ export function nextCursorIndex(index: number, key: string, length: number): num
   if (key === "ArrowRight") return Math.max(0, Math.min(length - 1, index + 1));
   return index;
 }
+
+export function collisionLabelOffsets(
+  labels: readonly { left: number; width: number }[],
+  minimumGap = 4,
+  laneHeight = 12,
+): number[] {
+  const lanes: Array<Array<{ left: number; right: number }>> = [];
+  return labels.map(({ left, width }) => {
+    const right = left + Math.max(0, width);
+    let laneIndex = 0;
+    while (lanes[laneIndex]?.some((placed) => left < placed.right + minimumGap && right + minimumGap > placed.left)) {
+      laneIndex += 1;
+    }
+    (lanes[laneIndex] ??= []).push({ left, right });
+    return laneIndex * laneHeight;
+  });
+}

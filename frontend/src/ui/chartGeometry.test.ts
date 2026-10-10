@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { chartFrame, confidenceBand, evenPositions, niceTicks, percentAlong, percentFromTop, scaledPoints, monotoneCurvePath, nextCursorIndex } from "./chartGeometry";
+import { chartFrame, confidenceBand, evenPositions, niceTicks, percentAlong, percentFromTop, scaledPoints, monotoneCurvePath, nextCursorIndex, collisionLabelOffsets } from "./chartGeometry";
 
 describe("chart geometry", () => {
   test("keeps axes inside a padded frame", () => {
@@ -61,5 +61,22 @@ describe("synchronized chart interaction geometry", () => {
     expect(nextCursorIndex(3, "ArrowRight", 4)).toBe(3);
     expect(nextCursorIndex(2, "Escape", 4)).toBe(2);
     expect(nextCursorIndex(0, "ArrowRight", 0)).toBe(-1);
+  });
+});
+
+describe("chart label collision layout", () => {
+  test("stacks overlapping event labels into separate vertical lanes", () => {
+    expect(collisionLabelOffsets([
+      { left: 20, width: 48 },
+      { left: 22, width: 70 },
+      { left: 25, width: 35 },
+    ])).toEqual([0, 12, 24]);
+  });
+
+  test("keeps separated event labels on the baseline", () => {
+    expect(collisionLabelOffsets([
+      { left: 20, width: 30 },
+      { left: 70, width: 30 },
+    ])).toEqual([0, 0]);
   });
 });
