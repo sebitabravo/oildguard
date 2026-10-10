@@ -25,6 +25,7 @@ import csv
 import json
 import logging
 import os
+import threading
 import time
 import urllib.request
 from typing import Any, Callable
@@ -55,6 +56,44 @@ except ImportError:  # el backend sigue funcionando sin la dependencia
 def accelerated_json_available() -> bool:
     """True si el decoder acelerado esta instalado (solo diagnostico)."""
     return orjson is not None
+
+
+def bridge_timing_enabled() -> bool:
+    """Instrumentacion del camino del puente (detras de bandera, cero coste si no)."""
+    return os.getenv("OILGUARD_BRIDGE_TIMING", "0") == "1"
+
+
+_BRIDGE_LOCK = threading.Lock()
+_BRIDGE = {"callbacks": 0, "total_ms": 0.0, "decode_ms": 0.0, "submit_ms": 0.0, "max_ms": 0.0}
+
+
+def bridge_timing_reset() -> None:
+    with _BRIDGE_LOCK:
+        for key in _BRIDGE:
+            _BRIDGE[key] = 0 if isinstance(_BRIDGE[key], int) else 0.0
+
+
+def bridge_state() -> dict[str, Any]:
+    """Reparto del tiempo del hilo de callback de paho.
+
+    El callback corre en el hilo de red: si decode+submit se llevan mucho, el
+    socket no se drena a tiempo y el broker acaba frenando al simulador. Sin
+    este reparto no hay forma de saber si el cuello es la red o el worker.
+    """
+    with _BRIDGE_LOCK:
+        callbacks = _BRIDGE["callbacks"]
+        total = _BRIDGE["total_ms"]
+        decode = _BRIDGE["decode_ms"]
+        submit = _BRIDGE["submit_ms"]
+        peak = _BRIDGE["max_ms"]
+    return {
+        "callbacks": callbacks,
+        "mean_total_ms": (total / callbacks) if callbacks else 0.0,
+        "mean_decode_ms": (decode / callbacks) if callbacks else 0.0,
+        "mean_submit_ms": (submit / callbacks) if callbacks else 0.0,
+        "max_total_ms": peak,
+        "decode_share": (decode / total) if total else 0.0,
+    }
 
 
 def subscription_topics(topic: str = MQTT_TOPIC) -> tuple[str, ...]:
@@ -173,16 +212,31 @@ def run_forever(
             log.warning("mqtt connect refused rc=%d", rc)
 
     def on_message(_c: Any, _u: Any, msg: Any) -> None:
+        timed = bridge_timing_enabled()
+        started = time.perf_counter() if timed else 0.0
         try:
             rows = decode_payload(msg.payload, msg.topic)
         except ValueError as exc:
             log.warning("dropping malformed message on %s: %s", msg.topic, exc)
             return
+        decoded = time.perf_counter() if timed else 0.0
         try:
             ack = forward(rows)
-            log.info("forwarded %d rows from %s -> ingest ack=%s", len(rows), msg.topic, ack)
+            log.debug("forwarded %d rows from %s -> ingest ack=%s", len(rows), msg.topic, ack)
         except Exception as exc:  # noqa: BLE001 - one bad batch must not kill the loop
             log.warning("forward failed (%d rows): %s", len(rows), exc)
+            return
+        finally:
+            if timed:
+                finished = time.perf_counter()
+                elapsed_ms = (finished - started) * 1000.0
+                with _BRIDGE_LOCK:
+                    _BRIDGE["callbacks"] += 1
+                    _BRIDGE["total_ms"] += elapsed_ms
+                    _BRIDGE["decode_ms"] += (decoded - started) * 1000.0
+                    _BRIDGE["submit_ms"] += (finished - decoded) * 1000.0
+                    if elapsed_ms > _BRIDGE["max_ms"]:
+                        _BRIDGE["max_ms"] = elapsed_ms
 
     client.on_connect = on_connect
     client.on_message = on_message

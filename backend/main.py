@@ -41,44 +41,52 @@ from starlette.concurrency import run_in_threadpool
 from shared.messages import message
 from shared.signing import derive_device_key, parse_device_keys, verify_row
 
-try:  # paquete (pytest / uvicorn backend.main:app)
-    from .aggregates import (
-        DEFAULT_METRICS,
-        QUANTILE_INTERPOLATION,
-        aggregate_by_device,
-        aggregate_fleet,
-        build_frame,
-        parse_metrics,
-    )
-    from .metrics import CachedProbe, IngestMetrics, TisoClock
-    from .pipeline import IngestPipeline
-    from .store import (
-        DEFAULT_DEVICE,
-        RETENTION_ROWS,
-        StoreView,
-        TelemetryStore,
-        as_float,
-        outage_runs,
-    )
-except ImportError:  # módulo suelto (Docker copia backend/ a /app)
-    from aggregates import (  # type: ignore
-        DEFAULT_METRICS,
-        QUANTILE_INTERPOLATION,
-        aggregate_by_device,
-        aggregate_fleet,
-        build_frame,
-        parse_metrics,
-    )
-    from metrics import CachedProbe, IngestMetrics, TisoClock  # type: ignore
-    from pipeline import IngestPipeline  # type: ignore
-    from store import (  # type: ignore
-        DEFAULT_DEVICE,
-        RETENTION_ROWS,
-        StoreView,
-        TelemetryStore,
-        as_float,
-        outage_runs,
-    )
+# Los modulos hermanos se importan UNO POR UNO con su propio try/except.
+# En un solo try grande, que falte un simbolo en cualquiera de ellos cambia
+# el modulo entero al modo plano y el error real desaparece bajo un
+# "No module named 'X'" del modulo equivocado.
+# Los dos layouts: paquete (pytest, uvicorn backend.main:app) y plano
+# (Docker copia backend/ a /app y ejecuta main:app).
+try:  # paquete
+    from . import influx_writer as _influx_writer
+    from . import aggregates as _aggregates
+    from . import fleetagg as _fleetagg
+    from . import ingest_mqtt as _ingest_mqtt
+    from . import metrics as _metrics
+    from . import outages as _outages
+    from . import pipeline as _pipeline
+    from . import store as _store
+except ImportError:  # modulos sueltos
+    import influx_writer as _influx_writer
+    import aggregates as _aggregates
+    import fleetagg as _fleetagg
+    import ingest_mqtt as _ingest_mqtt
+    import metrics as _metrics
+    import outages as _outages
+    import pipeline as _pipeline
+    import store as _store
+
+InfluxWriter = _influx_writer.InfluxWriter
+bridge_state = _ingest_mqtt.bridge_state
+bridge_timing_enabled = _ingest_mqtt.bridge_timing_enabled
+DEFAULT_METRICS = _aggregates.DEFAULT_METRICS
+QUANTILE_INTERPOLATION = _aggregates.QUANTILE_INTERPOLATION
+aggregate_by_device = _aggregates.aggregate_by_device
+aggregate_fleet = _aggregates.aggregate_fleet
+build_frame = _aggregates.build_frame
+parse_metrics = _aggregates.parse_metrics
+CachedProbe = _metrics.CachedProbe
+IngestMetrics = _metrics.IngestMetrics
+TisoClock = _metrics.TisoClock
+RateLimiter = _metrics.RateLimiter
+IngestPipeline = _pipeline.IngestPipeline
+DEFAULT_DEVICE = _store.DEFAULT_DEVICE
+RETENTION_ROWS = _store.RETENTION_ROWS
+StoreView = _store.StoreView
+TelemetryStore = _store.TelemetryStore
+as_float = _store.as_float
+row_ts = _store.row_ts
+outage_runs = _store.outage_runs
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("oilguard-backend")
@@ -100,6 +108,7 @@ _INFLUX_WRITE = os.getenv("OILGUARD_INFLUX_WRITE", "1") == "1"
 INGEST_QUEUE_BATCHES = int(os.getenv("OILGUARD_INGEST_QUEUE", "1000"))
 INGEST_FLUSH_ROWS = int(os.getenv("OILGUARD_INFLUX_FLUSH_ROWS", "5000"))
 INGEST_FLUSH_SECONDS = float(os.getenv("OILGUARD_INFLUX_FLUSH_SECONDS", "1"))
+INGEST_INFLUX_QUEUE_BATCHES = int(os.getenv("OILGUARD_INFLUX_QUEUE", "200"))
 # Con el bucket lleno por las pruebas de carga, contar los puntos persistidos
 # tardaba segundos. /health responde siempre en el plazo de espera; la sonda
 # sigue en vuelo y rellena el cache cuando termina.
@@ -400,6 +409,21 @@ def verify_rows(
     return prepared, rejections
 
 
+# Agregados incrementales de flota (R2d). Se alimentan en verify_and_store, de
+# modo que fleet_tick responde en O(dispositivos) y no relee las filas de la
+# ventana ni monta un DataFrame por tick.
+_FLEET_ROLLING = _fleetagg.RollingFleet(DEFAULT_METRICS)
+_FLEET_METRICS = list(DEFAULT_METRICS)
+
+# Rachas de corte seguidas en la ingesta (R2d), en vez de reescanear las filas
+# retenidas de cada dispositivo en cada peticion a /fleet/outages.
+_OUTAGES = _outages.OutageTracker()
+# Los agregados incrementales se vacian con el almacen; si no, un clear()
+# dejaba un tick respondiendo con datos de la sesion anterior.
+_STORE.on_clear(_FLEET_ROLLING.reset)
+_STORE.on_clear(_OUTAGES.reset)
+
+
 def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Núcleo de ingesta: verifica firmas y escribe en el almacén. Sin Influx.
 
@@ -420,8 +444,32 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
         _rejected_total += sum(rejected_reasons.values())
         _rejected_reasons.update(rejected_reasons)
         _verified_total += sum(1 for row in accepted if row.get("sig_verified"))
+        # Un solo recorrido de las filas aceptadas alimenta los agregados
+        # incrementales; el corte de ventana es por reloj de cada dispositivo.
+        ts_of = _TISO.epoch
+        rolling = _FLEET_ROLLING
+        outages_tracker = _OUTAGES
+        for row in accepted:
+            ts = row_ts(row)
+            device = row.get("device_id")
+            rolling.observe(
+                device,
+                ts,
+                [as_float(row.get(name)) for name in _FLEET_METRICS],
+            )
+            outages_tracker.observe(
+                device,
+                int(row.get("seq", 0)),
+                ts,
+                row.get("t_iso"),
+                as_float(row.get("link_down")),
+            )
 
     rejected_count = sum(rejected_reasons.values())
+    # El almacenamiento va primero y completo; Influx se encola despues y no
+    # puede hacer fallar ni retrasar la ingesta.
+    if accepted:
+        _INFLUX_WRITER.submit(accepted)
     _INGEST_METRICS.record(accepted=len(accepted), rejected=rejected_count, now=received_at)
     # Una sola pasada: los generadores anidados y la llamada por fila costaban
     # mas que la propia medicion de latencia.
@@ -439,7 +487,7 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
         seq = int(row.get("seq", 0))
         if seq > latest_seq:
             latest_seq = seq
-    log.info(
+    log.debug(
         "ingest accepted=%d rejected=%d reasons=%s latest_seq=%d store_rows=%d",
         len(accepted),
         rejected_count,
@@ -457,10 +505,72 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _write_line_protocol_raw(protocol: str) -> tuple[str, dict[str, Any]]:
+    """Escribe un lote de line protocol. Nunca lanza; degrada a memoria."""
+    if not _INFLUX_WRITE:
+        msg = "disabled (OILGUARD_INFLUX_WRITE=0); rows kept in memory"
+        log.info("InfluxDB %s", msg)
+        return msg, message("influx_client_missing")
+    try:
+        from influxdb_client import InfluxDBClient  # type: ignore
+        from influxdb_client.client.write_api import SYNCHRONOUS  # type: ignore
+    except ImportError:
+        msg = "disabled (influxdb-client not installed); rows kept in memory"
+        log.warning("InfluxDB %s", msg)
+        return msg, message("influx_client_missing")
+    points = protocol.count("\n") + 1
+    client = None
+    try:
+        client = InfluxDBClient(
+            url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG, timeout=3000
+        )
+        write_api = client.write_api(write_options=SYNCHRONOUS)
+        write_api.write(
+            bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=protocol
+        )
+        return (
+            f"written ({points} points -> {INFLUXDB_URL} bucket={INFLUXDB_BUCKET})",
+            message("influx_written", points=points),
+        )
+    except Exception as exc:  # noqa: BLE001 - best-effort; las filas ya estan en memoria
+        msg = f"fallback-memory (unreachable {INFLUXDB_URL}: {exc}); rows kept in memory"
+        log.warning("InfluxDB write failed; %s", msg)
+        return msg, message("influx_unreachable")
+    finally:
+        if client is not None:
+            try:
+                client.close()
+            except Exception:  # noqa: BLE001 - el cierre es complementario a la escritura
+                log.debug("influx write client close failed")
+
+
 def flush_influx(rows: list[dict[str, Any]]) -> None:
-    """Vuelca puntos a Influx y publica el estado para /health."""
+    """Vuelca puntos a Influx y publica el estado para /health.
+
+    Esta es la via SINCRONA que conserva el contrato de POST /ingest: la
+    respuesta sigue diciendo si el lote se escribio. El camino MQTT no la usa;
+    ese va al escritor asincrono.
+    """
     global _influx_status, _influx_message
     _influx_status, _influx_message = _write_to_influx(rows)
+
+
+def _write_line_protocol(protocol: str) -> None:
+    """Escritura real desde el hilo dedicado (una llamada por lote armado)."""
+    global _influx_status, _influx_message
+    status, message = _write_line_protocol_raw(protocol)
+    _influx_status, _influx_message = status, message
+
+
+# El ingest solo encola; este hilo es el unico que habla con Influx desde la
+# via MQTT. El CPU del worker estaba por debajo del 50 % esperando I/O.
+_INFLUX_WRITER = InfluxWriter(
+    write=_write_line_protocol,
+    max_batches=INGEST_INFLUX_QUEUE_BATCHES,
+    flush_rows=INGEST_FLUSH_ROWS,
+    flush_seconds=INGEST_FLUSH_SECONDS,
+    enabled=_INFLUX_WRITE,
+)
 
 
 def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -489,7 +599,8 @@ _PIPELINE = IngestPipeline(
     max_batches=INGEST_QUEUE_BATCHES,
     flush_rows=INGEST_FLUSH_ROWS,
     flush_seconds=INGEST_FLUSH_SECONDS,
-    influx_enabled=_INFLUX_WRITE,
+    # Influx ya no pasa por el worker: lo lleva InfluxWriter en su propio hilo.
+    influx_enabled=False,
 )
 
 _INGEST_METRICS = IngestMetrics(window_s=10.0)
@@ -541,11 +652,14 @@ def queue_state() -> dict[str, Any]:
 
 
 def influx_state() -> dict[str, Any]:
+    """Estado de la persistencia: la del escritor dedicado mas la via sincrona."""
     return {
         "enabled": _INFLUX_WRITE,
+        "async": True,
         "flush_rows": INGEST_FLUSH_ROWS,
         "flush_seconds": INGEST_FLUSH_SECONDS,
         "status": _influx_status,
+        **_INFLUX_WRITER.state(),
     }
 
 
@@ -761,8 +875,13 @@ def ingest(batch: IngestBatch) -> dict:
 
 def fleet_tick(window_s: int) -> dict[str, Any]:
     """Un tick del stream: agregados de flota en grupo fleet + estado de ingesta."""
-    frame = build_frame(_STORE.snapshot_window(window_s))
-    blocks, rows, devices = aggregate_fleet(frame, list(DEFAULT_METRICS))
+    if _FLEET_ROLLING.covers(window_s):
+        blocks, rows, devices = _FLEET_ROLLING.snapshot(window_s)
+    else:
+        # Fuera del horizonte lo incremental no puede responder sin inventarse
+        # un cero, asi que se cae a la ruta exacta.
+        frame = build_frame(_STORE.snapshot_window(window_s))
+        blocks, rows, devices = aggregate_fleet(frame, list(DEFAULT_METRICS))
     return {
         "type": "fleet_tick",
         "as_of": _now_iso(),
@@ -773,6 +892,50 @@ def fleet_tick(window_s: int) -> dict[str, Any]:
         "aggregates": blocks,
         "ingest": _INGEST_METRICS.compact(queue=queue_state()),
     }
+
+
+class TickCache:
+    """Un solo tick por intervalo para todos los clientes del WebSocket.
+
+    ``fleet_tick`` es O(filas retenidas): leer la ventana completa de la flota
+    para cada conexion convertia una推送 por segundo por cliente en N
+    recomputos completos por segundo. Medido con py-spy en la matriz de estres:
+    el tick era el 49 % del CPU del contenedor.
+    """
+
+    def __init__(self, interval_s: float, now_fn: Any = time.monotonic) -> None:
+        self.interval_s = float(interval_s)
+        self._now_fn = now_fn
+        self._lock = threading.Lock()
+        self._payload: dict[str, Any] | None = None
+        self._window: int | None = None
+        self._at = 0.0
+
+    def get(self, window_s: int) -> dict[str, Any] | None:
+        now = self._now_fn()
+        with self._lock:
+            fresh = self._payload is not None and (now - self._at) < self.interval_s
+            if fresh and self._window == window_s:
+                return self._payload
+        payload = fleet_tick(window_s)
+        with self._lock:
+            self._payload, self._window, self._at = payload, window_s, self._now_fn()
+        return payload
+
+    def advance(self, seconds: float) -> None:
+        with self._lock:
+            self._at -= seconds
+
+    def reset(self) -> None:
+        with self._lock:
+            self._payload, self._window, self._at = None, None, 0.0
+
+
+_FLEET_TICK_CACHE = TickCache(FLEET_TICK_SECONDS)
+
+
+def cached_fleet_tick(window_s: int) -> dict[str, Any]:
+    return _FLEET_TICK_CACHE.get(window_s)
 
 
 def _parse_tick_window(raw: str, current: int) -> int:
@@ -822,7 +985,7 @@ async def fleet_stream(websocket: WebSocket) -> None:
         while not closed.is_set():
             # El calculo de percentiles es CPU-bound; en el hilo de eventos
             # congelaria cada ruta HTTP durante cada tick.
-            payload = await run_in_threadpool(fleet_tick, window_s)
+            payload = await run_in_threadpool(cached_fleet_tick, window_s)
             await websocket.send_json(payload)
             try:
                 raw = await asyncio.wait_for(commands.get(), timeout=FLEET_TICK_SECONDS)
@@ -989,8 +1152,11 @@ def fleet_outages(
         devices = [device_id] if device_id else _STORE.devices()
         runs: list[dict[str, Any]] = []
         for device in devices:
-            rows = sorted(_STORE.rows(device), key=lambda row: int(row.get("seq", 0)))
-            runs.extend(outage_runs(rows, device))
+            if _OUTAGES.is_dirty(device):
+                # Llegada fuera de orden: el incremental no puede garantizar la
+                # agrupacion por seq, asi que se reconstruye desde el almacen.
+                _OUTAGES.rebuild(device, _STORE.rows(device))
+            runs.extend(_OUTAGES.runs(device))
     runs.sort(key=lambda run: (str(run.get("start_t_iso") or ""), run["device_id"]), reverse=True)
     total = len(runs)
     return {
@@ -1064,6 +1230,11 @@ def metrics_ingest() -> dict:
         "ingest": {
             **_INGEST_METRICS.snapshot(queue=queue_state()),
             "influx": influx_state(),
+            **(
+                {"mqtt_bridge": bridge_state()}
+                if bridge_timing_enabled()
+                else {}
+            ),
             "retention_rows": RETENTION_ROWS,
             "devices": len(_STORE.devices()),
         },
@@ -1447,8 +1618,23 @@ def _start_mqtt_bridge() -> None:
 @app.on_event("startup")
 def on_startup() -> None:
     _probe_influx()
+    _INFLUX_WRITER.start()
     _PIPELINE.start()
     _start_mqtt_bridge()
+
+
+@app.on_event("shutdown")
+def on_shutdown() -> None:
+    # Vaciar el pipeline y despues el escritor: lo que este en la cola del
+    # pipeline todavia puede encolar en la del escritor.
+    _PIPELINE.stop(timeout=5.0)
+    drained = _INFLUX_WRITER.stop(timeout=5.0)
+    log.info(
+        "shutdown complete: influx drained=%d batches, written=%d, dropped=%d",
+        drained,
+        _INFLUX_WRITER.written_batches(),
+        _INFLUX_WRITER.dropped_batches(),
+    )
 
 
 def load_rows_from_csv(path: str, limit: int = 0) -> list[dict[str, Any]]:

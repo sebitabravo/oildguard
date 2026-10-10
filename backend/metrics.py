@@ -236,6 +236,39 @@ class RollingLatency:
         return result
 
 
+class RateLimiter:
+    """Deja pasar como mucho un aviso por intervalo, informando del total.
+
+    Un aviso por evento es un aviso por fila cuando el deque se llena: medido
+    en la matriz de estres eran ~1700 lineas/s escribiendo en el hilo de
+    callback de MQTT, con el CPU del backend al 93 % y el worker de ingesta
+    sin GIL para trabajar. El contador exacto vive siempre en las metricas;
+    el log solo necesita ser visible, no exhaustivo.
+    """
+
+    def __init__(self, interval_s: float = 1.0, now_fn: Callable[[], float] = time.time) -> None:
+        self.interval_s = max(0.0, float(interval_s))
+        self._now_fn = now_fn
+        self._last: float | None = None
+        self._count = 0
+        self._lock = threading.Lock()
+
+    def should_log(self) -> tuple[bool, int]:
+        """(¿emitir?, cuantos eventos van acumulados)."""
+        with self._lock:
+            now = self._now_fn()
+            self._count += 1
+            if self._last is None or (now - self._last) >= self.interval_s:
+                self._last = now
+                return True, self._count
+            return False, self._count
+
+    def reset(self) -> None:
+        with self._lock:
+            self._last = None
+            self._count = 0
+
+
 def _run_in_background_thread(work: Callable[[], None]) -> None:
     threading.Thread(target=work, daemon=True).start()
 

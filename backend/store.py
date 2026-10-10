@@ -111,6 +111,7 @@ class TelemetryStore:
         self._accepted: Counter[str] = Counter()
         self._verified: Counter[str] = Counter()
         self._rejected: dict[str, Counter[str]] = {}
+        self._clear_hooks: list[Any] = []
 
     # -- escritura ---------------------------------------------------------
 
@@ -213,6 +214,15 @@ class TelemetryStore:
         """Inserta una fila suelta sin antireplay (firma de compatibilidad)."""
         self.commit([(row, None)])
 
+    def on_clear(self, hook: Any) -> None:
+        """Registra un callback que se dispara en cada ``clear()``.
+
+        Las estructuras que derivan del almacen (agregados incrementales de
+        flota) tienen que emptiedarse con el, o siguen respondiendo con datos
+        de una prueba o de una sesion anterior.
+        """
+        self._clear_hooks.append(hook)
+
     def clear(self) -> None:
         with self.lock:
             self._rows.clear()
@@ -222,6 +232,8 @@ class TelemetryStore:
             self._accepted.clear()
             self._verified.clear()
             self._rejected.clear()
+        for hook in list(self._clear_hooks):
+            hook()
 
     # -- lectura -----------------------------------------------------------
 
