@@ -40,7 +40,7 @@ export interface HistoryPoint {
   at: number;
   liters: number | null;
   sigma: number | null;
-  event?: "outage" | "alert" | "inspection";
+  event?: "outage" | "alert" | "inspection" | "refill";
 }
 
 export interface DemoWheel {
@@ -102,16 +102,23 @@ function round(value: number, digits = 1): number {
   return Math.round(value * factor) / factor;
 }
 
-function historyFor(random: () => number, level: number): Record<HistoryWindow, HistoryPoint[]> {
-  const windows: Array<[HistoryWindow, number]> = [["250h", 12], ["7d", 14], ["30d", 18], ["90d", 24]];
-  return Object.fromEntries(windows.map(([window, count]) => [
+function historyFor(random: () => number, level: number, lossRateLPer100h: number): Record<HistoryWindow, HistoryPoint[]> {
+  const windows: Array<[HistoryWindow, number, number]> = [["250h", 25, 250], ["7d", 21, 168], ["30d", 30, 720], ["90d", 36, 2160]];
+  return Object.fromEntries(windows.map(([window, count, windowHours]) => [
     window,
-    Array.from({ length: count }, (_, index) => ({
-      at: DEMO_REFERENCE_MS - ((count - index) * 4 * 60 * 60 * 1000),
-      liters: index === Math.floor(count / 2) && random() > 0.6 ? null : round(Math.min(NOMINAL_LITERS, level + random() * 5)),
-      sigma: round(0.8 + random() * 1.2),
-      event: index === Math.floor(count / 2) ? "inspection" : index === count - 3 ? "alert" : undefined,
-    })),
+    Array.from({ length: count }, (_, index) => {
+      const elapsedHours = (index / (count - 1)) * windowHours;
+      const baseline = Math.min(NOMINAL_LITERS, level + (lossRateLPer100h * (windowHours - elapsedHours)) / 100);
+      const refill = index === Math.floor(count * 0.62);
+      const noisyLevel = baseline + (refill ? 2.4 : 0) + (random() - 0.5) * 0.28;
+      const isGap = index === Math.floor(count * 0.28) || index === Math.floor(count * 0.76);
+      return {
+        at: DEMO_REFERENCE_MS - ((count - 1 - index) * (windowHours / (count - 1)) * 60 * 60 * 1000),
+        liters: isGap ? null : round(Math.max(0, Math.min(NOMINAL_LITERS + 2, noisyLevel))),
+        sigma: round(0.35 + random() * 0.35),
+        event: refill ? "refill" : index === Math.floor(count / 2) ? "inspection" : index === count - 3 ? "alert" : undefined,
+      };
+    }),
   ])) as Record<HistoryWindow, HistoryPoint[]>;
 }
 
@@ -126,6 +133,7 @@ export function createDemoDataset(seed = 930106): DemoDataset {
       const state = is980 ? "out-of-service" : states[(truckIndex + wheelIndex) % states.length];
       const alertLevel = state === "N1" || state === "N2" || state === "N4" ? state : null;
       const levelL = is980 ? 95 : round(82 + random() * 12);
+      const lossRateLPer100h = round(alertLevel ? 1.2 + random() * 2 : random() * 0.3, 2);
       const wheel: DemoWheel = {
         id: `wheel-${position}-${String(truckIndex + 1).padStart(2, "0")}`,
         truckId,
@@ -141,9 +149,9 @@ export function createDemoDataset(seed = 930106): DemoDataset {
         validity: state === "stale" ? "stale" : state === "link-down" ? "estimate" : is980 ? "invalid" : "valid",
         state,
         alertLevel,
-        lossRateLPer100h: round(alertLevel ? 1.2 + random() * 2 : random() * 0.3, 2),
+        lossRateLPer100h,
         lastComm: state === "stale" ? DEMO_REFERENCE_MS - 180_000 : state === "link-down" ? null : DEMO_REFERENCE_MS - 8_000,
-        history: historyFor(random, levelL),
+        history: historyFor(random, levelL, lossRateLPer100h),
       };
       if (alertLevel) {
         const recipient: Recipient = alertLevel === "N1" ? "Reliability" : alertLevel === "N2" ? "Planning" : "Operator";

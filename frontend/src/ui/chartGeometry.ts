@@ -32,6 +32,24 @@ export function scaledPoints(
   }));
 }
 
+export function scaledPointsInDomain(
+  values: readonly number[],
+  width: number,
+  height: number,
+  padding: { left: number; right: number; top: number; bottom: number },
+  min: number,
+  max: number,
+): ChartPoint[] {
+  if (!values.length) return [];
+  const span = max - min || 1;
+  const innerWidth = Math.max(1, width - padding.left - padding.right);
+  const innerHeight = Math.max(1, height - padding.top - padding.bottom);
+  return values.map((value, index) => ({
+    x: padding.left + (values.length === 1 ? innerWidth / 2 : (index / (values.length - 1)) * innerWidth),
+    y: padding.top + innerHeight - ((value - min) / span) * innerHeight,
+  }));
+}
+
 export function linePath(points: readonly ChartPoint[]): string {
   return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
 }
@@ -41,8 +59,13 @@ export function confidenceBand(
   sigma: readonly number[],
   width: number,
   height: number,
+  padding = { left: 0, right: 0, top: 0, bottom: 0 },
 ) {
-  const upper = scaledPoints(values.map((value, index) => value + (sigma[index] ?? 0)), width, height);
-  const lower = scaledPoints(values.map((value, index) => value - (sigma[index] ?? 0)), width, height).reverse();
+  const upperValues = values.map((value, index) => value + (sigma[index] ?? 0));
+  const lowerValues = values.map((value, index) => value - (sigma[index] ?? 0));
+  const min = Math.min(...lowerValues);
+  const max = Math.max(...upperValues);
+  const upper = scaledPointsInDomain(upperValues, width, height, padding, min, max);
+  const lower = scaledPointsInDomain(lowerValues, width, height, padding, min, max).reverse();
   return [...upper, ...lower];
 }

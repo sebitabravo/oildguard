@@ -1,0 +1,8 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import HistoryPage from "../../ops/history/HistoryPage";
+---
+
+<BaseLayout breadcrumb={["nav.group.operation", "nav.history"]}>
+  <HistoryPage client:only="preact" />
+</BaseLayout>

@@ -30,7 +30,7 @@ export const routeRegistry: RouteDefinition[] = [
   { id: "lab-sim", path: "/lab/sim", ready: false },
   { id: "lab-validation", path: "/lab/validation", ready: false },
   { id: "lab-bench", path: "/lab/bench", ready: false },
-  { id: "report", path: "/report", ready: false },
+  { id: "report", path: "/report", ready: true },
 ];
 
 export function isLegacyHash(hash: string): boolean {
