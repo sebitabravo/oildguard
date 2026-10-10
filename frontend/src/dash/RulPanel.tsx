@@ -14,7 +14,7 @@ import { classifyRulHorizon } from "./rulHorizon";
 
 const panel: CSSProperties = {
   border: "1px solid var(--og-line-dashboard)",
-  borderRadius: 6,
+  borderRadius: "var(--og-radius-panel)",
   padding: "10px 12px",
   background: "var(--og-panel-inset)",
 };

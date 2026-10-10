@@ -411,7 +411,7 @@ export default function Dashboard() {
 
       <div className="og-dashboard-panels" style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
         {/* level chart */}
-        <div className="og-dashboard-chart" style={{ flex: "2 1 560px", minWidth: 320, border: "1px solid var(--og-line-dashboard)", padding: 16, background: "var(--og-panel-dashboard)" }}>
+        <div className="og-dashboard-chart" style={{ flex: "2 1 560px", minWidth: 320, border: "1px solid var(--og-line-dashboard)", borderRadius: "var(--og-radius-panel)", padding: 16, background: "var(--og-panel-dashboard)" }}>
           <h2 style={{ margin: "0 0 4px", fontSize: 16 }}>
             {t("dash.chart.title", lang)}{" "}
             <span style={{ fontSize: 12, fontWeight: 500, color: "var(--og-muted)" }}>
@@ -441,7 +441,7 @@ export default function Dashboard() {
         {/* side column */}
         <div className="og-dashboard-side" style={{ flex: "1 1 280px", minWidth: 260, maxWidth: 400, display: "flex", flexDirection: "column", gap: 12 }}>
           {/* mode indicator */}
-          <div style={{ border: "1px solid var(--og-line-dashboard)", borderRadius: 6, padding: "10px 12px", background: "var(--og-panel-dashboard)" }}>
+          <div style={{ border: "1px solid var(--og-line-dashboard)", borderRadius: "var(--og-radius-panel)", padding: "10px 12px", background: "var(--og-panel-dashboard)" }}>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>
               {t("dash.mode.title", lang)}{" "}
               <span style={{ color: moving ? "var(--og-blue)" : "var(--og-green)" }}>
@@ -466,7 +466,7 @@ export default function Dashboard() {
           />
 
           {/* N1–N4 timeline */}
-          <div style={{ border: "1px solid var(--og-line-dashboard)", borderRadius: 6, padding: "10px 12px", background: "var(--og-panel-dashboard)" }}>
+          <div style={{ border: "1px solid var(--og-line-dashboard)", borderRadius: "var(--og-radius-panel)", padding: "10px 12px", background: "var(--og-panel-dashboard)" }}>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>
               {t("dash.alerts.title", lang)}{" "}
               <span style={{ fontSize: 12, fontWeight: 500, color: "var(--og-muted)" }}>
@@ -480,7 +480,7 @@ export default function Dashboard() {
             ) : (
               <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
                 {shownAlerts.map((a) => (
-                  <li key={a.alert_id} style={{ marginBottom: 8, border: `1px solid ${ALERT_CSS[a.level] ?? "var(--og-line-dashboard)"}`, borderRadius: 6, padding: "6px 8px" }}>
+                  <li key={a.alert_id} style={{ marginBottom: 8, border: `1px solid ${ALERT_CSS[a.level] ?? "var(--og-line-dashboard)"}`, borderRadius: "var(--og-radius-panel)", padding: "6px 8px" }}>
                     <span className={`og-badge og-badge--alert og-badge--${a.level.toLowerCase()}`}>
                       {a.level}
                     </span>
