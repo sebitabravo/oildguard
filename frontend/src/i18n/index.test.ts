@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { dict, dictKeys, t } from "./index";
+import { formatNumber } from "./numberFormat";
 
 function collectSpanishStrings(value: unknown): string[] {
   if (typeof value === "string") return [value];
@@ -51,9 +52,11 @@ describe("i18n dictionary", () => {
 
   test("the dashboard footnote reflects the geometry-derived pressure", () => {
     for (const lang of ["en", "es"] as const) {
-      const text = t("dash.footnote", lang);
+      const pressure = formatNumber(2.6, lang, 1);
+      const text = t("dash.footnote", lang, { pressure });
       expect(text.includes("28 kPa")).toBe(false);
-      expect(text.includes("2.6 kPa")).toBe(true);
+      expect(text.includes(`≈${pressure} kPa`)).toBe(true);
+      expect(text.includes(lang === "en" ? "≈2,6 kPa" : "≈2.6 kPa")).toBe(false);
     }
   });
 

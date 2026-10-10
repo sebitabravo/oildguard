@@ -166,7 +166,7 @@ describe("RUL suppression explanation", () => {
         }));
 
         expect(html).toContain(t("dash.analyzer.unavailable", lang));
-        expect(html).not.toContain(lang === "en" ? "RUL is suppressed" : "El RUL está suprimido");
+        expect(html.includes(lang === "en" ? "RUL is suppressed" : "El RUL está suprimido")).toBe(false);
       }
     } finally {
       if (defaultStorage) Object.defineProperty(globalThis, "localStorage", defaultStorage);

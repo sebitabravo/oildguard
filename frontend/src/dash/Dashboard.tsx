@@ -464,7 +464,7 @@ export default function Dashboard() {
           </h2>
           <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} />
           <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--og-muted)" }}>
-            {t("dash.footnote", lang)}
+            {t("dash.footnote", lang, { pressure: formatNumber(2.6, lang, 1) })}
           </p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8, fontSize: 13 }}>
             <span style={{ color: demoOilCss, fontWeight: 700 }}>

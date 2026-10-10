@@ -331,8 +331,8 @@ export const dict = {
   "demo.reset": { en: "Reset demo", es: "Reiniciar demo" },
   "truck.restart": { en: "Restart cycle", es: "Reiniciar ciclo" },
   "dash.footnote": {
-    en: "Pressure is derived from the gear-case geometry (sim/geometry.py): ≈2.6 kPa at 95 L · geometry is an ASSUMPTION until the bench h(V) test · SYNTHETIC-PROXY · priors in sim/physics.py · see docs/thesis-annex.md",
-    es: "La presión se deriva de la geometría de la caja de engranajes (sim/geometry.py): ≈2.6 kPa a 95 L · la geometría es un SUPUESTO hasta el ensayo h(V) en banco · SUSTITUTO SINTÉTICO · priors en sim/physics.py · ver docs/thesis-annex.md",
+    en: "Pressure is derived from the gear-case geometry (sim/geometry.py): ≈{pressure} kPa at 95 L · geometry is an ASSUMPTION until the bench h(V) test · SYNTHETIC-PROXY · priors in sim/physics.py · see docs/thesis-annex.md",
+    es: "La presión se deriva de la geometría de la caja de engranajes (sim/geometry.py): ≈{pressure} kPa a 95 L · la geometría es un SUPUESTO hasta el ensayo h(V) en banco · SUSTITUTO SINTÉTICO · priors en sim/physics.py · ver docs/thesis-annex.md",
   },
   "mine.hud.fleet": {
     en: "{trucks} trucks · {queued} queued · PLM III · synthetic proxy, field data pending",
@@ -577,8 +577,8 @@ export const dict = {
   "dash.alerts.empty": { en: "(no alerts — clean baseline; RUL stays suppressed anomaly-only)", es: "(sin alertas — línea base limpia; RUL suprimido, solo anomalías)" },
   "dash.chart.empty": { en: "No level samples yet — ingest rows or run the demo.", es: "Sin muestras de nivel — ingiere filas o ejecuta la demo." },
   "dash.chart.label": { en: "Oil level with confidence band", es: "Nivel de aceite con banda de confianza" },
-  "dash.chart.warning": { en: "warn 50% (47.5 L)", es: "advertencia 50% (47.5 L)" },
-  "dash.chart.critical": { en: "critical 30% (28.5 L)", es: "crítico 30% (28.5 L)" },
+  "dash.chart.warning": { en: "warn 50% ({liters} L)", es: "advertencia 50% ({liters} L)" },
+  "dash.chart.critical": { en: "critical 30% ({liters} L)", es: "crítico 30% ({liters} L)" },
   "dash.intro": {
     en: "Fused level + confidence, rest windows, N1–N4 ladder, RUL, and the sim-linked mode indicator. Model {model}.",
     es: "Nivel fusionado + confianza, ventanas de reposo, escalera N1–N4, RUL e indicador de modo. Modelo {model}.",

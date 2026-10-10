@@ -118,10 +118,10 @@ export default function LevelChart({
       <line x1={PAD_L} x2={W - PAD_R} y1={y(WARN_L)} y2={y(WARN_L)} stroke="var(--og-amber)" stroke-dasharray={`${5 * scale} ${4 * scale}`} stroke-width={scale} />
       <line x1={PAD_L} x2={W - PAD_R} y1={y(CRIT_L)} y2={y(CRIT_L)} stroke="var(--og-red)" stroke-dasharray={`${5 * scale} ${4 * scale}`} stroke-width={scale} />
       <text x={W - PAD_R + 10 * scale} y={y(WARN_L) - 4 * scale} fill="var(--og-amber)" font-size={11}>
-        {t("dash.chart.warning", lang)}
+        {t("dash.chart.warning", lang, { liters: formatNumber(WARN_L, lang, 1) })}
       </text>
       <text x={W - PAD_R + 10 * scale} y={y(CRIT_L) - 4 * scale} fill="var(--og-red)" font-size={11}>
-        {t("dash.chart.critical", lang)}
+        {t("dash.chart.critical", lang, { liters: formatNumber(CRIT_L, lang, 1) })}
       </text>
       {/* confidence band */}
       <polygon points={`${bandTop} ${bandBottom}`} fill="var(--og-blue)" opacity={0.22} />
