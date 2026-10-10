@@ -56,4 +56,49 @@ above; they are not extrapolations to production hardware.
 
 ## After optimization
 
-Pending: rerun after R2b
+Values below are copied from [`stress-results.json`](stress-results.json),
+measured on the same machine (arm64, macOS 15.8.1, Python 3.11.16 for the
+runner) after the ingest work documented in
+[`backend/API.md` — Ingest performance](../../backend/API.md): per-batch instead
+of per-row work on the hot path (R2b), Influx writes moved to a dedicated
+writer thread with coalescing (R2c), and an incremental fleet tick and outage
+tracker so dashboard polling no longer rescans the store (R2d). InfluxDB was
+enabled and no other agent or dev-server load was running during the run.
+
+| Influx | Devices × rate | Expected rows/s | Accepted rows/s | Accepted ratio | Latency p50 (s) | Latency p99 max (s) | Queue max | Dropped batches | Backend CPU median |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| on | 100 × 10 Hz | 1,000 | 995.5752 | 0.9956 | 0.4826 | 0.9432 | 0 | 0 | 7.50% |
+| on | 1,000 × 10 Hz | 10,000 | 9,698.8481 | 0.9699 | 0.7940 | 3.1177 | 946 | 957 | 77.76% |
+| on | 5,000 × 10 Hz | 50,000 | 3,642.4642 | 0.0728 | 5.5913 | 19.3844 | 1,000 | 73,583 | 80.47% |
+| on | 10,000 × 10 Hz | 100,000 | 1,014.1997 | 0.0101 | 9.1271 | 25.6417 | 1,000 | 115,030 | 73.29% |
+
+The simulator published every row in every case (`simulator_final.dropped`
+is 0; 93,373 rows/s at 10,000 devices).
+
+### Before vs after (Influx on)
+
+| Devices | Accepted rows/s before → after | Dropped batches before → after | p99 before → after |
+|---:|---|---|---|
+| 100 | 992 → 996 | 0 → 0 | 1.11 s → 0.94 s |
+| 1,000 | 5,150 → 9,699 (+88 %) | 23,274 → 957 | 7.18 s → 3.12 s |
+| 5,000 | 2,550 → 3,642 (+43 %) | 68,855 → 73,583 | 17.3 s → 19.4 s |
+| 10,000 | 1,630 → 1,014 | 103,876 → 115,030 | 19.4 s → 25.6 s |
+
+### Reading
+
+- At the design point of this prototype (hundreds to ~1,000 wheels at 10 Hz)
+  one backend process now keeps up: 97 % of the offered rows are accepted,
+  drops fall by 96 %, and p99 latency is ~3 s, of which ~0.5 s is the
+  10-row batching window of the simulator.
+- Beyond that, a single Python process is CPU-bound (~80 % of the container)
+  and the bounded queue sheds load as counted drops instead of growing
+  memory. 5,000 and 10,000 devices at 10 Hz are 5–10× above that ceiling;
+  their numbers show the backpressure behaving as designed, not a supported
+  operating point. The 10,000-device case also has fewer samples (22)
+  because `/metrics/ingest` itself responds slowly under saturation.
+- Scaling past one process (several ingest workers sharded by device, or
+  per-site edge aggregation) is an ASSUMPTION for future work; it was not
+  measured here. N threads inside one process were measured and rejected
+  (GIL contention, see `backend/API.md`).
+- Single 60 s runs on a shared laptop vary by roughly ±20 %; treat the table
+  as indicative.
