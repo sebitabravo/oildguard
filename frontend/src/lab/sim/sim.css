@@ -1,0 +1,93 @@
+.sim-page__grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 330px) minmax(0, 1fr) minmax(260px, 330px);
+  gap: 14px;
+  align-items: start;
+}
+.sim-page__col { display: grid; gap: 14px; min-width: 0; align-content: start; }
+.sim-page__cli { grid-column: 1 / -1; }
+
+.sim-page__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.sim-page__field-wide { grid-column: 1 / -1; }
+.sim-page__pinned { margin: 10px 0 0; padding: 8px 10px; color: var(--og-text-secondary); background: var(--og-panel-inset); border-left: 2px solid var(--og-accent); font-size: 12px; line-height: 1.5; }
+.sim-page__pinned.is-match { border-left-color: var(--og-green); }
+
+.sim-faults { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.sim-fault { display: grid; gap: 6px; width: 100%; min-height: 44px; padding: 10px 12px; color: var(--og-text-secondary); text-align: left; background: var(--og-panel-inset); border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-md); cursor: pointer; font: inherit; }
+.sim-fault:hover { border-color: var(--og-border-highlight); }
+.sim-fault[aria-pressed="true"] { border-color: var(--og-accent); background: color-mix(in srgb, var(--og-accent) 8%, var(--og-panel-inset)); }
+.sim-fault__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sim-fault__top strong { color: var(--og-text-primary); font-size: 13px; font-weight: 600; }
+.sim-fault__label { padding: 2px 7px; color: var(--og-accent); border: 1px solid color-mix(in srgb, var(--og-accent) 45%, transparent); border-radius: var(--og-radius-sm); font: 10px var(--og-mono); white-space: nowrap; }
+.sim-fault__effect { font-size: 12px; line-height: 1.5; }
+
+.sim-page__preview .lab-panel__head { margin-bottom: 6px; }
+.sim-legend { display: inline-flex; align-items: center; gap: 7px; color: var(--og-text-secondary); font: 10px var(--og-mono); white-space: nowrap; }
+.sim-legend__hatch, .sim-chart__hatch { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--og-blue) 55%, transparent) 0 2px, transparent 2px 7px); border: 1px solid color-mix(in srgb, var(--og-blue) 55%, transparent); }
+.sim-legend__hatch { display: inline-block; width: 18px; height: 11px; }
+
+.sim-chart { margin: 0 0 4px; }
+.sim-chart__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 6px; }
+.sim-chart__head h4 { margin: 0; color: var(--og-text-secondary); font: 500 11px var(--og-mono); letter-spacing: .05em; text-transform: uppercase; }
+.sim-chart__head span { color: var(--og-text-primary); font-size: 12px; }
+.sim-chart__frame { position: relative; }
+.sim-chart .og-time-series { height: 124px; min-height: 110px; }
+.sim-chart:last-of-type .og-time-series { height: 150px; }
+/* Misma caja que .og-time-series__plot para que el rayado quede sobre el área de trazo. */
+.sim-chart__hatch-layer { position: absolute; inset: 10px 28px 26px 56px; pointer-events: none; }
+.sim-chart__hatch { position: absolute; top: 0; bottom: 0; }
+
+.sim-transport { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--og-border-subtle); }
+.sim-transport__cursor { flex: 1 1 220px; min-width: 0; }
+
+.sim-counter { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.sim-counter li.is-empty { opacity: .55; }
+.sim-counter__row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.sim-counter__row code { color: var(--og-text-primary); font: 12px var(--og-mono); }
+.sim-counter__row span { color: var(--og-text-secondary); font-size: 12px; }
+.sim-counter__bar { display: block; height: 4px; margin-top: 6px; overflow: hidden; background: var(--og-overlay); border-radius: 99px; }
+.sim-counter__bar i { display: block; height: 100%; background: var(--og-accent); }
+.sim-counter__played { color: var(--og-text-secondary); font-size: 11px; }
+
+.sim-readout { display: grid; gap: 8px; margin: 0; }
+.sim-readout div { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 8px; border-top: 1px solid var(--og-border-subtle); }
+.sim-readout dt { color: var(--og-text-secondary); font-size: 12px; }
+.sim-readout dd { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--og-text-primary); font-size: 12px; text-align: right; }
+.sim-readout code { font: 12px var(--og-mono); }
+
+.sim-export { display: flex; flex-wrap: wrap; gap: 10px; }
+.sim-export .og-button { display: inline-flex; align-items: center; gap: 8px; }
+.sim-export__reason { color: var(--og-accent); }
+
+.sim-cli { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.sim-cli__block { min-width: 0; }
+.sim-cli__head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; color: var(--og-text-secondary); }
+.sim-cli pre { margin: 0; padding: 12px 14px; overflow-x: auto; color: var(--og-text-primary); background: var(--og-panel-inset); border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-md); font: 12px/1.6 var(--og-mono); white-space: pre-wrap; word-break: break-all; }
+
+/* En pantallas angostas las columnas se disuelven y cada panel ocupa su área. */
+@media (max-width: 1180px) {
+  .sim-page__col { display: contents; }
+  .sim-page__params { grid-area: params; }
+  .sim-page__faults { grid-area: faults; }
+  .sim-page__preview { grid-area: preview; }
+  .sim-page__counter { grid-area: counter; }
+  .sim-page__readout { grid-area: readout; }
+  .sim-page__export { grid-area: export; }
+  .sim-page__cli { grid-area: cli; }
+  .sim-page__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "preview preview"
+      "params faults"
+      "counter readout"
+      "export export"
+      "cli cli";
+  }
+}
+@media (max-width: 900px) {
+  .sim-page__grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "preview" "params" "faults" "counter" "readout" "export" "cli"; }
+  .sim-cli { grid-template-columns: minmax(0, 1fr); }
+  .sim-fault { min-height: 52px; }
+  .sim-transport { align-items: stretch; }
+  .sim-transport .og-button { flex: 1 1 120px; }
+}

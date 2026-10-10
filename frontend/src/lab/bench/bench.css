@@ -1,0 +1,41 @@
+.bench-page__grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(320px, .8fr); gap: 14px; align-items: start; }
+.bench-page__main { display: grid; gap: 14px; min-width: 0; }
+.bench-page__top { display: grid; gap: 14px; }
+
+.bench-page__sliders { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.bench-slider { gap: 8px; }
+.bench-slider__head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.bench-slider__head strong { white-space: nowrap; color: var(--og-text-primary); font-size: 14px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.bench-slider__range { display: flex; justify-content: space-between; align-items: center; color: var(--og-text-muted); font: 10px var(--og-mono); }
+.bench-slider__range em { color: var(--og-accent); font-style: normal; }
+
+.bench-page__cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.bench-page__cards .og-foundation-card { padding: 12px; background: var(--og-panel-inset); }
+.bench-page__cards .og-telemetry-value { margin-top: 8px; font-size: 20px; }
+.bench-page__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; margin: 14px 0 0; }
+.bench-page__facts div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 8px 0; border-top: 1px solid var(--og-border-subtle); }
+.bench-page__facts dt { color: var(--og-text-secondary); font-size: 12px; }
+.bench-page__facts dd { margin: 0; color: var(--og-text-primary); font-size: 12px; text-align: right; }
+
+.bench-page__curve { padding: 0 0 0 14px; background: var(--og-panel-inset); }
+.bench-page__curve .og-time-series { height: 190px; }
+.bench-page__axis { margin-top: 4px; color: var(--og-text-muted); font: 10px var(--og-mono); text-align: center; text-transform: uppercase; }
+
+.bench-protocol { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.bench-protocol li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: start; padding: 12px; background: var(--og-panel-inset); border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-md); }
+.bench-protocol__box { display: grid; width: 24px; height: 24px; place-items: center; color: var(--og-text-secondary); border: 1px solid var(--og-border-strong); border-radius: var(--og-radius-sm); font: 11px var(--og-mono); }
+.bench-protocol__text { color: var(--og-text-secondary); font-size: 13px; line-height: 1.55; }
+.bench-protocol .lab-chip-status { grid-column: 2; justify-self: start; }
+
+.bench-page .og-foundation-table th, .bench-page .og-foundation-table td { padding: 9px 12px; white-space: nowrap; }
+
+@media (max-width: 1400px) {
+  .bench-page__sliders { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+}
+@media (max-width: 1100px) {
+  .bench-page__grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .bench-page__cards, .bench-page__facts { grid-template-columns: minmax(0, 1fr); }
+  .bench-page .og-foundation-card .og-telemetry-value { font-size: 22px; }
+}

@@ -5,6 +5,7 @@
 export type Lang = "en" | "es";
 import { ops } from "./dict/ops";
 import { platform } from "./dict/platform";
+import { lab } from "./dict/lab";
 
 export const LANG_STORAGE_KEY = "oilguard-lang";
 
@@ -58,6 +59,7 @@ export function useLang(): [Lang, (l: Lang) => void] {
 export const dict = {
   ...ops,
   ...platform,
+  ...lab,
   "nav.label": { en: "Primary navigation", es: "Navegación principal" },
   "nav.mine": { en: "Mine & Fleet", es: "Mina y flota" },
   "nav.wheel": { en: "GDY106 Wheel", es: "Rueda GDY106" },
