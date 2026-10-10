@@ -142,6 +142,54 @@ def test_fleet_devices_alert_level_for_every_device_not_only_the_default(client)
     assert all("alert_level_reason" in d for d in payload["devices"])
 
 
+def test_fleet_devices_alert_level_is_omitted_with_a_reason_over_the_budget(client, monkeypatch):
+    """La escalera es lineal en filas: fuera de presupuesto se omite y se dice."""
+    monkeypatch.setattr(backend_main, "ALERT_LEVEL_ROW_BUDGET", 5)
+    rows = [_row(seq=seq, t_s=float(seq)) for seq in range(20)]
+    assert client.post("/ingest", json={"rows": rows}).status_code == 200
+
+    payload = client.get("/fleet/devices").json()
+
+    device = payload["devices"][0]
+    assert device["alert_level"] is None
+    assert device["alert_level_reason"] == "ladder_budget_exceeded"
+    assert payload["alert_level"] == {
+        "evaluated": False,
+        "mode": "auto",
+        "rows_scanned": 0,
+        "row_budget": 5,
+        "reason": "ladder_budget_exceeded",
+    }
+
+
+def test_fleet_devices_alert_level_on_forces_the_ladder_over_the_budget(client, monkeypatch):
+    monkeypatch.setattr(backend_main, "ALERT_LEVEL_ROW_BUDGET", 5)
+    rows = [_row(seq=seq, t_s=float(seq)) for seq in range(20)]
+    assert client.post("/ingest", json={"rows": rows}).status_code == 200
+
+    payload = client.get("/fleet/devices?alert_level=on").json()
+
+    assert payload["alert_level"]["evaluated"] is True
+    assert payload["alert_level"]["rows_scanned"] == 20
+    assert payload["devices"][0]["alert_level_reason"] in {"no_alert", None} or payload[
+        "devices"
+    ][0]["alert_level"] in {"N1", "N2", "N3", "N4"}
+
+
+def test_fleet_devices_alert_level_off_skips_the_ladder_entirely(client):
+    rows = [_row(seq=seq, t_s=float(seq)) for seq in range(6)]
+    assert client.post("/ingest", json={"rows": rows}).status_code == 200
+
+    payload = client.get("/fleet/devices?alert_level=off").json()
+
+    assert payload["alert_level"]["evaluated"] is False
+    assert payload["devices"][0]["alert_level_reason"] == "disabled_by_query"
+
+
+def test_fleet_devices_rejects_an_unknown_alert_level_mode(client):
+    assert client.get("/fleet/devices?alert_level=maybe").status_code == 422
+
+
 # --------------------------------------------------------------------------
 # 2. /level/series?signals= y truth_liters
 # --------------------------------------------------------------------------
