@@ -248,6 +248,8 @@ Disconnect is handled cleanly and cancels the reader task.
 | `OILGUARD_INFLUX_WRITE` | `1` | `0` disables InfluxDB (load tests) |
 | `OILGUARD_INFLUX_FLUSH_ROWS` | `5000` | points buffered before a forced flush |
 | `OILGUARD_INFLUX_FLUSH_SECONDS` | `1` | max seconds a point waits in the buffer |
+| `OILGUARD_INFLUX_COUNT_TTL_S` | `30` | how long `/health` reuses a cached `influx_points` |
+| `OILGUARD_INFLUX_COUNT_PROBE_WAIT_S` | `0.1` | max seconds `/health` waits for a count probe |
 | `OILGUARD_FLEET_TICK_SECONDS` | `1` | WebSocket tick period |
 | `OILGUARD_DEVICE_KEYS` | _(empty)_ | explicit `device_id:hex_key` entries |
 | `OILGUARD_DEVICE_MASTER_KEY` | _(empty)_ | hex master key for derived device keys |
@@ -304,6 +306,27 @@ range. A successful empty query returns `0`. The count query has a 1,200 ms
 client timeout and runs outside the in-memory store lock. If configuration,
 the SDK, or the query is unavailable, `influx_points` is `null`; `/health`
 still responds with HTTP 200.
+
+`/health` never blocks on InfluxDB. Counting millions of points takes
+seconds, and a health check that hangs does not report anything — it only
+exhausts whoever asks. The count runs in a background probe cached for
+`OILGUARD_INFLUX_COUNT_TTL_S` (30 s); a request reads the cache and waits at
+most `OILGUARD_INFLUX_COUNT_PROBE_WAIT_S` (0.1 s) *only when it is the one
+launching the probe*. A probe that overruns is not discarded — it fills the
+cache for the next caller. Measured against an Influx endpoint that hangs on
+connect: first call ~140 ms, subsequent calls ~2–5 ms.
+
+Two extra fields describe the cached value:
+
+| Field | Meaning |
+|---|---|
+| `influx_points_as_of` | ISO-8601 timestamp of the probe that produced the value, or `null` |
+| `influx_points_reason` | `null` when known, else `not_probed`, `count_unavailable` or `probe_failed` |
+| `influx_points_ttl_s` | configured TTL |
+
+The cache is invalidated when the Influx URL/org/bucket/token, the installed
+`influxdb_client` module, or the counting function itself changes — a cached
+count from a different installation would misreport persistence.
 
 Backend-generated prose/status fields retain their legacy English string and
 add a sibling `<field>_message` object for clients that localize the text:
