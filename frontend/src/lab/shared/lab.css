@@ -1,0 +1,42 @@
+/* Piezas comunes de las tres páginas del laboratorio sintético. */
+.lab-page { color: var(--og-text-primary); }
+.lab-page .og-page-header { margin-bottom: 18px; }
+
+/* Aviso persistente: queda fijo arriba mientras se desplaza la página. */
+.lab-banner { position: sticky; top: 0; z-index: 3; margin: 0 0 16px; background: var(--og-bg); }
+.lab-banner .og-notice { align-items: flex-start; border-width: 1px 1px 1px 4px; border-radius: var(--og-radius-md); background: color-mix(in srgb, var(--og-accent) 9%, var(--og-surface)); }
+.lab-banner .og-icon { width: 22px; height: 22px; margin-top: 1px; color: var(--og-accent); }
+.lab-banner__text { display: grid; gap: 3px; min-width: 0; }
+.lab-banner__text strong { color: var(--og-accent); font: 600 13px/1.4 var(--og-mono); letter-spacing: .04em; }
+.lab-banner__text span { color: var(--og-text-secondary); font-size: 12px; line-height: 1.5; }
+
+.lab-panel { min-width: 0; padding: 16px 18px; background: var(--og-surface); border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-md); }
+.lab-panel__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.lab-panel__head h3 { margin: 0; color: var(--og-text-primary); font-size: 15px; font-weight: 600; }
+.lab-panel__head p { margin: 4px 0 0; color: var(--og-text-secondary); font-size: 12px; line-height: 1.5; }
+.lab-note { margin: 10px 0 0; color: var(--og-text-secondary); font-size: 12px; line-height: 1.55; }
+.lab-mono { font-family: var(--og-mono); font-variant-numeric: tabular-nums; }
+
+.lab-field { display: grid; gap: 6px; color: var(--og-text-secondary); font: 10px var(--og-mono); letter-spacing: .06em; text-transform: uppercase; }
+.lab-field input:not([type="range"]), .lab-field select { min-height: 36px; padding: 0 10px; color: var(--og-text-primary); background: var(--og-panel-inset); border: 1px solid var(--og-border-strong); border-radius: var(--og-radius-sm); font: 13px var(--og-mono); }
+.lab-field input[type="range"] { width: 100%; min-height: 28px; accent-color: var(--og-accent); }
+
+.lab-chip-status { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; color: var(--og-text-secondary); border: 1px solid var(--og-border-strong); border-radius: 999px; font: 10px var(--og-mono); letter-spacing: .04em; white-space: nowrap; }
+.lab-chip-status::before { content: ""; width: 6px; height: 6px; border: 1px solid currentColor; border-radius: 50%; }
+
+.lab-source { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 14px; padding: 10px 14px; color: var(--og-text-secondary); background: var(--og-surface); border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-md); font-size: 12px; }
+.lab-source strong { color: var(--og-text-primary); font: 11px var(--og-mono); }
+.lab-source__dot { width: 8px; height: 8px; background: var(--og-text-muted); border-radius: 50%; }
+.lab-source__dot--live { background: var(--og-green); }
+.lab-source__dot--demo { background: var(--og-accent); }
+
+.lab-page :is(a, button, select, input):focus-visible { outline: 2px solid var(--og-accent); outline-offset: 2px; }
+
+@media (max-width: 900px) {
+  .lab-banner { position: static; margin-bottom: 12px; }
+  .lab-banner .og-notice { padding: 10px 12px; }
+  .lab-panel { padding: 14px; }
+  .lab-field input:not([type="range"]), .lab-field select { min-height: 44px; }
+  .lab-field input[type="range"] { min-height: 44px; }
+  .lab-page .og-button, .lab-page .og-seg__btn { min-height: 44px; }
+}

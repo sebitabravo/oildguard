@@ -1,0 +1,12 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { t } from "../../i18n";
+import SimPage from "../../lab/sim/SimPage";
+---
+
+<BaseLayout breadcrumb={["nav.group.lab", "nav.simulation"]}>
+  <h1 class="og-visually-hidden" data-i18n-en={t("nav.simulation", "en")} data-i18n-es={t("nav.simulation", "es")}>
+    {t("nav.simulation", "en")}
+  </h1>
+  <SimPage client:only="preact" />
+</BaseLayout>
