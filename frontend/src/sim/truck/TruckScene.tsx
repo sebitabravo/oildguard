@@ -11,7 +11,7 @@ import { wheelOmega } from "../../twin/truck930e/spec";
 import { buildPit, type PitBuild } from "../../twin/pit/buildPit";
 import { buildShovel } from "../../twin/pit/shovel";
 import { createDust } from "../../twin/pit/dust";
-import { shouldAdvanceDust } from "../../twin/pit/dustParticles";
+import { stepDustFrame } from "../../twin/pit/dustParticles";
 import { getFleetStore, getPitWorld, normalizeMineCam, readMineUrl } from "./mineWorld";
 import { HAUL_STATE_CSS, type HaulState } from "./cycle";
 import type { PlmState, TruckTick } from "../../twin/fleet/fleetSim";
@@ -177,7 +177,6 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
 
     const stopFrame = stage.onFrame((dt) => {
       if (pausedRef.current !== fleet.getSnapshot().paused) fleet.setPaused(pausedRef.current);
-      const advanceDust = shouldAdvanceDust(pausedRef.current);
       if (pendingStepRef.current > 0) {
         fleet.step(pendingStepRef.current);
         pendingStepRef.current = 0;
@@ -222,14 +221,20 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
         truck.model.setModeTint(tick.recal ? "rest" : "moving");
         truck.model.advance(dt);
         truck.ring.material.color.setHex(tick.recal ? 0x2fbf71 : tick.onGrade ? 0xf5a623 : 0x3a7bd5);
-        const headingX = Math.cos(tick.heading);
-        const headingZ = -Math.sin(tick.heading);
-        if (advanceDust && tick.speedMps > 2) {
-          scratch.set(tick.x - headingX * 3.4, tick.y + 0.1, tick.z - headingZ * 3.4);
-          dust.emit(scratch, new THREE.Vector3(-headingX * 1.3, 0, -headingZ * 1.3), Math.max(1, Math.floor(dt * 7)), Math.min(0.25, tick.speedMps / 55));
-        }
       }
-      if (advanceDust) dust.update(dt);
+      stepDustFrame(
+        pausedRef.current,
+        () => {
+          for (const tick of snapshot.trucks) {
+            if (tick.speedMps <= 2) continue;
+            const headingX = Math.cos(tick.heading);
+            const headingZ = -Math.sin(tick.heading);
+            scratch.set(tick.x - headingX * 3.4, tick.y + 0.1, tick.z - headingZ * 3.4);
+            dust.emit(scratch, new THREE.Vector3(-headingX * 1.3, 0, -headingZ * 1.3), Math.max(1, Math.floor(dt * 7)), Math.min(0.25, tick.speedMps / 55));
+          }
+        },
+        () => dust.update(dt),
+      );
       if (snapshot.shovel.truckId) {
         const phase = snapshot.shovel.swing;
         shovel.setCycle(phase, world.shovel.yawPile, world.shovel.yawTruck);

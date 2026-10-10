@@ -1,5 +1,5 @@
-import { describe, expect, test } from "bun:test";
-import { normalizeDustParameters, shouldAdvanceDust, stepDustParticle } from "./dustParticles";
+import { describe, expect, mock, test } from "bun:test";
+import { normalizeDustParameters, shouldAdvanceDust, stepDustFrame, stepDustParticle } from "./dustParticles";
 
 describe("dust particle logic", () => {
   test("clamps emitter and frame parameters to the simulation bounds", () => {
@@ -31,21 +31,28 @@ describe("dust particle logic", () => {
     expect(stepDustParticle(5, 4, 0.8, 0.1).alpha).toBe(0);
   });
 
-  test("pause gating freezes particle age and suppresses new dust without changing active frames", () => {
-    const dt = 0.05;
-    const initialAge = 0.5;
-    const speedMps = 10;
-    const runFrame = (paused: boolean) => {
-      let age = initialAge;
-      let emissions = 0;
-      if (shouldAdvanceDust(paused)) {
-        if (speedMps > 2) emissions = Math.max(1, Math.floor(dt * 7));
-        age = stepDustParticle(age, 4, 0.8, dt).age;
-      }
-      return { age, emissions };
-    };
+  test("production frame gate skips emission and particle updates while paused", () => {
+    const emitDust = mock(() => undefined);
+    const updateDust = mock(() => undefined);
 
-    expect(runFrame(true)).toEqual({ age: initialAge, emissions: 0 });
-    expect(runFrame(false)).toEqual({ age: 0.55, emissions: 1 });
+    stepDustFrame(true, emitDust, updateDust);
+
+    expect(emitDust).not.toHaveBeenCalled();
+    expect(updateDust).not.toHaveBeenCalled();
+  });
+
+  test("the production pause decision is false only while paused", () => {
+    expect(shouldAdvanceDust(true)).toBe(false);
+    expect(shouldAdvanceDust(false)).toBe(true);
+  });
+
+  test("production frame gate runs emission and particle updates while active", () => {
+    const emitDust = mock(() => undefined);
+    const updateDust = mock(() => undefined);
+
+    stepDustFrame(false, emitDust, updateDust);
+
+    expect(emitDust).toHaveBeenCalledTimes(1);
+    expect(updateDust).toHaveBeenCalledTimes(1);
   });
 });
