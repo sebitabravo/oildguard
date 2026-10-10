@@ -406,6 +406,19 @@ No unresolved known debt remains. The later test-only Astro/Bun typing compatibi
 
 ## Do's and Don'ts
 
+## Nordic Telemetry Precision foundation
+
+The final UI foundation uses a carbon ground (`#0B0F14`) with layered telemetry
+surfaces (`#111720`, `#18202C`, `#1E293B`). Machine Amber (`#F59E0B`) is
+reserved for action and selection; green, blue, orange and red remain semantic
+status lanes. Borders are visible and square-edged: 2/4/6/8 px radii only.
+
+Geist is the prose and heading face. JetBrains Mono is used for identifiers,
+timestamps, telemetry figures and micro-labels, with tabular numerals. Every
+synthetic or derived value carries an explicit provenance label, and the shell
+must never imply production TLS, SLA, authentication or validation that the
+prototype does not provide.
+
 ### Do:
 
 - **Do** carry the provenance of every figure into the layout — a tag, a badge, a footnote naming the source file and the assumption it rests on.

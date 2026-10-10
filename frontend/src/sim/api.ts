@@ -5,6 +5,7 @@
 // Base URL defaults to PUBLIC_BACKEND_URL (compose sets http://localhost:8000).
 
 import type { RestWindow, SignalRow } from "./signals";
+import { buildDeviceQuery } from "../ui/logic";
 
 export interface SigningStatus {
   enforced: boolean;
@@ -252,6 +253,16 @@ export interface IngestMetricsResponse {
   };
 }
 
+export interface FleetDevice {
+  device_id: string;
+  truck_id?: string;
+  last_seen?: string | null;
+  signed_row_ratio?: number | null;
+  firmware?: string | null;
+  certificate?: string | null;
+  status?: string;
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${BACKEND_URL}${path}`);
   if (!res.ok) throw new Error(`GET ${path} -> ${res.status}`);
@@ -270,16 +281,18 @@ export async function postIngest(rows: SignalRow[]): Promise<IngestAck> {
 }
 
 export const getHealth = (): Promise<HealthResponse> => getJson("/health");
-export const getLevel = (): Promise<LevelResponse> => getJson("/level");
-export const getLevelSeries = (limit = 300): Promise<LevelSeriesResponse> =>
-  getJson(`/level/series?limit=${limit}`);
-export const getWindows = (limit = 50): Promise<WindowsResponse> =>
-  getJson(`/windows?limit=${limit}`);
+const withDevice = buildDeviceQuery;
+export const getLevel = (deviceId?: string): Promise<LevelResponse> => getJson(withDevice("/level", deviceId));
+export const getLevelSeries = (limit = 300, deviceId?: string): Promise<LevelSeriesResponse> =>
+  getJson(withDevice(`/level/series?limit=${limit}`, deviceId));
+export const getWindows = (limit = 50, deviceId?: string): Promise<WindowsResponse> =>
+  getJson(withDevice(`/windows?limit=${limit}`, deviceId));
 /** T10 N1–N4 ladder over the memory store (honest fallback when empty). */
-export const getAlerts = (): Promise<AlertsResponse> => getJson("/alerts");
+export const getAlerts = (deviceId?: string): Promise<AlertsResponse> => getJson(withDevice("/alerts", deviceId));
 /** T10 trend-extrapolated RUL (suppressed + anomaly-only when gated). */
-export const getRul = (): Promise<RulResponse> => getJson("/rul");
+export const getRul = (deviceId?: string): Promise<RulResponse> => getJson(withDevice("/rul", deviceId));
 export const getFleetAggregates = (windowS = 10): Promise<FleetAggregatesResponse> =>
   getJson(`/fleet/aggregates?window_s=${windowS}&group=fleet`);
 export const getIngestMetrics = (): Promise<IngestMetricsResponse> =>
   getJson("/metrics/ingest");
+export const getFleetDevices = (): Promise<FleetDevice[]> => getJson("/fleet/devices");

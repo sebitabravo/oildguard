@@ -6,8 +6,9 @@
 
 web
 
-**Stack:** Astro + Preact dashboard, FastAPI with Python 3.12 and Polars,
-InfluxDB, Mosquitto, and a Rust/Tokio edge simulator.
+**Stack:** Astro + Preact dashboard with the Nordic Telemetry Precision design
+system (self-hosted Geist and JetBrains Mono), FastAPI with Python 3.12 and
+Polars, InfluxDB, Mosquitto, and a Rust/Tokio edge simulator.
 
 ## Users
 

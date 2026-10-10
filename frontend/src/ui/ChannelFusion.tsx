@@ -1,0 +1,1 @@
+export { ChannelFusion } from "./foundation";

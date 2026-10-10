@@ -3,6 +3,8 @@
 // comments stay English. Spanish uses neutral/professional register.
 
 export type Lang = "en" | "es";
+import { ops } from "./dict/ops";
+import { platform } from "./dict/platform";
 
 export const LANG_STORAGE_KEY = "oilguard-lang";
 
@@ -54,10 +56,59 @@ export function useLang(): [Lang, (l: Lang) => void] {
 }
 
 export const dict = {
+  ...ops,
+  ...platform,
   "nav.label": { en: "Primary navigation", es: "Navegación principal" },
   "nav.mine": { en: "Mine & Fleet", es: "Mina y flota" },
   "nav.wheel": { en: "GDY106 Wheel", es: "Rueda GDY106" },
   "nav.monitoring": { en: "Monitoring", es: "Monitoreo" },
+  "ui.movement": { en: "Movement", es: "Movimiento" },
+  "ui.rest": { en: "Rest", es: "Reposo" },
+  "ui.synthetic": { en: "Synthetic proxy", es: "Sustituto sintético" },
+  "ui.valid": { en: "Valid reading", es: "Lectura válida" },
+  "ui.estimate": { en: "Estimate in motion", es: "Estimación en movimiento" },
+  "ui.stale": { en: "Stale data", es: "Datos obsoletos" },
+  "ui.invalid": { en: "Invalid reading", es: "Lectura inválida" },
+  "ui.vote": { en: "Vote", es: "Voto" },
+  "ui.veto": { en: "Veto", es: "Veto" },
+  "ui.fired": { en: "Fired", es: "Activado" },
+  "ui.quiet": { en: "Quiet", es: "En calma" },
+  "ui.noData": { en: "No data", es: "Sin datos" },
+  "ui.backendLive": { en: "Backend live", es: "Backend en vivo" },
+  "ui.localDemo": { en: "Local demo data", es: "Datos demo locales" },
+  "ui.checking": { en: "Checking backend", es: "Comprobando backend" },
+  "ui.noBackendAction": { en: "Unavailable without a backend connection", es: "No disponible sin conexión al backend" },
+  "ui.ariaLevel": { en: "Oil level {value} of {max} liters", es: "Nivel de aceite {value} de {max} litros" },
+  "ui.notReported": { en: "Not reported", es: "No reportado" },
+  "ui.acknowledge": { en: "Acknowledge", es: "Reconocer" },
+  "ui.escalate": { en: "Escalate", es: "Escalar" },
+  "ui.sort": { en: "sort", es: "ordenar" },
+  "ui.chartDescription": { en: "Time series with confidence band, thresholds and events.", es: "Serie temporal con banda de confianza, umbrales y eventos." },
+  "ui.catalogueEyebrow": { en: "DESIGN SYSTEM / F1", es: "SISTEMA DE DISEÑO / F1" },
+  "ui.catalogueTitle": { en: "UI foundation", es: "Fundación de interfaz" },
+  "ui.catalogueDescription": { en: "Nordic Telemetry Precision · shared catalogue", es: "Nordic Telemetry Precision · catálogo compartido" },
+  "ui.catalogueSynthetic": { en: "Synthetic catalogue · all shared states", es: "Catálogo sintético · todos los estados compartidos" },
+  "ui.oilLevel": { en: "Oil level", es: "Nivel de aceite" },
+  "ui.confidence": { en: "Confidence", es: "Confianza" },
+  "ui.vsPriorWindow": { en: "vs prior window", es: "vs ventana anterior" },
+  "ui.severity": { en: "Severity", es: "Severidad" },
+  "ui.regimeValidity": { en: "Regime / validity", es: "Régimen / validez" },
+  "ui.noticesActions": { en: "Notices and actions", es: "Avisos y acciones" },
+  "ui.charts": { en: "Charts", es: "Gráficos" },
+  "ui.fusionTimeline": { en: "Fusion and timeline", es: "Fusión y línea de tiempo" },
+  "ui.device": { en: "Device", es: "Dispositivo" },
+  "ui.state": { en: "State", es: "Estado" },
+  "ui.validity": { en: "Validity", es: "Validez" },
+  "ui.alertAcknowledged": { en: "Alert acknowledged", es: "Alerta reconocida" },
+  "ui.reliability": { en: "Reliability", es: "Confiabilidad" },
+  "ui.alert": { en: "Alert", es: "Alerta" },
+  "ui.fleet": { en: "Fleet", es: "Flota" },
+  "ui.wheel": { en: "Wheel", es: "Rueda" },
+  "ui.localDemoLabel": { en: "Local demo data is labelled.", es: "Los datos demo locales están rotulados." },
+  "ui.noLiveRows": { en: "No live rows", es: "Sin filas en vivo" },
+  "ui.partialData": { en: "Partial data", es: "Datos parciales" },
+  "ui.analyzerUnavailable": { en: "Analyzer unavailable", es: "Analizador no disponible" },
+  "ui.demoActionsDisabled": { en: "Actions are disabled in local demo mode.", es: "Las acciones están deshabilitadas en el demo local." },
   "app.brand": { en: "OilGuard Mining", es: "OilGuard Mining" },
   "app.tagline": {
     en: "Digital twin · Komatsu 930E-4SE · GDY106",

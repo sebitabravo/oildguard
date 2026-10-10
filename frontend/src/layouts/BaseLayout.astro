@@ -1,161 +1,83 @@
 ---
 import "../theme.css";
-import { t, type DictKey } from "../i18n";
-import type { Section } from "../routes";
+import { t } from "../i18n";
+import { type Section } from "../routes";
+import { activeRoute, navGroups } from "../nav";
+import { BackendStatePill } from "../ui/foundation";
 
-interface Props {
-  section: Section;
-}
-
-const { section } = Astro.props;
-const navigation: Array<{ id: Section; label: DictKey; href: string }> = [
-  { id: "mine", label: "nav.mine", href: "/mine" },
-  { id: "wheel", label: "nav.wheel", href: "/wheel" },
-  { id: "monitoring", label: "nav.monitoring", href: "/monitoring" },
-];
+interface Props { section?: Section; title?: string; compact?: boolean; }
+const { section, title = "OilGuard Mining", compact = section === "mine" || section === "wheel" } = Astro.props;
+const current = activeRoute(Astro.url.pathname) ?? section ?? null;
 ---
-
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f2b705'/%3E%3C/svg%3E" />
-    <title>OilGuard Mining — Digital twin</title>
+    <link rel="preload" href="/fonts/Geist[wght].woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/JetBrainsMono[wght].woff2" as="font" type="font/woff2" crossorigin />
+    <title>{title}</title>
     <script is:inline>
       document.documentElement.style.visibility = "hidden";
-      const queryLanguage = new URLSearchParams(window.location.search).get("lang")?.trim().toLowerCase();
-      try {
-        if (queryLanguage === "en" || queryLanguage === "es") {
-          localStorage.setItem("oilguard-lang", queryLanguage);
-        }
-        document.documentElement.lang =
-          queryLanguage === "es" || (queryLanguage !== "en" && localStorage.getItem("oilguard-lang") === "es")
-            ? "es"
-            : "en";
-      } catch {
-        document.documentElement.lang = queryLanguage === "es" ? "es" : "en";
-      }
+      const q = new URLSearchParams(window.location.search).get("lang")?.toLowerCase();
+      try { if (q === "en" || q === "es") localStorage.setItem("oilguard-lang", q); } catch {}
+      document.documentElement.lang = q === "es" || (!q && localStorage.getItem("oilguard-lang") === "es") ? "es" : "en";
     </script>
   </head>
   <body>
-    <div class="og-app">
-      <header class="og-top">
-        <div class="og-brand">
-          <div class="og-brand__mark" aria-hidden="true">OG</div>
-          <div>
-            <div class="og-brand__name">
-              <span class="og-brand__name--full" data-i18n-en={t("app.brand", "en")} data-i18n-es={t("app.brand", "es")}>{t("app.brand", "en")}</span>
-              <span class="og-brand__name--short">OilGuard</span>
-            </div>
-            <div class="og-brand__tag" data-i18n-en={t("app.tagline", "en")} data-i18n-es={t("app.tagline", "es")}>{t("app.tagline", "en")}</div>
-          </div>
-        </div>
-        <nav class="og-nav" aria-label={t("nav.label", "en")} data-i18n-aria-en={t("nav.label", "en")} data-i18n-aria-es={t("nav.label", "es")}>
-          {navigation.map((item) => (
-            <a
-              class="og-nav__item"
-              href={item.href}
-              aria-current={section === item.id ? "page" : undefined}
-              data-i18n-en={t(item.label, "en")}
-              data-i18n-es={t(item.label, "es")}
-            >
-              {t(item.label, "en")}
-            </a>
+    <div class:list={["og-app", { "og-app--compact": compact }]}>
+      <aside class="og-sidebar" aria-label={t("nav.label", "en")}>
+        <a class="og-sidebar__brand" href="/">
+          <span class="og-brand__mark" aria-hidden="true">OG</span>
+          <span><strong>OILGUARD</strong><small>TELEMETRY CORE</small></span>
+        </a>
+        <div class="og-sidebar__scroll">
+          {navGroups.map((group) => (
+            <section class="og-nav-group">
+              <div class="og-label og-nav-group__label" data-i18n-en={t(group.label, "en")} data-i18n-es={t(group.label, "es")}>{t(group.label, "en")}</div>
+              {group.items.map((item) => (
+                <a class:list={["og-sidebar__item", { "is-active": current === item.id }]} href={item.href} aria-current={current === item.id ? "page" : undefined}>
+                  <span class="og-sidebar__dot" aria-hidden="true"></span>
+                  <span data-i18n-en={t(item.label, "en")} data-i18n-es={t(item.label, "es")}>{t(item.label, "en")}</span>
+                </a>
+              ))}
+            </section>
           ))}
-        </nav>
+        </div>
+        <footer class="og-sidebar__footer">
+          <BackendStatePill client:load />
+          <div class="og-label og-sidebar__footer-note" data-i18n-en={t("shell.synthetic", "en")} data-i18n-es={t("shell.synthetic", "es")}>{t("shell.synthetic", "en")}</div>
+        </footer>
+      </aside>
+      <header class="og-top">
+        <button class="og-mobile-menu" type="button" aria-label={t("shell.menu", "en")}>☰</button>
+        <div class="og-top__crumb"><span>OilGuard</span><b>/</b><strong data-i18n-en="Telemetry" data-i18n-es="Telemetría">Telemetry</strong></div>
         <div class="og-top__spacer"></div>
-        <div class="og-seg" role="group" aria-label={t("lang.label", "en")} data-i18n-aria-en={t("lang.label", "en")} data-i18n-aria-es={t("lang.label", "es")}>
+        <BackendStatePill client:load />
+        <div class="og-seg" role="group" aria-label={t("lang.label", "en")}>
           <button type="button" class="og-seg__btn" data-lang="en" aria-pressed="true">EN</button>
           <button type="button" class="og-seg__btn" data-lang="es" aria-pressed="false">ES</button>
         </div>
       </header>
-      <script is:inline>
-        const language = document.documentElement.lang === "es" ? "es" : "en";
-        document.querySelectorAll("[data-i18n-en]").forEach((element) => {
-          element.textContent = element.dataset[language === "en" ? "i18nEn" : "i18nEs"] ?? "";
-        });
-        document.querySelectorAll("[data-i18n-aria-en]").forEach((element) => {
-          element.setAttribute("aria-label", element.dataset[language === "en" ? "i18nAriaEn" : "i18nAriaEs"] ?? "");
-        });
-        document.querySelectorAll("[data-lang]").forEach((button) => {
-          button.setAttribute("aria-pressed", String(button.dataset.lang === language));
-        });
-        document.documentElement.style.visibility = "";
-      </script>
+      <nav class="og-mobile-nav" aria-label={t("nav.label", "en")}>
+        {navGroups[0].items.slice(0, 5).map((item) => <a href={item.href} data-i18n-en={t(item.label, "en")} data-i18n-es={t(item.label, "es")}>{t(item.label, "en")}</a>)}
+      </nav>
       <main class="og-content"><slot /></main>
     </div>
-    <script>
-      import { isLegacyHash, pathFromHash } from "../routes";
-      import { languageFromQuery } from "../i18n/queryLanguage";
-
-      const languageKey = "oilguard-lang";
-      const readLanguage = () => {
-        try {
-          return localStorage.getItem(languageKey) === "es" ? "es" : "en";
-        } catch {
-          return "en";
-        }
+    <script is:inline>
+      const langKey = "oilguard-lang";
+      const update = (lang) => {
+        document.documentElement.lang = lang;
+        document.querySelectorAll("[data-i18n-en]").forEach((el) => { el.textContent = el.dataset[lang === "es" ? "i18nEs" : "i18nEn"] ?? ""; });
+        document.querySelectorAll("[data-lang]").forEach((el) => el.setAttribute("aria-pressed", String(el.dataset.lang === lang)));
       };
-
-      const updateLanguage = (language: "en" | "es") => {
-        document.documentElement.lang = language;
-        document.querySelectorAll<HTMLElement>("[data-i18n-en]").forEach((element) => {
-          element.textContent = element.dataset[`i18n${language === "en" ? "En" : "Es"}`] ?? "";
-        });
-        document.querySelectorAll<HTMLElement>("[data-i18n-aria-en]").forEach((element) => {
-          element.setAttribute(
-            "aria-label",
-            element.dataset[`i18nAria${language === "en" ? "En" : "Es"}`] ?? "",
-          );
-        });
-        document.querySelectorAll<HTMLButtonElement>("[data-lang]").forEach((button) => {
-          button.setAttribute("aria-pressed", String(button.dataset.lang === language));
-        });
-      };
-
-      document.querySelectorAll<HTMLButtonElement>("[data-lang]").forEach((button) => {
-        button.addEventListener("click", () => {
-          const language = button.dataset.lang === "es" ? "es" : "en";
-          try {
-            localStorage.setItem(languageKey, language);
-          } catch {
-            // El almacenamiento puede no estar disponible en algunos contextos.
-          }
-          window.dispatchEvent(new CustomEvent("oilguard:lang", { detail: language }));
-        });
-      });
-
-      window.addEventListener("oilguard:lang", (event) => {
-        const language = (event as CustomEvent<unknown>).detail;
-        if (language === "en" || language === "es") updateLanguage(language);
-      });
-      window.addEventListener("storage", (event) => {
-        if (event.key === languageKey) updateLanguage(readLanguage());
-      });
-      const queryLanguage = languageFromQuery(window.location.search);
-      if (queryLanguage) {
-        try {
-          localStorage.setItem(languageKey, queryLanguage);
-        } catch {
-          // El almacenamiento puede no estar disponible en algunos contextos.
-        }
-        window.dispatchEvent(new CustomEvent("oilguard:lang", { detail: queryLanguage }));
-      }
-      updateLanguage(queryLanguage ?? readLanguage());
-
-      const redirectLegacyHash = () => {
-        if (!isLegacyHash(window.location.hash)) return;
-        const target = pathFromHash(window.location.hash, window.location.search);
-        if (`${window.location.pathname}${window.location.search}` !== target) {
-          window.location.replace(target);
-          return;
-        }
-        window.history.replaceState(null, "", target);
-      };
-
-      redirectLegacyHash();
-      window.addEventListener("hashchange", redirectLegacyHash);
+      document.querySelectorAll("[data-lang]").forEach((button) => button.addEventListener("click", () => {
+        const lang = button.dataset.lang === "es" ? "es" : "en";
+        try { localStorage.setItem(langKey, lang); } catch {}
+        update(lang); window.dispatchEvent(new CustomEvent("oilguard:lang", { detail: lang }));
+      }));
+      update(document.documentElement.lang === "es" ? "es" : "en");
+      document.documentElement.style.visibility = "";
     </script>
   </body>
 </html>
