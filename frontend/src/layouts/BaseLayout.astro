@@ -2,12 +2,15 @@
 import "../theme.css";
 import { t } from "../i18n";
 import { type Section } from "../routes";
+import type { DictKey } from "../i18n";
 import { activeRoute, navGroups } from "../nav";
 import { BackendStatePill } from "../ui/foundation";
 
-interface Props { section?: Section; title?: string; compact?: boolean; }
-const { section, title = "OilGuard Mining", compact = section === "mine" || section === "wheel" } = Astro.props;
+interface Props { section?: Section; title?: string; compact?: boolean; breadcrumb?: DictKey[]; }
+const { section, title = "OilGuard Mining", compact = section === "mine" || section === "wheel", breadcrumb } = Astro.props;
 const current = activeRoute(Astro.url.pathname) ?? section ?? null;
+const defaultBreadcrumb = navGroups.flatMap((group) => group.items).find((item) => item.id === current)?.label ?? "shell.dashboard";
+const breadcrumbKeys = breadcrumb ?? [defaultBreadcrumb];
 ---
 <!doctype html>
 <html lang="en">
@@ -51,7 +54,7 @@ const current = activeRoute(Astro.url.pathname) ?? section ?? null;
       </aside>
       <header class="og-top">
         <button class="og-mobile-menu" type="button" aria-label={t("shell.menu", "en")}>☰</button>
-        <div class="og-top__crumb"><span>OilGuard</span><b>/</b><strong data-i18n-en="Telemetry" data-i18n-es="Telemetría">Telemetry</strong></div>
+        <div class="og-top__crumb"><span>OilGuard</span>{breadcrumbKeys.map((key) => <><b>/</b><strong data-i18n-en={t(key, "en")} data-i18n-es={t(key, "es")}>{t(key, "en")}</strong></>)}</div>
         <div class="og-top__spacer"></div>
         <BackendStatePill client:load />
         <div class="og-seg" role="group" aria-label={t("lang.label", "en")}>

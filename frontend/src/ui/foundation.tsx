@@ -269,10 +269,11 @@ export function Icon({ name, label }: { name: string; label?: string }) {
 
 export function EmptyState({ title, detail }: { title: string; detail?: string }) { return <div className="og-empty"><strong>{title}</strong>{detail && <span>{detail}</span>}</div>; }
 export function KpiTile({ lang, label, value, unit, delta, meta, tone = "nominal" }: { lang: Lang; label: string; value: number | string; unit?: string; delta?: string; meta?: string; tone?: Tone }) {
-  return <div className="og-kpi-tile"><TelemetryCard lang={lang} label={label} value={value} unit={unit} status={tone} />{(delta || meta) && <small>{delta} {meta}</small>}</div>;
+  const displayValue = typeof value === "number" ? formatNumber(value, lang, 1) : value;
+  return <article className={`og-kpi-tile og-kpi-tile--${tone}`}><div className="og-label">{label}</div><div className="og-kpi-tile__value">{displayValue}{unit && <small>{unit}</small>}</div>{(delta || meta) && <div className="og-kpi-tile__meta">{delta}{delta && meta ? " · " : ""}{meta}</div>}</article>;
 }
 export function PageHeader({ eyebrow, title, description, meta, children }: { eyebrow?: string; title: string; description?: string; meta?: ComponentChildren; children?: ComponentChildren }) {
-  return <header className="og-page-header">{eyebrow && <div className="og-label">{eyebrow}</div>}<h2>{title}</h2>{description && <p>{description}</p>}<div className="og-page-header__meta">{meta}{children}</div></header>;
+  return <header className="og-page-header">{eyebrow && <div className="og-page-header__eyebrow og-label">{eyebrow}</div>}<h2>{title}</h2>{description && <p>{description}</p>}<div className="og-page-header__meta">{meta}{children}</div></header>;
 }
 
 export function BackendStatePill() {

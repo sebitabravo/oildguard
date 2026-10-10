@@ -263,8 +263,8 @@ export interface FleetDevice {
   status?: string;
 }
 
-async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${BACKEND_URL}${path}`);
+async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(`${BACKEND_URL}${path}`, { signal });
   if (!res.ok) throw new Error(`GET ${path} -> ${res.status}`);
   return (await res.json()) as T;
 }
@@ -280,7 +280,7 @@ export async function postIngest(rows: SignalRow[]): Promise<IngestAck> {
   return (await res.json()) as IngestAck;
 }
 
-export const getHealth = (): Promise<HealthResponse> => getJson("/health");
+export const getHealth = (signal?: AbortSignal): Promise<HealthResponse> => getJson("/health", signal);
 const withDevice = buildDeviceQuery;
 export const getLevel = (deviceId?: string): Promise<LevelResponse> => getJson(withDevice("/level", deviceId));
 export const getLevelSeries = (limit = 300, deviceId?: string): Promise<LevelSeriesResponse> =>
