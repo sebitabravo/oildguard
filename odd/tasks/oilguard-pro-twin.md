@@ -147,7 +147,7 @@ RDD outcomes: T2 slice c4a9ba6 declined; T2+T3 range lens_context_budget_exceede
 
 ## Next step
 
-T1–T10 and Q1–Q22 are recorded complete. Q16's backend and frontend message-code slices are committed and approved/acknowledged; its frontend review recorded the separate non-blocking advisory R3-001 at `frontend/src/dash/RulPanel.tsx:42-44`, fixed by Q20 `b875cc9`. Q19's static dashboard decimals and formatter-contract test fixtures were corrected in `11ca605` and `fd7881a`; final build and screenshots pass. Backend defaults were restored and all volumes/services were preserved. Q21 local leak-demo alert reasons use the shared structured message localizer. Q22 now formats the demo lab note with the shared locale formatter, while the Spanish decimal guard preserves explicit factual-spec exceptions. After parent assesses this Q22 work-unit commit, continue with Q23 only. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
+T1–T10 and Q1–Q23 are recorded complete. Q16's backend and frontend message-code slices are committed and approved/acknowledged; its frontend review recorded the separate non-blocking advisory R3-001 at `frontend/src/dash/RulPanel.tsx:42-44`, fixed by Q20 `b875cc9`. Q19's static dashboard decimals and formatter-contract test fixtures were corrected in `11ca605` and `fd7881a`; final build and screenshots pass. Backend defaults were restored and all volumes/services were preserved. Q21 local leak-demo alert reasons use the shared structured message localizer. Q22 formats the demo lab note with the shared locale formatter, while the Spanish decimal guard preserves explicit factual-spec exceptions. Q23 now rounds only the RUL no-leak-trend slope to two decimal places for EN and ES; all other numeric parameters retain their prior formatting. After parent assesses this Q23 work-unit commit, continue with Q24 only. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
 
 ## QA follow-up (2026-10-09)
 
@@ -388,16 +388,16 @@ The wheel checkbox input hitbox is 44×44 in EN and ES; its separately measured 
 ### QA-FIX5 follow-up (2026-10-10)
 
 - **Source of truth:** `/tmp/oilguard-briefs/QA-FIX5.md`; evidence: `/tmp/oilguard-qa/final2/report.md`, especially §5–7. Final QA reported 19/19 Chromium checks passing and the first Firefox/WebKit smoke pass; Q21–Q25 are bounded follow-up findings, not reopenings of unrelated completed work.
-- **Route:** delegated direct, one task/work-unit commit at a time. Implement Q22 only in this slice; stop after its commit and parent assessment. Do not start Q23–Q25 early.
+- **Route:** delegated direct, one task/work-unit commit at a time. Implement Q23 only in this slice; stop after its commit and parent assessment. Do not start Q24–Q25 early.
 - **TDD:** on; runner `cd frontend && bun test src`. For each task add the focused failing test before production implementation, record RED→GREEN, and retain tests with the behavior commit.
-- **Checks:** Q21 focused `cd frontend && bun test src/dash/backendMessages.test.ts` RED→GREEN. Q22 focused `cd frontend && bun test src/i18n/index.test.ts src/dash/demoCopy.test.ts src/i18n/formatterContract.test.ts` RED→GREEN; also run `cd frontend && bun test src` and `cd frontend && bun run build`. Final QA-FIX5 checks are `python3 -m pytest -q`, `cd frontend && bun test src`, and `cd frontend && bun run build`; then capture `/tmp/og-shots/qa-fix6-demo-es.png` during the local leak demo at N4 and verify all four Spanish alert reasons / decimal commas, and load `/wheel` in Firefox via the brief's Playwright command to verify zero WebGL warnings.
-- **Safety:** no new dependencies, push, Docker, or browser work during the Q22 implementation. Do not stage `.codex/hooks.json`, the existing unstaged `BaseLayout.astro` live.js hunk, or protected tooling directories. Spanish code comments; English identifiers, docs, and commits.
+- **Checks:** Q21 focused `cd frontend && bun test src/dash/backendMessages.test.ts` RED→GREEN. Q22 focused `cd frontend && bun test src/i18n/index.test.ts src/dash/demoCopy.test.ts src/i18n/formatterContract.test.ts` RED→GREEN; full Bun suite/build recorded below. Q23 focused `cd frontend && bun test src/dash/backendMessages.test.ts` RED→GREEN; full Bun suite/build recorded below. Final QA-FIX5 checks are `python3 -m pytest -q`, `cd frontend && bun test src`, and `cd frontend && bun run build`; then capture `/tmp/og-shots/qa-fix6-demo-es.png` during the local leak demo at N4 and verify all four Spanish alert reasons / decimal commas, and load `/wheel` in Firefox via the brief's Playwright command to verify zero WebGL warnings.
+- **Safety:** no new dependencies, push, Docker, or browser work during the Q23 implementation. Do not stage `.codex/hooks.json`, the existing unstaged `BaseLayout.astro` live.js hunk, or protected tooling directories. Spanish code comments; English identifiers, docs, and commits.
 
 #### QA-FIX5 tasks
 
 - [x] **Q21 — N-09 local leak-demo alert reasons:** replace four hardcoded local-demo reason strings with the same `{code, params}` structured messages as backend alerts: `ladder_n1_trend_persistence`, `ladder_n2_same_window_confirmation`, `ladder_n3_shift_window`, and `ladder_n4_abrupt_drop`. Reuse `shared/message_codes.json`, `i18n/index.ts`, and `dash/backendNotes.ts`; cover codes, parameters, English copy, and Spanish copy (including N4 number localization) in `backendMessages.test.ts`. Preserve English mode and fallback reason fields. Commit: `fix(frontend): localize leak demo alert reasons`.
 - [x] **Q22 — N-10 Spanish demo lab-note decimals:** parameterize every displayed value in `dash.demo.labNote`; format its rates, volume, ratio, and duration via shared `formatNumber` in the stage blurb, demo status row, and demo RUL note. Extend the Spanish dictionary guard to reject decimal literals except for allowlisted factual specifications: `app.scope` ratio 32.62:1; truck brochure dimensions/body-up values; powertrain ratios, retard-grid timing, and axle/Hydrair angle values; and inspection tolerances in steps 5–7. Commit: `fix(frontend): format lab note numbers per language`.
-- [ ] **Q23 — N-11 RUL slope precision:** limit the displayed slope in the ES RUL note to the established 2–3 decimal precision using `formatNumber`, with focused copy coverage. Commit: `fix(frontend): round displayed rul slope`.
+- [x] **Q23 — N-11 RUL slope precision:** format `rul_no_leak_trend.slope_l_per_h` to two decimals via shared `formatNumber` for EN and ES, with focused localized-copy coverage; preserve the previous formatting for every other numeric parameter. Commit: `fix(frontend): round displayed rul slope`.
 - [ ] **Q24 — N-08 freeze mine dust on pause:** make paused frames skip dust update/emission or drive dust from simulation time; add a pure update-gating test and preserve unpaused behavior. Commit: `fix(frontend): freeze dust while paused`.
 - [ ] **Q25 — N-12 Firefox wheel mipmap warning:** identify the triggering `/wheel` texture and prevent Firefox's lazy `generateMipmap` warning with an appropriate upload/filter change; verify Firefox console is warning-free using the exact Playwright version/command in the brief. Commit: `fix(frontend): avoid lazy mipmap init on wheel`.
 
@@ -419,6 +419,15 @@ The wheel checkbox input hitbox is 44×44 in EN and ES; its separately measured 
 - **Implementation:** `dash.demo.labNote` now carries five placeholders; `dash/demoCopy.ts` formats them through shared `formatNumber`, and the stage blurb, demo status row, and demo RUL note all use that same formatter. Demo-only paths changed; non-demo content is unchanged. The decimal guard allowlists only explicit factual values in six existing dictionary entries.
 - **Work-unit commit:** `fix(frontend): format lab note numbers per language` (this work unit).
 - **Next:** after parent assesses the Q22 commit, continue with Q23 only.
+
+#### QA-FIX5 Q23 evidence
+
+- **RED:** `cd frontend && bun test src/dash/backendMessages.test.ts` → 5 pass, 1 fail, 198 expectations. The new test expected `1.49` / `1,49`; its first EN assertion received the existing six-decimal `1.490262` instead.
+- **GREEN, focused:** `cd frontend && bun test src/dash/backendMessages.test.ts` → 6 pass, 0 fail, 201 expectations. The `rul_no_leak_trend` slope renders with two decimals (`1.49` / `1,49`) and no longer exposes six decimals.
+- **GREEN, full/build:** `cd frontend && bun test src` → 223 pass, 0 fail, 114,515 expectations across 47 files. `cd frontend && bun run build` → passed; Astro check 0 errors, 4 hints, all 4 static routes built; existing large-chunk warning.
+- **Implementation:** `formatMessageParams()` now selects two digits only for `rul_no_leak_trend.slope_l_per_h`; the shared formatter and existing trimming behavior remain unchanged for all other numeric params.
+- **Work-unit commit:** `fix(frontend): round displayed rul slope` (this work unit).
+- **Next:** after parent assesses the Q23 commit, continue with Q24 only.
 
 ### Q2 interim evidence — first copy migration work unit
 

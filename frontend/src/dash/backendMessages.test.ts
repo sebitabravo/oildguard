@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import messageCodes from "../../../shared/message_codes.json";
 import { dict } from "../i18n";
+import { formatNumber } from "../i18n/numberFormat";
 import { localizeBackendZone } from "./backendNotes";
 import * as backendNotes from "./backendNotes";
 import { demoAlertsUpTo } from "./demoData";
@@ -88,6 +89,28 @@ describe("structured backend messages", () => {
         .toBe(`N1 tendencia (entrada por persistencia): evidencia en la ventana 2, zona ${spanish}.`);
     }
     expect(localizeBackendZone("UNKNOWN", "es")).toBe("UNKNOWN");
+  });
+
+  test("rounds only the RUL no-leak-trend slope to two decimal places", () => {
+    expect(typeof localizeBackendMessage).toBe("function");
+    if (!localizeBackendMessage) return;
+
+    const slope = 1.4902624063443084;
+    const message = {
+      code: "rul_no_leak_trend",
+      params: { slope_l_per_h: slope },
+    };
+    const english = localizeBackendMessage(message, "legacy text", "en");
+    const spanish = localizeBackendMessage(message, "legacy text", "es");
+
+    expect(english).toBe(
+      `No leak trend: slope is ${formatNumber(slope, "en", 2)} L/h (not below zero); anomaly-only output.`,
+    );
+    expect(spanish).toBe(
+      `Sin tendencia de fuga: la pendiente es ${formatNumber(slope, "es", 2)} L/h (no es menor que cero); solo se emiten anomalías.`,
+    );
+    expect(english.includes(formatNumber(slope, "en", 6))).toBe(false);
+    expect(spanish.includes(formatNumber(slope, "es", 6))).toBe(false);
   });
 
   test("known codes select translations while unknown codes preserve the legacy field exactly", () => {

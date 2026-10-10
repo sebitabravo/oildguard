@@ -39,12 +39,12 @@ export function localizeBackendZone(zone: string, lang: Lang): string {
   return t(PLM_ZONE_KEYS[zone], lang);
 }
 
-function formatMessageValue(value: unknown, lang: Lang): string {
+function formatMessageValue(value: unknown, lang: Lang, digits = 6): string {
   if (Array.isArray(value)) {
-    return value.map((part) => formatMessageValue(part, lang)).join("+");
+    return value.map((part) => formatMessageValue(part, lang, digits)).join("+");
   }
   if (typeof value === "number" && Number.isFinite(value)) {
-    const formatted = formatNumber(value, lang, 6);
+    const formatted = formatNumber(value, lang, digits);
     const separator = lang === "es" ? "," : ".";
     const [integer, fraction] = formatted.split(separator);
     const trimmedFraction = fraction?.replace(/0+$/, "");
@@ -62,7 +62,8 @@ function formatMessageParams(
       if (name === "zone" && typeof value === "string") {
         return [name, localizeBackendZone(value, lang)];
       }
-      return [name, formatMessageValue(value, lang)];
+      const digits = message.code === "rul_no_leak_trend" && name === "slope_l_per_h" ? 2 : 6;
+      return [name, formatMessageValue(value, lang, digits)];
     }),
   );
 }
