@@ -42,13 +42,14 @@ On (project rule). Runners: `cargo test` (edge-sim), `python3 -m pytest -q`, `bu
 
 ## Tasks
 - [x] R0 Cross-language signing vectors fixture (`e0ba0f1`). Route: inline (Claude).
-- [ ] R1 Rust edge simulator crate (Copilot).
-- [ ] R2 Backend Python 3.12 + Polars aggregations + WebSocket + batched ingest (OpenCode).
-- [ ] R3 Precision benchmark f64 vs decimal, Rust and Python (Codex).
-- [ ] R4 Integration: compose service `edge-sim` (profile), CI jobs (cargo, py3.12), merge (Claude).
-- [ ] R5 Stress benchmark matrix + report `docs/bench/` (Claude).
-- [ ] R6 Docs: README, thesis annex rows, PRODUCT/SCHEMA updates (Claude).
-- [ ] R7 Final verification and QA pass (OpenCode QA after R2 merge, Claude).
+- [x] R1 Rust edge simulator crate (Copilot; 7ea2510, f72144d, d7658c7, bc78332, 19bea20 incl. R1b realtime engine; merged 89d65e7). Route: delegated (Copilot).
+- [x] R2 Backend Python 3.12 + Polars aggregations + WebSocket + batched ingest (OpenCode; merged adb6fb3, d67a725; fixes ae6ace5 rolling counter, 41401bf health cache). R2b ingest perf (54714b7..7e4cb15), R2c async Influx writer (036a831..7574f83), R2d incremental tick/outages (9e22a50, 511ec3e, 3d28a7c). Route: delegated (OpenCode).
+- [x] R3 Precision benchmark f64 vs decimal, Rust and Python (Codex 5103c31, 509a3f3, 1cb9d33; level-formula fix cba3d5a by Claude subagent; merged 901ea83). Codex RDD consent declined to save its quota; Claude reviewed the diff.
+- [x] R4 Integration: compose service `edge-sim` (profile), CI jobs (cargo, py3.12), merge (Claude; eca7486, c5d5fc2, af7ea93, 01c2d64; actionlint clean).
+- [x] R5 Stress benchmark matrix + report `docs/bench/` (Claude; runner 3db2008..afd1830 — its tests were written after the code, recorded honestly; baseline 38f001e; after-optimization deb38c0: 1,000 devices 9,699 rows/s, 957 drops, p99 3.1 s).
+- [x] R6 Docs: README, thesis annex rows, PRODUCT/SCHEMA updates (Copilot 42efb9d, 45f24e0, 211643a; merged 66bef32; annex P34 699461c).
+- [ ] R7 Final verification and QA pass — folded into `odd/tasks/final-design.md` F6 (OpenCode Playwright, three engines).
+- [x] R8 Live fleet telemetry panel (Copilot ab62422, ea27edf, error boundary f1fb631; merged f08e273) — later moved to `/fleet` by the final design.
 
 ## Acceptance criteria
 - `cargo test` green; Rust canonical bytes and signatures equal `signing_vectors.json`; deterministic
@@ -63,4 +64,4 @@ On (project rule). Runners: `cargo test` (edge-sim), `python3 -m pytest -q`, `bu
   (3 passed) after `python3 tests/make_signing_vectors.py`; 12 vectors.
 
 ## Next step
-Write briefs R1-R3, create worktrees, dispatch in parallel.
+Continues in `odd/tasks/final-design.md` (integration branch `feat/final-design` contains all R work).
