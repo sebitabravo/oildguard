@@ -107,6 +107,10 @@ export const dict = {
   "dash.backend.probing": { en: "Probing backend…", es: "Consultando el backend…" },
   "dash.backend.connected": { en: "Backend connected", es: "Backend conectado" },
   "dash.backend.offline": { en: "Backend unavailable · local DEMO data", es: "Backend no disponible · datos DEMO locales" },
+  "dash.analyzer.unavailable": {
+    en: "Analyzer unavailable: alerts and RUL cannot be computed",
+    es: "Analizador no disponible: no se pueden calcular alertas ni RUL",
+  },
   "dash.signing.verified": { en: "Signatures verified", es: "Firmas verificadas" },
   "dash.signing.rejected": { en: "rejected", es: "rechazadas" },
   "dash.signing.off": { en: "Enforcement off", es: "Verificación no obligatoria" },

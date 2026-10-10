@@ -19,9 +19,10 @@ export const BACKEND_URL: string =
   "http://localhost:8000";
 
 export interface HealthResponse {
-  status: "ok";
+  status: "ok" | "degraded";
   service: string;
   stage: string;
+  analysis: { available: boolean; reason: string | null };
   store_rows: number;
   influx: string;
   mqtt: { host: string; port: number; topic: string };
@@ -102,9 +103,10 @@ export interface AlertsData {
 }
 
 export interface AlertsResponse {
-  status: "ok";
+  status: "ok" | "unavailable";
   kind: "alerts";
   as_of: string;
+  evaluated: boolean;
   data: AlertsData;
 }
 
@@ -139,12 +141,25 @@ export interface RulDataSuppressed {
   reason?: string;
 }
 
-export type RulData = RulDataOk | RulDataSuppressed;
+export interface RulDataUnavailable {
+  hours: null;
+  haul_cycles: null;
+  shifts: null;
+  confidence: number;
+  status: "unavailable";
+  anomaly_only: true;
+  model: string;
+  note: string;
+  fallback: string;
+}
+
+export type RulData = RulDataOk | RulDataSuppressed | RulDataUnavailable;
 
 export interface RulResponse {
-  status: "ok";
+  status: "ok" | "unavailable";
   kind: "rul";
   as_of: string;
+  evaluated: boolean;
   data: RulData;
 }
 

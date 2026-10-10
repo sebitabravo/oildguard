@@ -46,6 +46,17 @@ button { font-family: inherit; }
 
 .og-num { font-variant-numeric: tabular-nums; }
 
+.og-analyzer-notice {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--og-red);
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: var(--og-panel-dashboard);
+  color: var(--og-text);
+  font-weight: 700;
+}
+
 /* Accessible focus: visible 2px outline on all interactive elements. */
 button:focus-visible,
 a:focus-visible,

@@ -9,7 +9,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import {
-  BACKEND_URL,
   getAlerts,
   getHealth,
   getLevel,
@@ -40,11 +39,12 @@ import { buildWheelDetailHref } from "../sim/bench/wheelUrl";
 import { DEMO_FLEET_WHEELS, evaluateCombinedRisk, latestWheelMetrics } from "./fleetRisk";
 import { localizeDashboardBackendText } from "./backendNotes";
 import { signingBadgeState } from "./signingBadge";
+import { analyzerUnavailableNotice } from "./analyzerAvailability";
 
 type Source = "loading" | "live" | "demo";
 type BackendNote =
   | { kind: "live"; rows: number; influx: string }
-  | { kind: "error"; message: string }
+  | { kind: "error" }
   | null;
 
 const DEMO_STAGES: DemoStageId[] = ["clean", "slow-leak", "abrupt-drop", "done"];
@@ -85,6 +85,7 @@ export default function Dashboard() {
   const [lang] = useLang();
   const [source, setSource] = useState<Source>("loading");
   const [backendNote, setBackendNote] = useState<BackendNote>(null);
+  const [analysisAvailable, setAnalysisAvailable] = useState<boolean | undefined>();
   const [signingStatus, setSigningStatus] = useState<SigningStatus | undefined>();
   const [storeRows, setStoreRows] = useState(0);
   const [level, setLevel] = useState<LevelResponse | null>(null);
@@ -108,12 +109,20 @@ export default function Dashboard() {
       ]);
       setStoreRows(h.store_rows);
       setSigningStatus(h.signing);
+      setAnalysisAvailable(h.analysis.available);
       setLevel(lv);
       setAlerts(al);
       setRul(ru);
       setWindows(wi);
       setBackendNote({ kind: "live", rows: h.store_rows, influx: h.influx });
       setSource("live");
+      const unavailable = h.analysis.available === false ||
+        al.status === "unavailable" || ru.status === "unavailable";
+      if (unavailable) {
+        const diagnostic = h.analysis.reason ??
+          (ru.status === "unavailable" ? ru.data.note : al.data.fallback);
+        if (diagnostic) console.debug("OilGuard analyzer unavailable", diagnostic);
+      }
       const lit = Number(lv.data.level_liters);
       if (Number.isFinite(lit)) {
         setHistory((prev) => {
@@ -123,11 +132,10 @@ export default function Dashboard() {
         });
       }
     } catch (e) {
+      console.debug("OilGuard backend request failed", e);
       setSigningStatus(undefined);
-      setBackendNote({
-        kind: "error",
-        message: e instanceof Error ? e.message : String(e),
-      });
+      setAnalysisAvailable(undefined);
+      setBackendNote({ kind: "error" });
       setSource("demo");
     }
   }, []);
@@ -189,6 +197,12 @@ export default function Dashboard() {
   };
 
   const demoActive = demoStage !== "idle";
+  const analyzerNotice = analyzerUnavailableNotice({
+    analysisAvailable,
+    alertStatus: alerts?.status,
+    rulStatus: rul?.status,
+  }, lang);
+  const analyzerUnavailable = analyzerNotice !== null;
   const fsm = stateAt(fsmTick);
   const moving = isMovingState(fsm.state);
   const recal = isRecalState(fsm.state);
@@ -207,7 +221,7 @@ export default function Dashboard() {
       : DEMO_SERIES.slice(0, 31);
   const shownAlerts = demoActive
     ? demoAlertsUpTo(demoStage)
-    : (alerts?.data.alerts ?? []);
+    : analyzerUnavailable ? [] : (alerts?.data.alerts ?? []);
   const shownWindows = demoActive
     ? DEMO_WINDOWS
     : (windows?.windows ?? DEMO_WINDOWS);
@@ -227,6 +241,8 @@ export default function Dashboard() {
         {t("dash.intro", lang, { model: t("rul.model.syntheticProxy", lang) })}{" "}
         {t("dash.honesty", lang)}
       </p>
+
+      {analyzerNotice && <div className="og-analyzer-notice" role="alert">{analyzerNotice}</div>}
 
       <section className="og-fleet-panel" aria-labelledby="og-fleet-title">
         <div className="og-fleet-panel__heading">
@@ -317,9 +333,7 @@ export default function Dashboard() {
                 rows: backendNote.rows,
                 influx: localizeDashboardBackendText(backendNote.influx, lang),
               })
-            : source === "demo" && backendNote?.kind === "error"
-              ? t("dash.backend.error", lang, { url: BACKEND_URL, message: backendNote.message })
-              : t(
+            : t(
                   source === "loading"
                     ? "dash.backend.probing"
                     : source === "live"
@@ -474,14 +488,17 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <RulPanel rul={demoActive ? demoRulFor(demoStage, lang) : (rul?.data ?? null)} />
+          <RulPanel
+            rul={demoActive ? demoRulFor(demoStage, lang) : (rul?.data ?? null)}
+            analyzerUnavailable={analyzerUnavailable && !demoActive}
+          />
 
           {/* N1–N4 timeline */}
           <div style={{ border: "1px solid var(--og-line-dashboard)", borderRadius: 6, padding: "10px 12px", background: "var(--og-panel-dashboard)" }}>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>
               {t("dash.alerts.title", lang)}{" "}
               <span style={{ fontSize: 12, fontWeight: 500, color: "var(--og-muted)" }}>
-                {(alerts?.data.escalation ?? shownAlerts.map((a) => a.level)).join(" → ") || t("dash.alerts.none", lang)}
+                {(analyzerUnavailable && !demoActive ? [] : alerts?.data.escalation ?? shownAlerts.map((a) => a.level)).join(" → ") || t("dash.alerts.none", lang)}
               </span>
             </div>
             {shownAlerts.length === 0 ? (
@@ -503,7 +520,7 @@ export default function Dashboard() {
                 ))}
               </ul>
             )}
-            {alerts && !demoActive && (
+            {alerts && !demoActive && !analyzerUnavailable && (
               <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--og-muted)" }}>
                 {localizeDashboardBackendText(alerts.data.note, lang)} · {localizeDashboardBackendText(alerts.data.fallback, lang)}
               </p>

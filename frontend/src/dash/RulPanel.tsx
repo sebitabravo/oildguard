@@ -16,8 +16,24 @@ const panel: CSSProperties = {
   background: "var(--og-panel-inset)",
 };
 
-export default function RulPanel({ rul }: { rul: RulData | null }) {
+export default function RulPanel({
+  rul,
+  analyzerUnavailable = false,
+}: {
+  rul: RulData | null;
+  analyzerUnavailable?: boolean;
+}) {
   const [lang] = useLang();
+  if (analyzerUnavailable || rul?.status === "unavailable") {
+    return (
+      <div style={{ ...panel, borderColor: "var(--og-red)" }}>
+        <strong>{t("rul.title", lang)}</strong>
+        <p style={{ margin: "6px 0 0", color: "var(--og-body)", fontSize: 13 }}>
+          {t("dash.analyzer.unavailable", lang)}
+        </p>
+      </div>
+    );
+  }
   if (!rul) {
     return (
       <div style={panel}>
