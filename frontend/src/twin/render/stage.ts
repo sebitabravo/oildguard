@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
-import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { CSS2DRenderer, type CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import {
   PRESET_DEFAULTS,
   resolveQuality,
@@ -10,6 +10,7 @@ import {
   type Quality,
   type StagePreset,
 } from "./settings";
+import { clampLabelCenterX } from "./labelLayout";
 
 // Stage compartido: renderer con tone mapping ACES, luz de entorno (IBL),
 // sol con sombras, OrbitControls, overlay CSS2D y un único bucle rAF.
@@ -72,6 +73,12 @@ export interface Stage {
 }
 
 const MAX_DT = 0.05;
+
+type CSS2DSceneObject = CSS2DObject & { isCSS2DObject: true };
+
+function isCSS2DSceneObject(object: THREE.Object3D): object is CSS2DSceneObject {
+  return (object as THREE.Object3D & { isCSS2DObject?: boolean }).isCSS2DObject === true;
+}
 
 function applyShadowFlag(renderer: THREE.WebGLRenderer, sun: THREE.DirectionalLight, scene: THREE.Scene, on: boolean, size: number) {
   const changed = renderer.shadowMap.enabled !== on;
@@ -234,6 +241,56 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
   let elapsed = 0;
   let frameId = 0;
   let disposed = false;
+  const compactViewport = window.matchMedia("(max-width: 900px)");
+  const sceneLabels: CSS2DSceneObject[] = [];
+  const preferredLabelCenters = new Map<CSS2DSceneObject, number>();
+  const projectedLabelPosition = new THREE.Vector3();
+  let sceneLabelsIndexed = false;
+  let compactLabelClampActive = false;
+
+  const fitSceneLabels = () => {
+    if (!sceneLabelsIndexed) {
+      scene.traverse((object) => {
+        if (!isCSS2DSceneObject(object)) return;
+        sceneLabels.push(object);
+        preferredLabelCenters.set(object, object.center.x);
+      });
+      sceneLabelsIndexed = sceneLabels.length > 0;
+    }
+    if (!sceneLabelsIndexed) return;
+
+    if (!compactViewport.matches) {
+      if (compactLabelClampActive) {
+        for (const label of sceneLabels) {
+          label.center.x = preferredLabelCenters.get(label) ?? label.center.x;
+        }
+        compactLabelClampActive = false;
+      }
+      return;
+    }
+
+    compactLabelClampActive = true;
+    const bounds = labels.domElement.getBoundingClientRect();
+    const { width } = labels.getSize();
+    if (bounds.width <= 0 || width <= 0) return;
+    const inset = Math.min(1, bounds.width / 2);
+    const boundsLeft = bounds.left + inset;
+    const boundsRight = bounds.right - inset;
+
+    for (const label of sceneLabels) {
+      if (!label.visible || !label.element.isConnected || label.element.style.display === "none") continue;
+      const labelWidth = label.element.getBoundingClientRect().width;
+      if (labelWidth <= 0) continue;
+
+      projectedLabelPosition.setFromMatrixPosition(label.matrixWorld).project(camera);
+      if (projectedLabelPosition.z < -1 || projectedLabelPosition.z > 1) continue;
+
+      const marginLeft = Number.parseFloat(label.element.style.marginLeft) || 0;
+      const anchorX = bounds.left + width / 2 + projectedLabelPosition.x * width / 2 + marginLeft;
+      const preferredCenter = preferredLabelCenters.get(label) ?? label.center.x;
+      label.center.x = clampLabelCenterX(anchorX, labelWidth, preferredCenter, boundsLeft, boundsRight);
+    }
+  };
 
   const frame = () => {
     frameId = requestAnimationFrame(frame);
@@ -242,6 +299,7 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
     for (const cb of callbacks) cb(dt, elapsed);
     controls.update();
     renderer.render(scene, camera);
+    fitSceneLabels();
     labels.render(scene, camera);
   };
   const start = () => {
