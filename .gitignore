@@ -52,3 +52,6 @@ coverage/
 # CLI from https://threejsresources.com/ai/skills; not versioned.
 **/skills/threejs-*/
 **/skills/.threejs-awesome-graphics-agent-skills.json
+
+# Rust build output (edge-sim, bench crates)
+**/target/
