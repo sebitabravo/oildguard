@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createDemoDataset } from "../../demo/dataset";
+import { createDemoDataset, demoDataset } from "../../demo/dataset";
 import {
   buildWheelDetailHref,
   classifyRowState,
@@ -7,6 +7,7 @@ import {
   fleetCounters,
   groupFleetRows,
   mergeLiveDevices,
+  relativeLastComm,
   toCsv,
 } from "./logic";
 
@@ -55,5 +56,14 @@ describe("fleet overview logic", () => {
 
   test("builds the monitoring detail link", () => {
     expect(buildWheelDetailHref("wheel RH/01")).toBe("/monitoring?wheel=wheel%20RH%2F01");
+  });
+
+  test("formats ages and keeps demo telemetry within the fixed reference day", () => {
+    expect(relativeLastComm(1_000, 13_000, "en")).toBe("12 s");
+    expect(relativeLastComm(1_000, 241_000, "es")).toBe("4 min");
+    expect(relativeLastComm(1_000, 7_201_000, "en")).toBe("2 h");
+    for (const row of rows) {
+      if (row.lastComm !== null) expect(demoDataset.referenceMs - row.lastComm).toBeLessThan(86_400_000);
+    }
   });
 });

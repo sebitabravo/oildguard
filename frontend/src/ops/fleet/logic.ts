@@ -1,4 +1,6 @@
 import type { DemoTruck, DemoWheel } from "../../demo/dataset";
+import { formatNumber } from "../../i18n/numberFormat";
+import type { Lang } from "../../i18n";
 
 export type FleetFilterState = "all" | "alert" | "no-link" | "out-of-service";
 export type FleetRowState = "nominal" | "N1" | "N2" | "N4" | "stale" | "link-down" | "out-of-service";
@@ -114,6 +116,7 @@ export function fleetCounters(rows: FleetRow[]) {
   const states = rows.map((row) => classifyRowState(row.wheel, row.lastComm));
   return {
     trucks: new Set(rows.map((row) => row.truckId)).size,
+    activeTrucks: new Set(rows.filter((row) => classifyRowState(row.wheel, row.lastComm) !== "out-of-service").map((row) => row.truckId)).size,
     wheels: rows.length,
     alerts: states.filter((state) => ["N1", "N2", "N4"].includes(state)).length,
     n4: states.filter((state) => state === "N4").length,
@@ -125,11 +128,13 @@ export function fleetCounters(rows: FleetRow[]) {
   };
 }
 
-export function relativeLastComm(lastComm: number | null, now = Date.now()): string {
+export function relativeLastComm(lastComm: number | null, now: number, lang: Lang): string {
   if (lastComm === null) return "link-down";
   const seconds = Math.max(0, Math.round((now - lastComm) / 1000));
-  if (seconds < 60) return `${seconds}s`;
-  return `${Math.round(seconds / 60)}m`;
+  if (seconds < 60) return `${formatNumber(seconds, lang, 0)} s`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${formatNumber(minutes, lang, 0)} min`;
+  return `${formatNumber(Math.round(minutes / 60), lang, 0)} h`;
 }
 
 export function toCsv(rows: FleetRow[]): string {

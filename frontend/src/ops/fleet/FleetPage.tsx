@@ -89,7 +89,7 @@ export default function FleetPage() {
         />
 
         <section className="og-fleet-kpis" aria-label={t("fleet.kpis", lang)}>
-          <KpiTile lang={lang} label={t("fleet.kpiMonitored", lang)} value={formatNumber(counts.trucks, lang, 0)} meta={`${formatNumber(counts.wheels, lang, 0)} ${t("fleet.wheels", lang)}`} />
+          <KpiTile lang={lang} label={t("fleet.kpiMonitored", lang)} value={formatNumber(counts.trucks, lang, 0)} unit={t("fleet.trucks", lang)} meta={`${formatNumber(counts.wheels, lang, 0)} ${t("fleet.gdy106Wheels", lang)} · ${t("fleet.activeCycle", lang)}: ${formatNumber(counts.activeTrucks, lang, 0)}`} />
           <KpiTile lang={lang} label={t("fleet.kpiAlerts", lang)} value={formatNumber(counts.alerts, lang, 0)} meta={`${formatNumber(counts.n4, lang, 0)} ${t("fleet.n4Word", lang)} · ${formatNumber(counts.n2, lang, 0)} ${t("fleet.n2Word", lang)}`} tone={counts.alerts ? "warning" : "nominal"} />
           <KpiTile lang={lang} label={t("fleet.kpiLink", lang)} value={formatNumber(counts.noLink, lang, 0)} meta={`${formatNumber(counts.stale, lang, 0)} ${t("fleet.staleWord", lang)} · ${formatNumber(counts.linkDown, lang, 0)} ${t("fleet.linkDownWord", lang)}`} tone={counts.noLink ? "critical" : "nominal"} />
         </section>
@@ -110,6 +110,11 @@ export default function FleetPage() {
         <div className="og-fleet-table-wrap">
           <table className="og-fleet-table">
             <caption className="og-visually-hidden">{t("fleet.tableCaption", lang)}</caption>
+            <colgroup>
+              <col className="og-fleet-col-wheel" /><col className="og-fleet-col-level" /><col className="og-fleet-col-trend" />
+              <col className="og-fleet-col-loss" /><col className="og-fleet-col-temp" /><col className="og-fleet-col-vibration" />
+              <col className="og-fleet-col-regime" /><col className="og-fleet-col-alert" /><col className="og-fleet-col-last" />
+            </colgroup>
             <thead><tr>
               <th>{t("fleet.columnWheel", lang)}</th>
               <th>{t("fleet.columnLevel", lang)}</th>
@@ -125,7 +130,7 @@ export default function FleetPage() {
               {visibleGroups.map((group) => (
                 <>
                   <tr className="og-fleet-group">
-                    <th colSpan={9}><span className="og-fleet-truck">{group.truckId}</span><span className="og-chip">{modelLabel(group.model, lang)}</span><span className="og-fleet-group-regime">{t("fleet.regimeSummary", lang)}</span><span className="og-fleet-group-alert">{group.wheels.some((row) => ["N1", "N2", "N4"].includes(classifyRowState(row.wheel, row.lastComm))) ? t("fleet.groupAlert", lang) : t("fleet.groupNominal", lang)}</span></th>
+                    <th colSpan={9}><span className="og-fleet-truck">{group.truckId}</span><span className="og-chip">{modelLabel(group.model, lang)}</span><span className="og-fleet-group-regime">{t("fleet.regimeSummary", lang)}</span><span className={`og-fleet-group-alert ${group.wheels.some((row) => ["N1", "N2", "N4", "stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm))) ? "is-attention" : "is-nominal"}`}>{group.wheels.some((row) => ["N1", "N2", "N4", "stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm))) ? t("fleet.groupAlert", lang) : t("fleet.groupNominal", lang)}</span></th>
                   </tr>
                   {group.wheels.map((row) => {
                     const rowState = classifyRowState(row.wheel, row.lastComm);
@@ -133,14 +138,14 @@ export default function FleetPage() {
                     return (
                       <tr className={rowClass(row)} tabIndex={0} onClick={() => { window.location.href = buildWheelDetailHref(row.id); }} onKeyDown={(event) => { if (event.key === "Enter") window.location.href = buildWheelDetailHref(row.id); }}>
                         <td className="og-fleet-wheel-cell"><strong>{row.truckId} · {row.wheel.position}</strong><span className="og-mono">{row.id}</span><small className={`og-fleet-source og-fleet-source--${row.source.toLowerCase()}`}>{row.source}</small></td>
-                        <td><div className="og-fleet-level"><LevelBar lang={lang} value={row.levelL} sigma={row.wheel.sigmaL} /><span className="og-mono">{formatNumber(row.levelL / 95 * 100, lang, 1)}% · {stateLabel(rowState, lang)}</span></div></td>
+                        <td><div className="og-fleet-level"><LevelBar lang={lang} value={row.levelL} sigma={row.wheel.sigmaL} /><span className="og-mono">{formatNumber(row.levelL / 95 * 100, lang, 1)}% (~{formatNumber(row.levelL, lang, 1)} ± {formatNumber(row.wheel.sigmaL, lang, 1)} L) · <b>{stateLabel(rowState, lang)}</b></span></div></td>
                         <td><Sparkline lang={lang} values={values} label={t("fleet.sparkline", lang)} /></td>
                         <td className="og-mono">{formatNumber(row.wheel.lossRateLPer100h, lang, 2)} L/100 h</td>
                         <td className="og-mono">{formatNumber(row.wheel.temperatureC, lang, 1)} °C</td>
                         <td className="og-mono">{formatNumber(row.wheel.vibRms, lang, 2)} g</td>
                         <td><RegimeChip lang={lang} regime={row.wheel.regime} /></td>
                         <td>{row.wheel.alertLevel ? <SeverityBadge lang={lang} severity={row.wheel.alertLevel} /> : "—"}</td>
-                        <td className="og-fleet-last"><span>{relativeLastComm(row.lastComm, now)}</span><small>{rowState === "stale" ? t("fleet.staleDetail", lang) : rowState === "link-down" ? t("fleet.linkDownDetail", lang) : row.source}</small></td>
+                        <td className="og-fleet-last"><span>{rowState === "stale" ? t("fleet.state.stale", lang) : rowState === "link-down" ? t("fleet.state.link-down", lang) : relativeLastComm(row.lastComm, row.source === "DEMO" ? demoDataset.referenceMs : now, lang)}</span><small>{rowState === "stale" ? t("fleet.staleDetail", lang) : rowState === "link-down" ? t("fleet.linkDownDetail", lang) : row.source}</small></td>
                       </tr>
                     );
                   })}
