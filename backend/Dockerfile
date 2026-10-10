@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 WORKDIR /app
 # Build context is the repo root (see docker-compose.yml): backend code +
 # the stdlib-only ai/ estimators (T10 ladder/RUL) ship in one image.
