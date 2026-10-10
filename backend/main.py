@@ -52,7 +52,14 @@ try:  # paquete (pytest / uvicorn backend.main:app)
     )
     from .metrics import CachedProbe, IngestMetrics, TisoClock
     from .pipeline import IngestPipeline
-    from .store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore, as_float
+    from .store import (
+        DEFAULT_DEVICE,
+        RETENTION_ROWS,
+        StoreView,
+        TelemetryStore,
+        as_float,
+        outage_runs,
+    )
 except ImportError:  # módulo suelto (Docker copia backend/ a /app)
     from aggregates import (  # type: ignore
         DEFAULT_METRICS,
@@ -70,6 +77,7 @@ except ImportError:  # módulo suelto (Docker copia backend/ a /app)
         StoreView,
         TelemetryStore,
         as_float,
+        outage_runs,
     )
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -934,6 +942,33 @@ def fleet_devices() -> dict:
         ),
         "reason": None if devices else "no_rows",
         "code": None if devices else "no_rows",
+    }
+
+
+@app.get("/fleet/outages")
+def fleet_outages(
+    device_id: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=2000),
+) -> dict:
+    """Rachas de filas con ``link_down`` por dispositivo (historial de cortes)."""
+    with _store_lock:
+        devices = [device_id] if device_id else _STORE.devices()
+        runs: list[dict[str, Any]] = []
+        for device in devices:
+            rows = sorted(_STORE.rows(device), key=lambda row: int(row.get("seq", 0)))
+            runs.extend(outage_runs(rows, device))
+    runs.sort(key=lambda run: (str(run.get("start_t_iso") or ""), run["device_id"]), reverse=True)
+    total = len(runs)
+    return {
+        "status": "ok",
+        "kind": "fleet-outages",
+        "as_of": _now_iso(),
+        "device_id": device_id,
+        "count": min(total, limit),
+        "outages_total": total,
+        "outages": runs[:limit],
+        "reason": "no_outages" if total == 0 else None,
+        "code": "no_outages" if total == 0 else None,
     }
 
 

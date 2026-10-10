@@ -341,6 +341,7 @@ class TelemetryStore:
                 }
             return stats
 
+
     def reverse(self, device_id: str) -> None:
         """Invierte el orden de un dispositivo (superficie de compatibilidad)."""
         with self.lock:
@@ -355,6 +356,41 @@ class TelemetryStore:
         with self.lock:
             for device in list(self._rows):
                 self.reverse(device)
+
+
+def outage_runs(rows: Iterable[dict[str, Any]], device_id: str) -> list[dict[str, Any]]:
+    """Rachas de filas con ``link_down`` dentro de las filas ya ordenadas.
+
+    ``forwarded`` se deja en None a proposito: el backend no entrega nada
+    durante un corte (no hay MQTT), asi que afirmar un numero de filas
+    entregadas seria inventar una medida. La UI lo trata como desconocido.
+    """
+    runs: list[dict[str, Any]] = []
+    current: list[dict[str, Any]] = []
+
+    def close(group: list[dict[str, Any]]) -> None:
+        if not group:
+            return
+        start, end = group[0], group[-1]
+        runs.append({
+            "device_id": device_id,
+            "start_t_iso": start.get("t_iso"),
+            "end_t_iso": end.get("t_iso"),
+            "start_t_s": row_ts(start),
+            "end_t_s": row_ts(end),
+            "duration_s": round(row_ts(end) - row_ts(start), 3),
+            "rows_buffered": len(group),
+            "forwarded": None,
+        })
+
+    for row in rows:
+        if int(as_float(row.get("link_down")) or 0) == 1:
+            current.append(row)
+        else:
+            close(current)
+            current = []
+    close(current)
+    return runs
 
 
 class StoreView:
