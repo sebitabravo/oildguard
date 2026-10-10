@@ -257,7 +257,7 @@ export default function Dashboard() {
       <section className="og-fleet-panel" aria-labelledby="og-fleet-title">
         <div className="og-fleet-panel__heading">
           <div>
-            <h2 id="og-fleet-title">{t("dash.fleet.title", lang)}</h2>
+            <h2 id="og-fleet-title" className="og-dashboard-sheet-title">{t("dash.fleet.title", lang)}</h2>
             <p>{t("dash.fleet.proxy", lang)}</p>
           </div>
           <span className="og-fleet-panel__risk-title">{t("dash.fleet.risk", lang)}</span>
@@ -406,7 +406,7 @@ export default function Dashboard() {
       <div className="og-dashboard-panels" style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
         {/* level chart */}
         <div className="og-dashboard-chart" style={{ flex: "2 1 560px", minWidth: 320, border: "1px solid var(--og-line-dashboard)", borderRadius: "var(--og-radius-panel)", padding: 16, background: "var(--og-panel-dashboard)" }}>
-          <h2 style={{ margin: "0 0 4px", fontSize: 16 }}>
+          <h2 className="og-dashboard-sheet-title" style={{ margin: "0 0 4px" }}>
             {t("dash.chart.title", lang)}{" "}
             <span style={{ fontSize: 12, fontWeight: 400, color: "var(--og-muted)" }}>
               ±{formatNumber(sigmaL, lang, 2)} L · conf {formatNumber(Number(confidence), lang, 3)} · {t("dash.chart.restWindows", lang)}

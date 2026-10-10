@@ -568,9 +568,10 @@ button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og
 /* ------------------------------------------------------------------ page (dashboard) */
 .og-page { height: 100%; overflow-y: auto; padding: 20px 24px 32px; }
 .og-page__inner { max-width: 1440px; margin: 0 auto; }
+.og-dashboard-sheet-title { font-size: 16px; }
 .og-fleet-panel { margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--og-line-dashboard); border-radius: var(--og-radius-panel); background: var(--og-panel-dashboard); }
 .og-fleet-panel__heading { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; }
-.og-fleet-panel__heading h2 { margin: 0; font-size: 18px; }
+.og-fleet-panel__heading h2 { margin: 0; }
 .og-fleet-panel__heading p { margin: 5px 0 0; color: var(--og-yellow); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
 .og-fleet-panel__risk-title { color: var(--og-muted); font-size: 12px; }
 .og-fleet-panel__assumption { max-width: 100ch; margin: 10px 0 12px; color: var(--og-body); font-size: 12px; line-height: 1.5; }
