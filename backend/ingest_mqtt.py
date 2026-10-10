@@ -43,6 +43,19 @@ DEVICE_TOPIC = os.getenv("MQTT_DEVICE_TOPIC", "oilguard/signals")
 
 RECONNECT_DELAYS = (1, 2, 5, 10, 30)  # s, cycled while the broker is down
 
+try:  # el perfil dio a la decodificacion el 31% del camino de ingesta
+    import orjson  # type: ignore
+
+    _json_loads = orjson.loads
+except ImportError:  # el backend sigue funcionando sin la dependencia
+    orjson = None  # type: ignore
+    _json_loads = json.loads
+
+
+def accelerated_json_available() -> bool:
+    """True si el decoder acelerado esta instalado (solo diagnostico)."""
+    return orjson is not None
+
 
 def subscription_topics(topic: str = MQTT_TOPIC) -> tuple[str, ...]:
     """Topicos a suscribir: el legado y el comodin por dispositivo."""
@@ -69,10 +82,14 @@ def decode_payload(raw: bytes, topic: str | None = None) -> list[dict[str, Any]]
     y la fila no trae ``device_id``, se completa con el del topico. Nunca se
     sobrescribe un ``device_id`` que ya viene en el payload: es campo firmado,
     y pisarlo invalidaria la HMAC de una fila correctamente firmada.
+
+    Acepta tanto el decoder acelerado como el de la stdlib: se captura
+    ``ValueError`` porque las dos librerias reportan JSON invalido como
+    subclase de ese error, con nombres distintos.
     """
     try:
-        body = json.loads(raw.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        body = _json_loads(raw)
+    except ValueError as exc:
         raise ValueError(f"not JSON: {exc}") from exc
     if isinstance(body, dict) and isinstance(body.get("rows"), list):
         rows = body["rows"]

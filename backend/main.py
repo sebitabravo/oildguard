@@ -50,7 +50,7 @@ try:  # paquete (pytest / uvicorn backend.main:app)
         build_frame,
         parse_metrics,
     )
-    from .metrics import CachedProbe, IngestMetrics
+    from .metrics import CachedProbe, IngestMetrics, TisoClock
     from .pipeline import IngestPipeline
     from .store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore
 except ImportError:  # módulo suelto (Docker copia backend/ a /app)
@@ -62,7 +62,7 @@ except ImportError:  # módulo suelto (Docker copia backend/ a /app)
         build_frame,
         parse_metrics,
     )
-    from metrics import CachedProbe, IngestMetrics  # type: ignore
+    from metrics import CachedProbe, IngestMetrics, TisoClock  # type: ignore
     from pipeline import IngestPipeline  # type: ignore
     from store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore  # type: ignore
 
@@ -113,6 +113,10 @@ def parse_master_key(spec: str) -> bytes | None:
 
 
 _DEVICE_MASTER_KEY = parse_master_key(os.getenv("OILGUARD_DEVICE_MASTER_KEY", ""))
+# Cache de derivacion por maestra; cambiar de maestra crea otra entrada, asi
+# que una llave de una instalacion jamas se sirve para otra.
+_DEVICE_KEY_CACHE: dict[bytes, dict[str, bytes]] = {}
+DEVICE_KEY_CACHE_LIMIT = 100_000
 _REQUIRE_SIGNATURE = os.getenv("OILGUARD_REQUIRE_SIGNATURE", "0") == "1"
 
 CAPACITY_L = 95.0  # GDY106 nominal, SAE 85W-140 (physics anchor)
@@ -214,13 +218,29 @@ def device_key(device_id: str) -> bytes | None:
     Listar una llave por equipo no escala a miles de dispositivos, asi que
     ``OILGUARD_DEVICE_MASTER_KEY`` permite derivarlas. La entrada explicita
     siempre gana: sirve para puentear un equipo durante una rotacion.
+
+    La derivacion se cachea por maestra: el perfil la mostraba como 1.2 s de
+    13 s en el camino firmado, porque se rederivaba la misma llave en cada una
+    de las diez filas de un lote.
     """
-    key = _DEVICE_KEYS.get(device_id)
-    if key is not None:
-        return key
-    if _DEVICE_MASTER_KEY and device_id:
-        return derive_device_key(_DEVICE_MASTER_KEY, device_id)
-    return None
+    explicit = _DEVICE_KEYS.get(device_id)
+    if explicit is not None:
+        return explicit
+    master = _DEVICE_MASTER_KEY
+    if not master or not device_id:
+        return None
+    cache = _DEVICE_KEY_CACHE.get(master)
+    if cache is None:
+        cache = {}
+        _DEVICE_KEY_CACHE[master] = cache
+    key = cache.get(device_id)
+    if key is None:
+        key = derive_device_key(master, device_id)
+        # Un device_id sin firmar podria inflar el cache sin limite.
+        if len(cache) >= DEVICE_KEY_CACHE_LIMIT:
+            cache.clear()
+        cache[device_id] = key
+    return key
 
 
 def _now_iso() -> str:
@@ -329,14 +349,22 @@ def verify_rows(
     """
     prepared: list[tuple[dict[str, Any], tuple | None]] = []
     rejections: list[tuple[str, str]] = []
+    # Locales del bucle: buscar un global por fila son millones de accesos al
+    # diccionario de modulos en el camino mas caliente.
+    require_signature = _REQUIRE_SIGNATURE
+    add_prepared = prepared.append
+    add_rejection = rejections.append
+    lookup_key = device_key
     for original in rows:
         row = dict(original)
-        device_id = str(row.get("device_id", "") or "")
+        device_id = row.get("device_id")
+        if type(device_id) is not str:  # noqa: E721 - atajo deliberado
+            device_id = str(device_id or "")
         has_signature = row.get("sig") is not None or row.get("sig_v") is not None
         reason: str | None = None
         identity: tuple | None = None
         if has_signature:
-            key = device_key(device_id)
+            key = lookup_key(device_id)
             if key is None:
                 reason = "unknown_device"
             else:
@@ -348,13 +376,13 @@ def verify_rows(
                     reason = "bad_signature"
                 else:
                     identity = (device_id, int(row["seq"]), str(row["t_iso"]))
-        elif _REQUIRE_SIGNATURE:
+        elif require_signature:
             reason = "unsigned"
         if reason is not None:
-            rejections.append((device_id, reason))
+            add_rejection((device_id, reason))
             continue
         row["sig_verified"] = has_signature
-        prepared.append((row, identity))
+        add_prepared((row, identity))
     return prepared, rejections
 
 
@@ -370,7 +398,7 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
     prepared, rejections = verify_rows(rows)
 
     with _store_lock:
-        accepted, replays = _STORE.commit(prepared, rejections)
+        accepted, replays = _STORE.commit(prepared, rejections, arrival=received_at)
         rejected_reasons: Counter[str] = Counter(reason for _, reason in rejections)
         if replays:
             rejected_reasons["replay"] += replays
@@ -381,16 +409,22 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
     rejected_count = sum(rejected_reasons.values())
     _INGEST_METRICS.record(accepted=len(accepted), rejected=rejected_count, now=received_at)
-    _INGEST_METRICS.record_latencies(
-        [
-            received_at - stamp
-            for stamp in (_parse_t_iso(row.get("t_iso")) for row in accepted)
-            if stamp is not None
-        ],
-        now=received_at,
-    )
+    # Una sola pasada: los generadores anidados y la llamada por fila costaban
+    # mas que la propia medicion de latencia.
+    epoch_of = _TISO.epoch
+    latencies: list[float] = []
+    add_latency = latencies.append
+    for row in accepted:
+        epoch = epoch_of(row.get("t_iso"))
+        if epoch is not None:
+            add_latency(received_at - epoch)
+    _INGEST_METRICS.record_latencies(latencies, now=received_at)
 
-    latest_seq = max((int(r.get("seq", 0)) for r in accepted), default=0)
+    latest_seq = 0
+    for row in accepted:
+        seq = int(row.get("seq", 0))
+        if seq > latest_seq:
+            latest_seq = seq
     log.info(
         "ingest accepted=%d rejected=%d reasons=%s latest_seq=%d store_rows=%d",
         len(accepted),
@@ -445,6 +479,11 @@ _PIPELINE = IngestPipeline(
 )
 
 _INGEST_METRICS = IngestMetrics(window_s=10.0)
+_TISO = TisoClock()
+
+
+def _DEVICE_KEY_CACHE_SIZE() -> int:
+    return sum(len(cache) for cache in _DEVICE_KEY_CACHE.values())
 
 
 def _influx_probe_key() -> tuple:
@@ -497,13 +536,12 @@ def influx_state() -> dict[str, Any]:
 
 
 def _parse_t_iso(value: Any) -> float | None:
-    """Epoch de ``t_iso``; None si no es ISO-8601 parseable."""
-    if not isinstance(value, str) or not value:
-        return None
-    try:
-        return datetime.fromisoformat(value).timestamp()
-    except ValueError:
-        return None
+    """Epoch de ``t_iso``; None si no es ISO-8601 parseable.
+
+    Delega en ``_TISO`` para no repetir el parseo cuando el lote entero
+    comparte marca de tiempo, que es lo que hace el simulador en tiempo real.
+    """
+    return _TISO.epoch(value)
 
 
 def select_device(device_id: str | None) -> str | None:
