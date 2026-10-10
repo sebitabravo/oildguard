@@ -147,7 +147,7 @@ RDD outcomes: T2 slice c4a9ba6 declined; T2+T3 range lens_context_budget_exceede
 
 ## Next step
 
-T1–T10 and Q1–Q20 are recorded complete. Q16's backend and frontend message-code slices are committed and approved/acknowledged; its frontend review recorded the separate non-blocking advisory R3-001 at `frontend/src/dash/RulPanel.tsx:42-44`, fixed by Q20 `b875cc9`. Q19's static dashboard decimals and formatter-contract test fixtures were corrected in `11ca605` and `fd7881a`; final build and screenshots pass. Backend defaults were restored and all volumes/services were preserved. Next step: Claude/OpenCode's independent final re-test remains user-owned and pending. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
+T1–T10 and Q1–Q21 are recorded complete. Q16's backend and frontend message-code slices are committed and approved/acknowledged; its frontend review recorded the separate non-blocking advisory R3-001 at `frontend/src/dash/RulPanel.tsx:42-44`, fixed by Q20 `b875cc9`. Q19's static dashboard decimals and formatter-contract test fixtures were corrected in `11ca605` and `fd7881a`; final build and screenshots pass. Backend defaults were restored and all volumes/services were preserved. Q21 local leak-demo alert reasons now use the shared structured message localizer. After parent assesses this Q21 work-unit commit, continue with Q22 only. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
 
 ## QA follow-up (2026-10-09)
 
@@ -384,6 +384,31 @@ The wheel checkbox input hitbox is 44×44 in EN and ES; its separately measured 
 - **GREEN:** added representative `pressure: 2.6` and `liters: 47.5` values. Final `python3 -m pytest -q` → 121 passed, 3 deprecation warnings; `cd frontend && bun test src` → 218 passed, 0 failed, 114,499 expectations across 46 files; `cd frontend && bun run build` → passed, 0 errors, 4 hints, all 4 routes built; existing large-chunk warning.
 - **Screenshots and backend:** final screenshot runner inspected `/tmp/og-shots/qa-fix5-monitoring-es.png` and `/tmp/og-shots/qa-fix5-monitoring-en.png` (1600×1000). The LIVE series had 300 sorted points; both charts are visible. ES threshold/geometry labels use commas; EN uses points. The unsigned 1,200-row slow-leak ingest and `/level/series` checks passed. Backend was restored by recreating only the backend: healthy, empty session (`store_rows=0`), signing disabled, and `/alerts`/`/rul` return `no_rows`; other services and volumes were preserved.
 - **Test-fixture commit:** `test(frontend): supply dashboard formatter examples` (`fd7881a`). RDD assessment from `8baf0af`: medium, 83 changed lines across 8 paths, `review_due=false` / `under_budget`; no review due.
+
+### QA-FIX5 follow-up (2026-10-10)
+
+- **Source of truth:** `/tmp/oilguard-briefs/QA-FIX5.md`; evidence: `/tmp/oilguard-qa/final2/report.md`, especially §5–7. Final QA reported 19/19 Chromium checks passing and the first Firefox/WebKit smoke pass; Q21–Q25 are bounded follow-up findings, not reopenings of unrelated completed work.
+- **Route:** delegated direct, one task/work-unit commit at a time. Implement Q21 only in this slice; stop after its commit and parent assessment. Do not start Q22–Q25 early.
+- **TDD:** on; runner `cd frontend && bun test src`. For each task add the focused failing test before production implementation, record RED→GREEN, and retain tests with the behavior commit.
+- **Checks:** Q21 focused `cd frontend && bun test src/dash/backendMessages.test.ts` RED→GREEN. Final QA-FIX5 checks are `python3 -m pytest -q`, `cd frontend && bun test src`, and `cd frontend && bun run build`; then capture `/tmp/og-shots/qa-fix6-demo-es.png` during the local leak demo at N4 and verify all four Spanish alert reasons / decimal commas, and load `/wheel` in Firefox via the brief's Playwright command to verify zero WebGL warnings.
+- **Safety:** no new dependencies, push, Docker, or browser work during Q21. Do not stage `.codex/hooks.json`, the existing unstaged `BaseLayout.astro` live.js hunk, or protected tooling directories. Spanish code comments; English identifiers, docs, and commits.
+
+#### QA-FIX5 tasks
+
+- [x] **Q21 — N-09 local leak-demo alert reasons:** replace four hardcoded local-demo reason strings with the same `{code, params}` structured messages as backend alerts: `ladder_n1_trend_persistence`, `ladder_n2_same_window_confirmation`, `ladder_n3_shift_window`, and `ladder_n4_abrupt_drop`. Reuse `shared/message_codes.json`, `i18n/index.ts`, and `dash/backendNotes.ts`; cover codes, parameters, English copy, and Spanish copy (including N4 number localization) in `backendMessages.test.ts`. Preserve English mode and fallback reason fields. Commit: `fix(frontend): localize leak demo alert reasons`.
+- [ ] **Q22 — N-10 Spanish demo lab-note decimals:** parameterize displayed values in `dash.demo.labNote`, format them with `formatNumber`, and extend the i18n guard to reject decimal points in Spanish dictionary copy except inside identifiers. Commit: `fix(frontend): format lab note numbers per language`.
+- [ ] **Q23 — N-11 RUL slope precision:** limit the displayed slope in the ES RUL note to the established 2–3 decimal precision using `formatNumber`, with focused copy coverage. Commit: `fix(frontend): round displayed rul slope`.
+- [ ] **Q24 — N-08 freeze mine dust on pause:** make paused frames skip dust update/emission or drive dust from simulation time; add a pure update-gating test and preserve unpaused behavior. Commit: `fix(frontend): freeze dust while paused`.
+- [ ] **Q25 — N-12 Firefox wheel mipmap warning:** identify the triggering `/wheel` texture and prevent Firefox's lazy `generateMipmap` warning with an appropriate upload/filter change; verify Firefox console is warning-free using the exact Playwright version/command in the brief. Commit: `fix(frontend): avoid lazy mipmap init on wheel`.
+
+#### QA-FIX5 Q21 evidence
+
+- **RED:** `cd frontend && bun test src/dash/backendMessages.test.ts` → 4 pass, 1 fail, 192 expectations; the new coverage received `undefined` instead of the four expected structured message codes.
+- **GREEN, focused:** `cd frontend && bun test src/dash/backendMessages.test.ts` → 5 pass, 0 fail, 196 expectations. The test verifies all four codes/params, preserved legacy English fallback reasons, canonical English copy, Spanish copy, and N3 comma formatting plus N4 localized text.
+- **GREEN, full:** `cd frontend && bun test src` → 219 pass, 0 fail, 114,505 expectations across 46 files. `cd frontend && bun run build` → pass; Astro check 0 errors, 4 hints, 4 static routes built; existing large-chunk warning.
+- **Implementation:** `demoAlertsUpTo()` now attaches `reason_message` payloads using the shared N1/N2/N3/N4 ladder codes and numeric/zone parameters. Dashboard already sends demo and backend alerts through `localizeBackendMessage`, so the local path now renders bilingual copy without changing the display integration; the original English `reason` values remain as fallback.
+- **Work-unit commit:** `fix(frontend): localize leak demo alert reasons` (this work unit).
+- **Next:** after parent assesses the Q21 commit, continue with Q22 only.
 
 ### Q2 interim evidence — first copy migration work unit
 

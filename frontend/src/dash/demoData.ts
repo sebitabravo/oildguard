@@ -95,6 +95,7 @@ function demoAlert(
   window_id: number,
   zone: string,
   reason: string,
+  reasonMessage: NonNullable<DashAlert["reason_message"]>,
   lvl: number
 ): DashAlert {
   return {
@@ -105,6 +106,7 @@ function demoAlert(
     window_id,
     zone,
     reason,
+    reason_message: reasonMessage,
     model: DEMO_MODEL,
     inputs: {
       z_med: level === "N4" ? -32.437 : -3.402,
@@ -139,6 +141,7 @@ export function demoAlertsUpTo(stage: string): DashAlert[] {
     2,
     "DUMP",
     "N1 trend (persistence entry)",
+    { code: "ladder_n1_trend_persistence", params: { window: 2, zone: "DUMP" } },
     93.43
   );
   const n2 = demoAlert(
@@ -148,6 +151,7 @@ export function demoAlertsUpTo(stage: string): DashAlert[] {
     2,
     "DUMP",
     "N2 confirmed leak: 2-of-3 channels same window 2",
+    { code: "ladder_n2_same_window_confirmation", params: { votes: 2, window: 2 } },
     93.43
   );
   const n3 = demoAlert(
@@ -157,6 +161,7 @@ export function demoAlertsUpTo(stage: string): DashAlert[] {
     2,
     "DUMP",
     "N3 shift-window: RUL-to-warning 0.35 h < 8.0 h shift",
+    { code: "ladder_n3_shift_window", params: { warning_hours: 0.35, shift_hours: 8.0 } },
     93.43
   );
   const n4 = demoAlert(
@@ -166,6 +171,7 @@ export function demoAlertsUpTo(stage: string): DashAlert[] {
     3,
     "LOAD",
     "N4 critical: abrupt window-to-window drop 95.0->80.0 L (>5.0 L)",
+    { code: "ladder_n4_abrupt_drop", params: { from_l: 95.0, to_l: 80.0, threshold_l: 5.0 } },
     79.97
   );
   if (stage === "clean") return [];
