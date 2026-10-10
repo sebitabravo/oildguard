@@ -13,7 +13,7 @@
 .landing__mobile-context { display: none; }
 .landing__language { display: flex; padding: 3px; gap: 2px; border: 1px solid var(--og-border-strong); }
 .landing__language button { min-width: 38px; min-height: 36px; color: var(--og-text-muted); background: transparent; border: 0; font: 10px var(--og-mono); cursor: pointer; }
-.landing__language button[aria-pressed="true"] { color: var(--og-text-primary); background: var(--og-panel-2); }
+.landing__language[data-current-lang="en"] button[data-lang="en"], .landing__language[data-current-lang="es"] button[data-lang="es"] { color: var(--og-on-yellow); background: var(--og-accent); font-weight: 600; }
 .landing__hero { display: grid; grid-template-columns: 1.06fr .94fr; align-items: center; gap: 36px; min-height: 424px; padding: 50px 0 42px; border-bottom: 1px solid var(--og-border-subtle); }
 .landing__hero-copy { max-width: 600px; }
 .landing__system-line { display: flex; align-items: center; gap: 9px; margin: 0 0 17px; color: var(--og-accent); font-size: 10px; letter-spacing: .08em; }

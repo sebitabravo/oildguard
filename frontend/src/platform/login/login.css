@@ -5,7 +5,7 @@
 .login__back:hover { color: var(--og-accent); }
 .login__language { display: flex; padding: 3px; gap: 2px; border: 1px solid var(--og-border-strong); }
 .login__language button { min-width: 38px; min-height: 36px; color: var(--og-text-muted); background: transparent; border: 0; font: 10px var(--og-mono); cursor: pointer; }
-.login__language button[aria-pressed="true"] { color: var(--og-text-primary); background: var(--og-panel-2); }
+.login__language[data-current-lang="en"] button[data-lang="en"], .login__language[data-current-lang="es"] button[data-lang="es"] { color: var(--og-on-yellow); background: var(--og-accent); font-weight: 600; }
 .login__main { display: grid; min-height: calc(100vh - 122px); place-items: center; padding: 28px 0; }
 .login__card { width: min(100%, 428px); padding: 34px; border: 1px solid var(--og-border-strong); background: var(--og-panel); box-shadow: 0 20px 60px rgba(0,0,0,.18); }
 .login__brand { display: grid; width: 45px; height: 45px; place-items: center; color: var(--og-on-yellow); background: var(--og-accent); font: 700 14px var(--og-mono); }

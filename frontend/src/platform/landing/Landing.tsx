@@ -7,7 +7,14 @@ import "./landing.css";
 export default function Landing() {
   const [lang, setLang] = useLang();
   const n = (value: number, digits = 0) => formatNumber(value, lang, digits);
-  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    const control = document.querySelector(".landing__language");
+    control?.setAttribute("data-current-lang", lang);
+    control?.querySelectorAll<HTMLButtonElement>("[data-lang]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.lang === lang));
+    });
+  }, [lang]);
 
   return (
     <div className="landing">
@@ -18,9 +25,9 @@ export default function Landing() {
         </a>
         <div className="landing__top-actions">
           <span className="landing__context">{t("landing.context", lang)}</span>
-          <div className="landing__language" role="group" aria-label={t("landing.language", lang)}>
-            <button type="button" aria-pressed={lang === "en"} onClick={() => setLang("en")}>EN</button>
-            <button type="button" aria-pressed={lang === "es"} onClick={() => setLang("es")}>ES</button>
+          <div className="landing__language" data-current-lang={lang} role="group" aria-label={t("landing.language", lang)}>
+            <button type="button" data-lang="en" aria-pressed={lang === "en"} onClick={() => setLang("en")}>EN</button>
+            <button type="button" data-lang="es" aria-pressed={lang === "es"} onClick={() => setLang("es")}>ES</button>
           </div>
         </div>
       </header>
@@ -88,7 +95,7 @@ export default function Landing() {
           <div className="landing__pipeline" aria-label={t("landing.pipelineAlt", lang)}>
             {["landing.stepRust", "landing.stepMqtt", "landing.stepFastApi", "landing.stepInflux", "landing.dashboard"].map((key, index) => <div className="landing__pipe-step"><span>0{index + 1}</span><strong>{t(key as Parameters<typeof t>[0], lang)}</strong>{index < 4 && <i aria-hidden="true">→</i>}</div>)}
           </div>
-          <div className="landing__sensors"><h3>{t("landing.sensorsTitle", lang)}</h3><div><span>{t("landing.pressureSensor", lang)} <ProvenanceTag lang={lang} value="VERIFIED" /></span><span>{t("landing.temperatureSensor", lang)} <ProvenanceTag lang={lang} value="VERIFIED" /></span><span>{t("landing.accelerometer", lang)} <ProvenanceTag lang={lang} value="VERIFIED" /></span><span>{t("landing.contextSensor", lang)} <ProvenanceTag lang={lang} value="ASSUMPTION" /></span></div><p>{t("landing.mountingNote", lang)}</p></div>
+          <div className="landing__sensors"><h3>{t("landing.sensorsTitle", lang)}</h3><div><span>{t("landing.pressureSensor", lang)} <ProvenanceTag lang={lang} value="ASSUMPTION" /></span><span>{t("landing.temperatureSensor", lang)} <ProvenanceTag lang={lang} value="ASSUMPTION" /></span><span>{t("landing.accelerometer", lang)} <ProvenanceTag lang={lang} value="ASSUMPTION" /></span><span>{t("landing.contextSensor", lang)} <ProvenanceTag lang={lang} value="ASSUMPTION" /></span></div><p>{t("landing.mountingNote", lang)}</p></div>
           <div className="landing__signing"><span className="landing__sign-icon" aria-hidden="true">✓</span><div><strong>{t("landing.signedRows", lang)}</strong><p>{t("landing.signedRowsBody", lang)}</p></div><ProvenanceTag lang={lang} value="VERIFIED" /></div>
         </section>
 

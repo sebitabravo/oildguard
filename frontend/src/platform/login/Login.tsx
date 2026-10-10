@@ -5,16 +5,27 @@ import "./login.css";
 
 export default function Login() {
   const [lang, setLang] = useLang();
-  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    const control = document.querySelector(".login__language");
+    control?.setAttribute("data-current-lang", lang);
+    control?.querySelectorAll<HTMLButtonElement>("[data-lang]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.lang === lang));
+    });
+    const email = document.querySelector<HTMLInputElement>(".login__field input[type=email]");
+    const password = document.querySelector<HTMLInputElement>(".login__field input[type=password]");
+    if (email) email.placeholder = t("login.emailPlaceholder", lang);
+    if (password) password.placeholder = t("login.passwordPlaceholder", lang);
+  }, [lang]);
 
   return (
     <div className="login">
       <h1 className="og-visually-hidden">{t("login.pageTitle", lang)}</h1>
       <header className="login__top">
         <a href="/" className="login__back">← {t("login.back", lang)}</a>
-        <div className="login__language" role="group" aria-label={t("login.language", lang)}>
-          <button type="button" aria-pressed={lang === "en"} onClick={() => setLang("en")}>EN</button>
-          <button type="button" aria-pressed={lang === "es"} onClick={() => setLang("es")}>ES</button>
+        <div className="login__language" data-current-lang={lang} role="group" aria-label={t("login.language", lang)}>
+          <button type="button" data-lang="en" aria-pressed={lang === "en"} onClick={() => setLang("en")}>EN</button>
+          <button type="button" data-lang="es" aria-pressed={lang === "es"} onClick={() => setLang("es")}>ES</button>
         </div>
       </header>
       <main className="login__main">
