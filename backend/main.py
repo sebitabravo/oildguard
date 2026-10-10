@@ -867,12 +867,54 @@ def fleet_aggregates(
     }
 
 
+def alert_level_for(device_id: str) -> tuple[str | None, str | None]:
+    """Nivel de alerta de un equipo segun la escalera T10, o por que falta.
+
+    Devuelve ``(nivel, razon)``; la razon es un token estable
+    (``analyzer_unavailable``, ``no_rows``, ``evaluation_failed``, ``no_alert``)
+    para que la UI lo localice sin analizar prosa.
+
+    Evaluar la escalera cuesta una pasada sobre las filas del equipo, asi que
+    se hace aqui y no por ruta: /fleet/devices ya es la ruta cara de la flota y
+    el cache de la UI la refresca cada pocos segundos.
+    """
+    evaluator, import_reason = _load_t10_evaluator()
+    if evaluator is None:
+        return None, "analyzer_unavailable"
+    rows = _sorted_device_rows(device_id)
+    if not rows:
+        return None, "no_rows"
+    try:
+        bundle = evaluator(_samples_from_rows(rows))
+    except Exception:  # noqa: BLE001 - puntuar nunca debe tumbar la ruta
+        return None, "evaluation_failed"
+    alerts = bundle.get("alerts") or []
+    highest: str | None = None
+    for alert in alerts:
+        level = str(alert.get("level", ""))
+        if level in _LADDER_ORDER and (
+            highest is None or _LADDER_ORDER.index(level) > _LADDER_ORDER.index(highest)
+        ):
+            highest = level
+    if highest is None:
+        return None, "no_alert"
+    return highest, None
+
+
+_LADDER_ORDER = ("N1", "N2", "N3", "N4")
+
+
 @app.get("/fleet/devices")
 def fleet_devices() -> dict:
-    """Retencion y estado de firmas por dispositivo."""
+    """Retención, estado de firmas, última lectura y alerta por dispositivo."""
     with _store_lock:
         stats = _STORE.device_stats()
     devices = [stats[device] for device in sorted(stats)]
+    for device in devices:
+        level, reason = alert_level_for(device["device_id"])
+        device["alert_level"] = level
+        device["alert_level_reason"] = reason
+    reasons = {device["alert_level_reason"] for device in devices}
     return {
         "status": "ok",
         "kind": "fleet-devices",
@@ -880,6 +922,10 @@ def fleet_devices() -> dict:
         "count": len(devices),
         "retention_rows": RETENTION_ROWS,
         "devices": devices,
+        "alert_level_reason": (
+            None if not devices or any(device["alert_level"] for device in devices) else
+            next(iter(sorted(reasons)), None)
+        ),
         "reason": None if devices else "no_rows",
         "code": None if devices else "no_rows",
     }

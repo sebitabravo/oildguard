@@ -54,6 +54,27 @@ def device_of(row: dict[str, Any]) -> str:
     return device_id if isinstance(device_id, str) else str(device_id or "")
 
 
+# Bloque "latest" que consumen las tarjetas de la UI de flota.
+LATEST_SIGNAL_FIELDS = (
+    "temperature_c",
+    "vib_rms_g",
+    "pressure_kpa",
+    "fsm_state",
+    "moving",
+    "link_down",
+    "t_iso",
+)
+
+
+def latest_signals(row: dict[str, Any]) -> dict[str, Any]:
+    """Ultima lectura de un dispositivo, con los numeros ya tipados."""
+    block: dict[str, Any] = {}
+    for name in LATEST_SIGNAL_FIELDS:
+        value = row.get(name)
+        block[name] = as_float(value) if name in NUMERIC_COLUMNS or name == "moving" or name == "link_down" else value
+    return block
+
+
 def row_ts(row: dict[str, Any]) -> float:
     """``t_s`` del simulador; si falta o no es numérico, la hora de llegada.
 
@@ -316,6 +337,7 @@ class TelemetryStore:
                     "rejected_reasons": dict(rejected),
                     "latest_level_liters": as_float(latest_row.get("level_liters")) if latest_row else None,
                     "latest_level_pct": as_float(latest_row.get("level_pct")) if latest_row else None,
+                    "latest": latest_signals(latest_row) if latest_row else None,
                 }
             return stats
 
