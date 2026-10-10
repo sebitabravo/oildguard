@@ -57,11 +57,16 @@ def device_of(row: dict[str, Any]) -> str:
 def row_ts(row: dict[str, Any]) -> float:
     """``t_s`` del simulador; si falta o no es numérico, la hora de llegada.
 
-El ``is None`` es deliberado: ``t_s`` vale 0.0 en la primera muestra de
+    El ``is None`` es deliberado: ``t_s`` vale 0.0 en la primera muestra de
     cada stream, y un ``or`` aquí no la distinguiría de "ausente", mezclando
     el reloj del simulador con el de llegada.
     """
-    simulated = as_float(row.get("t_s"))
+    simulated = row.get("t_s")
+    # Atajo: el decoder JSON ya devuelve float, y evitar la llamada a as_float
+    # en la ruta mas caliente es la mayor parte del ahorro aqui.
+    if type(simulated) is float:  # noqa: E721 - type() es el atajo deliberado
+        return simulated
+    simulated = as_float(simulated)
     if simulated is not None:
         return simulated
     return float(row.get(ARRIVAL_KEY) or 0.0)
@@ -92,32 +97,85 @@ class TelemetryStore:
         self,
         prepared: Sequence[tuple[dict[str, Any], tuple | None]],
         rejections: Sequence[tuple[str, str]] = (),
+        arrival: float | None = None,
     ) -> tuple[list[dict[str, Any]], int]:
         """Inserta filas ya verificadas y descuenta replays, todo bajo el lock.
 
         ``prepared`` son pares ``(fila, identidad)``; la identidad ``None``
         marca filas sin firma, que nunca participan del control antireplay.
         ``rejections`` son pares ``(device_id, motivo)`` ya contabilizados por
-        el verificador de firmas.
+        el verificador de firmas. ``arrival`` es la hora de recepcion del lote:
+        el perfil mostraba ``time.time()`` por fila como un coste medible, y un
+        lote entero llego en el mismo instante.
 
         Devuelve ``(filas_insertadas, replays_descontados)``.
         """
         accepted: list[dict[str, Any]] = []
+        append = accepted.append
         replays = 0
+        # Contadores acumulados del lote y fusionados una vez: miles de
+        # incrementos por fila son millones de operaciones de dict.
+        accepted_counts: Counter[str] = Counter()
+        verified_counts: Counter[str] = Counter()
+        latest_ts: dict[str, float] = {}
         with self.lock:
+            if arrival is None:
+                arrival = time.time()
+            rows_by_device = self._rows
+            seen_by_device = self._seen
             for row, identity in prepared:
                 device = device_of(row)
                 if identity is not None:
-                    seen = self._seen.get(device)
+                    seen = seen_by_device.get(device)
                     if seen is None:
                         seen = OrderedDict()
-                        self._seen[device] = seen
+                        seen_by_device[device] = seen
                     if identity in seen:
                         replays += 1
                         self._rejected.setdefault(device, Counter())["replay"] += 1
                         continue
-                self._append_locked(row, identity, device)
-                accepted.append(row)
+                    row[IDENTITY_KEY] = identity
+                    seen[identity] = None
+
+                bucket = rows_by_device.get(device)
+                if bucket is None:
+                    bucket = deque(maxlen=self.retention_rows)
+                    rows_by_device[device] = bucket
+                # deque(maxlen=) descarta por la izquierda al insertar: hay que
+                # leer la fila saliente ANTES de anadir para liberar su identidad.
+                if len(bucket) == bucket.maxlen:
+                    evicted = bucket[0]
+                    evicted_identity = evicted.get(IDENTITY_KEY)
+                    if evicted_identity is not None:
+                        expired = seen_by_device.get(device)
+                        if expired is not None:
+                            expired.pop(evicted_identity, None)
+                row[ARRIVAL_KEY] = arrival
+                bucket.append(row)
+
+                stamp = row_ts(row)
+                current_batch = latest_ts.get(device)
+                if current_batch is None or stamp > current_batch:
+                    latest_ts[device] = stamp
+                accepted_counts[device] += 1
+                if row.get("sig_verified"):
+                    verified_counts[device] += 1
+                append(row)
+
+            # Un solo volcado por dispositivo en vez de uno por fila.
+            for device, stamp in latest_ts.items():
+                current = self._latest_ts.get(device)
+                if current is None or stamp > current:
+                    self._latest_ts[device] = stamp
+            self._accepted.update(accepted_counts)
+            self._verified.update(verified_counts)
+            if accepted_counts:
+                stamp = arrival
+                for device in accepted_counts:
+                    current = self._updated.get(device)
+                    if current is None or stamp > current:
+                        self._updated[device] = stamp
+
             for device, reason in rejections:
                 self._rejected.setdefault(device, Counter())[reason] += 1
         return accepted, replays
@@ -132,38 +190,7 @@ class TelemetryStore:
 
     def append_row(self, row: dict[str, Any]) -> None:
         """Inserta una fila suelta sin antireplay (firma de compatibilidad)."""
-        with self.lock:
-            self._append_locked(row, None, device_of(row))
-
-    def _append_locked(
-        self, row: dict[str, Any], identity: tuple | None, device: str
-    ) -> None:
-        bucket = self._rows.get(device)
-        if bucket is None:
-            bucket = deque(maxlen=self.retention_rows)
-            self._rows[device] = bucket
-        # deque(maxlen=) descarta por la izquierda al insertar: hay que leer
-        # la fila saliente ANTES de añadir para liberar su identidad.
-        if len(bucket) == bucket.maxlen:
-            evicted = bucket[0]
-            evicted_identity = evicted.get(IDENTITY_KEY)
-            if evicted_identity is not None:
-                seen = self._seen.get(device)
-                if seen is not None:
-                    seen.pop(evicted_identity, None)
-        row[ARRIVAL_KEY] = time.time()
-        if identity is not None:
-            row[IDENTITY_KEY] = identity
-            seen = self._seen.setdefault(device, OrderedDict())
-            seen[identity] = None
-        bucket.append(row)
-
-        stamp = row_ts(row)
-        self._latest_ts[device] = max(self._latest_ts.get(device, stamp), stamp)
-        self._updated[device] = row[ARRIVAL_KEY]
-        self._accepted[device] += 1
-        if row.get("sig_verified"):
-            self._verified[device] += 1
+        self.commit([(row, None)])
 
     def clear(self) -> None:
         with self.lock:

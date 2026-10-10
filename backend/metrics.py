@@ -14,6 +14,7 @@ from __future__ import annotations
 import threading
 import time
 from collections import deque
+from datetime import datetime
 from typing import Any, Callable
 
 # Por encima de esto la muestra no es latencia de ingesta sino un emisor roto.
@@ -38,6 +39,53 @@ def _percentile(sorted_values: list[float], quantile: float) -> float | None:
     upper = min(lower + 1, len(sorted_values) - 1)
     weight = position - lower
     return sorted_values[lower] * (1.0 - weight) + sorted_values[upper] * weight
+
+
+class TisoClock:
+    """Convierte ``t_iso`` a epoch memoizando el ultimo valor visto.
+
+    El simulador sella la hora al emitir, asi que las diez filas de un lote
+    comparten ``t_iso`` y un lote grande repite el mismo valor cientos de
+    veces. ``datetime.fromisoformat`` por fila costaba 0.6 s cada 300k filas,
+    mas que todo el Almacen. Un recordatorio de una entrada resuelve el caso
+    comum sin cambiar el resultado de un valor distinto.
+    """
+
+    __slots__ = ("_last", "_parse_calls", "_cache", "_limit")
+
+    def __init__(self, limit: int = 4096) -> None:
+        self._last: tuple[str, float | None] | None = None
+        self._parse_calls = 0
+        self._cache: dict[str, float | None] = {}
+        self._limit = max(1, int(limit))
+
+    @property
+    def parse_calls(self) -> int:
+        return self._parse_calls
+
+    @property
+    def cached(self) -> int:
+        return len(self._cache)
+
+    def epoch(self, value: Any) -> float | None:
+        if not isinstance(value, str) or not value:
+            return None
+        if self._last is not None and self._last[0] == value:
+            return self._last[1]
+        cached = self._cache.get(value, False)
+        if cached is not False:
+            self._last = (value, cached)
+            return cached
+        self._parse_calls += 1
+        try:
+            epoch = datetime.fromisoformat(value).timestamp()
+        except ValueError:
+            epoch = None
+        if len(self._cache) >= self._limit:
+            self._cache.clear()
+        self._cache[value] = epoch
+        self._last = (value, epoch)
+        return epoch
 
 
 class RollingCounter:
@@ -137,6 +185,28 @@ class RollingLatency:
                 self._samples.popleft()
                 self._dropped += 1
         return True
+
+    def observe_many(self, values: Any, now: float | None = None) -> None:
+        """Registra un lote de latencias con un solo lock.
+
+        El perfil mostraba ``observe`` como 0.7 s de 5.1 s porque tomaba el lock
+        una vez por fila; un lote de diez mil filas son diez mil esperas.
+        """
+        if not values:
+            return
+        stamp = now if now is not None else self._now_fn()
+        with self._lock:
+            samples = self._samples
+            limit = self.max_samples
+            for value in values:
+                if value < 0.0 or value > MAX_LATENCY_S:
+                    self._invalid += 1
+                    continue
+                samples.append((stamp, value))
+                while len(samples) > limit:
+                    samples.popleft()
+                    self._dropped += 1
+            self._evict(stamp)
 
     def _evict(self, now: float) -> None:
         floor = now - self.window_s
@@ -278,13 +348,12 @@ class IngestMetrics:
             self._latency.observe(latency_s, stamp)
 
     def record_latencies(self, values: Any, now: float | None = None) -> None:
-        """Registra un lote de latencias; evita un lock por fila en rafagas grandes."""
+        """Registra un lote de latencias con un solo lock del almacén de muestras."""
         if not values:
             return
         stamp = now if now is not None else self._now_fn()
         with self._lock:
-            for value in values:
-                self._latency.observe(value, stamp)
+            self._latency.observe_many(values, stamp)
 
     def snapshot(self, now: float | None = None, queue: dict[str, Any] | None = None) -> dict[str, Any]:
         stamp = now if now is not None else self._now_fn()
