@@ -556,7 +556,7 @@ button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og
   .og-top__spacer { display: none; }
   .og-seg { order: 1; flex: 0 0 auto; }
   .og-hud--tl { width: calc(100% - 28px) !important; }
-  .og-scene--wheel .og-stack--tr { top: 104px; right: 14px; left: 14px; }
+  .og-scene--wheel .og-stack--tr { display: none; }
   .og-scene--mine .og-stack--tr { top: auto; bottom: 120px; }
   .og-dock { flex-wrap: wrap; align-items: flex-end; }
   .og-dock > .og-hud { max-width: 100%; flex-wrap: wrap; justify-content: flex-end; }
