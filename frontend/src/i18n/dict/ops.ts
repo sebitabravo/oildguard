@@ -190,6 +190,8 @@ export const ops = {
   "wheel.banner.none": { en: "No active escalation · the four ladder levels are quiet.", es: "Sin escalamiento activo · los cuatro niveles de la escalera están en calma." },
   "dash.backend.outage.title": { en: "Backend unreachable · showing local DEMO data only", es: "Backend no disponible · mostrando solo datos DEMO locales" },
   "dash.backend.outage.detail": { en: "Live telemetry, alerts and RUL are unavailable. Do not mistake this view for a healthy fleet.", es: "La telemetría en vivo, las alertas y el RUL no están disponibles. No confundas esta vista con una flota sana." },
+  "dash.reading.stale.title": { en: "Stale reading · no recent telemetry", es: "Lectura obsoleta · sin telemetría reciente" },
+  "dash.reading.stale.detail": { en: "The last live update is older than 120 s or missing. Treat this reading as outdated.", es: "La última actualización en vivo supera los 120 s o no existe. Trata esta lectura como obsoleta." },
   "wheel.telemetry": { en: "Current telemetry", es: "Telemetría actual" },
   "wheel.card.level": { en: "Estimated oil level", es: "Nivel estimado de aceite" },
   "wheel.card.levelNominal": { en: "{value}% of 95 L nominal", es: "{value}% de 95 L nominal" },

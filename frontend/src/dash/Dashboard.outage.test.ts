@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { h } from "preact";
 import renderToString from "preact-render-to-string";
 import { isBackendOutage } from "./analyzerAvailability";
+import { isReadingStale, resolveReadingStale } from "./readingFreshness";
 import { BackendOutageBanner, DashboardStatusNotices } from "./Dashboard";
 import { t, type Lang } from "../i18n";
 
@@ -71,14 +72,14 @@ describe("backend outage banner layout", () => {
 // Representa el tramo de avisos tal como lo pinta Dashboard en producción:
 // el mismo componente, sin sonda ni backend. Si se elimina el aviso de apagón
 // o se restaura el mensaje de calma durante el apagón, estos casos fallan.
-function renderStatusNotices(lang: Lang, backendOutage: boolean): string {
+function renderStatusNotices(lang: Lang, backendOutage: boolean, readingStale = false): string {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
     value: { getItem: () => lang },
   });
   try {
-    return renderToString(h(DashboardStatusNotices, { activeLevel: null, backendOutage, analyzerNotice: null }));
+    return renderToString(h(DashboardStatusNotices, { activeLevel: null, backendOutage, analyzerNotice: null, readingStale }));
   } finally {
     if (descriptor) Object.defineProperty(globalThis, "localStorage", descriptor);
     else Reflect.deleteProperty(globalThis, "localStorage");
@@ -101,6 +102,186 @@ describe("dashboard outage status path", () => {
       const html = renderStatusNotices(lang, false);
       expect(html.includes(t("wheel.banner.none", lang))).toBe(true);
       expect(html.includes(t("dash.backend.outage.title", lang))).toBe(false);
+    }
+  });
+});
+
+// A02: la marca temporal real del backend (level.data.t_iso) decide la
+// frescura; el `stale: false` constante ya no puede ocultar una lectura
+// vieja. Reloj fijo: sin pruebas frágiles contra el reloj mural.
+const STALE_NOW = Date.parse("2026-10-10T12:00:00.000Z");
+// Misma edad que la rueda "stale" del dataset DEMO (-180 s) y la fresca (-8 s).
+const AGED_READING_MS = STALE_NOW - 180_000;
+const FRESH_READING_MS = STALE_NOW - 8_000;
+
+// Costura conductual A02 por la vía productiva real: la prueba entrega la
+// marca envejecida + el ahora inyectado sin precalcular ningún booleano; el
+// propio `DashboardStatusNotices` resuelve con `resolveReadingStale`. Si el
+// cableado de producción volviera al `stale: false` previo a A02, este caso
+// falla (aparece la calma y falta el aviso obsoleto).
+function renderStatusNoticesFromReading(
+  lang: Lang,
+  backendOutage: boolean,
+  reading: { live: boolean; demoActive: boolean; lastUpdateMs: number | null; nowMs: number },
+): string {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: { getItem: () => lang },
+  });
+  try {
+    return renderToString(h(DashboardStatusNotices, {
+      activeLevel: null,
+      backendOutage,
+      analyzerNotice: null,
+      live: reading.live,
+      demoActive: reading.demoActive,
+      lastUpdateMs: reading.lastUpdateMs,
+      nowMs: reading.nowMs,
+    }));
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, "localStorage", descriptor);
+    else Reflect.deleteProperty(globalThis, "localStorage");
+  }
+}
+
+describe("dashboard stale production seam (timestamp in, notice out)", () => {
+  test("aged live timestamp resolves stale inside the component: stale box, no calm", () => {
+    for (const lang of ["en", "es"] as const) {
+      const html = renderStatusNoticesFromReading(lang, false, {
+        live: true,
+        demoActive: false,
+        lastUpdateMs: AGED_READING_MS,
+        nowMs: STALE_NOW,
+      });
+      expect(html.includes('role="status"')).toBe(true);
+      expect(html.includes(t("dash.reading.stale.title", lang))).toBe(true);
+      expect(html.includes(t("dash.reading.stale.detail", lang))).toBe(true);
+      expect(html.includes(t("wheel.banner.none", lang))).toBe(false);
+    }
+  });
+
+  test("fresh live timestamp resolves fresh inside the component: calm, no stale", () => {
+    for (const lang of ["en", "es"] as const) {
+      const html = renderStatusNoticesFromReading(lang, false, {
+        live: true,
+        demoActive: false,
+        lastUpdateMs: FRESH_READING_MS,
+        nowMs: STALE_NOW,
+      });
+      expect(html.includes(t("wheel.banner.none", lang))).toBe(true);
+      expect(html.includes(t("dash.reading.stale.title", lang))).toBe(false);
+      expect(html.includes('role="status"')).toBe(false);
+    }
+  });
+
+  test("outage keeps precedence through the seam: alert banner, stale suppressed", () => {
+    for (const lang of ["en", "es"] as const) {
+      const html = renderStatusNoticesFromReading(lang, true, {
+        live: true,
+        demoActive: false,
+        lastUpdateMs: AGED_READING_MS,
+        nowMs: STALE_NOW,
+      });
+      expect(html.includes('role="alert"')).toBe(true);
+      expect(html.includes(t("dash.backend.outage.title", lang))).toBe(true);
+      expect(html.includes(t("dash.reading.stale.title", lang))).toBe(false);
+      expect(html.includes(t("wheel.banner.none", lang))).toBe(false);
+    }
+  });
+});
+
+describe("dashboard stale reading status path", () => {
+  test("aged live timestamp renders the stale notice and no calm message", () => {
+    const derived = resolveReadingStale({
+      live: true,
+      demoActive: false,
+      lastUpdateMs: AGED_READING_MS,
+      nowMs: STALE_NOW,
+    });
+    expect(derived).toBe(true);
+    for (const lang of ["en", "es"] as const) {
+      const html = renderStatusNotices(lang, false, derived);
+      expect(html.includes('role="status"')).toBe(true);
+      expect(html.includes(t("dash.reading.stale.title", lang))).toBe(true);
+      expect(html.includes(t("dash.reading.stale.detail", lang))).toBe(true);
+      expect(html.includes(t("wheel.banner.none", lang))).toBe(false);
+    }
+  });
+
+  test("fresh live timestamp keeps the calm notice and no stale banner", () => {
+    const derived = resolveReadingStale({
+      live: true,
+      demoActive: false,
+      lastUpdateMs: FRESH_READING_MS,
+      nowMs: STALE_NOW,
+    });
+    expect(derived).toBe(false);
+    for (const lang of ["en", "es"] as const) {
+      const html = renderStatusNotices(lang, false, derived);
+      expect(html.includes(t("wheel.banner.none", lang))).toBe(true);
+      expect(html.includes(t("dash.reading.stale.title", lang))).toBe(false);
+      expect(html.includes('role="status"')).toBe(false);
+    }
+  });
+
+  test("negative: forcing the pre-A02 constant-false path hides the stale state", () => {
+    // La misma marca envejecida sí es obsoleta según el resolutor; si la
+    // ruta de producción volviera al `stale: false` anterior, ningún aviso
+    // aparecería y el mensaje de calma tranquilizaría con datos viejos.
+    expect(isReadingStale(AGED_READING_MS, STALE_NOW)).toBe(true);
+    for (const lang of ["en", "es"] as const) {
+      const html = renderStatusNotices(lang, false, false);
+      expect(html.includes(t("dash.reading.stale.title", lang))).toBe(false);
+      expect(html.includes(t("wheel.banner.none", lang))).toBe(true);
+    }
+  });
+
+  test("outage keeps its own banner without duplicating the stale notice", () => {
+    for (const lang of ["en", "es"] as const) {
+      const html = renderStatusNotices(lang, true, true);
+      expect(html.includes('role="alert"')).toBe(true);
+      expect(html.includes(t("dash.backend.outage.title", lang))).toBe(true);
+      expect(html.includes(t("dash.reading.stale.title", lang))).toBe(false);
+      expect(html.includes(t("wheel.banner.none", lang))).toBe(false);
+    }
+  });
+});
+
+describe("stale notice layout", () => {
+  // Igual que el aviso de apagón: un único hijo coherente para que título y
+  // detalle envuelvan como un aviso natural a 390px.
+  test("keeps title and detail in a single coherent content node", () => {
+    for (const lang of ["en", "es"] as const) {
+      const html = renderStatusNotices(lang, false, true);
+      const noticeInner = html.match(/og-notice--stale[^>]*>([\s\S]*?)<\/div>/)?.[1] ?? "";
+      expect(noticeInner.includes("<span>")).toBe(true);
+      const spanInner = noticeInner.match(/<span>([\s\S]*?)<\/span>/)?.[1] ?? "";
+      expect(spanInner.includes("<strong>")).toBe(true);
+      expect(spanInner.includes(t("dash.reading.stale.title", lang))).toBe(true);
+      expect(spanInner.includes(t("dash.reading.stale.detail", lang))).toBe(true);
+      const outsideSpan = noticeInner.replace(/<span>[\s\S]*?<\/span>/, "");
+      expect(outsideSpan.includes(t("dash.reading.stale.detail", lang))).toBe(false);
+    }
+  });
+
+  // Una sola caja ámbar coherente: la vía obsoleta no usa el envoltorio rojo
+  // de apagón (`og-analyzer-notice`), así no se anidan dos bordes ni la
+  // lectura vieja comparte carril de error; el `role="status"` vive en un
+  // `div` neutro sin clases y la única caja visible es el Notice `stale`.
+  test("renders one stale box with status semantics, never nested in the outage lane", () => {
+    for (const lang of ["en", "es"] as const) {
+      const html = renderStatusNoticesFromReading(lang, false, {
+        live: true,
+        demoActive: false,
+        lastUpdateMs: AGED_READING_MS,
+        nowMs: STALE_NOW,
+      });
+      expect(html.includes('role="status"')).toBe(true);
+      expect(html.includes("og-notice--stale")).toBe(true);
+      expect(html.includes("og-analyzer-notice")).toBe(false);
+      const staleCount = html.split("og-notice--stale").length - 1;
+      expect(staleCount).toBe(1);
     }
   });
 });

@@ -18,9 +18,9 @@ Path convention: all frontend paths below are repo-relative starting with `front
 - **Route:** Delegated direct. Mapping trigger: 25 work units spanning more than four files; one serialized writer, OpenCode in Herdr `w1T:p3`. Parent reviews each full diff and proof before committing or advancing.
 - **TDD:** On for this approved feature, explicitly selected by the user-approved plan; runner `cd frontend && bun test src`. Behavior changes require a negative test observed failing against pre-fix code in a disposable copy, then RED → GREEN → REFACTOR.
 - **Checks:** Each row's focused command; applicable UI evidence matrix in §4; full checks at A13/B12: `cd frontend && bun test src`, `cd frontend && bun run build`, `python3 -m pytest -q`.
-- **Forecast / delivery:** Estimate 2,500–5,000 authored changed lines including tests/docs/i18n; advisory only. Strategy `ask-on-risk`; resolve a chain boundary only if the authored feature crosses the existing delivery budget. No remote delivery.
+- **Forecast / delivery:** Estimate 2,500–5,000 authored changed lines including tests/docs/i18n; advisory only. Strategy `ask-on-risk`; the user selected `feature-branch-chain` before the A02 work-unit commit because the forecast exceeds the delivery budget. PR boundaries remain to be recorded when delivery is authorized; no remote delivery is authorized.
 - **Engram mirror:** Pending; runtime did not register an authoritative session identity, so no agent-attributed memory write is permitted.
-- **Current state:** Branch `feat/integrity-narrative`, based on `a739728703fa110789909a8079b7d8af72e04e0e`; A01 is the only active task. The pre-existing user-owned `.codex/hooks.json` modification remains untouched.
+- **Current state:** Branch `feat/integrity-narrative`, based on `a739728703fa110789909a8079b7d8af72e04e0e`; A01 is DONE at commit `5122505` per the worktree record. A02 is functionally VERIFIED / COMMIT PENDING (work-unit commit pending; A03 not started and still pending). The pre-existing user-owned `.codex/hooks.json` modification remains untouched. Native RDD mode is on (decided by default); the first worktree candidate assessment failed as unassessable/high because untracked files were undeclared (exit 1, risk=high, reason=unassessable, review_due=true/high_risk, changed_paths=0), so a fresh committed-only assessment is still required after the work-unit commit. No review transaction has started. The goal is not complete.
 
 ## 1. Reading report
 
@@ -77,8 +77,8 @@ Check commands use the exact existing runners. Full checks catalog (not run in t
 
 | progress | id | one-line objective | area | explicit target files | depends on | acceptance | exact command or bounded browser/manual procedure | estimate |
 |---|---|---|---|---|---|---|---|---|
-| VERIFIED / COMMIT PENDING | A01 | Make total backend outage visually unmissable on Dashboard | frontend-dashboard | `frontend/src/dash/Dashboard.tsx`, `frontend/src/dash/analyzerAvailability.ts`, `frontend/src/dash/analyzerAvailability.test.ts`, NEW `frontend/src/dash/Dashboard.outage.test.ts`, `frontend/src/i18n/dict/ops.ts` | none (first task) | Backend-down renders a prominent outage banner and no calm/all-clear fleet message; negative test fails without the fix; disposable backend only (see §4) | `cd frontend && bun test src/dash/analyzerAvailability.test.ts src/dash/Dashboard.outage.test.ts` plus targeted manual: disposable backend down, Dashboard at 1024px EN screenshot, confirm banner; closure: §4 full capture matrix | 3h |
-| [ ] | A02 | Derive stale state from timestamps instead of a constant false | frontend-dashboard | `frontend/src/dash/Dashboard.tsx`, NEW `frontend/src/dash/readingFreshness.ts`, NEW `frontend/src/dash/readingFreshness.test.ts`, `frontend/src/dash/Dashboard.outage.test.ts`, `frontend/src/i18n/dict/ops.ts` | A01 | Stale indicator follows data timestamps/config; production path can reach stale; cutoff traced to actual timestamps, not physics tuning; negative test fails on the constant-false path | `cd frontend && bun test src/dash/readingFreshness.test.ts src/dash/Dashboard.outage.test.ts` plus targeted manual: aged-timestamp fixture at 1024px EN/ES; closure: §4 full capture matrix | 3h |
+| DONE — commit `5122505` | A01 | Make total backend outage visually unmissable on Dashboard | frontend-dashboard | `frontend/src/dash/Dashboard.tsx`, `frontend/src/dash/analyzerAvailability.ts`, `frontend/src/dash/analyzerAvailability.test.ts`, NEW `frontend/src/dash/Dashboard.outage.test.ts`, `frontend/src/i18n/dict/ops.ts` | none (first task) | Backend-down renders a prominent outage banner and no calm/all-clear fleet message; negative test fails without the fix; disposable backend only (see §4) | `cd frontend && bun test src/dash/analyzerAvailability.test.ts src/dash/Dashboard.outage.test.ts` plus targeted manual: disposable backend down, Dashboard at 1024px EN screenshot, confirm banner; closure: §4 full capture matrix | 3h |
+| VERIFIED / COMMIT PENDING | A02 | Derive stale state from timestamps instead of a constant false | frontend-dashboard | `frontend/src/dash/Dashboard.tsx`, NEW `frontend/src/dash/readingFreshness.ts`, NEW `frontend/src/dash/readingFreshness.test.ts`, `frontend/src/dash/Dashboard.outage.test.ts`, `frontend/src/i18n/dict/ops.ts` | A01 | Stale indicator follows data timestamps/config; production path can reach stale; cutoff traced to actual timestamps, not physics tuning; negative test fails on the constant-false path | `cd frontend && bun test src/dash/readingFreshness.test.ts src/dash/Dashboard.outage.test.ts` plus targeted manual: aged-timestamp fixture at 1024px EN/ES; closure: §4 full capture matrix | 3h |
 | [ ] | A03 | Add per-FIELD mixed-source fleet provenance in mergeLiveDevices and FleetPage | frontend-fleet | `frontend/src/ops/fleet/logic.ts`, `frontend/src/ops/fleet/FleetPage.tsx`, `frontend/src/ops/fleet/logic.test.ts`, NEW `frontend/src/ops/fleet/FleetPage.provenance.test.ts`, `frontend/src/i18n/dict/ops.ts` | A02 | Every merged fleet field shows its own live/demo provenance at the field; no silent demo-as-live field; negative test fails when a demo field renders unlabeled | `cd frontend && bun test src/ops/fleet/logic.test.ts src/ops/fleet/FleetPage.provenance.test.ts` plus targeted manual: backend live then disposable-backend down, verify per-field labels at 1024px EN; closure: §4 full capture matrix | 4h |
 | [ ] | A04 | Label per-field source, units, band, and validity for numeric confidence/sigma/level where displayed | frontend-wheel | `frontend/src/dash/Dashboard.tsx`, `frontend/src/ops/wheel/WheelPanels.tsx`, NEW `frontend/src/ops/wheel/WheelPanels.provenance.test.ts`, `frontend/src/dash/Dashboard.outage.test.ts`, `frontend/src/i18n/dict/ops.ts` | A03 | Numeric confidence, sigma, and level fields each show source label, units, band where applicable, and validity per FIELD; demo values never show bare 3-decimal precision; negative test fails on an unlabeled demo number | `cd frontend && bun test src/ops/wheel/WheelPanels.provenance.test.ts src/dash/Dashboard.outage.test.ts` plus targeted manual: inspect the three numeric fields live and down at 1024px EN/ES; closure: §4 full capture matrix | 3h |
 | [ ] | A05 | Report calibration verdict as synthetic with physical state not evaluated | frontend-calibration | `frontend/src/lab/calibration/CalibrationPage.tsx`, `frontend/src/lab/calibration/logic.ts`, `frontend/src/lab/calibration/logic.test.ts`, `frontend/src/i18n/dict/platform.ts` | A04 | Self-generated curve verdict reads synthetic/nominal-synthetic with physical bench explicitly not evaluated; no bare nominal pass remains; negative test fails on the old nominal verdict | `cd frontend && bun test src/lab/calibration/logic.test.ts` plus targeted manual: open calibration verdict live and disposable-backend down, capture both states; closure: §4 full capture matrix | 3h |
@@ -105,14 +105,106 @@ Check commands use the exact existing runners. Full checks catalog (not run in t
 
 ## 3.1 Current work log
 
-### A01 — implementation and verification complete; work-unit commit pending
+### A01 — complete; commit `5122505`
 
 - OpenCode added `isBackendOutage`, bilingual outage copy, a `role="alert"` banner, and `DashboardStatusNotices`, the production-rendered notices component, so the calm “four ladder levels are quiet” message is suppressed only during a live backend outage. No all-clear claim is shown while live telemetry is unavailable.
 - TDD evidence from the disposable baseline archive: `bun test src/dash/Dashboard.outage.test.ts` failed before A01 because `isBackendOutage` was not exported (0 pass, 1 fail, exit 1). A mutation removing the calm-message suppression then failed the integration assertion (4 pass, 1 fail, exit 1). No live-worktree rollback was used.
 - Focused GREEN: `cd frontend && bun test src/dash/analyzerAvailability.test.ts src/dash/Dashboard.outage.test.ts` → 9 pass, 0 fail, 41 expectations. The parent requested a fresh-context read-only spot check, which independently returned the same result and exit code 0. Dictionary/guard check: `bun test src/i18n/index.test.ts src/honesty.test.ts` → 9 pass, 0 fail, 5,597 expectations. `git diff --check` passed for the tracked A01 source paths.
 - Screenshots under `/tmp/og-a01-e2e/`: parent inspected live 1024px EN and outage 1024px EN/ES; the alert is visible during outage and the calm notice returns after backend recovery. Parent also inspected 390px outage EN/ES, each in normal and real reduced-motion mode; the alert remains readable, title/detail wrap as one coherent message, and `matchMedia('(prefers-reduced-motion: reduce)').matches` was true for the reduced-motion captures. The earlier 390px Spanish capture that missed the alert was superseded by these complete captures.
 - An earlier evidence retry mistakenly invoked `bunx astro dev` from `/tmp/og-a01-e2e`, which attempted temporary package resolution and did not serve the page; the parent interrupted it before installation. It made no tracked repository edits. Final captures were later produced using the project-local Astro binary. The disposable backend and frontend processes were stopped; ports 8001 and 5174 are clear.
-- Parent read the full A01 diff. No files are staged; `.codex/hooks.json` remains the original user-owned dirty file and was not touched. A01 is ready for its work-unit commit; A02 has not started. After the commit, run native `gentle-ai review assess` against that exact committed candidate and record its returned risk/due result before advancing.
+- Parent read the full A01 diff and independently inspected the EN/ES desktop/mobile and reduced-motion captures. Work-unit commit: `5122505` (`fix(dashboard): surface backend outage state`), containing only the four scoped source/test files and this feature record; `.codex/hooks.json` was not staged. Native RDD remained on (default); assessment against base `a739728703fa110789909a8079b7d8af72e04e0e` returned `risk=medium`, `changed_lines=323`, `review_due=false`, `review_due_reason=under_budget`. No review transaction was started. Keep the same base-ref as the last reviewed boundary for the next commit until native review acknowledges a later range. A02 had not started at that point. The feature forecast remains 2,500–5,000 authored lines and delivery strategy is `ask-on-risk`; the user later selected `feature-branch-chain` before the A02 work-unit commit. No PR boundary or remote delivery has been created.
+
+### A02 — functionally VERIFIED / COMMIT PENDING (verified 2026-10-10, America/Santiago; work-unit commit pending; A03 not started)
+
+Outcome first: A02 is functionally verified and waiting on its work-unit commit. A01 stays DONE at commit `5122505` per the worktree record. A03 is still pending and has not started. The user-owned `.codex/hooks.json` dirt remains untouched. The user selected `feature-branch-chain` for the feature's delivery strategy; no PR or remote action is authorized or underway. The goal is not complete.
+
+| Topic | Decision |
+|-------|----------|
+| Cutoff | 120 s traced to the existing device-inventory staleness threshold, not physics tuning |
+| Timestamp path | Parent independently traced the live timestamp through `backend/main.py:1270` (`t_iso`), `frontend/src/sim/api.ts:59`, and the Dashboard parse path |
+| Cutoff trace | 120 s comes from existing `frontend/src/platform/devices/logic.ts:24` / `DeviceInventoryPage.tsx:134` and `dict/platform.ts:298`; no physics or alert threshold changed |
+| Notice semantics | Aged live readings render one amber stale notice with `role="status"` plus the stale-data validity chip, and no calm message |
+| Precedence | Backend outage keeps its own higher-priority `role="alert"` banner; stale is suppressed during outage |
+| Bounded correction | The first capture round showed a nested critical-red/amber box; that was corrected in the one bounded A02 correction and recaptured |
+| Allowed diff | Limited to Dashboard, new `readingFreshness.ts` plus its test, the extended outage test, and `dict/ops.ts`; no dependencies added |
+
+Verification checklist (reviewer can confirm each line):
+
+- [x] Focused A02 GREEN: `cd frontend && bun test src/dash/readingFreshness.test.ts src/dash/Dashboard.outage.test.ts` → 25 pass, 0 fail, 120 expectations, exit 0 (full output pasted verbatim below).
+- [x] Guard GREEN: `cd frontend && bun test src/i18n/index.test.ts src/honesty.test.ts` → 9 pass, 0 fail, 5605 expectations, exit 0 (full output pasted verbatim below).
+- [x] Negative proof in disposable copy `/tmp/og-a02-negative.oQLvhc` (source copy only mutated to force `resolveReadingStale` to false; live worktree never reverted): `cd /tmp/og-a02-negative.oQLvhc/frontend && bun test src/dash/Dashboard.outage.test.ts` → 12 pass, 3 fail, 82 expect calls, exit 1; failures include the aged-timestamp production seam, the aged reading path, and the single stale box. This proves the stale production-status path fails under a constant-false mutation; it is expected failure evidence, not a broken live check.
+- [x] `git diff --check`: no output, exit 0.
+- [x] EN/ES screenshots visually inspected by the parent at `/tmp/og-a02-e2e/aged-en-1024.png` and `/tmp/og-a02-e2e/aged-es-1024.png`, each 1024×800: backend live with the aged timestamp, one amber stale notice with role=status, the stale-data validity chip, no calm message. Outage remains the higher-priority error banner.
+- [x] Runtime scenario and rollback boundary for the work-unit commit: disposable stub/backend on 8001 plus local Astro on 5174; stopped disposable PIDs 97850/97972; parent checked `lsof -nP -iTCP:8001 -iTCP:5174 -sTCP:LISTEN` with no listeners returned; other ports/services left untouched; rollback equals the work-unit commit boundary only.
+- [ ] Honesty boundary: native RDD mode is on (decided by default); the pre-commit worktree candidate assessment `gentle-ai review assess --cwd /Users/sebitabravo/Developer/oilguard --json` returned exit 1 because it requires an explicit untracked-file scope (risk=high, reason=unassessable, review_due=true/high_risk, changed_paths=0). A fresh committed-only assessment is still required after the work-unit commit; no review transaction has started. The user selected `feature-branch-chain`; the commit is no longer blocked on that choice. No PR or remote action is authorized or underway.
+
+Full focused output (copied verbatim, not trimmed):
+
+```
+bun test v1.4.2 (50a8a8387)
+
+src/dash/readingFreshness.test.ts:
+(pass) reading freshness cutoff > matches the device-inventory staleness threshold (120 s, not physics tuning) [0.37ms]
+(pass) isReadingStale > treats the DEMO fresh-fixture age (8 s) as fresh [0.13ms]
+(pass) isReadingStale > treats the DEMO stale-fixture age (180 s) as stale [0.01ms]
+(pass) isReadingStale > keeps the exact cutoff fresh and stales anything past it
+(pass) isReadingStale > treats a missing or unparsable timestamp as stale without inventing an age [0.02ms]
+(pass) isReadingStale > treats a future timestamp as fresh
+(pass) resolveReadingStale production path > reaches stale for the live wheel with an aged backend timestamp [0.22ms]
+(pass) resolveReadingStale production path > stays fresh for the live wheel with a recent backend timestamp
+(pass) resolveReadingStale production path > never flags the demo walk or DEMO wheels against the wall clock [0.01ms]
+(pass) resolveReadingStale production path > negative: the pre-A02 constant-false path reports valid for aged data [0.03ms]
+
+src/dash/Dashboard.outage.test.ts:
+(pass) backend outage banner state > reports an outage only for the live wheel with a failed backend [0.03ms]
+(pass) backend outage banner output > renders an unmistakable alert banner in English, never the calm message [3.81ms]
+(pass) backend outage banner output > renders the same alert banner localized in Spanish, never the calm message [0.14ms]
+(pass) backend outage banner layout > keeps title and detail in a single coherent content node [0.31ms]
+(pass) dashboard outage status path > outage without active alert shows the prominent banner and no calm message [0.44ms]
+(pass) dashboard outage status path > healthy state without escalation keeps the calm notice and no outage banner [0.13ms]
+(pass) dashboard stale production seam (timestamp in, notice out) > aged live timestamp resolves stale inside the component: stale box, no calm [0.31ms]
+(pass) dashboard stale production seam (timestamp in, notice out) > fresh live timestamp resolves fresh inside the component: calm, no stale [0.16ms]
+(pass) dashboard stale production seam (timestamp in, notice out) > outage keeps precedence through the seam: alert banner, stale suppressed [0.24ms]
+(pass) dashboard stale reading status path > aged live timestamp renders the stale notice and no calm message [0.35ms]
+(pass) dashboard stale reading status path > fresh live timestamp keeps the calm notice and no stale banner [0.90ms]
+(pass) dashboard stale reading status path > negative: forcing the pre-A02 constant-false path hides the stale state [0.08ms]
+(pass) dashboard stale reading status path > outage keeps its own banner without duplicating the stale notice [0.09ms]
+(pass) stale notice layout > keeps title and detail in a single coherent content node [0.51ms]
+(pass) stale notice layout > renders one stale box with status semantics, never nested in the outage lane [0.16ms]
+
+25 pass
+0 fail
+120 expect() calls
+Ran 25 tests across 2 files. [89.00ms]
+```
+
+Exit 0.
+
+Full guard output (copied verbatim, not trimmed):
+
+```
+bun test v1.4.2 (50a8a8387)
+
+src/honesty.test.ts:
+(pass) honesty matcher > normalizes case and accents while respecting short-token boundaries [5.29ms]
+(pass) frontend honesty guard > contains no unsupported claims or machine-control actions [361.38ms]
+
+src/i18n/index.test.ts:
+(pass) i18n dictionary > every key has non-empty EN and ES copy [1.22ms]
+(pass) i18n dictionary > no sprint or task codes leak into UI copy [0.81ms]
+(pass) i18n dictionary > Spanish dictionary copy keeps required accents [2.41ms]
+(pass) i18n dictionary > Spanish dictionary copy uses decimal commas outside factual specifications [0.96ms]
+(pass) i18n dictionary > the demo lab note formats every displayed number for the selected language [2.81ms]
+(pass) i18n dictionary > the dashboard footnote reflects the geometry-derived pressure [0.12ms]
+(pass) navigation exposes the three product sections [0.02ms]
+
+9 pass
+0 fail
+5605 expect() calls
+Ran 9 tests across 2 files. [448.00ms]
+```
+
+Exit 0.
 
 ### Herdr completion signal
 
@@ -155,4 +247,4 @@ Execution is authorized by the user's explicit approval. Start with A01 only; pr
 
 ## Recovery footer
 
-No authoritative runtime memory identity was available in this pane, so no Engram mirror or session-summary writes were made and no substitute session IDs were invented. The existing historical TDD-on note is not proof of global config; every behavior-changing task in this plan proposes RED-GREEN-REFACTOR with a negative test replayed in a disposable copy first, subject to plan approval. About 400 authored lines per task is advisory only; never delete tests, whitespace, comments, or blank lines for size, and never split or pad work to fit the heuristic. Provisional total forecast (estimate only): 2500–5000 authored lines including tests, docs, and i18n. Delivery strategy defaults to `ask-on-risk`, with the chain boundary decision pending before the first applicable work-unit commit (no PRs are planned now). Receipt-driven development is currently on by default; this plan leaves the switch unchanged and treats native candidate consent as separate. This checked-in feature record carries the approved scope; each task still requires its own observed outcome, applicable proof, parent readback, and work-unit commit.
+No authoritative runtime memory identity was available in this pane, so no Engram mirror or session-summary writes were made and no substitute session IDs were invented. The existing historical TDD-on note is not proof of global config; every behavior-changing task in this plan proposes RED-GREEN-REFACTOR with a negative test replayed in a disposable copy first, subject to plan approval. About 400 authored lines per task is advisory only; never delete tests, whitespace, comments, or blank lines for size, and never split or pad work to fit the heuristic. Provisional total forecast (estimate only): 2500–5000 authored lines including tests, docs, and i18n. Delivery strategy defaults to `ask-on-risk`; the user resolved the chain strategy as `feature-branch-chain` before the A02 work-unit commit (no PR boundaries or remote actions are currently authorized). Receipt-driven development is currently on by default; this plan leaves the switch unchanged and treats native candidate consent as separate. This checked-in feature record carries the approved scope; each task still requires its own observed outcome, applicable proof, parent readback, and work-unit commit.

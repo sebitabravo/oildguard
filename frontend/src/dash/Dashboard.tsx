@@ -43,6 +43,7 @@ import { formatNumber } from "../i18n/numberFormat";
 import { localizeBackendMessage, localizeBackendZone } from "./backendNotes";
 import { signingBadgeState } from "./signingBadge";
 import { analyzerUnavailableNotice, isBackendOutage } from "./analyzerAvailability";
+import { resolveReadingStale } from "./readingFreshness";
 import { mergeLevelSeries } from "./levelSeries";
 import { formatDemoLabNote } from "./demoCopy";
 import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
@@ -120,21 +121,58 @@ export function BackendOutageBanner() {
 }
 
 // Tramo de avisos de disponibilidad de Dashboard en un componente renderizable:
-// la misma rama que pinta la página en producción (apagón, analizador y
-// escalera), para cubrirla con prueba de integración sin leer cadenas fuente.
-export function DashboardStatusNotices({ activeLevel, backendOutage, analyzerNotice }: {
+// la misma rama que pinta la página en producción (apagón, analizador,
+// lectura obsoleta y escalera), para cubrirla con prueba de integración sin
+// leer cadenas fuente. La lectura obsoleta ocupa el lugar del mensaje de
+// calma igual que el apagón: una escalera en calma calculada con datos
+// viejos no debe tranquilizar. Durante el apagón manda su propio aviso.
+// Vía productiva A02: cuando llegan marca temporal + reloj se resuelve aquí
+// mismo con `resolveReadingStale` (la misma llamada que usa Dashboard); el
+// booleano `readingStale` solo queda por compatibilidad con renders que ya
+// resolvieron fuera. Así la prueba pasa la marca envejecida sin precalcular
+// el booleano y revierte a falso si el cableado vuelve a `stale: false`.
+export function DashboardStatusNotices({ activeLevel, backendOutage, analyzerNotice, readingStale, live, demoActive, lastUpdateMs, nowMs }: {
   activeLevel: Severity | null;
   backendOutage: boolean;
   analyzerNotice: string | null;
+  readingStale?: boolean;
+  live?: boolean;
+  demoActive?: boolean;
+  lastUpdateMs?: number | null;
+  nowMs?: number;
 }) {
   const [lang] = useLang();
+  const hasReadingInput = live !== undefined || demoActive !== undefined || lastUpdateMs !== undefined || nowMs !== undefined;
+  const resolvedStale = hasReadingInput
+    ? resolveReadingStale({
+        live: live ?? false,
+        demoActive: demoActive ?? false,
+        lastUpdateMs: lastUpdateMs ?? null,
+        nowMs: nowMs ?? Date.now(),
+      })
+    : readingStale === true;
+  const showStale = resolvedStale && !backendOutage;
   return (
     <>
       {backendOutage && <BackendOutageBanner />}
       {analyzerNotice && <div className="og-analyzer-notice" role="alert">{analyzerNotice}</div>}
+      {showStale && (
+        // Aviso obsoleto en su propia caja ámbar: sin el envoltorio rojo de
+        // apagón para no anidar dos bordes ni mezclar carriles (el rojo queda
+        // reservado al apagón). El `div` solo aporta `role="status"` sin
+        // clases ni CSS nuevo; la única caja visible es el Notice `stale`.
+        <div role="status">
+          <Notice lang={lang} kind="stale">
+            <span>
+              <strong>{t("dash.reading.stale.title", lang)}</strong>{" "}
+              {t("dash.reading.stale.detail", lang)}
+            </span>
+          </Notice>
+        </div>
+      )}
       {activeLevel
         ? <AlertBanner lang={lang} severity={activeLevel}>{t(alertBannerKey(activeLevel), lang)}</AlertBanner>
-        : backendOutage ? null : <Notice lang={lang} kind="info">{t("wheel.banner.none", lang)}</Notice>}
+        : backendOutage || showStale ? null : <Notice lang={lang} kind="info">{t("wheel.banner.none", lang)}</Notice>}
     </>
   );
 }
@@ -365,8 +403,16 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
     : liveLevel !== null && Number.isFinite(liveLevel) ? liveLevel : wheel.levelL;
   const sensorsFromBackend = live || demoActive;
   const regime = sensorsFromBackend ? (moving ? "movement" : "rest") : wheel.regime;
+  // La frescura sale de la marca real de última comunicación (t_iso del
+  // backend en vivo), no de un falso constante (A02).
+  const lastUpdateMs = demoActive
+    ? DEMO_REFERENCE_MS
+    : live
+      ? (level?.data.t_iso ? Date.parse(level.data.t_iso) : null)
+      : wheel.lastComm;
+  const readingStale = resolveReadingStale({ live, demoActive, lastUpdateMs, nowMs: Date.now() });
   const validity = sensorsFromBackend
-    ? levelValidity({ moving, confidence, stale: false })
+    ? levelValidity({ moving, confidence, stale: readingStale })
     : wheel.validity;
 
   // Escalera y canales: alertas reales (en vivo/demo) o las del conjunto DEMO de la rueda.
@@ -381,11 +427,6 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   const votes = (["pressure_drop", "level_trend", "vib_impact"] as const)
     .filter((name) => channelStates[name] === "fired").length;
 
-  const lastUpdateMs = demoActive
-    ? DEMO_REFERENCE_MS
-    : live
-      ? (level?.data.t_iso ? Date.parse(level.data.t_iso) : null)
-      : wheel.lastComm;
   const sourceBadge = (
     <span className={`og-badge og-badge--source og-badge--source-${source}`}>
       {live
@@ -431,7 +472,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
         {t("dash.honesty", lang)}
       </Notice>
 
-      <DashboardStatusNotices activeLevel={activeLevel} backendOutage={backendOutage} analyzerNotice={analyzerNotice} />
+      <DashboardStatusNotices activeLevel={activeLevel} backendOutage={backendOutage} analyzerNotice={analyzerNotice} live={live} demoActive={demoActive} lastUpdateMs={lastUpdateMs} nowMs={Date.now()} />
 
       <TelemetryRow
         lang={lang}
