@@ -77,7 +77,12 @@ def test_level_series_returns_fused_fields_sorted_by_sequence(client):
     assert payload["reason"] is None
     series = payload["series"]
     assert len(series) == len(rows)
-    assert set(series[0]) == {"t_s", "level_l", "sigma_l", "moving", "recal_window"}
+    # truth_liters es aditivo (F2) y solo aparece cuando las filas traen la
+    # verdad del generador, que es el caso de estas.
+    assert set(series[0]) == {
+        "t_s", "level_l", "sigma_l", "moving", "recal_window", "truth_liters",
+    }
+    assert all(point["truth_liters"] is not None for point in series)
     assert [point["t_s"] for point in series] == sorted(point["t_s"] for point in series)
     assert all(point["sigma_l"] is not None for point in series)
     assert any(point["level_l"] is not None for point in series)

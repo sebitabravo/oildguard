@@ -182,15 +182,20 @@ def test_level_series_exposes_ground_truth_when_rows_carry_it(client):
     assert series[-1]["truth_liters"] == 83.0
 
 
-def test_level_series_omits_truth_when_rows_do_not_carry_it(client, monkeypatch):
-    """Filas de solo conteo (sin ground truth) no deben fingir una verdad."""
+def test_level_series_omits_truth_when_rows_do_not_carry_it(client):
+    """Filas sin verdad del generador no deben fingir una verdad medida."""
+    rows = []
+    for seq in range(6):
+        row = _row(seq=seq, t_s=float(seq))
+        row.pop("level_liters")  # llega al almacén sin ground truth
+        rows.append(row)
     with backend_main._store_lock:
         backend_main._store_rows.clear()
-        backend_main.verify_and_store([{"device_id": "wheel-RH-01", "seq": 0, "t_s": 0.0,
-                                        "level_liters": None, "moving": 0, "recal_window": 1}])
+    backend_main.verify_and_store(rows)
 
-    series = client.get("/level/series").json()["series"]
+    series = client.get("/level/series?limit=2000").json()["series"]
 
+    assert len(series) == 6
     assert all("truth_liters" not in point for point in series)
 
 

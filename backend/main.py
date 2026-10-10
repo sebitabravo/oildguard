@@ -52,7 +52,7 @@ try:  # paquete (pytest / uvicorn backend.main:app)
     )
     from .metrics import CachedProbe, IngestMetrics, TisoClock
     from .pipeline import IngestPipeline
-    from .store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore
+    from .store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore, as_float
 except ImportError:  # módulo suelto (Docker copia backend/ a /app)
     from aggregates import (  # type: ignore
         DEFAULT_METRICS,
@@ -64,7 +64,13 @@ except ImportError:  # módulo suelto (Docker copia backend/ a /app)
     )
     from metrics import CachedProbe, IngestMetrics, TisoClock  # type: ignore
     from pipeline import IngestPipeline  # type: ignore
-    from store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore  # type: ignore
+    from store import (  # type: ignore
+        DEFAULT_DEVICE,
+        RETENTION_ROWS,
+        StoreView,
+        TelemetryStore,
+        as_float,
+    )
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("oilguard-backend")
@@ -993,13 +999,47 @@ def level(device_id: str | None = Query(default=None)) -> dict:
     }
 
 
+SERIES_SIGNALS = ("pressure_kpa", "temperature_c", "vib_rms_g")
+
+
+def _parse_series_signals(raw: str | None) -> list[str]:
+    """Señales extra de la serie; vacío o desconocido -> las tres por defecto."""
+    if not raw:
+        return []
+    requested = [item.strip() for item in raw.split(",") if item.strip()]
+    unknown = [name for name in requested if name not in SERIES_SIGNALS]
+    if unknown:
+        raise ValueError(
+            f"unknown signals: {', '.join(sorted(unknown))}; "
+            f"available: {', '.join(SERIES_SIGNALS)}"
+        )
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for name in requested:
+        if name not in seen:
+            seen.add(name)
+            ordered.append(name)
+    return ordered
+
+
 @app.get("/level/series")
 def level_series(
     limit: int = Query(default=300, ge=1, le=2000),
     device_id: str | None = Query(default=None),
+    signals: str | None = Query(default=None),
 ) -> dict:
-    """Sirve la serie fusionada y limitada de nivel del almacenamiento de sesión."""
+    """Sirve la serie fusionada y limitada de nivel del almacenamiento de sesión.
+
+    ``signals`` añade columnas por punto (aditivo, no cambia el contrato) y
+    ``truth_liters`` aparece solo si las filas traen la verdad del generador:
+    inventar una verdad que no se midió sería exactamente el tipo de dato que
+    este producto no debe mostrar.
+    """
     rows = _sorted_device_rows(select_device(device_id))
+    try:
+        requested = _parse_series_signals(signals)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     if not rows:
         return {
             "status": "ok",
@@ -1014,15 +1054,21 @@ def level_series(
 
     estimate = level_estimator.estimate(_samples_from_rows(rows))
     sigma_l = estimate.get("sigma_liters")
+    has_truth = any(as_float(row.get("level_liters")) is not None for row in rows)
     series = []
     for row, point in zip(rows, estimate["estimates"]):
-        series.append({
+        item: dict[str, Any] = {
             "t_s": point["t_s"],
             "level_l": point["level_liters"],
             "sigma_l": sigma_l,
             "moving": int(float(row.get("moving", 0))),
             "recal_window": int(float(row.get("recal_window", 0))),
-        })
+        }
+        for name in requested:
+            item[name] = as_float(row.get(name))
+        if has_truth:
+            item["truth_liters"] = as_float(row.get("level_liters"))
+        series.append(item)
     series = _downsample_evenly(series, limit)
     return {
         "status": "ok",
