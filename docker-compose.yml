@@ -85,5 +85,28 @@ services:
     environment:
       PUBLIC_BACKEND_URL: http://localhost:8000
 
+  edge-sim:
+    # Simulador de borde en Rust para pruebas de carga; no arranca con el stack
+    # normal (perfil "sim"): docker compose --profile sim up edge-sim
+    profiles: ["sim"]
+    build: ./edge-sim
+    container_name: oilguard-edge-sim
+    depends_on:
+      mqtt:
+        condition: service_healthy
+    environment:
+      OILGUARD_DEVICE_MASTER_KEY: ${OILGUARD_DEVICE_MASTER_KEY:-}
+    command:
+      - --devices
+      - ${EDGE_SIM_DEVICES:-100}
+      - --rate-hz
+      - "10"
+      - --mode
+      - realtime
+      - --mqtt-url
+      - mqtt://mqtt:1883
+      - --stats-interval
+      - "10"
+
 volumes:
   influxdb-data:
