@@ -1,6 +1,7 @@
 """Humo del backend FastAPI sin InfluxDB ni MQTT: cae a la memoria."""
 
 from datetime import datetime, timezone
+import builtins
 
 import pytest
 from fastapi.testclient import TestClient
@@ -66,6 +67,66 @@ def test_health_reports_memory_fallback(client):
     h = client.get("/health")
     assert h.status_code == 200
     assert h.json()["status"] == "ok"
+    assert h.json()["analysis"] == {"available": True, "reason": None}
+
+
+def test_empty_store_keeps_healthy_but_unevaluated_semantics(client):
+    health = client.get("/health").json()
+    alerts = client.get("/alerts").json()
+    rul = client.get("/rul").json()
+
+    assert health["status"] == "ok"
+    assert health["analysis"] == {"available": True, "reason": None}
+    assert alerts["status"] == "ok"
+    assert alerts["evaluated"] is False
+    assert alerts["data"]["escalation"] == []
+    assert rul["status"] == "ok"
+    assert rul["evaluated"] is False
+    assert rul["data"]["status"] == "suppressed"
+
+
+def test_loaded_analyzer_reports_real_evaluation_for_alerts_and_rul(client):
+    assert client.post("/ingest", json=batch()).status_code == 200
+
+    health = client.get("/health").json()
+    alerts = client.get("/alerts").json()
+    rul = client.get("/rul").json()
+
+    assert health["analysis"] == {"available": True, "reason": None}
+    assert alerts["status"] == "ok"
+    assert alerts["evaluated"] is True
+    assert rul["status"] == "ok"
+    assert rul["evaluated"] is True
+
+
+def test_missing_analyzer_import_degrades_health_and_routes(client, monkeypatch):
+    assert client.post("/ingest", json=batch()).status_code == 200
+    original_import = builtins.__import__
+
+    def import_without_analyzer(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "ai.ladder":
+            raise ModuleNotFoundError("No module named 'sim'")
+        return original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", import_without_analyzer)
+
+    health_response = client.get("/health")
+    alerts_response = client.get("/alerts")
+    rul_response = client.get("/rul")
+    health = health_response.json()
+    alerts = alerts_response.json()
+    rul = rul_response.json()
+
+    assert health_response.status_code == 200
+    assert health["status"] == "degraded"
+    assert health["analysis"]["available"] is False
+    assert health["analysis"]["reason"]
+    assert alerts_response.status_code == 200
+    assert alerts["status"] == "unavailable"
+    assert alerts["evaluated"] is False
+    assert rul_response.status_code == 200
+    assert rul["status"] == "unavailable"
+    assert rul["evaluated"] is False
 
 
 def test_legacy_four_field_payload_is_rejected(client):

@@ -14,7 +14,7 @@ docker compose up -d --build -V
 curl -s http://localhost:8000/health
 ```
 
-Confirm the health response contains `"status":"ok"`. Open `http://localhost:5173` for the three pages: `/mine`, `/wheel`, and `/monitoring`.
+Confirm the health response contains `"status":"ok"` and `"analysis":{"available":true,"reason":null}`. If it reports `"status":"degraded"` or analysis is unavailable, do not treat an empty alert list as a clean result; repair the backend image first. Open `http://localhost:5173` for the three pages: `/mine`, `/wheel`, and `/monitoring`.
 
 ### 0:30–1:30 — Mine and fleet
 
@@ -53,8 +53,8 @@ unset OILGUARD_DEVICE_KEYS OILGUARD_REQUIRE_SIGNATURE DEVICE_KEY
 docker compose up -d backend
 ```
 
-The health response exposes aggregate signing counters only, not device IDs
-or keys. HMAC verifies row integrity and shared-key origin; it does not provide
+The health response exposes aggregate signing counters and analyzer
+availability, not device IDs or keys. HMAC verifies row integrity and shared-key origin; it does not provide
 confidentiality, HTTP caller authentication, MQTT/TLS, or IEC 62443 compliance.
 Key provisioning, secure storage, and rotation remain production gaps.
 
@@ -83,7 +83,7 @@ Use the header's **EN** / **ES** control and revisit the honesty copy. `?lang=en
 
 ### 0:00–0:30 — Inicio y estado
 
-Desde la raíz del repositorio, ejecuta `docker compose config --quiet` y `docker compose up -d --build -V`; confirma que `http://localhost:8000/health` responda con `"status":"ok"`.
+Desde la raíz del repositorio, ejecuta `docker compose config --quiet` y `docker compose up -d --build -V`; confirma que `http://localhost:8000/health` responda con `"status":"ok"` y `"analysis":{"available":true,"reason":null}`. Si indica `"status":"degraded"` o el analizador no está disponible, no interpretes una lista vacía de alertas como un resultado limpio; corrige primero la imagen del backend.
 
 ### 0:30–1:30 — Mina y flota
 

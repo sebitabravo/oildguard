@@ -17,12 +17,39 @@ The frontend reads `PUBLIC_BACKEND_URL`; Compose sets it to
 
 | Method | Path | Status when real |
 |---|---|---|
-| GET | `/health` | `ok` (store, Influx, MQTT, and aggregate signing diagnostics) |
+| GET | `/health` | `ok` or `degraded` (store, Influx, MQTT, signing, and analyzer availability diagnostics) |
 | POST | `/ingest` | `ok` — accepted rows stored; per-row signature rejections returned in the ack |
 | GET | `/level` | `ok` — latest ingested ground-truth row echoed; `confidence` remains the `0.0` placeholder on this endpoint (`backend/main.py:346-377`) |
 | GET | `/windows?limit=50` | `ok` — rest windows grouped from `recal_window` flags |
-| GET | `/alerts` | `ok` — T10 N1–N4 ladder over the memory store (`synthetic-proxy`; honest fallback note when unevaluatable) |
-| GET | `/rul` | `ok` — T10 trend-extrapolated RUL, or `suppressed` + anomaly-only note when precision-gated |
+| GET | `/alerts` | `ok` — T10 N1–N4 ladder over the memory store; `unavailable` when the analyzer cannot load |
+| GET | `/rul` | `ok` — T10 trend-extrapolated RUL or a precision-gated `suppressed` result; `unavailable` when the analyzer cannot load |
+
+## GET /health
+
+`/health` responds with HTTP 200 while reporting whether the analysis runtime
+can be imported. `status` is `ok` when available and `degraded` when it is
+not. The `analysis` object includes a boolean `available` and a diagnostic
+`reason` (`null` on success):
+
+```json
+{
+  "status": "ok",
+  "analysis": {"available": true, "reason": null},
+  "store_rows": 600,
+  "signing": {
+    "enforced": false,
+    "devices": 0,
+    "verified_total": 0,
+    "rejected_total": 0,
+    "rejected_reasons": {}
+  }
+}
+```
+
+When the analyzer or one of its runtime packages cannot load, health remains
+HTTP 200 but reports `status: "degraded"`, `analysis.available: false`, and
+the import failure in `analysis.reason`. Do not interpret an empty alert list
+as a clean analysis unless the corresponding response has `evaluated: true`.
 
 ## POST /ingest
 
@@ -101,8 +128,8 @@ Signed rows carry `sig_v: "ogs1"` and `sig: "<HMAC-SHA256 hex digest>"`;
 the signature field is 64 lowercase hexadecimal characters for a SHA-256
 digest. Unsigned rows omit both fields.
 
-`GET /health` includes aggregate status only; it never returns device IDs or
-keys:
+`GET /health` includes aggregate signing counters and analyzer diagnostics;
+it never returns device IDs or keys:
 
 ```json
 {
@@ -112,7 +139,8 @@ keys:
     "verified_total": 10,
     "rejected_total": 1,
     "rejected_reasons": {"bad_signature": 1}
-  }
+  },
+  "analysis": {"available": true, "reason": null}
 }
 ```
 
@@ -227,14 +255,22 @@ curl -s localhost:8000/rul      # T10 RUL (suppressed + anomaly-only when gated)
 ## GET /alerts + GET /rul (T10)
 
 Both evaluate the memory store with `ai/ladder.py` (rest runs grouped
-by `recal_window`, same contract as `/windows`). `GET /alerts` returns
-`{alerts, escalation, ladder: [N1..N4], level, rul_status, model:
-"synthetic-proxy", note, fallback}`; `GET /rul` returns `{hours,
-hours_to_warning, hours_to_critical, haul_cycles, shifts, confidence,
-...}` or the suppressed variant (`hours: null, anomaly_only: true` +
-reason). Empty store, missing `ai/` in the image, or evaluation errors
-return the honest `fallback`/`note` strings — never a 500. Full method,
-thresholds, and real log excerpts: `docs/t10-rul-ladder.md`.
+by `recal_window`, same contract as `/windows`). Successful responses expose
+top-level `evaluated: true`, including a precision-suppressed RUL result.
+When the analyzer imports successfully but the store is empty, the endpoints
+remain `status: "ok"`, return `evaluated: false`, and preserve the existing
+empty-alert / suppressed-RUL shape. If the analyzer cannot load, both
+endpoints return HTTP 200 with top-level `status: "unavailable"` and
+`evaluated: false`; `/rul` data also uses `status: "unavailable"` rather than
+the precision-gated `suppressed` state. Its raw import reason remains in the
+API diagnostics for operators.
+
+`GET /alerts` returns `{status, kind, as_of, evaluated, data}` where `data`
+contains `{alerts, escalation, ladder: [N1..N4], level, rul_status, model,
+note, fallback}` when evaluated. `GET /rul` returns the same envelope around
+the RUL data (`hours`, `hours_to_warning`, `hours_to_critical`, `haul_cycles`,
+`shifts`, `confidence`, and related fields). Full method, thresholds, and
+real log excerpts: `docs/t10-rul-ladder.md`.
 
 ## Round-trip (generator -> MQTT -> backend -> query)
 

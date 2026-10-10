@@ -247,30 +247,42 @@ def _latest_row() -> dict[str, Any] | None:
         return max(_store_rows, key=lambda r: int(r.get("seq", 0)))
 
 
-def _t10_bundle() -> tuple[dict[str, Any] | None, str]:
+def _load_t10_evaluator() -> tuple[Any | None, str | None]:
+    try:
+        from ai.ladder import evaluate as evaluate_ladder  # type: ignore
+    except Exception as exc:  # noqa: BLE001 - health informa si falta el analizador
+        return None, str(exc)
+    return evaluate_ladder, None
+
+
+def _analysis_status() -> dict[str, Any]:
+    evaluator, reason = _load_t10_evaluator()
+    return {"available": evaluator is not None, "reason": reason}
+
+
+def _t10_bundle() -> tuple[dict[str, Any] | None, str, bool, bool]:
     """Evaluate the T10 ladder/RUL over the in-memory store.
 
-    Returns (bundle, fallback_note). bundle is None when no evaluation
-    is possible (empty store, missing T10 logic, evaluation error) — the
-    fallback note says why, so callers stay honest instead of 500ing.
+    Returns (bundle, fallback_note, available, evaluated). Empty stores
+    remain healthy but unevaluated; a missing evaluator is unavailable.
     Rest grouping reuses the same ``recal_window`` runs as GET /windows
     (the full T7 rules detector is ``sim/detect.py``).
     """
+    evaluator, import_reason = _load_t10_evaluator()
+    if evaluator is None:
+        return None, (
+            f"T10 analyzer unavailable ({import_reason}); rows remain stored, "
+            "but alerts and RUL were not evaluated. Rebuild the backend image "
+            "with its runtime packages included."
+        ), False, False
+
     with _store_lock:
         rows = sorted(_store_rows, key=lambda r: int(r.get("seq", 0)))
     if not rows:
         return None, (
             "no rows ingested yet; POST SignalRow batches to /ingest, "
             "then GET /alerts walks the N1–N4 ladder."
-        )
-    try:
-        from ai.ladder import evaluate as _evaluate_ladder  # type: ignore
-    except Exception as exc:  # noqa: BLE001 - optional T10 logic boundary
-        return None, (
-            f"T10 logic unavailable in this image ({exc}); rows are kept, "
-            f"alerts unavailable. Rebuild with the repo-root context so "
-            f"ai/ ships (see backend/Dockerfile)."
-        )
+        ), True, False
     samples = []
     for r in rows:
         s = dict(r)
@@ -280,18 +292,18 @@ def _t10_bundle() -> tuple[dict[str, Any] | None, str]:
             s["rest"] = False
         samples.append(s)
     try:
-        bundle = _evaluate_ladder(samples)
+        bundle = evaluator(samples)
     except Exception as exc:  # noqa: BLE001 - scoring must never 500 queries
         log.warning("T10 evaluation failed: %s", exc)
         return None, (
             f"T10 evaluation failed ({exc}); surface anomaly-only "
             f"(ai/flags.jsonl path) instead."
-        )
+        ), True, False
     return bundle, (
         "memory-store grouping by recal_window flags (full T7 detector: "
         "sim/detect.py); rest-gated synthetic-proxy model, UNPROVEN until "
         "S7 bench (see docs/t10-rul-ladder.md)."
-    )
+    ), True, True
 
 
 # ---------------------------------------------------------------------------
@@ -301,6 +313,7 @@ def _t10_bundle() -> tuple[dict[str, Any] | None, str]:
 
 @app.get("/health")
 def health() -> dict:
+    analysis = _analysis_status()
     with _store_lock:
         n = len(_store_rows)
         signing = {
@@ -311,9 +324,10 @@ def health() -> dict:
             "rejected_reasons": dict(_rejected_reasons),
         }
     return {
-        "status": "ok",
+        "status": "ok" if analysis["available"] else "degraded",
         "service": "oilguard-backend",
         "stage": "S4-t8",
+        "analysis": analysis,
         "store_rows": n,
         "influx": _influx_status,
         "mqtt": {"host": MQTT_HOST, "port": MQTT_PORT, "topic": MQTT_TOPIC},
@@ -428,7 +442,7 @@ def windows(limit: int = 50) -> dict:
 
 @app.get("/alerts")
 def alerts() -> dict:
-    bundle, fallback = _t10_bundle()
+    bundle, fallback, analysis_available, evaluated = _t10_bundle()
     if bundle is None:
         data: dict[str, Any] = {
             "alerts": [],
@@ -449,13 +463,32 @@ def alerts() -> dict:
             "note": bundle["note"],
             "fallback": fallback,
         }
-    return {"status": "ok", "kind": "alerts", "as_of": _now_iso(), "data": data}
+    return {
+        "status": "ok" if analysis_available else "unavailable",
+        "kind": "alerts",
+        "as_of": _now_iso(),
+        "evaluated": evaluated,
+        "data": data,
+    }
 
 
 @app.get("/rul")
 def rul() -> dict:
-    bundle, fallback = _t10_bundle()
-    if bundle is None or bundle["rul"].get("status") != "ok":
+    bundle, fallback, analysis_available, evaluated = _t10_bundle()
+    if not analysis_available:
+        reason = fallback
+        data = {
+            "hours": None,
+            "haul_cycles": None,
+            "shifts": None,
+            "confidence": 0.0,
+            "status": "unavailable",
+            "anomaly_only": True,
+            "model": "synthetic-proxy",
+            "note": f"RUL unavailable: {reason}",
+            "fallback": fallback,
+        }
+    elif bundle is None or bundle["rul"].get("status") != "ok":
         reason = fallback if bundle is None else bundle["rul"].get("reason", "")
         data = {
             "hours": None,
@@ -486,7 +519,13 @@ def rul() -> dict:
             "note": r["note"],
             "fallback": fallback,
         }
-    return {"status": "ok", "kind": "rul", "as_of": _now_iso(), "data": data}
+    return {
+        "status": "ok" if analysis_available else "unavailable",
+        "kind": "rul",
+        "as_of": _now_iso(),
+        "evaluated": evaluated,
+        "data": data,
+    }
 
 
 # ---------------------------------------------------------------------------
