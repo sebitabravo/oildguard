@@ -25,6 +25,7 @@ import csv
 import json
 import logging
 import os
+import sys
 import threading
 import time
 from collections import Counter
@@ -49,7 +50,7 @@ try:  # paquete (pytest / uvicorn backend.main:app)
         build_frame,
         parse_metrics,
     )
-    from .metrics import IngestMetrics
+    from .metrics import CachedProbe, IngestMetrics
     from .pipeline import IngestPipeline
     from .store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore
 except ImportError:  # módulo suelto (Docker copia backend/ a /app)
@@ -61,7 +62,7 @@ except ImportError:  # módulo suelto (Docker copia backend/ a /app)
         build_frame,
         parse_metrics,
     )
-    from metrics import IngestMetrics  # type: ignore
+    from metrics import CachedProbe, IngestMetrics  # type: ignore
     from pipeline import IngestPipeline  # type: ignore
     from store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore  # type: ignore
 
@@ -85,6 +86,11 @@ _INFLUX_WRITE = os.getenv("OILGUARD_INFLUX_WRITE", "1") == "1"
 INGEST_QUEUE_BATCHES = int(os.getenv("OILGUARD_INGEST_QUEUE", "1000"))
 INGEST_FLUSH_ROWS = int(os.getenv("OILGUARD_INFLUX_FLUSH_ROWS", "5000"))
 INGEST_FLUSH_SECONDS = float(os.getenv("OILGUARD_INFLUX_FLUSH_SECONDS", "1"))
+# Con el bucket lleno por las pruebas de carga, contar los puntos persistidos
+# tardaba segundos. /health responde siempre en el plazo de espera; la sonda
+# sigue en vuelo y rellena el cache cuando termina.
+INFLUX_COUNT_TTL_S = float(os.getenv("OILGUARD_INFLUX_COUNT_TTL_S", "30"))
+INFLUX_COUNT_PROBE_WAIT_S = float(os.getenv("OILGUARD_INFLUX_COUNT_PROBE_WAIT_S", "0.1"))
 FLEET_TICK_SECONDS = float(os.getenv("OILGUARD_FLEET_TICK_SECONDS", "1"))
 FLEET_WINDOW_MIN = 1
 FLEET_WINDOW_MAX = 300
@@ -441,6 +447,34 @@ _PIPELINE = IngestPipeline(
 _INGEST_METRICS = IngestMetrics(window_s=10.0)
 
 
+def _influx_probe_key() -> tuple:
+    """Identidad de la instalacion que produce el conteo cacheado.
+
+    Si cambian las credenciales, el cliente instalado o la propia funcion que
+    cuenta, el numero cacheado pertenece a otra instalacion: servirlo seria
+    mentir sobre la persistencia.
+    """
+    return (
+        INFLUXDB_URL,
+        INFLUXDB_ORG,
+        INFLUXDB_BUCKET,
+        INFLUXDB_TOKEN,
+        sys.modules.get("influxdb_client"),
+        _count_influx_points,
+    )
+
+
+# Contar millones de puntos persistidos tarda segundos y /health debe
+# responder igual: la sonda corre en segundo plano con TTL y la ruta solo lee
+# el cache, esperando como mucho INFLUX_COUNT_PROBE_WAIT_S.
+_INFLUX_POINTS = CachedProbe(
+    fetch=lambda: _count_influx_points(),
+    key_fn=_influx_probe_key,
+    ttl_s=INFLUX_COUNT_TTL_S,
+    wait_s=INFLUX_COUNT_PROBE_WAIT_S,
+)
+
+
 def queue_state() -> dict[str, Any]:
     """Estado de la cola que consumen /metrics/ingest y /health."""
     return {
@@ -621,7 +655,8 @@ def health() -> dict:
             "rejected_total": _rejected_total,
             "rejected_reasons": dict(_rejected_reasons),
         }
-    influx_points = _count_influx_points()
+    _INFLUX_POINTS.refresh()
+    influx_points, influx_points_reason, influx_points_at = _INFLUX_POINTS.peek()
     return {
         "status": "ok" if analysis["available"] else "degraded",
         "service": "oilguard-backend",
@@ -631,6 +666,13 @@ def health() -> dict:
         "devices": device_count,
         "retention_rows": RETENTION_ROWS,
         "influx_points": influx_points,
+        "influx_points_as_of": (
+            datetime.fromtimestamp(influx_points_at, timezone.utc).isoformat()
+            if influx_points_at is not None
+            else None
+        ),
+        "influx_points_reason": influx_points_reason,
+        "influx_points_ttl_s": INFLUX_COUNT_TTL_S,
         "influx": _influx_status,
         "influx_message": _influx_message,
         "mqtt": {"host": MQTT_HOST, "port": MQTT_PORT, "topic": MQTT_TOPIC},

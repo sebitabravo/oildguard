@@ -19,6 +19,11 @@ from typing import Any, Callable
 # Por encima de esto la muestra no es latencia de ingesta sino un emisor roto.
 MAX_LATENCY_S = 3600.0
 MAX_SAMPLES = 100_000
+# Ancho del bucket de los contadores rodantes. Una ventana medida en buckets
+# de 1 s pierde hasta un segundo entero: la ventana de 1 s devolvia solo el
+# bucket corriente (0 justo tras una frontera) y la de 10 s cubria 9 s reales.
+# 50 ms deja el error de cuantizacion por debajo del 5%.
+RATE_BUCKET_S = 0.05
 QUANTILES = (("p50", 0.50), ("p95", 0.95), ("p99", 0.99))
 
 
@@ -36,7 +41,7 @@ def _percentile(sorted_values: list[float], quantile: float) -> float | None:
 
 
 class RollingCounter:
-    """Contador por segundos que solo conserva la ventana que se consulta."""
+    """Contador por buckets que solo conserva la ventana propia del contador."""
 
     def __init__(self, window_s: float = 10.0, now_fn: Callable[[], float] = time.time) -> None:
         self.window_s = float(window_s)
@@ -45,35 +50,55 @@ class RollingCounter:
         self._total = 0
         self._lock = threading.Lock()
 
+    @staticmethod
+    def _bucket_of(moment: float) -> int:
+        return int(moment / RATE_BUCKET_S)
+
     def add(self, amount: int = 1, now: float | None = None) -> None:
         if amount <= 0:
             return
-        stamp = int(now if now is not None else self._now_fn())
+        moment = now if now is not None else self._now_fn()
+        bucket = self._bucket_of(moment)
         with self._lock:
-            if self._buckets and self._buckets[-1][0] == stamp:
+            # Podar tambien aqui, no solo al leer: si nadie consulta
+            # /metrics/ingest los buckets crecerian sin limite.
+            self._evict(self._bucket_of(moment - self.window_s))
+            if self._buckets and self._buckets[-1][0] == bucket:
                 previous, count = self._buckets[-1]
                 self._buckets[-1] = (previous, count + amount)
             else:
-                self._buckets.append((stamp, amount))
+                self._buckets.append((bucket, amount))
             self._total += amount
 
     def total(self, window_s: float, now: float | None = None) -> int:
-        stamp = int(now if now is not None else self._now_fn())
+        moment = now if now is not None else self._now_fn()
+        high = self._bucket_of(moment)
+        low = self._bucket_of(moment - window_s)
         with self._lock:
             # La poda usa SIEMPRE la ventana propia del contador: si se podara
             # con la ventana consultada, un total(1s) borraria los datos que un
             # total(10s) posterior todavia necesita.
-            self._evict(stamp - int(self.window_s))
-            floor = stamp - int(window_s)
-            return sum(count for bucket, count in self._buckets if bucket > floor)
+            self._evict(self._bucket_of(moment - self.window_s))
+            # La ventana es (now - W, now]: se incluye el bucket corriente y se
+            # excluye el que abre la ventana, para que mida W segundos de reloj
+            # y no W - 1 mas un parcial.
+            return sum(count for bucket, count in self._buckets if low < bucket <= high)
 
     def cumulative(self) -> int:
         with self._lock:
             return self._total
 
+    def bucket_count(self) -> int:
+        with self._lock:
+            return len(self._buckets)
+
     def _evict(self, floor: int) -> None:
-        while self._buckets and self._buckets[0][0] <= floor:
-            self._buckets.popleft()
+        if self._buckets and self._buckets[0][0] <= floor:
+            # Filtrar y no solo popleft: un loteDelayed puede insertar un bucket
+            # viejo al final y dejaria una entrada caducada sin podar.
+            self._buckets = deque(
+                (bucket, count) for bucket, count in self._buckets if bucket > floor
+            )
 
 
 class RollingLatency:
@@ -141,6 +166,87 @@ class RollingLatency:
         return result
 
 
+class CachedProbe:
+    """Cache con TTL para una sonda cara que no puede bloquear el camino de la request.
+
+    Una sonda se lanza en segundo plano y la llamada espera como mucho
+    ``timeout``; si no llega a tiempo, sigue en vuelo y su resultado rellena el
+    cache para la llamada siguiente. Asi /health responde siempre en milisegundos
+    aunque la sonda tarde segundos, y ningun trabajo se tira a la basura.
+    """
+
+    def __init__(
+        self,
+        fetch: Callable[[], Any],
+        key_fn: Callable[[], Any] | None = None,
+        ttl_s: float = 30.0,
+        wait_s: float = 0.1,
+        now_fn: Callable[[], float] = time.time,
+    ) -> None:
+        self._fetch = fetch
+        self._key_fn = key_fn
+        self.ttl_s = float(ttl_s)
+        self.wait_s = float(wait_s)
+        self._now_fn = now_fn
+        self._default_now_fn = now_fn
+        self._lock = threading.Lock()
+        self._value: Any = None
+        self._reason = "not_probed"
+        self._as_of: float | None = None
+        self._key: Any = None
+        self._done: threading.Event | None = None
+
+    def peek(self) -> tuple[Any, str | None, float | None]:
+        with self._lock:
+            return self._value, (None if self._value is not None else self._reason), self._as_of
+
+    def reset(self) -> None:
+        with self._lock:
+            self._value, self._reason, self._as_of, self._key = None, "not_probed", None, None
+            self._done = None
+            self._now_fn = self._default_now_fn
+
+    def _fresh(self) -> bool:
+        return self._as_of is not None and (self._now_fn() - self._as_of) < self.ttl_s
+
+    def refresh(self, wait_s: float | None = None) -> Any:
+        """Devuelve el valor cacheado; lanza la sonda si vencio el TTL."""
+        key = self._key_fn() if self._key_fn is not None else None
+        launched = False
+        with self._lock:
+            # Una entrada cacheada pertenece a la configuracion que la produjo:
+            # si esa cambio, el numero es de otra instalacion y no vale.
+            if key != self._key:
+                self._value, self._reason, self._as_of = None, "not_probed", None
+                self._key = key
+            if self._fresh():
+                return self._value
+            if self._done is None:
+                self._done = threading.Event()
+                threading.Thread(target=self._run, daemon=True).start()
+                launched = True
+            done = self._done
+        # Solo espera quien lanza la sonda. Si ya hay una en vuelo, el llamador
+        # lee el cache de inmediato: hacer esperar a todos por un sondeo ajeno
+        # devuelve /health a ser lento mientras Influx sigue colgado.
+        if launched:
+            done.wait(self.wait_s if wait_s is None else wait_s)
+        with self._lock:
+            return self._value
+
+    def _run(self) -> None:
+        try:
+            value = self._fetch()
+            reason = None if value is not None else "count_unavailable"
+        except Exception:  # noqa: BLE001 - una sonda rota no puede tumbar /health
+            value, reason = None, "probe_failed"
+        with self._lock:
+            self._value, self._reason, self._as_of = value, reason, self._now_fn()
+            self._done = None
+        # El valor se publica bajo el lock; el evento solo evita que un waiter
+        # siga esperando cuando la sonda ya termino.
+
+
 class IngestMetrics:
     """Contadores de filas, latencia y estado de la cola en un solo objeto."""
 
@@ -194,6 +300,9 @@ class IngestMetrics:
             "queue": dict(queue or {}),
             "latency": self._latency.snapshot(stamp),
             "window_s": self.window_s,
+            # Las ventanas se cuentan en buckets: la lectura lleva un error de
+            # cuantizacion de hasta un bucket (<=5%) respecto al reloj real.
+            "resolution_s": RATE_BUCKET_S,
         }
 
     def compact(self, now: float | None = None, queue: dict[str, Any] | None = None) -> dict[str, Any]:
