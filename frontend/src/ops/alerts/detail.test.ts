@@ -40,8 +40,8 @@ describe("channelEvidence", () => {
     const base = byLevel("N2");
     const record = { ...base, inputs: { ...base.inputs, z_med: null } };
     const metric = channelEvidence(record)[0].metrics.find((m) => m.key === "z_med");
-    expect(metric?.value).toBeNull();
-    expect(metric?.crossed).toBeNull();
+    expect(metric?.value).toBe(null);
+    expect(metric?.crossed).toBe(null);
     expect(evaluateChannel("pressure_drop", record.inputs)).toBe("no-data");
   });
 });
@@ -80,14 +80,14 @@ describe("liveSignalWindow", () => {
 
   test("centres on the alert time and fills gaps with the previous value", () => {
     const window = liveSignalWindow(series, 40);
-    expect(window).not.toBeNull();
+    expect(window).not.toBe(null);
     expect(window?.levelL.every((value) => Number.isFinite(value))).toBe(true);
     expect(window?.levelL[window.triggerIndex]).toBeCloseTo(90 - 20 * 0.1, 5);
   });
 
   test("returns null without usable points", () => {
-    expect(liveSignalWindow([], 10)).toBeNull();
-    expect(liveSignalWindow([{ t_s: 1, level_l: null, sigma_l: null, moving: 0, recal_window: 0 }], 1)).toBeNull();
+    expect(liveSignalWindow([], 10)).toBe(null);
+    expect(liveSignalWindow([{ t_s: 1, level_l: null, sigma_l: null, moving: 0, recal_window: 0 }], 1)).toBe(null);
   });
 });
 

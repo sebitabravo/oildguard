@@ -38,10 +38,10 @@ describe("parseAlertId", () => {
     expect(parseAlertId("id=N2-w01")).toBe("N2-w01");
   });
   test("rejects missing, empty, oversized or odd ids", () => {
-    expect(parseAlertId("")).toBeNull();
-    expect(parseAlertId("?id=")).toBeNull();
-    expect(parseAlertId("?id=%3Cscript%3E")).toBeNull();
-    expect(parseAlertId(`?id=${"a".repeat(200)}`)).toBeNull();
+    expect(parseAlertId("")).toBe(null);
+    expect(parseAlertId("?id=")).toBe(null);
+    expect(parseAlertId("?id=%3Cscript%3E")).toBe(null);
+    expect(parseAlertId(`?id=${"a".repeat(200)}`)).toBe(null);
   });
 });
 
@@ -97,7 +97,7 @@ describe("demo alert records", () => {
 });
 
 describe("evaluateChannel", () => {
-  const base = { z_med: -0.5, level_med_L: 90, level_med_pct: 94.7, kurt_max: 2, rms_med: 0.2, temp_drift_c: 0.1, trend_slope_L_per_h: 0 };
+  const base = { z_med: -0.5, level_med_L: 90, level_med_pct: 94.7, kurt_max: 2, rms_med: 0.2, temp_drift_c: 0.1, trend_slope_L_per_h: 0, rul_hours_to_warning: null };
   test("applies the ladder thresholds", () => {
     expect(evaluateChannel("pressure_drop", { ...base, z_med: -(RULES.zThr + 0.1) })).toBe("fired");
     expect(evaluateChannel("pressure_drop", { ...base, z_med: -RULES.zThr })).toBe("quiet");
@@ -127,7 +127,7 @@ describe("liveToRecord", () => {
     expect(record?.votes).toBe(2);
     expect(record?.recipient).toBe("Planning");
     expect(record?.reason.code).toBe("ladder_n2_same_window_confirmation");
-    expect(record?.wheelId).toBeNull();
+    expect(record?.wheelId).toBe(null);
     expect(record?.lifecycle).toBe("open");
     expect(record?.tS).toBe(42);
   });
@@ -135,7 +135,7 @@ describe("liveToRecord", () => {
     const record = liveToRecord(liveAlert({ channels: null }), NOW);
     expect(record?.channels.pressure_drop).toBe("no-data");
     expect(record && hasPartialData(record)).toBe(true);
-    expect(liveToRecord(liveAlert({ level: "N9" }), NOW)).toBeNull();
+    expect(liveToRecord(liveAlert({ level: "N9" }), NOW)).toBe(null);
   });
   test("joins array message params and falls back to the English reason for unknown codes", () => {
     const joined = liveToRecord(liveAlert({
@@ -143,7 +143,7 @@ describe("liveToRecord", () => {
     }), NOW);
     expect(joined?.reason.params.windows).toBe("0+1");
     const unknown = liveToRecord(liveAlert({ reason_message: { code: "other", params: {} } }), NOW);
-    expect(unknown?.reason.code).toBeNull();
+    expect(unknown?.reason.code).toBe(null);
     expect(unknown?.reason.fallback).toContain("N2 confirmed leak");
   });
 });
@@ -221,8 +221,8 @@ describe("local demo lifecycle", () => {
     expect(reduceLifecycle("open", "escalate")).toBe("escalated");
     expect(reduceLifecycle("acknowledged", "close")).toBe("closed");
     expect(reduceLifecycle("escalated", "acknowledge")).toBe("acknowledged");
-    expect(reduceLifecycle("closed", "acknowledge")).toBeNull();
-    expect(reduceLifecycle("open", "close")).toBeNull();
+    expect(reduceLifecycle("closed", "acknowledge")).toBe(null);
+    expect(reduceLifecycle("open", "close")).toBe(null);
     expect(availableActions("open")).toEqual(["acknowledge", "escalate"]);
     expect(availableActions("closed")).toEqual([]);
   });
@@ -258,8 +258,8 @@ describe("local demo lifecycle", () => {
 describe("wheel pre-filter and merging", () => {
   test("reads the wheel query parameter defensively", () => {
     expect(parseWheelParam("?wheel=wheel-LH-01")).toBe("wheel-LH-01");
-    expect(parseWheelParam("?wheel=%3Cb%3E")).toBeNull();
-    expect(parseWheelParam("")).toBeNull();
+    expect(parseWheelParam("?wheel=%3Cb%3E")).toBe(null);
+    expect(parseWheelParam("")).toBe(null);
   });
 
   test("filters by wheel id", () => {
@@ -287,7 +287,7 @@ describe("wheel pre-filter and merging", () => {
 
   test("trend alerts carry the zone their message needs", () => {
     for (const record of records) {
-      expect(record.reason.code).not.toBeNull();
+      expect(record.reason.code).not.toBe(null);
       if (record.level === "N1") expect(typeof record.reason.params.zone).toBe("string");
     }
   });

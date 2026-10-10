@@ -12,16 +12,16 @@ describe("localizeReason", () => {
       for (const lang of ["en", "es"] as const) {
         const text = localizeReason(record, lang);
         expect(text.length).toBeGreaterThan(0);
-        expect(text).not.toMatch(/[{}]/);
+        expect(/[{}]/.test(text)).toBe(false);
       }
     }
   });
 
   test("formats decimals with the language separator", () => {
     const n4 = records.find((r) => r.level === "N4") as AlertRecord;
-    expect(localizeReason(n4, "en")).toMatch(/\d\.\d/);
-    expect(localizeReason(n4, "es")).toMatch(/\d,\d/);
-    expect(localizeReason(n4, "es")).not.toMatch(/\d\.\d/);
+    expect(/\d\.\d/.test(localizeReason(n4, "en"))).toBe(true);
+    expect(/\d,\d/.test(localizeReason(n4, "es"))).toBe(true);
+    expect(/\d\.\d/.test(localizeReason(n4, "es"))).toBe(false);
   });
 
   test("uses the backend fallback text when the code is unknown", () => {
