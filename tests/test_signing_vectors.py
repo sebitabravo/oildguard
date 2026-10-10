@@ -3,7 +3,7 @@
 import json
 
 import make_signing_vectors as msv
-from shared.signing import canonical_bytes, verify_row
+from shared.signing import canonical_bytes, derive_device_key, verify_row
 
 
 def _load() -> dict:
@@ -32,3 +32,11 @@ def test_typed_and_csv_forms_share_canonical_bytes():
             twin = by_name[name.replace("-typed", "-csv_strings")]
             assert vector["canonical"] == twin["canonical"], name
             assert vector["sig"] == twin["sig"], name
+
+
+def test_derived_key_vectors_match_master_key_derivation():
+    data = _load()
+    master = bytes.fromhex(data["key_hex"])
+    assert len(data["derived_keys"]) == 3
+    for entry in data["derived_keys"]:
+        assert derive_device_key(master, entry["device_id"]).hex() == entry["key_hex"]
