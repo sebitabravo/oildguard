@@ -54,16 +54,17 @@ export interface TelemetryRowProps {
   temperatureC: number;
   vibrationG: number;
   tauS: number;
-  liveChannels: boolean;
+  pressureLive: boolean;
+  temperatureLive: boolean;
+  vibrationLive: boolean;
 }
 
 function levelTone(percent: number): "nominal" | "warning" | "critical" {
   return percent < 30 ? "critical" : percent < 50 ? "warning" : "nominal";
 }
 
-export function TelemetryRow({ lang, level, sigma, confidence, validity, pressureKpa, temperatureC, vibrationG, tauS, liveChannels }: TelemetryRowProps) {
+export function TelemetryRow({ lang, level, sigma, confidence, validity, pressureKpa, temperatureC, vibrationG, tauS, pressureLive, temperatureLive, vibrationLive }: TelemetryRowProps) {
   const percent = (level / 95) * 100;
-  const reference = liveChannels ? undefined : t("wheel.card.demoReference", lang);
   return (
     <section className="og-wheel-telemetry" aria-label={t("wheel.telemetry", lang)}>
       <TelemetryCard lang={lang} label={t("wheel.card.level", lang)} value={level} unit="L" sigma={sigma} status={levelTone(percent)}>
@@ -72,15 +73,15 @@ export function TelemetryRow({ lang, level, sigma, confidence, validity, pressur
       </TelemetryCard>
       <TelemetryCard lang={lang} label={t("wheel.card.pressure", lang)} value={formatNumber(pressureKpa, lang, 2)} unit="kPa">
         <p className="og-wheel-card__note">{t("wheel.card.pressureNote", lang)}</p>
-        {reference && <p className="og-wheel-card__ref">{reference}</p>}
+        <p className="og-wheel-card__ref">{t(pressureLive ? "wheel.card.liveSource" : "wheel.card.demoReference", lang)}</p>
       </TelemetryCard>
       <TelemetryCard lang={lang} label={t("wheel.card.temperature", lang)} value={temperatureC} unit="°C">
         <p className="og-wheel-card__note">{t("wheel.card.temperatureNote", lang)}</p>
-        {reference && <p className="og-wheel-card__ref">{reference}</p>}
+        <p className="og-wheel-card__ref">{t(temperatureLive ? "wheel.card.liveSource" : "wheel.card.demoReference", lang)}</p>
       </TelemetryCard>
       <TelemetryCard lang={lang} label={t("wheel.card.vibration", lang)} value={formatNumber(vibrationG, lang, 2)} unit="g">
         <p className="og-wheel-card__note">{t("wheel.card.vibrationNote", lang)}</p>
-        {reference && <p className="og-wheel-card__ref">{reference}</p>}
+        <p className="og-wheel-card__ref">{t(vibrationLive ? "wheel.card.liveSource" : "wheel.card.demoReference", lang)}</p>
       </TelemetryCard>
       <TelemetryCard lang={lang} label={t("wheel.card.settling", lang)} value={formatNumber(tauS, lang, 2)} unit="s">
         <p className="og-wheel-card__note">{t("wheel.card.settlingNote", lang)}</p>

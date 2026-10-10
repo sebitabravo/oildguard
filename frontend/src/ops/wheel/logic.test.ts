@@ -9,6 +9,7 @@ import {
   highestLevel,
   isLiveWheel,
   ladderRows,
+  latestSensorReadings,
   levelValidity,
   rawTelemetryText,
   resolveWheel,
@@ -76,6 +77,18 @@ describe("channel fusion", () => {
 });
 
 describe("telemetry derivations", () => {
+  test("selects the latest available pressure, temperature and vibration values", () => {
+    expect(latestSensorReadings([
+      { t_s: 3, pressure_kpa: 12.5, temperature_c: 58, vib_rms_g: 0.12 },
+      { t_s: 1, pressure_kpa: 9, temperature_c: 50, vib_rms_g: 0.08 },
+      { t_s: 2, pressure_kpa: null, temperature_c: 55, vib_rms_g: null },
+    ])).toEqual({ pressureKpa: 12.5, temperatureC: 58, vibrationG: 0.12 });
+    expect(latestSensorReadings([
+      { t_s: 1, pressure_kpa: 9, temperature_c: 50, vib_rms_g: 0.08 },
+      { t_s: 2, pressure_kpa: Number.NaN, temperature_c: null, vib_rms_g: 0.2 },
+    ])).toEqual({ pressureKpa: 9, temperatureC: 50, vibrationG: 0.2 });
+  });
+
   test("settling tau is 0.75 s at the 60 C reference and shrinks as oil warms", () => {
     expect(settlingTauSeconds(60)).toBeCloseTo(0.75, 2);
     expect(settlingTauSeconds(80)).toBeLessThan(settlingTauSeconds(70));

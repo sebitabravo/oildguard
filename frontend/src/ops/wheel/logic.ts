@@ -20,6 +20,32 @@ export function isLiveWheel(wheelId: string): boolean {
   return wheelId === LIVE_WHEEL_ID;
 }
 
+export function latestSensorReadings(rows: ReadonlyArray<{
+  t_s: number;
+  pressure_kpa?: number | null;
+  temperature_c?: number | null;
+  vib_rms_g?: number | null;
+}>): { pressureKpa?: number; temperatureC?: number; vibrationG?: number } {
+  const values: { pressureKpa?: number; temperatureC?: number; vibrationG?: number } = {};
+  const times = { pressureKpa: Number.NEGATIVE_INFINITY, temperatureC: Number.NEGATIVE_INFINITY, vibrationG: Number.NEGATIVE_INFINITY };
+  for (const row of rows) {
+    if (!Number.isFinite(row.t_s)) continue;
+    if (typeof row.pressure_kpa === "number" && Number.isFinite(row.pressure_kpa) && row.t_s >= times.pressureKpa) {
+      values.pressureKpa = row.pressure_kpa;
+      times.pressureKpa = row.t_s;
+    }
+    if (typeof row.temperature_c === "number" && Number.isFinite(row.temperature_c) && row.t_s >= times.temperatureC) {
+      values.temperatureC = row.temperature_c;
+      times.temperatureC = row.t_s;
+    }
+    if (typeof row.vib_rms_g === "number" && Number.isFinite(row.vib_rms_g) && row.t_s >= times.vibrationG) {
+      values.vibrationG = row.vib_rms_g;
+      times.vibrationG = row.t_s;
+    }
+  }
+  return values;
+}
+
 export function wheelLinks(wheelId: string): { history: string; alerts: string } {
   const query = `wheel=${encodeURIComponent(wheelId)}`;
   return { history: `/wheel/history?${query}`, alerts: `/alerts?${query}` };
