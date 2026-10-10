@@ -173,6 +173,44 @@ def _write_to_influx(rows: list[dict[str, Any]]) -> str:
         return msg
 
 
+def _count_influx_points() -> int | None:
+    if not INFLUXDB_URL or not INFLUXDB_ORG or not INFLUXDB_BUCKET or not INFLUXDB_TOKEN:
+        return None
+
+    client = None
+    try:
+        from influxdb_client import InfluxDBClient  # type: ignore
+
+        client = InfluxDBClient(
+            url=INFLUXDB_URL,
+            token=INFLUXDB_TOKEN,
+            org=INFLUXDB_ORG,
+            timeout=1200,
+        )
+        query = (
+            f'from(bucket: "{INFLUXDB_BUCKET}") '
+            '|> range(start: 0) '
+            '|> filter(fn: (r) => r._measurement == "oilguard_signals" '
+            'and r._field == "seq") '
+            "|> count()"
+        )
+        tables = client.query_api().query(query, org=INFLUXDB_ORG)
+        return sum(
+            int(record.get_value())
+            for table in tables
+            for record in table.records
+        )
+    except Exception as exc:  # noqa: BLE001 - la salud debe seguir disponible si Influx no responde
+        log.debug("InfluxDB persisted point count unavailable: %s", exc)
+        return None
+    finally:
+        if client is not None:
+            try:
+                client.close()
+            except Exception as exc:  # noqa: BLE001 - el cierre es complementario a la consulta
+                log.debug("InfluxDB count client close failed: %s", exc)
+
+
 def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Core ingestion used by POST /ingest and the MQTT bridge thread."""
     global _influx_status, _verified_total, _rejected_total
@@ -323,12 +361,14 @@ def health() -> dict:
             "rejected_total": _rejected_total,
             "rejected_reasons": dict(_rejected_reasons),
         }
+    influx_points = _count_influx_points()
     return {
         "status": "ok" if analysis["available"] else "degraded",
         "service": "oilguard-backend",
         "stage": "S4-t8",
         "analysis": analysis,
         "store_rows": n,
+        "influx_points": influx_points,
         "influx": _influx_status,
         "mqtt": {"host": MQTT_HOST, "port": MQTT_PORT, "topic": MQTT_TOPIC},
         "signing": signing,

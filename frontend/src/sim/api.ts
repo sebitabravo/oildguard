@@ -24,6 +24,7 @@ export interface HealthResponse {
   stage: string;
   analysis: { available: boolean; reason: string | null };
   store_rows: number;
+  influx_points: number | null;
   influx: string;
   mqtt: { host: string; port: number; topic: string };
   signing?: SigningStatus;

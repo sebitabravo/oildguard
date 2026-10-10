@@ -17,7 +17,7 @@ The frontend reads `PUBLIC_BACKEND_URL`; Compose sets it to
 
 | Method | Path | Status when real |
 |---|---|---|
-| GET | `/health` | `ok` or `degraded` (store, Influx, MQTT, signing, and analyzer availability diagnostics) |
+| GET | `/health` | `ok` or `degraded` (session store, persisted Influx count, MQTT, signing, and analyzer availability diagnostics) |
 | POST | `/ingest` | `ok` — accepted rows stored; per-row signature rejections returned in the ack |
 | GET | `/level` | `ok` — latest ingested ground-truth row echoed; `confidence` remains the `0.0` placeholder on this endpoint (`backend/main.py:346-377`) |
 | GET | `/windows?limit=50` | `ok` — rest windows grouped from `recal_window` flags |
@@ -36,6 +36,7 @@ not. The `analysis` object includes a boolean `available` and a diagnostic
   "status": "ok",
   "analysis": {"available": true, "reason": null},
   "store_rows": 600,
+  "influx_points": 1200,
   "signing": {
     "enforced": false,
     "devices": 0,
@@ -50,6 +51,15 @@ When the analyzer or one of its runtime packages cannot load, health remains
 HTTP 200 but reports `status: "degraded"`, `analysis.available: false`, and
 the import failure in `analysis.reason`. Do not interpret an empty alert list
 as a clean analysis unless the corresponding response has `evaluated: true`.
+
+`store_rows` counts rows accepted into this backend process's in-memory session;
+it resets on backend restart and does not represent historical persistence.
+`influx_points` is an independent count of persisted `_field == "seq"` values
+for measurement `oilguard_signals` in the configured bucket across its retained
+range. A successful empty query returns `0`. The count query has a 1,200 ms
+client timeout and runs outside the in-memory store lock. If configuration,
+the SDK, or the query is unavailable, `influx_points` is `null`; `/health`
+still responds with HTTP 200.
 
 ## POST /ingest
 
