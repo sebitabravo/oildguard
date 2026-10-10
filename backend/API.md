@@ -428,6 +428,60 @@ opt-in ladder, which is documented above.
 
 ## Ingest performance
 
+### Incremental fleet tick and outage tracking (R2d)
+
+`fleet_tick` used to be `O(rows retained)` per tick: it re-read the window for
+all devices and built a full Polars frame. `py-spy` attributed 49 % of
+container CPU to that path. Both hot endpoints are now incremental.
+
+**Fleet aggregates** (`backend/fleetagg.py`). Every accepted row updates its
+device's window inside `verify_and_store`, so a tick is `O(devices)`:
+
+| Statistic | Exactness | How |
+| --- | --- | --- |
+| `count`, `mean` | exact | running accumulators |
+| `min`, `max` | exact | monotonic queues (classic sliding window) |
+| `rows`, `devices` | exact | per-device row counts |
+| `p50`, `p95`, `p99` | **approximate** | bounded per-device reservoir |
+
+Quantiles are the only sampled part. When a device's sample exceeds twice the
+cap it is halved, keeping one of every two elements — the Apache Sketch
+reservoir rule: `O(1)` amortised, deterministic, uniform over the whole
+retained interval. With 1000 devices the effective sample is ~32–64k values
+per signal, so quantile error falls as `sqrt(q(1-q)/n)` — well inside the 1 %
+of range asserted in `tests/test_fleet_incremental.py`.
+
+The window cutoff is **per device clock**, matching the exact computation: a
+device that stopped publishing still contributes its own last window. A
+globally-clocked structure would count it as zero. Above the horizon (300 s)
+the structure cannot answer without inventing a zero, so `fleet_tick` falls
+back to the exact Polars path instead of faking one.
+
+**Outages** (`backend/outages.py`). `link_down` runs are tracked at ingest:
+an open run is a `start`, and it moves to a bounded deque (50 per device) when
+it closes. The store inserts in arrival order while the old scan sorted by
+`seq`, so a late row could close a run that actually continues; rather than
+assume that never happens, the device is marked `dirty` and rebuilt from the
+store on read. Correct always, and the cost is paid only by devices with
+out-of-order arrivals.
+
+Measured in process, 1000 devices, 10 s window, 100k rows:
+
+```bash
+python -m backend.bench_fleet --devices 1000 --window 10
+```
+
+| Path | Before | After | |
+| --- | --- | --- | --- |
+| fleet tick | 329.51 ms | 47.25 ms | **7.0x** |
+| `/fleet/outages` (~14 000 runs) | 877.12 ms | 725.03 ms | 1.2x |
+
+**The outage number is a negative result and worth reading as one.** Removing
+the scan left the expensive part untouched: both paths still build and sort
+~14 000 response blocks. Beating it needs `heapq.nlargest` over the iterator so
+`limit=50` stops materialising runs it will discard, which changes tie ordering
+and needs its own equivalence test. Not done here.
+
 ### Bridge timing (optional, off by default)
 
 `OILGUARD_BRIDGE_TIMING=1` instruments the paho callback thread in
