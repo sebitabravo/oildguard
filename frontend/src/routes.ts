@@ -23,7 +23,7 @@ export const routeRegistry: RouteDefinition[] = [
   { id: "mine", path: "/mine", ready: true },
   { id: "wheel", path: "/wheel", ready: true },
   { id: "alerts", path: "/alerts", ready: true },
-  { id: "alert-detail", path: "/alerts/detail", ready: false },
+  { id: "alert-detail", path: "/alerts/detail", ready: true },
   { id: "alert-rules", path: "/alerts/rules", ready: false },
   { id: "devices", path: "/devices", ready: true },
   { id: "link", path: "/link", ready: true },
