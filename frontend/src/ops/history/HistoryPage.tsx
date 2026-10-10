@@ -11,7 +11,7 @@ import "./history.css";
 const windows: HistoryWindow[] = ["250h", "7d", "30d", "90d"];
 const windowHours: Record<HistoryWindow, number> = { "250h": 250, "7d": 168, "30d": 720, "90d": 2160 };
 
-function formatEvent(event: "alert" | "inspection" | "outage", lang: "en" | "es"): string {
+function formatEvent(event: "alert" | "inspection" | "outage" | "refill", lang: "en" | "es"): string {
   return t(`history.event.${event === "inspection" ? "inspection" : event}`, lang);
 }
 
@@ -71,7 +71,7 @@ export default function HistoryPage() {
           <KpiTile lang={lang} label={t("history.completeness", lang)} value={`${formatNumber(kpis.completeness, lang, 0)}%`} />
         </section>
         <section className="og-history-charts">
-          <article><h3>{t("history.level", lang)}</h3><TimeSeriesChart lang={lang} values={levelValues} sigma={points.map((point) => point.sigma ?? 0)} thresholds={[{ value: 47.5, label: "50%" }, { value: 28.5, label: "30%" }]} events={chartEvents} gaps={chartGaps} title={t("history.level", lang)} /></article>
+          <article><h3>{t("history.level", lang)}</h3><TimeSeriesChart lang={lang} values={levelValues} sigma={points.map((point) => point.sigma ?? 0)} thresholds={[{ value: 47.5, label: "50%" }, { value: 28.5, label: "30%" }]} domain={[0, 95]} events={chartEvents} gaps={chartGaps} title={t("history.level", lang)} /></article>
           <article><h3>{t("history.temperature", lang)}</h3><TimeSeriesChart lang={lang} values={temperatureValues} events={chartEvents} gaps={chartGaps} title={t("history.temperature", lang)} /></article>
           <article><h3>{t("history.vibration", lang)}</h3><TimeSeriesChart lang={lang} values={vibrationValues} events={chartEvents} gaps={chartGaps} title={t("history.vibration", lang)} /></article>
         </section>
@@ -84,7 +84,7 @@ export default function HistoryPage() {
                 <tr tabIndex={event === "alert" ? 0 : undefined} onClick={() => { if (event === "alert") window.location.href = `/alerts/detail?id=alert-${wheel.id}`; }}>
                   <td className="og-mono">{new Date(point.at).toISOString().slice(0, 16).replace("T", " ")}</td>
                   <td>{formatEvent(event, lang)}</td>
-                  <td>{event === "outage" ? t("history.event.outage", lang) : event === "alert" ? `${wheel.alertLevel ?? "N2"} · ${wheel.truckId}` : t("history.event.inspection", lang)}</td>
+                  <td>{event === "outage" ? t("history.event.outage", lang) : event === "alert" ? `${wheel.alertLevel ?? "N2"} · ${wheel.truckId}` : event === "refill" ? t("history.event.refill", lang) : t("history.event.inspection", lang)}</td>
                   <td className="og-mono">{point.liters === null ? "—" : `${formatNumber(point.liters, lang, 1)} L`}</td>
                 </tr>
               ))}</tbody>

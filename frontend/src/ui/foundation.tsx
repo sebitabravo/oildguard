@@ -3,7 +3,7 @@ import { t, useLang, type Lang } from "../i18n";
 import { formatNumber } from "../i18n/numberFormat";
 import { useBackendState, backendStateLabel } from "./backendOrDemo";
 import { levelBarGeometry, severityColor, severityTone, type Tone } from "./logic";
-import { chartFrame, confidenceBand, linePath, scaledPoints } from "./chartGeometry";
+import { chartFrame, confidenceBand, linePath, scaledPoints, scaledPointsInDomain } from "./chartGeometry";
 
 export type Severity = "N1" | "N2" | "N3" | "N4";
 
@@ -197,6 +197,8 @@ export function TimeSeriesChart({
   events = [],
   gaps = [],
   title = "Time series",
+  xLabels = ["0", "mid", "end"],
+  domain,
 }: {
   lang: Lang;
   values: number[];
@@ -205,10 +207,17 @@ export function TimeSeriesChart({
   events?: Array<{ index: number; label: string }>;
   gaps?: number[];
   title?: string;
+  xLabels?: [string, string, string];
+  domain?: [number, number];
 }) {
   const frame = chartFrame(360, 180);
-  const points = scaledPoints(values, frame.width, frame.height, frame.padding);
-  const band = confidenceBand(values, sigma, frame.width, frame.height);
+  const upperValues = values.map((value, index) => value + (sigma[index] ?? 0));
+  const lowerValues = values.map((value, index) => value - (sigma[index] ?? 0));
+  const min = domain?.[0] ?? Math.min(...lowerValues);
+  const max = domain?.[1] ?? Math.max(...upperValues);
+  const points = scaledPointsInDomain(values, frame.width, frame.height, frame.padding, min, max);
+  const band = confidenceBand(values, sigma, frame.width, frame.height, frame.padding);
+  const thresholdY = (value: number) => frame.padding.top + (frame.height - frame.padding.top - frame.padding.bottom) - ((value - min) / (max - min || 1)) * (frame.height - frame.padding.top - frame.padding.bottom);
   return (
     <svg className="og-time-series" viewBox="0 0 360 180" preserveAspectRatio="none" role="img" aria-labelledby="chart-title chart-desc">
       <defs><pattern id="gap-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="1" /></pattern></defs>
@@ -216,11 +225,11 @@ export function TimeSeriesChart({
       <desc id="chart-desc">{t("ui.chartDescription", lang)}</desc>
       <polygon points={band.map((point) => `${point.x},${point.y}`).join(" ")} className="og-chart-band" />
       <rect x={frame.padding.left} y={frame.padding.top} width={frame.width - frame.padding.left - frame.padding.right} height={frame.height - frame.padding.top - frame.padding.bottom} className="og-chart-regime" />
-      {thresholds.map((threshold) => <g><line x1="0" x2="360" y1={140 - threshold.value} y2={140 - threshold.value} className="og-chart-threshold" /><text x="4" y={136 - threshold.value}>{threshold.label}</text></g>)}
+      {thresholds.map((threshold) => <g><line x1={frame.padding.left} x2={frame.width - frame.padding.right} y1={thresholdY(threshold.value)} y2={thresholdY(threshold.value)} className="og-chart-threshold" /><text x={frame.padding.left + 4} y={thresholdY(threshold.value) - 4}>{threshold.label}</text></g>)}
       {gaps.map((gap) => <rect x={gap} y="0" width="12" height="140" className="og-chart-gap" />)}
       <path d={linePath(points.filter((point): point is { x: number; y: number } => point !== null))} className="og-chart-line" />
       {events.map((event) => <g><line x1={points[event.index]?.x ?? 0} x2={points[event.index]?.x ?? 0} y1="0" y2="140" className="og-chart-event" /><title>{event.label}</title></g>)}
-      <text x={frame.padding.left} y={frame.height - 4}>{formatNumber(0, lang, 0)}</text><text x={frame.width - frame.padding.right - 18} y={frame.height - 4}>{formatNumber(values.length, lang, 0)}</text>
+      <text x={frame.padding.left} y={frame.height - 4}>{xLabels[0]}</text><text x={frame.width / 2 - 10} y={frame.height - 4}>{xLabels[1]}</text><text x={frame.width - frame.padding.right - 18} y={frame.height - 4}>{xLabels[2]}</text>
     </svg>
   );
 }

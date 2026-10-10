@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { demoDataset, type DemoWheel, type HistoryPoint } from "../../demo/dataset";
+import { createDemoDataset, demoDataset, type DemoWheel, type HistoryPoint } from "../../demo/dataset";
 import {
   historyKpis,
   sliceHistory,
@@ -32,5 +32,17 @@ describe("wheel history contracts", () => {
 
   test("history points are available for the demo wheel selected by the route", () => {
     expect(sliceHistory(wheel, "30d").length).toBeGreaterThan(0);
+  });
+
+  test("demo history follows the wheel loss rate within the available level range", () => {
+    const selected = createDemoDataset().wheels.find((item) => item.id === "wheel-LH-02") as DemoWheel;
+    const points = sliceHistory(selected, "250h").filter((point) => point.liters !== null);
+    const first = points[0]?.liters ?? 0;
+    const last = points[points.length - 1]?.liters ?? 0;
+    const observedLoss = first - last;
+    const expectedLoss = Math.min(selected.lossRateLPer100h * 250 / 100, 95 - selected.levelL);
+    expect(observedLoss).toBeGreaterThan(expectedLoss * 0.6);
+    expect(observedLoss).toBeLessThan(expectedLoss * 1.4 + 0.5);
+    expect(points.every((point) => (point.liters ?? 0) >= 0 && (point.liters ?? 0) <= 97)).toBe(true);
   });
 });
