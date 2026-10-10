@@ -40,6 +40,7 @@ export interface HistoryPoint {
   at: number;
   liters: number | null;
   sigma: number | null;
+  temperatureC: number | null;
   event?: "outage" | "alert" | "inspection" | "refill";
 }
 
@@ -102,7 +103,22 @@ function round(value: number, digits = 1): number {
   return Math.round(value * factor) / factor;
 }
 
-function historyFor(random: () => number, level: number, lossRateLPer100h: number): Record<HistoryWindow, HistoryPoint[]> {
+// Ciclo de trabajo: el aceite sube hacia el régimen caliente mientras el camión acarrea y
+// se enfría de forma exponencial en reposo, con ruido pequeño (no es una senoide).
+function dutyCycleTemperature(index: number, count: number, offset: number, noise: number): number {
+  const cycles = Math.max(2, Math.round(count / 7));
+  const phase = ((index / count) * cycles) % 1;
+  const hauling = 0.6;
+  const warm = (elapsed: number) => 64 + 15 * (1 - Math.exp(-elapsed / 0.18));
+  const value = phase < hauling
+    ? warm(phase)
+    : 64 + (warm(hauling) - 64) * Math.exp(-(phase - hauling) / 0.22);
+  return round(value + offset + (noise - 0.5) * 2.4);
+}
+
+function historyFor(random: () => number, level: number, lossRateLPer100h: number, wheelTemperatureC: number): Record<HistoryWindow, HistoryPoint[]> {
+  const temperatureNoise = seeded(Math.round(level * 100) + Math.round(wheelTemperatureC * 10));
+  const temperatureOffset = (wheelTemperatureC - 60) * 0.12;
   const windows: Array<[HistoryWindow, number, number]> = [["250h", 25, 250], ["7d", 21, 168], ["30d", 30, 720], ["90d", 36, 2160]];
   return Object.fromEntries(windows.map(([window, count, windowHours]) => [
     window,
@@ -116,6 +132,7 @@ function historyFor(random: () => number, level: number, lossRateLPer100h: numbe
         at: DEMO_REFERENCE_MS - ((count - 1 - index) * (windowHours / (count - 1)) * 60 * 60 * 1000),
         liters: isGap ? null : round(Math.max(0, Math.min(NOMINAL_LITERS + 2, noisyLevel))),
         sigma: round(0.35 + random() * 0.35),
+        temperatureC: isGap ? null : dutyCycleTemperature(index, count, temperatureOffset, temperatureNoise()),
         event: refill ? "refill" : index === Math.floor(count / 2) ? "inspection" : index === count - 3 ? "alert" : undefined,
       };
     }),
@@ -134,6 +151,7 @@ export function createDemoDataset(seed = 930106): DemoDataset {
       const alertLevel = state === "N1" || state === "N2" || state === "N4" ? state : null;
       const levelL = is980 ? 95 : round(82 + random() * 12);
       const lossRateLPer100h = round(alertLevel ? 1.2 + random() * 2 : random() * 0.3, 2);
+      const temperatureC = round(48 + random() * 25);
       const wheel: DemoWheel = {
         id: `wheel-${position}-${String(truckIndex + 1).padStart(2, "0")}`,
         truckId,
@@ -143,7 +161,7 @@ export function createDemoDataset(seed = 930106): DemoDataset {
         levelL,
         sigmaL: round(0.8 + random() * 1.5),
         pressureKpa: round(2.1 + random() * 0.8, 2),
-        temperatureC: round(48 + random() * 25),
+        temperatureC,
         vibRms: round(0.18 + random() * 0.5, 2),
         regime: wheelIndex === 0 ? "rest" : "movement",
         validity: state === "stale" ? "stale" : state === "link-down" ? "estimate" : is980 ? "invalid" : "valid",
@@ -151,7 +169,7 @@ export function createDemoDataset(seed = 930106): DemoDataset {
         alertLevel,
         lossRateLPer100h,
         lastComm: state === "stale" ? DEMO_REFERENCE_MS - 180_000 : state === "link-down" ? null : DEMO_REFERENCE_MS - 8_000,
-        history: historyFor(random, levelL, lossRateLPer100h),
+        history: historyFor(random, levelL, lossRateLPer100h, temperatureC),
       };
       if (alertLevel) {
         const recipient: Recipient = alertLevel === "N1" ? "Reliability" : alertLevel === "N2" ? "Planning" : "Operator";

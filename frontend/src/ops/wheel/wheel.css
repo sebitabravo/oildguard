@@ -1,0 +1,95 @@
+.og-wheel-detail .og-page__inner { display: grid; gap: 16px; }
+.og-wheel-detail .og-page-header { margin-bottom: 0; }
+
+/* Contexto de rueda */
+.og-wheel-context { display: grid; grid-template-columns: minmax(220px, 280px) 1fr; gap: 20px; align-items: center; padding: 14px 16px; background: var(--og-surface); border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-md); }
+.og-wheel-context__select { display: grid; gap: 6px; }
+.og-wheel-context__select select { min-height: 38px; padding: 0 10px; color: var(--og-text-primary); background: var(--og-panel-inset); border: 1px solid var(--og-border-strong); border-radius: var(--og-radius-sm); font: 12px var(--og-mono); }
+.og-wheel-context__position { margin: 6px 0 0; color: var(--og-text-secondary); font-size: 12px; }
+.og-wheel-context__facts { display: grid; grid-template-columns: .9fr 1.1fr 1.3fr 1.7fr 1.1fr; gap: 16px; margin: 0; }
+.og-wheel-context__facts .og-badge { max-width: 100%; white-space: normal; }
+.og-wheel-context__facts dt { margin-bottom: 6px; color: var(--og-text-muted); font: 10px var(--og-mono); letter-spacing: .06em; text-transform: uppercase; }
+.og-wheel-context__facts dd { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0; color: var(--og-text-primary); font: 13px var(--og-mono); }
+.og-wheel-context__facts small { color: var(--og-text-muted); font: 10px var(--og-mono); }
+.og-mono { font-family: var(--og-mono); font-variant-numeric: tabular-nums; }
+
+/* Fila de telemetría */
+.og-wheel-telemetry { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.og-wheel-telemetry .og-foundation-card { display: grid; align-content: start; gap: 6px; }
+.og-wheel-telemetry .og-telemetry-value { margin-top: 4px; }
+.og-wheel-card__note { margin: 0; color: var(--og-text-secondary); font: 11px/1.4 var(--og-mono); }
+.og-wheel-card__ref { margin: 0; color: var(--og-accent); font: 10px var(--og-mono); letter-spacing: .04em; text-transform: uppercase; }
+
+.og-wheel-telemetry .og-foundation-card { min-width: 0; }
+.og-wheel-telemetry .og-label { white-space: normal; overflow-wrap: anywhere; letter-spacing: .03em; }
+.og-wheel-telemetry .og-chip, .og-wheel-telemetry .og-wheel-card__note, .og-wheel-telemetry .og-wheel-card__ref { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.og-wheel-panel .og-badge { max-width: 100%; white-space: normal; line-height: 1.4; }
+
+/* Consola */
+.og-wheel-console { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; background: var(--og-surface); border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-md); }
+.og-wheel-console__spacer { flex: 1 1 auto; }
+.og-wheel-stepper { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 14px; background: var(--og-panel-inset); border: 1px solid var(--og-accent); border-radius: var(--og-radius-md); }
+.og-wheel-stepper__blurb { color: var(--og-text-secondary); font-size: 13px; }
+
+/* Cuadrícula principal */
+.og-wheel-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr); gap: 16px; align-items: start; }
+.og-wheel-main, .og-wheel-side { display: grid; gap: 16px; min-width: 0; }
+.og-wheel-panel { padding: 16px; min-width: 0; background: var(--og-surface); border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-md); }
+.og-wheel-panel__title { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin: 0 0 12px; color: var(--og-text-primary); font-size: 13px; font-weight: 600; }
+.og-wheel-panel__meta { color: var(--og-text-muted); font: 11px var(--og-mono); font-weight: 400; }
+.og-wheel-panel__note { margin: 10px 0 0; color: var(--og-text-secondary); font-size: 12px; line-height: 1.5; }
+.og-wheel-panel__warn { margin: 0 0 8px; color: var(--og-accent); font: 11px var(--og-mono); letter-spacing: .04em; }
+.og-wheel-status { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 13px; }
+.og-wheel-status__source { color: var(--og-text-muted); }
+.og-wheel-mode > div { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.og-wheel-mode .og-badge { margin-right: 8px; }
+.og-wheel-rul { padding: 0; background: transparent; border: 0; }
+
+/* Leyenda del gráfico */
+.og-wheel-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 0; padding: 0; list-style: none; color: var(--og-text-secondary); font: 11px var(--og-mono); }
+.og-wheel-legend li { display: inline-flex; gap: 7px; align-items: center; }
+.og-wheel-legend i { display: inline-block; width: 14px; height: 8px; border-radius: 1px; }
+.og-wheel-legend .is-level { height: 2px; background: var(--og-text); }
+.og-wheel-legend .is-band { background: color-mix(in srgb, var(--og-blue) 35%, transparent); }
+.og-wheel-legend .is-rest { background: color-mix(in srgb, var(--og-green) 40%, transparent); }
+.og-wheel-legend .is-movement { background: color-mix(in srgb, var(--og-blue) 14%, transparent); border: 1px solid var(--og-border-strong); }
+
+/* Escalera N1-N4 */
+.og-wheel-ladder { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.og-wheel-ladder li { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; color: var(--og-text-muted); background: var(--og-panel-inset); border: 1px solid var(--og-border-subtle); border-left: 3px solid var(--og-border-strong); border-radius: var(--og-radius-sm); font-size: 12px; }
+.og-wheel-ladder li b { font: 600 13px var(--og-mono); }
+.og-wheel-ladder li em { font: normal 10px var(--og-mono); letter-spacing: .06em; }
+.og-wheel-ladder li.is-active { color: var(--og-text-primary); border-color: var(--tone); border-left-width: 4px; background: color-mix(in srgb, var(--tone) 10%, var(--og-panel-inset)); }
+.og-wheel-ladder li.is-active b, .og-wheel-ladder li.is-active em { color: var(--tone); }
+
+/* Alertas */
+.og-wheel-alerts { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.og-wheel-alerts li { padding: 8px 10px; border: 1px solid var(--tone); border-radius: var(--og-radius-sm); font-size: 13px; }
+.og-wheel-alerts p { margin: 4px 0 0; color: var(--og-text-secondary); font-size: 12px; }
+.og-wheel-alerts__meta { color: var(--og-text-muted); font-size: 12px; }
+
+/* Telemetría cruda y enlaces */
+.og-wheel-raw { padding: 12px 16px; background: var(--og-surface); border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-md); }
+.og-wheel-raw summary { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; min-height: 28px; color: var(--og-text-primary); font: 12px var(--og-mono); cursor: pointer; }
+.og-wheel-raw pre { margin: 12px 0 0; padding: 12px; overflow-x: auto; color: var(--og-text-secondary); background: var(--og-panel-inset); border-radius: var(--og-radius-sm); font: 11px/1.6 var(--og-mono); }
+.og-wheel-links { display: flex; flex-wrap: wrap; gap: 10px; }
+.og-wheel-links a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; color: var(--og-accent); border: 1px solid var(--og-border-strong); border-radius: var(--og-radius-sm); font: 12px var(--og-mono); text-decoration: none; }
+.og-wheel-links a:hover, .og-wheel-links a:focus-visible { border-color: var(--og-accent); }
+
+@media (max-width: 1200px) {
+  .og-wheel-telemetry { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .og-wheel-context__facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .og-wheel-grid, .og-wheel-context { grid-template-columns: 1fr; }
+  .og-wheel-telemetry { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .og-wheel-context__select select, .og-wheel-links a, .og-wheel-console .og-button { min-height: 44px; }
+  .og-wheel-raw summary { min-height: 44px; }
+}
+@media (max-width: 560px) {
+  .og-wheel-telemetry, .og-wheel-context__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .og-wheel-telemetry .og-foundation-card { padding: 12px; }
+  .og-wheel-telemetry .og-foundation-card:last-child { grid-column: 1 / -1; }
+  .og-wheel-links a { flex: 1 1 100%; justify-content: center; }
+  .og-wheel-console .og-button { flex: 1 1 100%; }
+}
