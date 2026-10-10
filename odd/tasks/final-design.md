@@ -56,7 +56,7 @@ RED before GREEN for every new pure helper/component logic.
 | F5 | Claude | Integration pass, screenshots, docs | F3, F4 |
 | F6 | OpenCode (Playwright MCP) | Final design + functional QA, Chromium/Firefox/WebKit, 1600 and 390 px | F5 |
 
-- [ ] F0 honesty guard
+- [x] F0 honesty guard — Codex 9c2b3f8, 56f3a1a, 6b55d74; merged; bun 247 pass (route: delegated, Codex)
 - [ ] F1 foundation
 - [ ] F2 backend additions
 - [ ] F3 operations pages
