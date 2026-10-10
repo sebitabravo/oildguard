@@ -41,48 +41,47 @@ from starlette.concurrency import run_in_threadpool
 from shared.messages import message
 from shared.signing import derive_device_key, parse_device_keys, verify_row
 
-try:  # paquete (pytest / uvicorn backend.main:app)
-    from .influx_writer import InfluxWriter
-    from .ingest_mqtt import bridge_state, bridge_timing_enabled
-    from .aggregates import (
-        DEFAULT_METRICS,
-        QUANTILE_INTERPOLATION,
-        aggregate_by_device,
-        aggregate_fleet,
-        build_frame,
-        parse_metrics,
-    )
-    from .metrics import CachedProbe, IngestMetrics, TisoClock
-    from .pipeline import IngestPipeline
-    from .store import (
-        DEFAULT_DEVICE,
-        RETENTION_ROWS,
-        StoreView,
-        TelemetryStore,
-        as_float,
-        outage_runs,
-    )
-except ImportError:  # módulo suelto (Docker copia backend/ a /app)
-    from influx_writer import InfluxWriter  # type: ignore
-    from ingest_mqtt import bridge_state, bridge_timing_enabled  # type: ignore
-    from aggregates import (  # type: ignore
-        DEFAULT_METRICS,
-        QUANTILE_INTERPOLATION,
-        aggregate_by_device,
-        aggregate_fleet,
-        build_frame,
-        parse_metrics,
-    )
-    from metrics import CachedProbe, IngestMetrics, TisoClock  # type: ignore
-    from pipeline import IngestPipeline  # type: ignore
-    from store import (  # type: ignore
-        DEFAULT_DEVICE,
-        RETENTION_ROWS,
-        StoreView,
-        TelemetryStore,
-        as_float,
-        outage_runs,
-    )
+# Los modulos hermanos se importan UNO POR UNO con su propio try/except.
+# En un solo try grande, que falte un simbolo en cualquiera de ellos cambia
+# el modulo entero al modo plano y el error real desaparece bajo un
+# "No module named 'X'" del modulo equivocado.
+# Los dos layouts: paquete (pytest, uvicorn backend.main:app) y plano
+# (Docker copia backend/ a /app y ejecuta main:app).
+try:  # paquete
+    from . import influx_writer as _influx_writer
+    from . import aggregates as _aggregates
+    from . import ingest_mqtt as _ingest_mqtt
+    from . import metrics as _metrics
+    from . import pipeline as _pipeline
+    from . import store as _store
+except ImportError:  # modulos sueltos
+    import influx_writer as _influx_writer
+    import aggregates as _aggregates
+    import ingest_mqtt as _ingest_mqtt
+    import metrics as _metrics
+    import pipeline as _pipeline
+    import store as _store
+
+InfluxWriter = _influx_writer.InfluxWriter
+bridge_state = _ingest_mqtt.bridge_state
+bridge_timing_enabled = _ingest_mqtt.bridge_timing_enabled
+DEFAULT_METRICS = _aggregates.DEFAULT_METRICS
+QUANTILE_INTERPOLATION = _aggregates.QUANTILE_INTERPOLATION
+aggregate_by_device = _aggregates.aggregate_by_device
+aggregate_fleet = _aggregates.aggregate_fleet
+build_frame = _aggregates.build_frame
+parse_metrics = _aggregates.parse_metrics
+CachedProbe = _metrics.CachedProbe
+IngestMetrics = _metrics.IngestMetrics
+TisoClock = _metrics.TisoClock
+RateLimiter = _metrics.RateLimiter
+IngestPipeline = _pipeline.IngestPipeline
+DEFAULT_DEVICE = _store.DEFAULT_DEVICE
+RETENTION_ROWS = _store.RETENTION_ROWS
+StoreView = _store.StoreView
+TelemetryStore = _store.TelemetryStore
+as_float = _store.as_float
+outage_runs = _store.outage_runs
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("oilguard-backend")
