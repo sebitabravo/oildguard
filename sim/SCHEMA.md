@@ -65,6 +65,32 @@ HTTP mapping: `POST /ingest` accepts the complete `SignalRow` schema above.
 The backend preserves both T10 fields, `rotating_sensor_regime` and
 `submerged_fraction_per_revolution`, through HTTP and MQTT ingestion.
 
+## MQTT transport
+
+The Rust simulator publishes one JSON batch per device to
+`oilguard/signals/<device_id>`. The batch envelope is:
+
+```json
+{"rows": [<SignalRow>, ...]}
+```
+
+The default simulator batch contains 10 rows; the count is configurable with
+`--batch-rows`. The backend also accepts the legacy `oilguard/signals` topic
+and a single-row payload, but new device publishers should use the per-device
+topic. The row fields are defined only in the table above; the batch envelope
+does not change the `SignalRow` schema.
+
+In simulated mode, `t_iso` is derived from the configured start time and
+sequence. In realtime mode, `t_iso` is the UTC wall-clock timestamp at row
+creation; `t_s` and `seq` remain deterministic simulated-time values.
+
+The Rust simulator reproduces the Python generator byte for byte for row
+values and canonical signing input. This is proven by
+[`edge-sim/tests/parity.rs`](../edge-sim/tests/parity.rs), which compares the
+golden generator rows, signing vectors, and physics fixture; the complete
+parity strategy is summarized in
+[`docs/architecture-telemetry.md`](../docs/architecture-telemetry.md).
+
 ## Signed CSV rows
 
 The default unsigned CSV keeps the header above unchanged. With
