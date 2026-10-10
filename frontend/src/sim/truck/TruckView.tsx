@@ -27,7 +27,7 @@ export default function TruckView() {
   const [lang] = useLang();
 
   const dock = (
-    <div className="og-hud" style={{ position: "static", display: "flex", gap: 8 }}>
+    <div className="og-hud" style={{ position: "static", display: "flex", gap: "var(--og-dock-gap)" }}>
       <button
         type="button"
         className={`og-btn ${paused ? "og-btn--ok" : "og-btn--primary"}`}

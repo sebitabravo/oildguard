@@ -81,7 +81,7 @@ export default function BenchView() {
   const dock = (
     <div
       className="og-hud"
-      style={{ position: "static", display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}
+      style={{ position: "static", display: "flex", gap: "var(--og-dock-gap)", flexWrap: "wrap", alignItems: "flex-end" }}
     >
       <label className="og-field">
         <span className="og-field__label">
