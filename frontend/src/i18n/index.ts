@@ -407,8 +407,8 @@ export const dict = {
   },
   "truck.sheet.dimensionsTitle": { en: "930E-4SE dimensions & weights", es: "930E-4SE: dimensiones y pesos" },
   "truck.sheet.dimensions": {
-    en: "Course envelope {length} × {width} × {height} m; body-up {bodyUp} m (the 3D model uses the brochure: 15.60 × 8.69 × 7.37 m, body-up 14.02 m). Empty {empty} kg (F {emptyFront} / R {emptyRear}); loaded {loaded} kg (F {loadedFront} / R {loadedRear}); payload {payload} kg, {volume} m3. Max {max} T (10% {max}-{overload} T allowed, never above {overload} T).",
-    es: "Envolvente del curso: {length} × {width} × {height} m; altura con tolva elevada: {bodyUp} m (el modelo 3D usa el folleto: 15.60 × 8.69 × 7.37 m, altura con tolva elevada: 14.02 m). Vacío: {empty} kg (delantero {emptyFront} / trasero {emptyRear}); cargado: {loaded} kg (delantero {loadedFront} / trasero {loadedRear}); carga útil: {payload} kg, {volume} m³. Máximo: {max} t (10 % {max}-{overload} t permitido; nunca superar {overload} t).",
+    en: "Course envelope {length} × {width} × {height} m; body-up {bodyUp} m (the 3D model uses the brochure: {brochureLength} × {brochureWidth} × {brochureHeight} m, body-up {brochureBodyUp} m). Empty {empty} kg (F {emptyFront} / R {emptyRear}); loaded {loaded} kg (F {loadedFront} / R {loadedRear}); payload {payload} kg, {volume} m3. Max {max} T (10% {max}-{overload} T allowed, never above {overload} T).",
+    es: "Envolvente del curso: {length} × {width} × {height} m; altura con tolva elevada: {bodyUp} m (el modelo 3D usa el folleto: {brochureLength} × {brochureWidth} × {brochureHeight} m, altura con tolva elevada: {brochureBodyUp} m). Vacío: {empty} kg (delantero {emptyFront} / trasero {emptyRear}); cargado: {loaded} kg (delantero {loadedFront} / trasero {loadedRear}); carga útil: {payload} kg, {volume} m³. Máximo: {max} t (10 % {max}-{overload} t permitido; nunca superar {overload} t).",
   },
   "truck.sheet.fluidsTitle": { en: "Fluids (reconciliation footnote)", es: "Fluidos (nota de conciliación)" },
   "truck.sheet.fluids": {
@@ -417,8 +417,8 @@ export const dict = {
   },
   "truck.sheet.powertrainTitle": { en: "Powertrain", es: "Tren de potencia" },
   "truck.sheet.powertrain": {
-    en: "QSK78 3500 HP @1900 (3429 flywheel; SSDA variant note). GTA-39 AC→DC→AC via inverters/condensers; blower 453 m3/min; cabinet PCS/PLM/AID/VHMS/IM; MT AC induction motors; retard grids 5400 short/3300 cont hp 0.7 s; axle box + Hydrair II F12.92/R9.40 ±6.5deg.",
-    es: "QSK78 3500 HP @1900 (3429 volante; nota variante SSDA). GTA-39 AC→DC→AC por inversores/condensadores; soplador 453 m3/min; gabinete PCS/PLM/AID/VHMS/IM; motores MT de inducción AC; rejillas 5400 corto/3300 cont hp 0.7 s; caja del eje + Hydrair II del 12.92/tras 9.40 ±6.5°.",
+    en: "QSK78 3500 HP @1900 (3429 flywheel; SSDA variant note). GTA-39 AC→DC→AC via inverters/condensers; blower 453 m3/min; cabinet PCS/PLM/AID/VHMS/IM; MT AC induction motors; retard grids 5400 short/3300 cont hp {gridSeconds} s; axle box + Hydrair II F{frontRatio}/R{rearRatio} ±{angle}deg.",
+    es: "QSK78 3500 HP @1900 (3429 volante; nota variante SSDA). GTA-39 AC→DC→AC por inversores/condensadores; soplador 453 m3/min; gabinete PCS/PLM/AID/VHMS/IM; motores MT de inducción AC; rejillas 5400 corto/3300 cont hp {gridSeconds} s; caja del eje + Hydrair II del {frontRatio}/tras {rearRatio} ±{angle}°.",
   },
   "truck.sheet.brakesTitle": { en: "Brakes & cab", es: "Frenos y cabina" },
   "truck.sheet.brakes": {

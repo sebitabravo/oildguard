@@ -5,8 +5,6 @@ import { formatNumber } from "./numberFormat";
 // Son medidas y relaciones técnicas citadas literalmente, no números de estado de la interfaz.
 const factualSpanishDecimalExceptions: Partial<Record<DictKey, readonly string[]>> = {
   "app.scope": ["32.62"],
-  "truck.sheet.dimensions": ["15.60", "8.69", "7.37", "14.02"],
-  "truck.sheet.powertrain": ["12.92", "9.40", "6.5", "0.7"],
   "bench.inspection.step.5": ["0.869", "0.824"],
   "bench.inspection.step.6": ["0.558", "0.513"],
   "bench.inspection.step.7": ["0.100", "0.125"],

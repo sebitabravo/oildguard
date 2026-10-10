@@ -64,7 +64,7 @@ export default function BenchView() {
   const oilLitresText = formatNumber(frac * CAPACITY_L, lang, 1);
   const oilValueText = t("bench.field.oilValueText", lang, {
     litres: oilLitresText,
-    percent: oilPct,
+    percent: formatNumber(oilPct, lang, 0),
   });
   const viscosityValue = formatNumber(viscosity, lang, 2);
   const viscosityStateKey = viscosity < 0.8

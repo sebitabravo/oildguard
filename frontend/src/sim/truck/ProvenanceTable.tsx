@@ -1,4 +1,5 @@
 import { t, type DictKey, type Lang } from "../../i18n";
+import { formatNumber } from "../../i18n/numberFormat";
 import { specRows, type Provenance } from "../../twin/truck930e/spec";
 
 // Tabla "Procedencia del modelo" generada desde spec.ts: cada cota con su valor,
@@ -10,7 +11,8 @@ const TAG_KEY: Record<Provenance, DictKey> = {
   ASSUMPTION: "prov.assumption",
 };
 
-const fmt = (v: number) => (Number.isInteger(v) ? String(v) : String(Math.round(v * 1000) / 1000));
+const fmt = (value: number, lang: Lang) =>
+  formatNumber(value, lang, 3).replace(/([,.]\d*?[1-9])0+$/, "$1").replace(/[,.]0+$/, "");
 
 export default function ProvenanceTable({ lang }: { lang: Lang }) {
   const rows = specRows();
@@ -43,7 +45,7 @@ export default function ProvenanceTable({ lang }: { lang: Lang }) {
               .map((r) => (
                 <tr key={`${g}.${r.name}`}>
                   <td>{r.name}</td>
-                  <td className="og-table__num og-num">{fmt(r.value)}</td>
+                  <td className="og-table__num og-num">{fmt(r.value, lang)}</td>
                   <td>{r.unit}</td>
                   <td>
                     <span className={`og-tag og-tag--${r.tag.toLowerCase()}`}>{t(TAG_KEY[r.tag], lang)}</span>

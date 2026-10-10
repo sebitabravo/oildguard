@@ -1,11 +1,12 @@
 import { useState } from "preact/hooks";
 import TruckScene from "./TruckScene";
-import { HAUL_STATE_CSS, TRUCK_CALLOUTS, TRUCK_DIMS_M, TRUCK_WEIGHTS_KG } from "./cycle";
+import { HAUL_STATE_CSS, TRUCK_CALLOUTS, TRUCK_DIMS_M } from "./cycle";
 import { PLM_ORDER, type PlmState } from "../../twin/fleet/fleetSim";
 import { t, type DictKey, useLang } from "../../i18n";
+import { formatNumber } from "../../i18n/numberFormat";
 import Drawer from "../../ui/Drawer";
 import HonestyBadge from "../../ui/HonestyBadge";
-import ProvenanceTable from "./ProvenanceTable";
+import TruckSheet from "./TruckSheet";
 import { resetFleetStore } from "./mineWorld";
 import { buildPlmStateLabel } from "./mineSceneCopy";
 
@@ -88,46 +89,15 @@ export default function TruckView() {
     </>
   );
 
-  const sheet = (
-    <>
-      <h2 className="og-h2">{t("truck.sheet.dimensionsTitle", lang)}</h2>
-      <p className="og-body og-num">
-        {t("truck.sheet.dimensions", lang, {
-          length: TRUCK_DIMS_M.L,
-          width: TRUCK_DIMS_M.W,
-          height: TRUCK_DIMS_M.H,
-          bodyUp: TRUCK_DIMS_M.bodyUp,
-          empty: TRUCK_WEIGHTS_KG.empty,
-          emptyFront: TRUCK_WEIGHTS_KG.emptyF,
-          emptyRear: TRUCK_WEIGHTS_KG.emptyR,
-          loaded: TRUCK_WEIGHTS_KG.loaded,
-          loadedFront: TRUCK_WEIGHTS_KG.loadedF,
-          loadedRear: TRUCK_WEIGHTS_KG.loadedR,
-          payload: TRUCK_WEIGHTS_KG.payload,
-          volume: TRUCK_WEIGHTS_KG.volumeM3,
-          max: TRUCK_WEIGHTS_KG.maxT,
-          overload: TRUCK_WEIGHTS_KG.overloadT,
-        })}
-      </p>
-      <h2 className="og-h2">{t("truck.sheet.fluidsTitle", lang)}</h2>
-      <p className="og-body">{t("truck.sheet.fluids", lang)}</p>
-      <h2 className="og-h2">{t("truck.sheet.powertrainTitle", lang)}</h2>
-      <p className="og-body">{t("truck.sheet.powertrain", lang)}</p>
-      <h2 className="og-h2">{t("truck.sheet.brakesTitle", lang)}</h2>
-      <p className="og-body">{t("truck.sheet.brakes", lang)}</p>
-      <ProvenanceTable lang={lang} />
-    </>
-  );
-
   const notes = (
     <>
       <h2 className="og-h2">{t("truck.notes.title", lang)}</h2>
       <p className="og-body">
         {t("truck.notes.about", lang, {
-          length: TRUCK_DIMS_M.L,
-          width: TRUCK_DIMS_M.W,
-          height: TRUCK_DIMS_M.H,
-          bodyUp: TRUCK_DIMS_M.bodyUp,
+          length: formatNumber(TRUCK_DIMS_M.L, lang, 2),
+          width: formatNumber(TRUCK_DIMS_M.W, lang, 2),
+          height: formatNumber(TRUCK_DIMS_M.H, lang, 2),
+          bodyUp: formatNumber(TRUCK_DIMS_M.bodyUp, lang, 2),
         })}
       </p>
       <p className="og-body">{t("app.scope", lang)}</p>
@@ -136,7 +106,7 @@ export default function TruckView() {
       <ol className="og-list">
         {TRUCK_CALLOUTS.map((c) => (
           <li key={c.n}>
-            <strong>{c.n}.</strong> {t(`truck.callout.${c.n}` as DictKey, lang)}
+            <strong>{formatNumber(c.n, lang, 0)}.</strong> {t(`truck.callout.${c.n}` as DictKey, lang)}
           </li>
         ))}
       </ol>
@@ -166,7 +136,7 @@ export default function TruckView() {
         requestedTab={requestedTab}
         tabs={[
           { id: "status", label: t("drawer.status", lang), content: status },
-          { id: "sheet", label: t("drawer.sheet", lang), content: sheet },
+          { id: "sheet", label: t("drawer.sheet", lang), content: <TruckSheet lang={lang} /> },
           { id: "notes", label: t("drawer.notes", lang), content: notes },
         ]}
       />
