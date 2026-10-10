@@ -15,8 +15,9 @@ import {
   viscosityLabel,
 } from "./settling";
 import { DEMO_OIL_EVENT, parseDemoOil } from "../../dash/demoBus";
-import { CAPACITY_L, GDY106_TRAIN, stageRatio, trainRatio } from "../../twin/physics";
+import { CAPACITY_L } from "../../twin/physics";
 import { parseWheelUrl } from "./wheelUrl";
+import { buildGearRatioDisplay } from "./gearRatioDisplay";
 import { t, type DictKey, useLang } from "../../i18n";
 import Drawer from "../../ui/Drawer";
 import HonestyBadge from "../../ui/HonestyBadge";
@@ -45,6 +46,7 @@ export default function BenchView() {
   const [cutaway, setCutaway] = useState(initial.cutaway);
   const [exploded, setExploded] = useState(initial.exploded);
   const [lang] = useLang();
+  const gearRatioDisplay = buildGearRatioDisplay(lang);
 
   useEffect(() => {
     const onDemoOil = (e: Event) => {
@@ -167,11 +169,7 @@ export default function BenchView() {
           })}
         </div>
         <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
-          {t("bench.readout.train", lang, {
-            highSpeed: stageRatio(GDY106_TRAIN.hs).toFixed(2),
-            lowSpeed: stageRatio(GDY106_TRAIN.ls).toFixed(2),
-            overall: trainRatio().toFixed(2),
-          })}
+          {t("bench.readout.train", lang, gearRatioDisplay)}
         </div>
         <div
           style={{
@@ -233,6 +231,7 @@ export default function BenchView() {
     <>
       <h2 className="og-h2">{t("bench.notes.title", lang)}</h2>
       <p className="og-body">{t("bench.notes.about", lang)}</p>
+      <p className="og-body og-num">{t("bench.notes.train", lang, gearRatioDisplay)}</p>
       <p className="og-body">{t("app.scope", lang)}</p>
       <p className="og-body">{t("bench.honesty", lang)}</p>
       <h2 className="og-h2">{t("bench.inspection.title", lang)}</h2>

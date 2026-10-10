@@ -323,8 +323,12 @@ export const dict = {
     es: "Asentamiento ≈ {milliseconds} ms · sustituto de viscosidad {value} ({label})",
   },
   "bench.readout.train": {
-    en: "Planetary train: {highSpeed}:1 × {lowSpeed}:1 = {overall}:1 · derived stage speeds",
-    es: "Tren planetario: {highSpeed}:1 × {lowSpeed}:1 = {overall}:1 · velocidades derivadas",
+    en: "Planetary train: {highSpeed}:1 × {lowSpeed}:1 ≈ {overall}:1 (Komatsu manual; stage values rounded to three decimals)",
+    es: "Tren planetario: {highSpeed}:1 × {lowSpeed}:1 ≈ {overall}:1 (manual Komatsu; valores de etapa redondeados a tres decimales)",
+  },
+  "bench.notes.train": {
+    en: "Manual-validated overall ratio: {highSpeed}:1 × {lowSpeed}:1 ≈ {overall}:1 (Komatsu manual; stage values rounded to three decimals).",
+    es: "Relación total validada manualmente: {highSpeed}:1 × {lowSpeed}:1 ≈ {overall}:1 (manual Komatsu; valores de etapa redondeados a tres decimales).",
   },
   "bench.readout.moving": { en: "Moving — recalibration gated", es: "En movimiento — recalibración bloqueada" },
   "bench.sensor.title": { en: "Sensor markers (no-drill + items)", es: "Sensores (instalación sin perforación · ítems)" },
