@@ -16,7 +16,13 @@ from datetime import datetime, timezone
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 sys.path.insert(0, ROOT)
 
-from shared.signing import SIG_VERSION, SIGNED_FIELDS, canonical_bytes, sign_row  # noqa: E402
+from shared.signing import (  # noqa: E402
+    SIG_VERSION,
+    SIGNED_FIELDS,
+    canonical_bytes,
+    derive_device_key,
+    sign_row,
+)
 from sim.generate import iter_rows  # noqa: E402
 
 FIXTURE_PATH = os.path.join(ROOT, "tests", "fixtures", "signing_vectors.json")
@@ -52,6 +58,10 @@ def build_fixture() -> dict:
         "key_hex": TEST_KEY_HEX,
         "signed_fields": list(SIGNED_FIELDS),
         "vectors": vectors,
+        "derived_keys": [
+            {"device_id": device_id, "key_hex": derive_device_key(key, device_id).hex()}
+            for device_id in ("wheel-RH-01", "wheel-LH-01", "OG-0042-RR")
+        ],
     }
 
 

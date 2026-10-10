@@ -127,3 +127,26 @@ def test_device_key_parser_reports_device_without_leaking_invalid_key_material()
 
     assert "wheel-RH-01" in str(error.value)
     assert key_material not in str(error.value)
+
+
+def test_derive_device_key_is_hmac_of_device_id_under_master_key():
+    import hashlib
+    import hmac as _hmac
+
+    from shared.signing import derive_device_key
+
+    master = bytes(range(32))
+    expected = _hmac.new(master, b"oilguard-device-key/v1\x00wheel-RH-01", hashlib.sha256).digest()
+    assert derive_device_key(master, "wheel-RH-01") == expected
+    assert derive_device_key(master, "wheel-RH-01") != derive_device_key(master, "wheel-LH-01")
+
+
+def test_derive_device_key_rejects_empty_inputs():
+    import pytest as _pytest
+
+    from shared.signing import derive_device_key
+
+    with _pytest.raises(ValueError):
+        derive_device_key(b"", "wheel-RH-01")
+    with _pytest.raises(ValueError):
+        derive_device_key(bytes(range(32)), "")

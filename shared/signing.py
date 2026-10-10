@@ -110,3 +110,21 @@ def parse_device_keys(spec: str) -> dict[str, bytes]:
             raise ValueError(f"duplicate key entry for device {device_id}")
         devices[device_id] = key
     return devices
+
+
+# Etiqueta de dominio: separa esta derivación de cualquier otro uso del HMAC con
+# la misma llave maestra y permite versionarla sin ambigüedad.
+_DEVICE_KEY_LABEL = b"oilguard-device-key/v1\x00"
+
+
+def derive_device_key(master_key: bytes, device_id: str) -> bytes:
+    """Llave por dispositivo derivada de una llave maestra (HMAC-SHA256).
+
+    Permite simular miles de dispositivos sin listar una llave por cada uno en
+    OILGUARD_DEVICE_KEYS; el backend y el simulador derivan la misma llave.
+    """
+    if not master_key:
+        raise ValueError("empty master key")
+    if not device_id:
+        raise ValueError("empty device id")
+    return hmac.new(master_key, _DEVICE_KEY_LABEL + device_id.encode("utf-8"), hashlib.sha256).digest()
