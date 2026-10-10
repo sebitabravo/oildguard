@@ -238,6 +238,84 @@ and the stream continues. Ticks are never buffered: at most one is in flight,
 so a slow client misses samples instead of the server accumulating memory.
 Disconnect is handled cleanly and cancels the reader task.
 
+## Ingest performance (end to end)
+
+`verify_and_store` never talks to InfluxDB on the MQTT path. It appends rows to
+the store and hands the row list to a **dedicated writer thread** through a
+bounded queue. `POST /ingest` is unchanged and still writes synchronously,
+because its response reports the write outcome.
+
+`backend/influx_writer.py` holds the writer:
+
+- The queue holds **rows**, not line protocol. Encoding line protocol is the
+  expensive part (it was measured at 75 % of the path when it ran on the
+  ingest worker), so it happens on the writer thread.
+- The writer **coalesces**: it accumulates until `OILGUARD_INFLUX_FLUSH_ROWS`
+  (5000) points or `OILGUARD_INFLUX_FLUSH_SECONDS` (1 s). The simulator
+  publishes one message per device per tick, so without coalescing this would
+  be 1000 separate 10-point writes per second.
+- When the writer queue is full the **Influx batch** is dropped and counted in
+  `influx.dropped_batches`. The memory store and the API stay complete.
+- `shutdown` drains the pipeline first and the writer second, because rows
+  still in the pipeline can enqueue into the writer.
+
+`/metrics/ingest` exposes the writer under `influx`: `async`, `queue_depth`,
+`queue_capacity`, `written_batches`, `written_points`, `dropped_batches`,
+`dropped_points`, `failed_batches`.
+
+### Line protocol
+
+`encode_line_protocol` builds Influx line protocol directly. Two details that
+cost real data before they were fixed:
+
+1. **The Rust simulator publishes numeric fields as JSON strings**
+   (`"pressure_kpa": "2.579"`), not numbers. Values are coerced, exactly as the
+   older `Point`-based writer did. Dropping them silently wrote only `seq`.
+2. **InfluxDB rejects RFC3339 timestamps**, with `+00:00` *and* with `Z`; it
+   wants an integer epoch. Lines carry **epoch nanoseconds**, computed with
+   integer arithmetic (`datetime.timestamp()` returns a float and at 1.77e9
+   leaves ~95 ns of resolution). Seconds precision would be wrong: the
+   timestamp is the primary key, and at 10 Hz several rows land in the same
+   second and would overwrite each other.
+
+### Logging
+
+The per-batch ingest line is `DEBUG`, and drop warnings are rate-limited to
+one per `OILGUARD_DROP_LOG_INTERVAL_S` (1 s), reporting the running total.
+One warning per dropped batch meant **927 log lines per second** at 93 % CPU,
+written from the MQTT callback thread, which competes with the ingest worker
+for the GIL. The exact counts are always in the metrics.
+
+### WebSocket tick
+
+`/ws/fleet` computes **one tick per interval shared by all clients**
+(`TickCache`). A tick is O(rows retained); computing it per client meant N full
+recomputes per second for N tabs.
+
+### Measured in Docker
+
+`bench/stress/run_matrix.py`, 1000 devices x 10 Hz, 60 s, on a shared machine:
+
+| Case | Before (Claude, R2b) | After |
+|---|---|---|
+| 1,000 devices, Influx ON | 3,142 rows/s, 31,098 drops, p50 4.1 s / p99 15.3 s | 4,213 rows/s, 29,446 drops, p50 0.94 s / p99 15.6 s |
+| 1,000 devices, Influx OFF | 9,005 rows/s, 3,726 drops | 5,189–9,968 rows/s, 0–24,132 drops |
+
+The target (>= 9,000 rows/s, 0 drops, p99 < 3 s with Influx ON) was **not
+met**. Two things dominate and neither is the Influx write:
+
+- `py-spy` per-thread profiling inside the container attributed **49 % of
+  container CPU to `fleet_tick`** and 48 % to ingest. Anything else polling
+  the API at that moment competes for the same GIL; the Influx writer itself
+  showed up as ~1 % of samples.
+- The same build measured 9,968 rows/s with Influx off in one run and 5,189 in
+  another, so run-to-run variance on this box is larger than the differences
+  being measured. Treat single 60 s runs as indicative, not conclusive.
+
+The async writer, the coalescing and the encoding-off-the-hot-path change are
+real and measured; the end-to-end ceiling is set by the rest of the process
+competing with itself.
+
 ## UI data endpoints (additive, F2 / D8)
 
 Everything below is **additive**: no existing field, route or status code
