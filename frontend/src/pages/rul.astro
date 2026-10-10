@@ -1,0 +1,8 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import RulPage from "../ops/rul/RulPage";
+---
+
+<BaseLayout breadcrumb={["nav.group.operation", "nav.rul"]}>
+  <RulPage client:only="preact" />
+</BaseLayout>
