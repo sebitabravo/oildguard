@@ -648,7 +648,7 @@ export default function BenchScene({
   const resting = mode === "rest";
 
   return (
-    <div className="og-scene">
+    <div className="og-scene og-scene--wheel">
       <div ref={hostRef} className="og-scene__host" />
       <p id="wheel-scene-description" className="og-visually-hidden" aria-live="polite" aria-atomic="true">
         {publishedAccessibilityCopy.caption}
