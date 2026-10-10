@@ -37,6 +37,66 @@ def test_rolling_counter_reports_one_and_ten_second_windows():
     assert counter.total(10.0, clock.now) == 8
 
 
+def test_rolling_rate_counts_the_current_second_in_a_steady_stream():
+    """1000 filas/s durante 1.5 s, leidas en un instante de reloj de epoch."""
+    base = 1_789_628_000.0
+    clock = Clock(base)
+    counter = RollingCounter(window_s=10.0, now_fn=clock)
+
+    for index in range(1500):
+        counter.add(1, base + index / 1000.0)
+
+    # La ventana de 1 s son las ~1000 filas del ultimo segundo, no las que
+    # entraron despues de la ultima frontera (que pueden ser cero).
+    assert counter.total(1.0, base + 1.5) == pytest.approx(1000, rel=0.10)
+    # Todo lo registrado cabe en 10 s: la ventana larga no pierde un segundo.
+    assert counter.total(10.0, base + 1.5) == 1500
+
+
+def test_steady_rate_stays_flat_instead_of_sawing_between_boundaries():
+    base = 1_789_628_000.0
+    clock = Clock(base)
+    counter = RollingCounter(window_s=10.0, now_fn=clock)
+    samples: list[int] = []
+
+    for index in range(20 * 1000):
+        moment = base + index / 1000.0
+        counter.add(1, moment)
+        if index >= 15 * 1000 and (index + 1) % 250 == 0:
+            samples.append(counter.total(10.0, moment))
+
+    # Con un stream constante la ventana de 10 s debe leer ~10000 en cada
+    # lectura, no oscilar entre 9000 y 10000 segun donde caiga la frontera.
+    assert len(samples) > 10
+    assert min(samples) == pytest.approx(10_000, rel=0.10)
+    assert max(samples) == pytest.approx(10_000, rel=0.10)
+
+
+def test_reading_just_after_a_second_boundary_is_not_zero():
+    base = 1_789_628_000.0
+    clock = Clock(base)
+    counter = RollingCounter(window_s=10.0, now_fn=clock)
+
+    for index in range(1000):
+        counter.add(1, base + index / 1000.0)
+    # Justo tras la frontera: el bucket corriente esta practicamente vacio y
+    # la ventana de 1 s debio reportar ~1000, no 0.
+    assert counter.total(1.0, base + 1.0) == pytest.approx(1000, rel=0.10)
+
+
+def test_rolling_counter_bounds_itself_without_any_read():
+    """add() tambien poda: sin /metrics/ingest los buckets no crecen sin limite."""
+    base = 1_789_628_000.0
+    clock = Clock(base)
+    counter = RollingCounter(window_s=10.0, now_fn=clock)
+
+    for index in range(300_000):  # 5 minutos de una fila por milisegundo
+        counter.add(1, base + index / 1000.0)
+
+    # 10 s de ventana a 50 ms por bucket son 200; el margen cubre el corte.
+    assert counter.bucket_count() <= 400
+
+
 def test_rolling_counter_drops_samples_that_leave_the_window():
     clock = Clock()
     counter = RollingCounter(window_s=10.0, now_fn=clock)

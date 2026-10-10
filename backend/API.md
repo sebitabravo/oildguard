@@ -103,7 +103,7 @@ row.
       "percentile_method": "linear", "max_latency_s": 3600.0
     },
     "influx": {"enabled": true, "flush_rows": 5000, "flush_seconds": 1.0, "status": "..."},
-    "window_s": 10.0, "retention_rows": 36000, "devices": 10000
+    "window_s": 10.0, "resolution_s": 0.05, "retention_rows": 36000, "devices": 10000
   }
 }
 ```
@@ -117,6 +117,15 @@ metric unusable. Percentiles use **linear interpolation**, the same method as
 (100000 samples); if it overflows the oldest are dropped and counted in
 `dropped_samples`. Rows whose `t_iso` does not parse are simply not sampled,
 which shows up as `latency.count` below `rows.accepted_*`.
+
+`accepted_*s` and `rejected_*s` are counted over the window `(now - W, now]`,
+including the current partial second, so `accepted_1s` reads the rate of the
+last second rather than the rows that happened to arrive after the last
+second boundary. Windows are summed from `resolution_s` (0.05 s) buckets, so a
+reading carries up to one bucket of quantization error (<=5%) against real
+time; `resolution_s` is echoed in the payload. Counters are pruned by their
+own 10 s window on write as well as on read, so they stay bounded even if
+nothing ever queries the endpoint.
 
 `GET /health` carries a compact `ingest` object (`queue_depth`,
 `dropped_batches`, `accepted_rows_10s`, `rejected_rows_10s`,
