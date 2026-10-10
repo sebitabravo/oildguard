@@ -238,6 +238,116 @@ and the stream continues. Ticks are never buffered: at most one is in flight,
 so a slow client misses samples instead of the server accumulating memory.
 Disconnect is handled cleanly and cancels the reader task.
 
+## UI data endpoints (additive, F2 / D8)
+
+Everything below is **additive**: no existing field, route or status code
+changed shape. CORS is untouched.
+
+### GET /fleet/devices
+
+Adds two fields per device on top of the existing ones:
+
+| Field | Meaning |
+|---|---|
+| `latest` | `{temperature_c, vib_rms_g, pressure_kpa, fsm_state, moving, link_down, t_iso}` from the last retained row, or `null` when the device has no rows |
+| `alert_level` | `"N1"`..`"N4"` (highest level the T10 ladder raised) or `null` |
+| `alert_level_reason` | stable token when `alert_level` is `null`: `analyzer_unavailable`, `no_rows`, `evaluation_failed`, `no_alert`, `ladder_budget_exceeded`, `disabled_by_query` |
+
+A top-level `alert_level` object says what happened and why:
+
+```json
+"alert_level": {"evaluated": true, "mode": "auto", "rows_scanned": 3120,
+                "row_budget": 8000, "reason": null}
+```
+
+**The ladder is bounded by default.** `ladder.evaluate` is linear in rows
+(~18 ms per 3600-row device, measured), so a 10-device fleet at 3600 rows each
+is ~180 ms — 4x the route budget. The default `alert_level=auto` therefore runs
+the ladder only when the store fits in `OILGUARD_ALERT_LEVEL_ROW_BUDGET`
+(8000 rows); above that it is omitted with `ladder_budget_exceeded` and the
+response says so. `?alert_level=on` forces it (and pays for it);
+`?alert_level=off` skips it. An unknown mode returns `422`.
+
+### GET /level/series
+
+`signals=pressure_kpa,temperature_c,vib_rms_g` adds those columns per point;
+without it the point shape is unchanged. An unknown signal returns `422`.
+
+`truth_liters` is added per point **only when the rows carry the generator
+ground truth** (`level_liters`). When they do not, it is omitted: inventing a
+truth that was never measured is exactly the kind of number this product must
+not show.
+
+### GET /fleet/outages
+
+`GET /fleet/outages?device_id=&limit=` groups consecutive `link_down` rows per
+device:
+
+```json
+{"status": "ok", "kind": "fleet-outages", "count": 1, "outages_total": 1,
+ "outages": [{"device_id": "wheel-A", "start_t_iso": "...", "end_t_iso": "...",
+              "start_t_s": 0.0, "end_t_s": 3.0, "duration_s": 3.0,
+              "rows_buffered": 4, "forwarded": null}],
+ "reason": null, "code": null}
+```
+
+`forwarded` is always `null`: there is no delivery during an outage (no MQTT),
+so a `0` would assert a measurement that does not exist. Treat it as unknown.
+With no outages the response is HTTP 200 with `outages: []` and
+`reason`/`code` `no_outages`, distinguishable from a real zero. `limit` caps
+the list; `outages_total` keeps the true count.
+
+### GET /config/thresholds
+
+A read-only mirror of the thresholds the analysis **actually uses**. The values
+are imported from `ai/ladder.py`, `ai/level.py` and `ai/rul.py` — never copied.
+A copy ages silently and the UI ends up showing thresholds the backend no
+longer enforces.
+
+```json
+{"status": "ok", "kind": "config-thresholds",
+ "model": "synthetic-proxy", "capacity_l": 95.0,
+ "warn_pct": 50.0, "crit_pct": 30.0, "warn_l": 47.5, "crit_l": 28.5,
+ "min_scored_n": 10, "min_baseline_n": 10, "min_r2": 0.3, "max_sigma_l": 2.0,
+ "z_thr": 3.0, "z_extreme": 10.0, "kurt_spike": 5.0,
+ "rms_high_g": 0.6, "temp_drift_c": 1.5, "abrupt_step_l": 5.0,
+ "shift_h": 8.0, "cycle_s": 29.0,
+ "min_channels": 2, "n2_votes_of": 3,
+ "channels": ["pressure_drop", "level_trend", "vib_impact"], "temp_veto": true,
+ "ladder": ["N1", "N2", "N3", "N4"],
+ "severity": {"N1": "watch", "N2": "warning", "N3": "warning", "N4": "critical"},
+ "sources": {"ladder": "ai/ladder.py", "level": "ai/level.py", "rul": "ai/rul.py"}}
+```
+
+`min_channels` is the 2-of-3 confirmation rule of N2; `temp_veto` marks that
+temperature is an exclusion channel rather than evidence. POST returns `405`.
+
+### Response time
+
+Measured in-process on a 36,000-row store (10 devices x 3600 rows), median of
+15 calls, Python 3.12. Documented rather than asserted: a wall-clock budget in
+the suite was flaky on this machine during R2b, and a test that fails when the
+box is busy trains people to re-run it.
+
+| Endpoint | Median |
+|---|---|
+| `/config/thresholds` | 1.7 ms |
+| `/level` | 2.7 ms |
+| `/metrics/ingest` | 3.7 ms |
+| `/health` | 3.9 ms |
+| `/fleet/aggregates?window_s=10` | 3.8 ms |
+| `/fleet/devices` | 5.7 ms |
+| `/fleet/outages` | 25.0 ms |
+| `/level/series?signals=...` | 25.4 ms |
+| `/fleet/devices?alert_level=on` | 210.9 ms (explicit opt-in) |
+
+Every default route is under the 50 ms budget; the only exception is the
+opt-in ladder, which is documented above.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `OILGUARD_ALERT_LEVEL_ROW_BUDGET` | `8000` | rows above which `/fleet/devices` omits `alert_level` |
+
 ## Ingest performance
 
 Measured in-process by `backend/bench_ingest.py`, which drives the same path

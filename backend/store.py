@@ -54,6 +54,27 @@ def device_of(row: dict[str, Any]) -> str:
     return device_id if isinstance(device_id, str) else str(device_id or "")
 
 
+# Bloque "latest" que consumen las tarjetas de la UI de flota.
+LATEST_SIGNAL_FIELDS = (
+    "temperature_c",
+    "vib_rms_g",
+    "pressure_kpa",
+    "fsm_state",
+    "moving",
+    "link_down",
+    "t_iso",
+)
+
+
+def latest_signals(row: dict[str, Any]) -> dict[str, Any]:
+    """Ultima lectura de un dispositivo, con los numeros ya tipados."""
+    block: dict[str, Any] = {}
+    for name in LATEST_SIGNAL_FIELDS:
+        value = row.get(name)
+        block[name] = as_float(value) if name in NUMERIC_COLUMNS or name == "moving" or name == "link_down" else value
+    return block
+
+
 def row_ts(row: dict[str, Any]) -> float:
     """``t_s`` del simulador; si falta o no es numérico, la hora de llegada.
 
@@ -316,8 +337,10 @@ class TelemetryStore:
                     "rejected_reasons": dict(rejected),
                     "latest_level_liters": as_float(latest_row.get("level_liters")) if latest_row else None,
                     "latest_level_pct": as_float(latest_row.get("level_pct")) if latest_row else None,
+                    "latest": latest_signals(latest_row) if latest_row else None,
                 }
             return stats
+
 
     def reverse(self, device_id: str) -> None:
         """Invierte el orden de un dispositivo (superficie de compatibilidad)."""
@@ -333,6 +356,41 @@ class TelemetryStore:
         with self.lock:
             for device in list(self._rows):
                 self.reverse(device)
+
+
+def outage_runs(rows: Iterable[dict[str, Any]], device_id: str) -> list[dict[str, Any]]:
+    """Rachas de filas con ``link_down`` dentro de las filas ya ordenadas.
+
+    ``forwarded`` se deja en None a proposito: el backend no entrega nada
+    durante un corte (no hay MQTT), asi que afirmar un numero de filas
+    entregadas seria inventar una medida. La UI lo trata como desconocido.
+    """
+    runs: list[dict[str, Any]] = []
+    current: list[dict[str, Any]] = []
+
+    def close(group: list[dict[str, Any]]) -> None:
+        if not group:
+            return
+        start, end = group[0], group[-1]
+        runs.append({
+            "device_id": device_id,
+            "start_t_iso": start.get("t_iso"),
+            "end_t_iso": end.get("t_iso"),
+            "start_t_s": row_ts(start),
+            "end_t_s": row_ts(end),
+            "duration_s": round(row_ts(end) - row_ts(start), 3),
+            "rows_buffered": len(group),
+            "forwarded": None,
+        })
+
+    for row in rows:
+        if int(as_float(row.get("link_down")) or 0) == 1:
+            current.append(row)
+        else:
+            close(current)
+            current = []
+    close(current)
+    return runs
 
 
 class StoreView:

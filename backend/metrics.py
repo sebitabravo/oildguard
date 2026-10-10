@@ -236,6 +236,10 @@ class RollingLatency:
         return result
 
 
+def _run_in_background_thread(work: Callable[[], None]) -> None:
+    threading.Thread(target=work, daemon=True).start()
+
+
 class CachedProbe:
     """Cache con TTL para una sonda cara que no puede bloquear el camino de la request.
 
@@ -243,6 +247,12 @@ class CachedProbe:
     ``timeout``; si no llega a tiempo, sigue en vuelo y su resultado rellena el
     cache para la llamada siguiente. Asi /health responde siempre en milisegundos
     aunque la sonda tarde segundos, y ningun trabajo se tira a la basura.
+
+    Cada sonda lleva la generacion con la que se lanzo y solo escribe si esa
+    generacion sigue vigente. Sin esa guarda, una sonda lenta que sobrevive a un
+    ``reset()`` o a un cambio de configuracion escribe su resultado viejo sobre
+    el cache nuevo: el numero de la instalacion anterior se sirria como si
+    fuera de la actual.
     """
 
     def __init__(
@@ -252,6 +262,7 @@ class CachedProbe:
         ttl_s: float = 30.0,
         wait_s: float = 0.1,
         now_fn: Callable[[], float] = time.time,
+        executor: Callable[[Callable[[], None]], None] | None = None,
     ) -> None:
         self._fetch = fetch
         self._key_fn = key_fn
@@ -259,12 +270,20 @@ class CachedProbe:
         self.wait_s = float(wait_s)
         self._now_fn = now_fn
         self._default_now_fn = now_fn
+        self._executor = executor or _run_in_background_thread
+        self._default_executor = self._executor
         self._lock = threading.Lock()
         self._value: Any = None
         self._reason = "not_probed"
         self._as_of: float | None = None
         self._key: Any = None
         self._done: threading.Event | None = None
+        self._generation = 0
+
+    def set_executor(self, executor: Callable[[Callable[[], None]], None] | None) -> None:
+        """Sustituye el lanzador de sondas (los tests inyectan uno manual)."""
+        with self._lock:
+            self._executor = executor or self._default_executor
 
     def peek(self) -> tuple[Any, str | None, float | None]:
         with self._lock:
@@ -272,9 +291,11 @@ class CachedProbe:
 
     def reset(self) -> None:
         with self._lock:
+            self._generation += 1
             self._value, self._reason, self._as_of, self._key = None, "not_probed", None, None
             self._done = None
             self._now_fn = self._default_now_fn
+            self._executor = self._default_executor
 
     def _fresh(self) -> bool:
         return self._as_of is not None and (self._now_fn() - self._as_of) < self.ttl_s
@@ -285,15 +306,19 @@ class CachedProbe:
         launched = False
         with self._lock:
             # Una entrada cacheada pertenece a la configuracion que la produjo:
-            # si esa cambio, el numero es de otra instalacion y no vale.
+            # si esa cambio, el numero es de otra instalacion y no vale. La
+            # generacion se incrementa para que la sonda en vuelo se descarte.
             if key != self._key:
+                self._generation += 1
                 self._value, self._reason, self._as_of = None, "not_probed", None
                 self._key = key
+                self._done = None
             if self._fresh():
                 return self._value
             if self._done is None:
                 self._done = threading.Event()
-                threading.Thread(target=self._run, daemon=True).start()
+                generation = self._generation
+                self._executor(lambda: self._run(generation))
                 launched = True
             done = self._done
         # Solo espera quien lanza la sonda. Si ya hay una en vuelo, el llamador
@@ -304,13 +329,15 @@ class CachedProbe:
         with self._lock:
             return self._value
 
-    def _run(self) -> None:
+    def _run(self, generation: int) -> None:
         try:
             value = self._fetch()
             reason = None if value is not None else "count_unavailable"
         except Exception:  # noqa: BLE001 - una sonda rota no puede tumbar /health
             value, reason = None, "probe_failed"
         with self._lock:
+            if generation != self._generation:
+                return  # la sonda pertenece a una configuracion que ya no es la vigente
             self._value, self._reason, self._as_of = value, reason, self._now_fn()
             self._done = None
         # El valor se publica bajo el lock; el evento solo evita que un waiter
