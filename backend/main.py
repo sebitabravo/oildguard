@@ -37,8 +37,10 @@ from shared.messages import message
 from shared.signing import derive_device_key, parse_device_keys, verify_row
 
 try:  # paquete (pytest / uvicorn backend.main:app)
+    from .pipeline import IngestPipeline
     from .store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore
 except ImportError:  # módulo suelto (Docker copia backend/ a /app)
+    from pipeline import IngestPipeline  # type: ignore
     from store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore  # type: ignore
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -55,6 +57,12 @@ INFLUXDB_TOKEN = os.getenv("INFLUXDB_TOKEN", "oilguard-local-admin-token")
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "oilguard/signals")
+# Influx se puede apagar para pruebas de carga: el almacén en memoria basta y
+# las escrituras síncronas son el cuello de botella que hay que medir sin él.
+_INFLUX_WRITE = os.getenv("OILGUARD_INFLUX_WRITE", "1") == "1"
+INGEST_QUEUE_BATCHES = int(os.getenv("OILGUARD_INGEST_QUEUE", "1000"))
+INGEST_FLUSH_ROWS = int(os.getenv("OILGUARD_INFLUX_FLUSH_ROWS", "5000"))
+INGEST_FLUSH_SECONDS = float(os.getenv("OILGUARD_INFLUX_FLUSH_SECONDS", "1"))
 _DEVICE_KEYS = parse_device_keys(os.getenv("OILGUARD_DEVICE_KEYS", ""))
 
 
@@ -193,6 +201,12 @@ def _write_to_influx(rows: list[dict[str, Any]]) -> tuple[str, dict[str, Any]]:
     Never raises: every failure degrades to the memory store and is
     logged clearly so a missing/unreachable InfluxDB is visible, not silent.
     """
+    if not _INFLUX_WRITE:
+        # Comparte codigo con "cliente ausente": para el cliente el contrato
+        # es identico (no se escribio nada, las filas quedan en memoria).
+        msg = "disabled (OILGUARD_INFLUX_WRITE=0); rows kept in memory"
+        log.info("InfluxDB %s", msg)
+        return msg, message("influx_client_missing")
     try:
         from influxdb_client import InfluxDBClient, Point  # type: ignore
         from influxdb_client.client.write_api import SYNCHRONOUS  # type: ignore
@@ -312,9 +326,14 @@ def verify_rows(
     return prepared, rejections
 
 
-def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Core ingestion used by POST /ingest and the MQTT bridge thread."""
-    global _influx_status, _influx_message, _verified_total, _rejected_total
+def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Núcleo de ingesta: verifica firmas y escribe en el almacén. Sin Influx.
+
+    Lo comparten ``POST /ingest`` y el worker de la cola; el vaciado a Influx
+    vive aparte para que la vía HTTP conserve su contrato síncrono mientras el
+    camino MQTT agrupa puntos en lugar de pagar una escritura por lote.
+    """
+    global _verified_total, _rejected_total
     prepared, rejections = verify_rows(rows)
 
     with _store_lock:
@@ -327,31 +346,59 @@ def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         _rejected_reasons.update(rejected_reasons)
         _verified_total += sum(1 for row in accepted if row.get("sig_verified"))
 
-    if accepted:
-        influx, influx_message = _write_to_influx(accepted)
-    else:
-        influx, influx_message = _influx_status, _influx_message
-    _influx_status = influx
-    _influx_message = influx_message
     latest_seq = max((int(r.get("seq", 0)) for r in accepted), default=0)
     log.info(
-        "ingest accepted=%d rejected=%d reasons=%s latest_seq=%d store_rows=%d influx=%s",
+        "ingest accepted=%d rejected=%d reasons=%s latest_seq=%d store_rows=%d",
         len(accepted),
         sum(rejected_reasons.values()),
         dict(rejected_reasons),
         latest_seq,
         total,
-        influx,
     )
     return {
+        "accepted": accepted,
         "ingested": len(accepted),
         "latest_seq": latest_seq,
         "store_rows": total,
-        "influx": influx,
-        "influx_message": influx_message,
         "rejected": sum(rejected_reasons.values()),
         "rejected_reasons": dict(rejected_reasons),
     }
+
+
+def flush_influx(rows: list[dict[str, Any]]) -> None:
+    """Vuelca puntos a Influx y publica el estado para /health."""
+    global _influx_status, _influx_message
+    _influx_status, _influx_message = _write_to_influx(rows)
+
+
+def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Contrato síncrono de POST /ingest: verifica, almacena y reporta Influx."""
+    result = verify_and_store(rows)
+    accepted = result.pop("accepted")
+    if accepted:
+        flush_influx(accepted)
+        log.info("ingest influx=%s", _influx_status)
+    return {
+        "ingested": result["ingested"],
+        "latest_seq": result["latest_seq"],
+        "store_rows": result["store_rows"],
+        "influx": _influx_status,
+        "influx_message": _influx_message,
+        "rejected": result["rejected"],
+        "rejected_reasons": result["rejected_reasons"],
+    }
+
+
+# La cola y el worker viven a nivel de modulo para que POST /ingest, el puente
+# MQTT y las pruebas compartan exactamente el mismo camino de verificacion.
+_PIPELINE = IngestPipeline(
+    process=verify_and_store,
+    flush=flush_influx,
+    max_batches=INGEST_QUEUE_BATCHES,
+    flush_rows=INGEST_FLUSH_ROWS,
+    flush_seconds=INGEST_FLUSH_SECONDS,
+    influx_enabled=_INFLUX_WRITE,
+)
 
 
 def select_device(device_id: str | None) -> str | None:
@@ -830,6 +877,23 @@ def _probe_influx() -> None:
         )
 
 
+def enqueue_batch(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Punto de entrada del puente MQTT: encola y reporta el resultado del turno.
+
+    Un lote que no entra se descarta y se cuenta; devolver el drop en el ack
+    hace visible la contrapresion en el log del broker en vez de perderla.
+    """
+    if _PIPELINE.submit(rows):
+        return {"status": "queued", "kind": "ingest-queued", "rows": len(rows)}
+    return {
+        "status": "dropped",
+        "kind": "ingest-dropped",
+        "rows": len(rows),
+        "reason": "queue_full",
+        "queue_capacity": _PIPELINE.capacity(),
+    }
+
+
 def _start_mqtt_bridge() -> None:
     """Launch the MQTT -> ingest bridge in a daemon thread (best-effort).
 
@@ -847,7 +911,7 @@ def _start_mqtt_bridge() -> None:
 
     def _loop() -> None:
         try:
-            run_forever(forward_fn=lambda rows: ingest_rows(rows))
+            run_forever(forward_fn=enqueue_batch)
         except Exception as exc:  # noqa: BLE001 - background thread boundary
             log.warning(
                 "MQTT bridge stopped (broker %s:%s topic %s: %s); "
@@ -866,6 +930,7 @@ def _start_mqtt_bridge() -> None:
 @app.on_event("startup")
 def on_startup() -> None:
     _probe_influx()
+    _PIPELINE.start()
     _start_mqtt_bridge()
 
 
