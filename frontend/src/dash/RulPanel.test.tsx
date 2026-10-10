@@ -138,6 +138,42 @@ describe("RUL suppression explanation", () => {
     }
   });
 
+  test("prioritizes analyzer-unavailable copy over structured notes in both languages", () => {
+    const defaultStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+    const rul: RulDataSuppressed = {
+      hours: null,
+      haul_cycles: null,
+      shifts: null,
+      confidence: 0,
+      status: "suppressed",
+      anomaly_only: true,
+      model: "synthetic-proxy",
+      note: "Structured note that must not replace analyzer status.",
+      note_message: { code: "rul_suppressed_summary", params: {} },
+      fallback: "",
+    };
+
+    try {
+      for (const lang of ["en", "es"] as const) {
+        Object.defineProperty(globalThis, "localStorage", {
+          configurable: true,
+          value: { getItem: () => lang },
+        });
+        const html = renderToString(h(RulPanel, {
+          rul,
+          analyzerUnavailable: true,
+          evaluationReason: "analysis_unavailable",
+        }));
+
+        expect(html).toContain(t("dash.analyzer.unavailable", lang));
+        expect(html).not.toContain(lang === "en" ? "RUL is suppressed" : "El RUL está suprimido");
+      }
+    } finally {
+      if (defaultStorage) Object.defineProperty(globalThis, "localStorage", defaultStorage);
+      else Reflect.deleteProperty(globalThis, "localStorage");
+    }
+  });
+
   test("renders structured RUL note and reason messages in both languages", () => {
     const defaultStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
     const rul: RulDataSuppressed = {

@@ -40,9 +40,11 @@ export default function RulPanel({
       <div style={{ ...panel, borderColor: "var(--og-red)" }}>
         <strong>{t("rul.title", lang)}</strong>
         <p style={{ margin: "6px 0 0", color: "var(--og-body)", fontSize: 13 }}>
-          {rul?.note_message
-            ? noteCopy
-            : reasonCopy ?? t("dash.analyzer.unavailable", lang)}
+          {analyzerUnavailable
+            ? reasonCopy ?? t("dash.analyzer.unavailable", lang)
+            : rul?.note_message
+              ? noteCopy
+              : reasonCopy ?? t("dash.analyzer.unavailable", lang)}
         </p>
       </div>
     );

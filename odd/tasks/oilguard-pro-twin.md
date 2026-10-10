@@ -316,8 +316,8 @@ The wheel checkbox input hitbox is 44×44 in EN and ES; its separately measured 
 #### QA-FIX4 tasks
 
 - [x] **Q18 — live `/level/series` chart:** add a sorted, evenly downsampled fused-level endpoint (`limit` default 300, max 2000; empty response includes `reason: no_rows`), contract tests and API docs; then load it for LIVE Dashboard initialization/refresh and merge later polled points by `t_s` without changing DEMO mode. Commits: `feat(backend): serve fused level series`; `fix(frontend): plot live level history`.
-- [x] **Q19 — locale-consistent displayed numbers:** add/test shared `formatNumber(value, lang, digits)`, use decimal commas in ES and points in EN across user-visible dashboard, RUL, alerts, wheel, HUD and chart axes, and add the direct-`toFixed()` display guard. Commit: `fix(frontend): format numbers per language`.
-- [ ] **Q20 — acknowledged R3-001 advisory:** ensure `analyzerUnavailable=true` takes precedence over a structured RUL note, with a regression test in EN/ES; record the finding text and fix commit. The committed task record describes the finding as a structured note potentially overriding the analyzer-unavailable explanation; verify behavior against source and test.
+- [x] **Q19 — locale-consistent displayed numbers:** add/test shared `formatNumber(value, lang, digits)`, use decimal commas in ES and points in EN across user-visible dashboard, RUL, alerts, wheel, HUD and chart axes, and add the direct-`toFixed()` display guard. Commit: `fix(frontend): format numbers per language` (`798b15d`).
+- [x] **Q20 — acknowledged R3-001 advisory:** ensure `analyzerUnavailable=true` takes precedence over a structured RUL note, with a regression test in EN/ES; record the finding text and fix commit. Commit: `fix(frontend): prioritize analyzer-unavailable message` (hash in completion handoff).
 
 #### Q18 backend series endpoint work unit
 
@@ -344,6 +344,16 @@ The wheel checkbox input hitbox is 44×44 in EN and ES; its separately measured 
 - **GREEN, full:** `cd frontend && bun test src` → 216 pass, 0 fail, 114,485 expectations across 45 files. `cd frontend && bun run build` → pass; Astro check 0 errors, 0 warnings, 4 hints; 4 static routes built; existing large-chunk warning.
 - **Implementation:** Added one shared fixed-precision `formatNumber(value, lang, digits)` formatter with decimal point in EN, comma in ES, and no grouping. Dashboard metrics, summaries and alert times, chart axis labels, RUL values, backend-message parameters, gear ratios, wheel oil/viscosity readouts, mine/wheel HUDs, and scene accessibility copy now use it. The TSX guard allows only the six explicit LevelChart SVG-geometry coordinate serializations to retain `toFixed()`.
 - **Commit:** `fix(frontend): format numbers per language` (exact hash in the completion handoff).
+
+#### Q19 review outcome and Q20 advisory fix
+
+- **Q19 RDD range:** `c938f98..798b15d` was assessed medium, 24 paths / 604 changed lines, `slice_budget_reached`.
+- **Review attempt:** the exact bound STATUS returned START for lineage `review-aed428391e38f0bb`. The parent START attempt returned `invalid_request` / `mutation_outcome=not_started` because the supplied `--target-evidence` value did not match the returned tokens. No review authority started; the same candidate will not be retried. Record this outcome as review unavailable/refused, not approved.
+- **Off-path spot check:** parent ran `bun test src` → 216 pass, 114,485 expectations.
+- **R3-001 wording and provenance:** the acknowledged receipt payload for `review-873d288983df0648` was unavailable in the workspace, so this is not verbatim receipt text. The surviving task record describes the finding as: “a structured note may override the analyzer-unavailable explanation when `analyzerUnavailable=true`.” Source verification in `frontend/src/dash/RulPanel.tsx` confirmed the unavailable branch selected `note_message` ahead of the localized analyzer explanation.
+- **Q20 RED:** `cd frontend && bun test src/dash/RulPanel.test.tsx` → 7 pass, 1 fail, 29 expectations; the new EN/ES regression expected localized analyzer-unavailable copy but received the structured “RUL is suppressed” note.
+- **Q20 GREEN:** `cd frontend && bun test src/dash/RulPanel.test.tsx` → 8 pass, 0 fail, 32 expectations. When `analyzerUnavailable=true`, the panel now prioritizes the localized evaluation reason or analyzer-unavailable fallback over structured notes; structured-note behavior remains unchanged otherwise.
+- **Q20 commit:** `fix(frontend): prioritize analyzer-unavailable message` (hash in completion handoff).
 
 ### Q2 interim evidence — first copy migration work unit
 
