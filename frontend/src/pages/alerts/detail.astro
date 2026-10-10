@@ -1,0 +1,11 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { t } from "../../i18n";
+import AlertDetailPage from "../../ops/alerts/AlertDetailPage";
+---
+<BaseLayout breadcrumb={["nav.group.alerts", "nav.alerts", "alerts.detail.title"]}>
+  <h1 class="og-visually-hidden" data-i18n-en={t("alerts.detail.title", "en")} data-i18n-es={t("alerts.detail.title", "es")}>
+    {t("alerts.detail.title", "en")}
+  </h1>
+  <AlertDetailPage client:only="preact" />
+</BaseLayout>
