@@ -36,6 +36,11 @@ from pydantic import BaseModel, Field
 from shared.messages import message
 from shared.signing import parse_device_keys, verify_row
 
+try:  # paquete (pytest / uvicorn backend.main:app)
+    from .store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore
+except ImportError:  # módulo suelto (Docker copia backend/ a /app)
+    from store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore  # type: ignore
+
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("oilguard-backend")
 
@@ -115,12 +120,30 @@ class IngestBatch(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# In-memory store (thread-safe; primary read path, Influx fallback target)
+# Per-device telemetry store (R2): thread-safe, primary read path,
+# Influx fallback target
 # ---------------------------------------------------------------------------
 
-_store_lock = threading.Lock()
-_store_rows: list[dict[str, Any]] = []
-_seen_signed_rows: set[tuple[str, int, str]] = set()
+
+class _SeenView:
+    """``.clear()`` sobre los sets antireplay de todos los dispositivos."""
+
+    __slots__ = ("_store",)
+
+    def __init__(self, store: TelemetryStore) -> None:
+        self._store = store
+
+    def clear(self) -> None:
+        self._store.clear_seen()
+
+    def __len__(self) -> int:
+        return self._store.tracked_identities()
+
+
+_STORE = TelemetryStore(retention_rows=RETENTION_ROWS, default_device=DEFAULT_DEVICE)
+_store_lock = _STORE.lock  # el lock histórico; ahora es el del almacén
+_store_rows = StoreView(_STORE)  # lista global histórica, resuelta por dispositivo
+_seen_signed_rows = _SeenView(_STORE)
 _verified_total = 0
 _rejected_total = 0
 _rejected_reasons: Counter[str] = Counter()
@@ -216,47 +239,61 @@ def _count_influx_points() -> int | None:
                 log.debug("InfluxDB count client close failed: %s", exc)
 
 
+def verify_rows(
+    rows: list[dict[str, Any]],
+) -> tuple[list[tuple[dict[str, Any], tuple | None]], list[tuple[str, str]]]:
+    """Verifica firmas FUERA del lock y devuelve filas preparadas + rechazos.
+
+    El HMAC es la parte cara del ingest y no toca estado compartido, así que
+    hacerlo fuera del lock reduce la sección crítica a la inserción en el
+    deque: sin eso, miles de dispositivos serializan el HMAC de todos en un
+    solo mutex y la latencia crece con el tamaño del lote, no con el del store.
+    """
+    prepared: list[tuple[dict[str, Any], tuple | None]] = []
+    rejections: list[tuple[str, str]] = []
+    for original in rows:
+        row = dict(original)
+        device_id = str(row.get("device_id", "") or "")
+        has_signature = row.get("sig") is not None or row.get("sig_v") is not None
+        reason: str | None = None
+        identity: tuple | None = None
+        if has_signature:
+            key = _DEVICE_KEYS.get(device_id)
+            if key is None:
+                reason = "unknown_device"
+            else:
+                try:
+                    valid = verify_row(row, key)
+                except (KeyError, TypeError, ValueError, OverflowError):
+                    valid = False
+                if not valid:
+                    reason = "bad_signature"
+                else:
+                    identity = (device_id, int(row["seq"]), str(row["t_iso"]))
+        elif _REQUIRE_SIGNATURE:
+            reason = "unsigned"
+        if reason is not None:
+            rejections.append((device_id, reason))
+            continue
+        row["sig_verified"] = has_signature
+        prepared.append((row, identity))
+    return prepared, rejections
+
+
 def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Core ingestion used by POST /ingest and the MQTT bridge thread."""
     global _influx_status, _influx_message, _verified_total, _rejected_total
-    accepted: list[dict[str, Any]] = []
-    rejected_reasons: Counter[str] = Counter()
-    with _store_lock:
-        for original in rows:
-            row = dict(original)
-            has_signature = row.get("sig") is not None or row.get("sig_v") is not None
-            reason: str | None = None
-            if has_signature:
-                device_id = str(row.get("device_id", ""))
-                key = _DEVICE_KEYS.get(device_id)
-                if key is None:
-                    reason = "unknown_device"
-                else:
-                    try:
-                        valid = verify_row(row, key)
-                    except (KeyError, TypeError, ValueError, OverflowError):
-                        valid = False
-                    if not valid:
-                        reason = "bad_signature"
-                    else:
-                        identity = (device_id, int(row["seq"]), str(row["t_iso"]))
-                        if identity in _seen_signed_rows:
-                            reason = "replay"
-                        else:
-                            _seen_signed_rows.add(identity)
-                            row["sig_verified"] = True
-                            accepted.append(row)
-                            _verified_total += 1
-            elif _REQUIRE_SIGNATURE:
-                reason = "unsigned"
-            else:
-                row["sig_verified"] = False
-                accepted.append(row)
+    prepared, rejections = verify_rows(rows)
 
-            if reason is not None:
-                rejected_reasons[reason] += 1
+    with _store_lock:
+        accepted, replays = _STORE.commit(prepared, rejections)
+        rejected_reasons: Counter[str] = Counter(reason for _, reason in rejections)
+        if replays:
+            rejected_reasons["replay"] += replays
+        total = _STORE.total_rows()
         _rejected_total += sum(rejected_reasons.values())
         _rejected_reasons.update(rejected_reasons)
+        _verified_total += sum(1 for row in accepted if row.get("sig_verified"))
 
     if accepted:
         influx, influx_message = _write_to_influx(accepted)
@@ -264,9 +301,6 @@ def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         influx, influx_message = _influx_status, _influx_message
     _influx_status = influx
     _influx_message = influx_message
-    with _store_lock:
-        _store_rows.extend(accepted)
-        total = len(_store_rows)
     latest_seq = max((int(r.get("seq", 0)) for r in accepted), default=0)
     log.info(
         "ingest accepted=%d rejected=%d reasons=%s latest_seq=%d store_rows=%d influx=%s",
@@ -288,11 +322,28 @@ def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _latest_row() -> dict[str, Any] | None:
+def select_device(device_id: str | None) -> str | None:
+    """Device explícito; si no, ``OILGUARD_DEFAULT_DEVICE`` si existe, si no el más reciente.
+
+    Un ``device_id`` explícito siempre gana aunque no tenga filas: así una
+    consulta sobre un equipo callado devuelve su vacío honesto en vez del
+    dato de otro equipo.
+    """
+    if device_id:
+        return device_id
+    return _STORE.default_device_id()
+
+
+def _sorted_device_rows(device_id: str | None) -> list[dict[str, Any]]:
+    if not device_id:
+        return []
     with _store_lock:
-        if not _store_rows:
-            return None
-        return max(_store_rows, key=lambda r: int(r.get("seq", 0)))
+        return sorted(_STORE.rows(device_id), key=lambda r: int(r.get("seq", 0)))
+
+
+def _latest_row(device_id: str | None = None) -> dict[str, Any] | None:
+    with _store_lock:
+        return _STORE.latest(select_device(device_id))
 
 
 def _load_t10_evaluator() -> tuple[Any | None, str | None]:
@@ -330,7 +381,9 @@ def _downsample_evenly(points: list[dict[str, Any]], limit: int) -> list[dict[st
     return [points[(index * last_index) // (limit - 1)] for index in range(limit)]
 
 
-def _t10_bundle() -> tuple[dict[str, Any] | None, str, dict[str, Any], bool, bool]:
+def _t10_bundle(
+    device_id: str | None = None,
+) -> tuple[dict[str, Any] | None, str, dict[str, Any], bool, bool]:
     """Evaluate the T10 ladder/RUL over the in-memory store.
 
     Returns (bundle, fallback_note, available, evaluated). Empty stores
@@ -346,8 +399,7 @@ def _t10_bundle() -> tuple[dict[str, Any] | None, str, dict[str, Any], bool, boo
             "with its runtime packages included."
         ), message("alerts_analyzer_unavailable_fallback"), False, False
 
-    with _store_lock:
-        rows = sorted(_store_rows, key=lambda r: int(r.get("seq", 0)))
+    rows = _sorted_device_rows(select_device(device_id))
     if not rows:
         return None, (
             "no rows ingested yet; POST SignalRow batches to /ingest, "
@@ -410,7 +462,8 @@ def _compose_rul_suppression_note(reason: str) -> str:
 def health() -> dict:
     analysis = _analysis_status()
     with _store_lock:
-        n = len(_store_rows)
+        n = _STORE.total_rows()
+        device_count = len(_STORE.devices())
         signing = {
             "enforced": _REQUIRE_SIGNATURE,
             "devices": len(_DEVICE_KEYS),
@@ -425,6 +478,8 @@ def health() -> dict:
         "stage": "S4-t8",
         "analysis": analysis,
         "store_rows": n,
+        "devices": device_count,
+        "retention_rows": RETENTION_ROWS,
         "influx_points": influx_points,
         "influx": _influx_status,
         "influx_message": _influx_message,
@@ -456,9 +511,10 @@ def ingest(batch: IngestBatch) -> dict:
 
 
 @app.get("/level")
-def level() -> dict:
+def level(device_id: str | None = Query(default=None)) -> dict:
     """Latest fused-level reading. Confidence is a stub until S5 (T10)."""
-    latest = _latest_row()
+    device = select_device(device_id)
+    latest = _latest_row(device)
     if latest is None:
         data: dict[str, Any] = {
             "level_liters": CAPACITY_L,
@@ -466,6 +522,7 @@ def level() -> dict:
             "capacity_liters": CAPACITY_L,
             "confidence": 0.0,
             "unit": "L",
+            "device_id": device,
             "source": "default (no rows ingested yet)",
             "source_message": message("source_no_rows"),
             "reference": "GDY106 nominal 95 L SAE 85W-140",
@@ -490,17 +547,22 @@ def level() -> dict:
             "note": "Level echoes ingested ground truth; fused estimate + confidence land in S5 (T10).",
             "note_message": message("level_memory_store_note"),
         }
-    return {"status": "ok", "kind": "oil-level", "as_of": _now_iso(), "data": data}
+    return {
+        "status": "ok",
+        "kind": "oil-level",
+        "as_of": _now_iso(),
+        "device_id": device,
+        "data": data,
+    }
 
 
 @app.get("/level/series")
-def level_series(limit: int = Query(default=300, ge=1, le=2000)) -> dict:
+def level_series(
+    limit: int = Query(default=300, ge=1, le=2000),
+    device_id: str | None = Query(default=None),
+) -> dict:
     """Sirve la serie fusionada y limitada de nivel del almacenamiento de sesión."""
-    with _store_lock:
-        rows = sorted(
-            (dict(row) for row in _store_rows),
-            key=lambda row: int(row.get("seq", 0)),
-        )
+    rows = _sorted_device_rows(select_device(device_id))
     if not rows:
         return {
             "status": "ok",
@@ -536,15 +598,14 @@ def level_series(limit: int = Query(default=300, ge=1, le=2000)) -> dict:
 
 
 @app.get("/windows")
-def windows(limit: int = 50) -> dict:
+def windows(limit: int = 50, device_id: str | None = Query(default=None)) -> dict:
     """Rest windows grouped from in-memory ``recal_window`` flags.
 
     Consecutive rows with recal_window == 1 form one window (zone by
     majority vote, audit only). The full stillness-rules detector is
     ``sim/detect.py`` — see docs/t7-windows.md.
     """
-    with _store_lock:
-        rows = sorted(_store_rows, key=lambda r: int(r.get("seq", 0)))
+    rows = _sorted_device_rows(select_device(device_id))
     out: list[dict[str, Any]] = []
     cur: list[dict[str, Any]] = []
 
@@ -585,8 +646,8 @@ def windows(limit: int = 50) -> dict:
 
 
 @app.get("/alerts")
-def alerts() -> dict:
-    bundle, fallback, fallback_message, analysis_available, evaluated = _t10_bundle()
+def alerts(device_id: str | None = Query(default=None)) -> dict:
+    bundle, fallback, fallback_message, analysis_available, evaluated = _t10_bundle(device_id)
     reason = _unevaluated_reason(bundle, analysis_available, evaluated)
     if bundle is None:
         data: dict[str, Any] = {
@@ -625,8 +686,8 @@ def alerts() -> dict:
 
 
 @app.get("/rul")
-def rul() -> dict:
-    bundle, fallback, fallback_message, analysis_available, evaluated = _t10_bundle()
+def rul(device_id: str | None = Query(default=None)) -> dict:
+    bundle, fallback, fallback_message, analysis_available, evaluated = _t10_bundle(device_id)
     response_reason = _unevaluated_reason(bundle, analysis_available, evaluated)
     if not analysis_available:
         reason = fallback
