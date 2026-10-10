@@ -59,7 +59,7 @@ body {
 
 button { font-family: inherit; }
 
-.og-num { font-variant-numeric: tabular-nums; }
+.og-num, .og-value, .og-sensor-id { font-variant-numeric: tabular-nums; }
 
 .og-analyzer-notice {
   display: flex;
@@ -279,7 +279,6 @@ input:focus-visible,
   font-size: 9px;
   font-weight: 700;
   line-height: 1;
-  font-variant-numeric: tabular-nums;
 }
 .og-card--sensor-active {
   border-color: var(--og-yellow);
@@ -289,7 +288,7 @@ input:focus-visible,
 .og-progress { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); overflow: hidden; margin-top: 8px; }
 .og-progress__bar { height: 100%; width: 0; background: var(--tone, var(--og-yellow)); }
 
-.og-value { font-variant-numeric: tabular-nums; font-weight: 700; }
+.og-value { font-weight: 700; }
 .og-value--lg { font-size: 22px; line-height: 1.1; }
 
 /* Badges / status */
