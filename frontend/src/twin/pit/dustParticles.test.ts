@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { normalizeDustParameters, stepDustParticle } from "./dustParticles";
+import { normalizeDustParameters, shouldAdvanceDust, stepDustParticle } from "./dustParticles";
 
 describe("dust particle logic", () => {
   test("clamps emitter and frame parameters to the simulation bounds", () => {
@@ -29,5 +29,23 @@ describe("dust particle logic", () => {
 
     expect(stepDustParticle(4, 4, 0.8, 0.1).alpha).toBe(0);
     expect(stepDustParticle(5, 4, 0.8, 0.1).alpha).toBe(0);
+  });
+
+  test("pause gating freezes particle age and suppresses new dust without changing active frames", () => {
+    const dt = 0.05;
+    const initialAge = 0.5;
+    const speedMps = 10;
+    const runFrame = (paused: boolean) => {
+      let age = initialAge;
+      let emissions = 0;
+      if (shouldAdvanceDust(paused)) {
+        if (speedMps > 2) emissions = Math.max(1, Math.floor(dt * 7));
+        age = stepDustParticle(age, 4, 0.8, dt).age;
+      }
+      return { age, emissions };
+    };
+
+    expect(runFrame(true)).toEqual({ age: initialAge, emissions: 0 });
+    expect(runFrame(false)).toEqual({ age: 0.55, emissions: 1 });
   });
 });

@@ -11,6 +11,10 @@ const MAX_DT = 0.1;
 
 const finiteOr = (value: number, fallback: number): number => (Number.isFinite(value) ? value : fallback);
 
+export function shouldAdvanceDust(paused: boolean): boolean {
+  return !paused;
+}
+
 export function normalizeDustParameters(
   capacity: number,
   count: number,
