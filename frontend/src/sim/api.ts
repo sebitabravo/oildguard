@@ -77,7 +77,12 @@ export interface LevelSeriesPoint {
   sigma_l: number | null;
   moving: number;
   recal_window: number;
+  pressure_kpa?: number | null;
+  temperature_c?: number | null;
+  vib_rms_g?: number | null;
 }
+
+export type LevelSeriesSignal = "pressure_kpa" | "temperature_c" | "vib_rms_g";
 
 export interface LevelSeriesResponse {
   status: "ok";
@@ -283,8 +288,16 @@ export async function postIngest(rows: SignalRow[]): Promise<IngestAck> {
 export const getHealth = (signal?: AbortSignal): Promise<HealthResponse> => getJson("/health", signal);
 const withDevice = buildDeviceQuery;
 export const getLevel = (deviceId?: string): Promise<LevelResponse> => getJson(withDevice("/level", deviceId));
-export const getLevelSeries = (limit = 300, deviceId?: string): Promise<LevelSeriesResponse> =>
-  getJson(withDevice(`/level/series?limit=${limit}`, deviceId));
+export function levelSeriesPath(limit = 300, deviceId?: string, signals?: LevelSeriesSignal[]): string {
+  const path = withDevice(`/level/series?limit=${limit}`, deviceId);
+  if (!signals?.length) return path;
+  const [pathname, query = ""] = path.split("?");
+  const params = new URLSearchParams(query);
+  params.set("signals", signals.join(","));
+  return `${pathname}?${params.toString().replace(/\+/g, "%20")}`;
+}
+export const getLevelSeries = (limit = 300, deviceId?: string, signals?: LevelSeriesSignal[]): Promise<LevelSeriesResponse> =>
+  getJson(levelSeriesPath(limit, deviceId, signals));
 export const getWindows = (limit = 50, deviceId?: string): Promise<WindowsResponse> =>
   getJson(withDevice(`/windows?limit=${limit}`, deviceId));
 /** T10 N1–N4 ladder over the memory store (honest fallback when empty). */

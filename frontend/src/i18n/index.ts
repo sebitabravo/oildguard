@@ -82,6 +82,8 @@ export const dict = {
   "ui.localDemo": { en: "Local demo data", es: "Datos demo locales" },
   "ui.checking": { en: "Checking backend", es: "Comprobando backend" },
   "ui.noBackendAction": { en: "Unavailable without a backend connection", es: "No disponible sin conexión al backend" },
+  "ui.noAlertLifecycleApi": { en: "Alert actions are unavailable because this prototype has no alert lifecycle API.", es: "Las acciones de alerta no están disponibles porque este prototipo no tiene una API para gestionar su ciclo de vida." },
+  "ui.openAlerts": { en: "Open alerts", es: "Abrir alertas" },
   "ui.ariaLevel": { en: "Oil level {value} of {max} liters", es: "Nivel de aceite {value} de {max} litros" },
   "ui.notReported": { en: "Not reported", es: "No reportado" },
   "ui.acknowledge": { en: "Acknowledge", es: "Reconocer" },

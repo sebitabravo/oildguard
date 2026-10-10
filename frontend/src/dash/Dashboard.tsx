@@ -18,6 +18,7 @@ import {
   type AlertsResponse,
   type BackendMessage,
   type LevelResponse,
+  type LevelSeriesSignal,
   type LevelSeriesPoint,
   type RulResponse,
   type SigningStatus,
@@ -60,6 +61,7 @@ import {
   isLiveWheel,
   levelValidity,
   rawTelemetryText,
+  latestSensorReadings,
   resolveWheel,
   settlingTauSeconds,
   wheelLinks,
@@ -72,6 +74,7 @@ type BackendNote =
   | null;
 
 const DEMO_STAGES: DemoStageId[] = ["clean", "slow-leak", "abrupt-drop", "done"];
+const LIVE_SENSOR_SIGNALS: LevelSeriesSignal[] = ["pressure_kpa", "temperature_c", "vib_rms_g"];
 
 const DEMO_BLURB_KEYS: Record<DemoStageId, DictKey> = {
   idle: "dash.demo.blurb.idle",
@@ -114,6 +117,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   const [windows, setWindows] = useState<WindowsResponse | null>(null);
   const [history, setHistory] = useState<ChartPoint[]>([]);
   const [rawRows, setRawRows] = useState<LevelSeriesPoint[]>([]);
+  const [latestSignals, setLatestSignals] = useState<ReturnType<typeof latestSensorReadings> | null>(null);
   const [demoStage, setDemoStage] = useState<DemoStageId>("idle");
   const [demoTick, setDemoTick] = useState(0);
   const [fsmTick, setFsmTick] = useState(0);
@@ -128,7 +132,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
         getAlerts(LIVE_WHEEL_ID),
         getRul(LIVE_WHEEL_ID),
         getWindows(50, LIVE_WHEEL_ID),
-        getLevelSeries(300, LIVE_WHEEL_ID),
+        getLevelSeries(300, LIVE_WHEEL_ID, LIVE_SENSOR_SIGNALS),
       ]);
       setStoreRows(h.store_rows);
       setSigningStatus(h.signing);
@@ -138,6 +142,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
       setRul(ru);
       setWindows(wi);
       setRawRows(ls.series.slice(-6));
+      setLatestSignals(latestSensorReadings(ls.series));
       setBackendNote({
         kind: "live",
         rows: h.store_rows,
@@ -169,6 +174,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
       console.debug("OilGuard backend request failed", e);
       setSigningStatus(undefined);
       setAnalysisAvailable(undefined);
+      setLatestSignals(null);
       setBackendNote({ kind: "error" });
       setSource("demo");
     }
@@ -185,6 +191,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
       setWindows(null);
       setHistory([]);
       setRawRows([]);
+      setLatestSignals(null);
     }
     void fetchAll();
     // El parámetro demo=1 inicia la demostración al abrir Monitoreo.
@@ -291,6 +298,9 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   const signingBadge = signingBadgeState(signingStatus);
 
   const liveLevel = source === "live" && level ? Number(level.data.level_liters) : null;
+  const pressureKpa = latestSignals?.pressureKpa ?? wheel.pressureKpa;
+  const temperatureC = latestSignals?.temperatureC ?? wheel.temperatureC;
+  const vibrationG = latestSignals?.vibrationG ?? wheel.vibRms;
   const currentLevel = demoActive
     ? shownPoints[shownPoints.length - 1]?.liters ?? wheel.levelL
     : liveLevel !== null && Number.isFinite(liveLevel) ? liveLevel : wheel.levelL;
@@ -374,11 +384,13 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
         sigma={sigmaL}
         confidence={confidence}
         validity={validity}
-        pressureKpa={wheel.pressureKpa}
-        temperatureC={wheel.temperatureC}
-        vibrationG={wheel.vibRms}
-        tauS={settlingTauSeconds(wheel.temperatureC)}
-        liveChannels={false}
+        pressureKpa={pressureKpa}
+        temperatureC={temperatureC}
+        vibrationG={vibrationG}
+        tauS={settlingTauSeconds(temperatureC)}
+        pressureLive={latestSignals?.pressureKpa !== undefined}
+        temperatureLive={latestSignals?.temperatureC !== undefined}
+        vibrationLive={latestSignals?.vibrationG !== undefined}
       />
 
       <section className="og-wheel-console" aria-label={t("wheel.console.title", lang)}>

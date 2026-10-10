@@ -197,6 +197,7 @@ export const ops = {
   "wheel.card.temperatureNote": { en: "duty-cycle envelope", es: "envolvente de ciclo de trabajo" },
   "wheel.card.vibration": { en: "Vibration RMS", es: "Vibración RMS" },
   "wheel.card.vibrationNote": { en: "impact channel input", es: "entrada del canal de impacto" },
+  "wheel.card.liveSource": { en: "LIVE · backend signal row", es: "EN VIVO · fila de señal del backend" },
   "wheel.card.settling": { en: "Settling (tau)", es: "Asentamiento (tau)" },
   "wheel.card.settlingNote": { en: "0.75 s × viscosity proxy · estimated", es: "0,75 s × sustituto de viscosidad · estimado" },
   "wheel.card.demoReference": { en: "DEMO · no live channel", es: "DEMO · sin canal en vivo" },
