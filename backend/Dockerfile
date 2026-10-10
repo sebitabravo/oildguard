@@ -4,7 +4,7 @@ WORKDIR /app
 # the stdlib-only ai/ estimators (T10 ladder/RUL) ship in one image.
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-COPY backend/main.py backend/ingest_mqtt.py backend/store.py backend/pipeline.py backend/metrics.py backend/aggregates.py backend/influx_writer.py ./
+COPY backend/main.py backend/ingest_mqtt.py backend/store.py backend/pipeline.py backend/metrics.py backend/aggregates.py backend/influx_writer.py backend/fleetagg.py backend/outages.py ./
 COPY ai ./ai
 COPY shared ./shared
 COPY sim ./sim
