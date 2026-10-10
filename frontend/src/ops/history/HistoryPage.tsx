@@ -5,7 +5,7 @@ import { t, useLang } from "../../i18n";
 import {
   KpiTile, Notice, PageHeader, SegmentedControl, TimeSeriesChart,
 } from "../../ui/foundation";
-import { historyKpis, sliceHistory } from "./logic";
+import { historyKpis, sliceHistory, timeAxisLabels } from "./logic";
 import "./history.css";
 
 const windows: HistoryWindow[] = ["250h", "7d", "30d", "90d"];
@@ -29,10 +29,11 @@ export default function HistoryPage() {
     if (point.liters !== null) return point.liters;
     return all.slice(0, index).reverse().find((item) => item.liters !== null)?.liters ?? wheel.levelL;
   });
-  const temperatureValues = points.map((_, index) => wheel.temperatureC + Math.sin(index * 0.9) * 3);
+  const temperatureValues = points.map((point, index, all) => point.temperatureC ?? all.slice(0, index).reverse().find((item) => item.temperatureC !== null)?.temperatureC ?? wheel.temperatureC);
   const vibrationValues = points.map((_, index) => wheel.vibRms + Math.cos(index * 0.7) * 0.08);
   const chartEvents = points.flatMap((point, index) => point.event ? [{ index, label: formatEvent(point.event, lang) }] : []);
-  const chartGaps = demoDataset.outages.some((outage) => outage.deviceId === wheel.id) ? [220] : [];
+  const chartGaps = points.flatMap((point, index) => point.liters === null ? [index] : []);
+  const xLabels = timeAxisLabels(windowKey, points, lang, t("history.axis.now", lang));
   const rows = points.flatMap((point) => point.event ? [{ point, event: point.event }] : []);
 
   return (
@@ -71,9 +72,9 @@ export default function HistoryPage() {
           <KpiTile lang={lang} label={t("history.completeness", lang)} value={`${formatNumber(kpis.completeness, lang, 0)}%`} />
         </section>
         <section className="og-history-charts">
-          <article><h3>{t("history.level", lang)}</h3><TimeSeriesChart lang={lang} values={levelValues} sigma={points.map((point) => point.sigma ?? 0)} thresholds={[{ value: 47.5, label: "50%" }, { value: 28.5, label: "30%" }]} domain={[0, 95]} events={chartEvents} gaps={chartGaps} title={t("history.level", lang)} /></article>
-          <article><h3>{t("history.temperature", lang)}</h3><TimeSeriesChart lang={lang} values={temperatureValues} events={chartEvents} gaps={chartGaps} title={t("history.temperature", lang)} /></article>
-          <article><h3>{t("history.vibration", lang)}</h3><TimeSeriesChart lang={lang} values={vibrationValues} events={chartEvents} gaps={chartGaps} title={t("history.vibration", lang)} /></article>
+          <article><h3>{t("history.level", lang)}</h3><TimeSeriesChart lang={lang} values={levelValues} sigma={points.map((point) => point.sigma ?? 0)} thresholds={[{ value: 47.5, label: t("history.threshold.warning", lang) }, { value: 28.5, label: t("history.threshold.critical", lang) }]} domain={[0, 95]} yUnit="L" xLabels={xLabels} events={chartEvents} gaps={chartGaps} title={t("history.level", lang)} /></article>
+          <article><h3>{t("history.temperature", lang)}</h3><TimeSeriesChart lang={lang} values={temperatureValues} domain={[55, 90]} yUnit="°C" xLabels={xLabels} events={chartEvents} gaps={chartGaps} title={t("history.temperature", lang)} /></article>
+          <article><h3>{t("history.vibration", lang)}</h3><TimeSeriesChart lang={lang} values={vibrationValues} yUnit="g" yDecimals={2} xLabels={xLabels} events={chartEvents} gaps={chartGaps} title={t("history.vibration", lang)} /></article>
         </section>
         <section className="og-history-events">
           <h3>{t("history.event", lang)}</h3>

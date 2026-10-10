@@ -31,4 +31,27 @@ describe("demo dataset", () => {
     expect(data.devices.some((device) => device.fw === null && device.cert === null)).toBe(true);
     expect(data.outages.length).toBeGreaterThan(0);
   });
+
+  test("keeps history temperature in a duty-cycle band, warm while hauling and cooling at rest", () => {
+    const data = createDemoDataset();
+    for (const wheel of data.wheels) {
+      for (const points of Object.values(wheel.history)) {
+        const temps = points.flatMap((point) => point.temperatureC === null ? [] : [point.temperatureC]);
+        expect(temps.length).toBeGreaterThan(0);
+        expect(Math.min(...temps)).toBeGreaterThanOrEqual(60);
+        expect(Math.max(...temps)).toBeLessThanOrEqual(85);
+        expect(Math.max(...temps) - Math.min(...temps)).toBeGreaterThan(6);
+        // Un ciclo de trabajo no es una senoide: hay tramos de enfriamiento más largos que de subida.
+        const rises = temps.slice(1).filter((value, index) => value > temps[index]).length;
+        expect(rises).not.toBe(temps.length - 1);
+      }
+    }
+  });
+
+  test("leaves no temperature where the level has a communication gap", () => {
+    const wheel = createDemoDataset().wheels[0];
+    for (const point of wheel.history["250h"]) {
+      expect(point.temperatureC === null).toBe(point.liters === null);
+    }
+  });
 });

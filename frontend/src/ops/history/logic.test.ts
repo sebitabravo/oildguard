@@ -3,6 +3,7 @@ import { createDemoDataset, demoDataset, type DemoWheel, type HistoryPoint } fro
 import {
   historyKpis,
   sliceHistory,
+  timeAxisLabels,
   type HistoryKpiInput,
 } from "./logic";
 
@@ -16,10 +17,10 @@ describe("wheel history contracts", () => {
 
   test("computes level change, loss rate, alerts, and completeness", () => {
     const points: HistoryPoint[] = [
-      { at: 0, liters: 90, sigma: 1 },
-      { at: 3_600_000, liters: 89, sigma: 1, event: "alert" },
-      { at: 7_200_000, liters: null, sigma: null },
-      { at: 10_800_000, liters: 87, sigma: 1, event: "inspection" },
+      { at: 0, liters: 90, sigma: 1, temperatureC: 70 },
+      { at: 3_600_000, liters: 89, sigma: 1, temperatureC: 71, event: "alert" },
+      { at: 7_200_000, liters: null, sigma: null, temperatureC: null },
+      { at: 10_800_000, liters: 87, sigma: 1, temperatureC: 72, event: "inspection" },
     ];
     const input: HistoryKpiInput = { points, hoursPerWindow: 3 };
     expect(historyKpis(input)).toEqual({
@@ -44,5 +45,22 @@ describe("wheel history contracts", () => {
     expect(observedLoss).toBeGreaterThan(expectedLoss * 0.6);
     expect(observedLoss).toBeLessThan(expectedLoss * 1.4 + 0.5);
     expect(points.every((point) => (point.liters ?? 0) >= 0 && (point.liters ?? 0) <= 97)).toBe(true);
+  });
+
+  test("labels the 250 h window with hours before now", () => {
+    const labels = timeAxisLabels("250h", sliceHistory(wheel, "250h"), "en", "now");
+    expect(labels.length).toBe(6);
+    expect(labels[0]).toContain("250");
+    expect(labels[0]).toContain("h");
+    expect(labels[labels.length - 1]).toBe("now");
+  });
+
+  test("labels longer windows with localized calendar dates", () => {
+    const es = timeAxisLabels("30d", sliceHistory(wheel, "30d"), "es", "ahora");
+    const en = timeAxisLabels("30d", sliceHistory(wheel, "30d"), "en", "now");
+    expect(es.length).toBe(5);
+    expect(/ene|dic/i.test(es.join(" "))).toBe(true);
+    expect(/Jan|Dec/.test(en.join(" "))).toBe(true);
+    expect(new Set(es).size).toBe(es.length);
   });
 });

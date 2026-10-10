@@ -3,7 +3,7 @@ import { t, useLang, type Lang } from "../i18n";
 import { formatNumber } from "../i18n/numberFormat";
 import { useBackendState, backendStateLabel } from "./backendOrDemo";
 import { levelBarGeometry, severityColor, severityTone, type Tone } from "./logic";
-import { chartFrame, confidenceBand, linePath, scaledPoints, scaledPointsInDomain } from "./chartGeometry";
+import { confidenceBand, evenPositions, linePath, niceTicks, percentAlong, percentFromTop, scaledPoints, scaledPointsInDomain } from "./chartGeometry";
 
 export type Severity = "N1" | "N2" | "N3" | "N4";
 
@@ -197,7 +197,10 @@ export function TimeSeriesChart({
   events = [],
   gaps = [],
   title = "Time series",
-  xLabels = ["0", "mid", "end"],
+  xLabels = [],
+  yTicks,
+  yUnit,
+  yDecimals = 0,
   domain,
 }: {
   lang: Lang;
@@ -207,30 +210,42 @@ export function TimeSeriesChart({
   events?: Array<{ index: number; label: string }>;
   gaps?: number[];
   title?: string;
-  xLabels?: [string, string, string];
+  xLabels?: string[];
+  yTicks?: number[];
+  yUnit?: string;
+  yDecimals?: number;
   domain?: [number, number];
 }) {
-  const frame = chartFrame(360, 180);
+  // El trazo se estira con preserveAspectRatio="none"; todo el texto va en HTML
+  // sobre la misma caja para que las etiquetas nunca se deformen.
+  const plot = { width: 300, height: 100 };
+  const zero = { left: 0, right: 0, top: 0, bottom: 0 };
   const upperValues = values.map((value, index) => value + (sigma[index] ?? 0));
   const lowerValues = values.map((value, index) => value - (sigma[index] ?? 0));
   const min = domain?.[0] ?? Math.min(...lowerValues);
   const max = domain?.[1] ?? Math.max(...upperValues);
-  const points = scaledPointsInDomain(values, frame.width, frame.height, frame.padding, min, max);
-  const band = confidenceBand(values, sigma, frame.width, frame.height, frame.padding);
-  const thresholdY = (value: number) => frame.padding.top + (frame.height - frame.padding.top - frame.padding.bottom) - ((value - min) / (max - min || 1)) * (frame.height - frame.padding.top - frame.padding.bottom);
+  const points = scaledPointsInDomain(values, plot.width, plot.height, zero, min, max);
+  const band = confidenceBand(values, sigma, plot.width, plot.height, zero, [min, max]);
+  const ticks = yTicks ?? niceTicks(min, max, 4);
+  const yPct = (value: number) => percentFromTop(value, min, max);
+  const gapWidth = plot.width / Math.max(1, values.length - 1);
   return (
-    <svg className="og-time-series" viewBox="0 0 360 180" preserveAspectRatio="none" role="img" aria-labelledby="chart-title chart-desc">
-      <defs><pattern id="gap-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="1" /></pattern></defs>
-      <title id="chart-title">{title}</title>
-      <desc id="chart-desc">{t("ui.chartDescription", lang)}</desc>
-      <polygon points={band.map((point) => `${point.x},${point.y}`).join(" ")} className="og-chart-band" />
-      <rect x={frame.padding.left} y={frame.padding.top} width={frame.width - frame.padding.left - frame.padding.right} height={frame.height - frame.padding.top - frame.padding.bottom} className="og-chart-regime" />
-      {thresholds.map((threshold) => <g><line x1={frame.padding.left} x2={frame.width - frame.padding.right} y1={thresholdY(threshold.value)} y2={thresholdY(threshold.value)} className="og-chart-threshold" /><text x={frame.padding.left + 4} y={thresholdY(threshold.value) - 4}>{threshold.label}</text></g>)}
-      {gaps.map((gap) => <rect x={gap} y="0" width="12" height="140" className="og-chart-gap" />)}
-      <path d={linePath(points.filter((point): point is { x: number; y: number } => point !== null))} className="og-chart-line" />
-      {events.map((event) => <g><line x1={points[event.index]?.x ?? 0} x2={points[event.index]?.x ?? 0} y1="0" y2="140" className="og-chart-event" /><title>{event.label}</title></g>)}
-      <text x={frame.padding.left} y={frame.height - 4}>{xLabels[0]}</text><text x={frame.width / 2 - 10} y={frame.height - 4}>{xLabels[1]}</text><text x={frame.width - frame.padding.right - 18} y={frame.height - 4}>{xLabels[2]}</text>
-    </svg>
+    <div className="og-time-series" role="img" aria-label={`${title}. ${t("ui.chartDescription", lang)}`}>
+      <div className="og-time-series__plot">
+        <svg viewBox={`0 0 ${plot.width} ${plot.height}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
+          {ticks.map((tick) => <line x1="0" x2={plot.width} y1={(yPct(tick) / 100) * plot.height} y2={(yPct(tick) / 100) * plot.height} className="og-chart-grid" />)}
+          {gaps.map((gap) => <rect x={points[gap]?.x ?? 0} y="0" width={gapWidth} height={plot.height} className="og-chart-gap" />)}
+          <polygon points={band.map((point) => `${point.x},${point.y}`).join(" ")} className="og-chart-band" />
+          {thresholds.map((threshold) => <line x1="0" x2={plot.width} y1={(yPct(threshold.value) / 100) * plot.height} y2={(yPct(threshold.value) / 100) * plot.height} className="og-chart-threshold" />)}
+          {events.map((event) => <line x1={points[event.index]?.x ?? 0} x2={points[event.index]?.x ?? 0} y1="0" y2={plot.height} className="og-chart-event" />)}
+          <path d={linePath(points)} className="og-chart-line" />
+        </svg>
+        {ticks.map((tick) => <span className="og-chart-ytick" style={{ top: `${yPct(tick)}%` }}>{formatNumber(tick, lang, yDecimals)}{yUnit ? ` ${yUnit}` : ""}</span>)}
+        {thresholds.map((threshold) => <span className="og-chart-threshold-label" style={{ top: `${yPct(threshold.value)}%` }}>{threshold.label}</span>)}
+        {events.map((event) => <span className="og-chart-event-label" style={{ left: `${percentAlong(event.index, values.length)}%` }}>{event.label}</span>)}
+        {xLabels.map((label, index) => <span className={`og-chart-xtick${index === 0 ? " is-first" : index === xLabels.length - 1 ? " is-last" : ""}`} style={{ left: `${evenPositions(xLabels.length)[index]}%` }}>{label}</span>)}
+      </div>
+    </div>
   );
 }
 
