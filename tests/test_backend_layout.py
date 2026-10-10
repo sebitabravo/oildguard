@@ -17,7 +17,11 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import threading
+import time
 from pathlib import Path
+
+import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 BACKEND = REPO / "backend"
@@ -128,3 +132,146 @@ def test_bridge_timing_is_off_by_default_and_costs_nothing():
 
     assert bridge_timing_enabled() is False
     assert bridge_state()["callbacks"] == 0
+
+PAYLOAD = (
+    b'{"rows":[{"dev_id":"dev-1","seq":1,"t_s":1.0,'
+    b'"pressure_kpa":2.5,"temp_c":20.0,"vibration_mm_s":1.0}]}'
+)
+
+
+class _FakeMsg:
+    topic = "oilguard/signals/dev-1"
+
+    def __init__(self, payload: bytes):
+        self.payload = payload
+
+
+def _drive_callback(monkeypatch, forward, payload: bytes = PAYLOAD) -> None:
+    """Ejecuta el callback real de run_forever contra un cliente paho falso.
+
+    on_message es una closure, asi que solo se alcanza a traves del cliente:
+    el falso entrega un mensaje en loop_forever y luego bloquea en un Event.
+    El hilo se abandona como daemon al terminar la prueba.
+
+    Se inyecta un modulo paho ficticio en vez de depender del driver: asi la
+    prueba es hermetica y no cambia si el broker esta disponible.
+    """
+    import types
+
+    import backend.ingest_mqtt as im
+
+    delivered = threading.Event()
+    park = threading.Event()  # nunca se activa: el hilo queda aparcado
+
+    class _FakeClient:
+        def __init__(self, *_a, **_k):
+            self.on_message = None
+
+        def connect(self, *_a, **_k):
+            return 0
+
+        def loop_forever(self):
+            # run_forever reconecta en bucle mientras loop_forever devuelva, asi
+            # que el mensaje se entrega una sola vez y luego el hilo se queda
+            # bloqueado hasta que la prueba lo libere.
+            if not delivered.is_set():
+                # Se marca DESPUES del callback: la prueba lee el estado de
+                # temporizacion en cuanto ve la senal.
+                self.on_message(self, None, _FakeMsg(payload))
+                delivered.set()
+            # Tras entregar, el hilo queda aparcado: run_forever reconectaria
+            # en bucle y quemaria CPU durante el resto de la sesion.
+            park.wait()
+
+        def subscribe(self, *_a, **_k):
+            return 0
+
+        def disconnect(self):
+            return 0
+
+        def publish(self, *_a, **_k):
+            raise AssertionError("no se publica nada en este camino")
+
+    paho = types.ModuleType("paho")
+    mqtt_pkg = types.ModuleType("paho.mqtt")
+    mqtt_mod = types.ModuleType("paho.mqtt.client")
+    mqtt_mod.Client = _FakeClient
+    paho.mqtt = mqtt_pkg
+    mqtt_pkg.client = mqtt_mod
+
+    for name, module in (
+        ("paho", paho),
+        ("paho.mqtt", mqtt_pkg),
+        ("paho.mqtt.client", mqtt_mod),
+    ):
+        monkeypatch.setitem(sys.modules, name, module)
+
+    thread = threading.Thread(
+        target=lambda: im.run_forever(forward), daemon=True
+    )
+    thread.start()
+    assert delivered.wait(5), "el cliente falso nunca recibio el mensaje"
+
+
+def test_bridge_timing_costs_nothing_when_disabled(monkeypatch):
+    import backend.ingest_mqtt as im
+
+    im.bridge_timing_reset()
+    monkeypatch.delenv("OILGUARD_BRIDGE_TIMING", raising=False)
+    assert im.bridge_timing_enabled() is False
+
+    calls: list = []
+    _drive_callback(monkeypatch, lambda rows: calls.append(rows) or {"accepted": len(rows)})
+
+    assert len(calls) == 1
+    # Con la bandera apagada no se toca ni un solo temporizador.
+    assert im.bridge_state()["callbacks"] == 0
+    im.bridge_timing_reset()
+
+
+def test_bridge_timing_splits_decode_and_submit_when_enabled(monkeypatch):
+    import backend.ingest_mqtt as im
+
+    im.bridge_timing_reset()
+    monkeypatch.setenv("OILGUARD_BRIDGE_TIMING", "1")
+    assert im.bridge_timing_enabled() is True
+
+    calls: list = []
+
+    def forward(rows):
+        calls.append(rows)
+        time.sleep(0.005)  # submit lento a proposito para separarlo de decode
+        return {"accepted": len(rows)}
+
+    _drive_callback(monkeypatch, forward)
+
+    state = im.bridge_state()
+    assert len(calls) == 1
+    assert state["callbacks"] == 1
+    assert state["mean_total_ms"] > 0.0
+    assert state["mean_submit_ms"] >= 4.0
+    # decode + submit cuadra con el total medido.
+    assert state["mean_decode_ms"] + state["mean_submit_ms"] == pytest.approx(
+        state["mean_total_ms"], rel=0.05
+    )
+    assert 0.0 <= state["decode_share"] <= 1.0
+    assert state["max_total_ms"] == pytest.approx(state["mean_total_ms"], rel=0.5)
+    im.bridge_timing_reset()
+
+
+def test_bridge_timing_reset_clears_partial_state(monkeypatch):
+    import backend.ingest_mqtt as im
+
+    monkeypatch.setenv("OILGUARD_BRIDGE_TIMING", "1")
+    _drive_callback(monkeypatch, lambda rows: {"accepted": len(rows)})
+    assert im.bridge_state()["callbacks"] == 1
+
+    im.bridge_timing_reset()
+    assert im.bridge_state() == {
+        "callbacks": 0,
+        "mean_total_ms": 0.0,
+        "mean_decode_ms": 0.0,
+        "mean_submit_ms": 0.0,
+        "max_total_ms": 0.0,
+        "decode_share": 0.0,
+    }

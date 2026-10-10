@@ -428,6 +428,19 @@ opt-in ladder, which is documented above.
 
 ## Ingest performance
 
+### Bridge timing (optional, off by default)
+
+`OILGUARD_BRIDGE_TIMING=1` instruments the paho callback thread in
+`backend/ingest_mqtt.py` and adds an `mqtt_bridge` block to `/metrics/ingest`.
+It splits callback time into decode and submit, which is the only way to tell
+whether a stalled ingest is the broker socket or the worker. With the flag unset
+the callback does two `os.getenv`-free boolean checks per message and nothing
+else — `bridge_timing_enabled()` is the gate and the timings are never computed.
+
+`backend/bench_ingest.py` does not need it; `py-spy` per-thread sampling inside
+the container already attributes CPU per thread. Reach for the flag when the
+question is *where inside the callback* the time goes, not *which thread*.
+
 Measured in-process by `backend/bench_ingest.py`, which drives the same path
 the MQTT worker uses — decode → verify → store → metrics, Influx disabled —
 with realistic batches (10 rows per device per publish at 10 Hz). It runs
