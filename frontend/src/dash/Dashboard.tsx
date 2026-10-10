@@ -47,6 +47,7 @@ import { mergeLevelSeries } from "./levelSeries";
 import { formatDemoLabNote } from "./demoCopy";
 import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
 import FleetLivePanel from "./fleetLive/FleetLivePanel";
+import FleetLivePanelBoundary from "./fleetLive/FleetLivePanelBoundary";
 
 type Source = "loading" | "live" | "demo";
 type BackendNote =
@@ -315,7 +316,9 @@ export default function Dashboard() {
           </table>
         </div>
       </section>
-      <FleetLivePanel lang={lang} />
+      <FleetLivePanelBoundary lang={lang}>
+        <FleetLivePanel lang={lang} />
+      </FleetLivePanelBoundary>
 
       {/* source + backend row */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12, alignItems: "center" }}>

@@ -604,6 +604,7 @@ button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og
 .og-fleet-live__status--green { color: var(--og-green); }
 .og-fleet-live__status--amber { color: var(--og-amber); }
 .og-fleet-live__waiting { margin: 16px 0 2px; color: var(--og-muted); font-size: 13px; }
+.og-fleet-live--fallback p { margin: 10px 0 0; color: var(--og-muted); font-size: 13px; }
 .og-fleet-live__meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; color: var(--og-muted); font-size: 11px; }
 .og-fleet-live__overview { display: grid; grid-template-columns: repeat(7, minmax(100px, 1fr)); gap: 8px; margin-top: 12px; }
 .og-fleet-live__overview > div { min-width: 0; padding: 9px 10px; border: 1px solid var(--og-line); border-radius: var(--og-radius); background: var(--og-panel-inset); }
