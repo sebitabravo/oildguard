@@ -150,16 +150,21 @@ class InfluxWriter:
         write: Callable[[str], Any],
         *,
         max_batches: int = DEFAULT_MAX_BATCHES,
+        flush_rows: int = 5000,
+        flush_seconds: float = 1.0,
         enabled: bool = True,
         name: str = "influx-writer",
     ) -> None:
         self._write = write
         self._queue: queue.Queue[str] = queue.Queue(maxsize=max(1, int(max_batches)))
+        self.flush_rows = max(1, int(flush_rows))
+        self.flush_seconds = max(0.01, float(flush_seconds))
         self.enabled = bool(enabled)
         self._name = name
         self._lock = threading.Lock()
         self._stopping = threading.Event()
         self._thread: threading.Thread | None = None
+        self._buffer: list[str] = []
         self._written_batches = 0
         self._written_points = 0
         self._dropped_batches = 0
@@ -197,22 +202,56 @@ class InfluxWriter:
     def run_forever(self) -> None:
         while not self._stopping.is_set():
             try:
-                protocol = self._queue.get(timeout=0.2)
+                protocol = self._queue.get(timeout=self.flush_seconds)
             except queue.Empty:
+                self.flush_buffer()
                 continue
-            self._consume(protocol)
+            # El simulador publica un mensaje por dispositivo y por tick: sin
+            # agrupar serian 1000 escrituras de 10 puntos por segundo, y cada
+            # ida y vuelta a Influx cuesta mas que las 10 filas que lleva.
+            self._buffer.append(protocol)
+            if self._pending_points() >= self.flush_rows:
+                self.flush_buffer()
 
-    def _consume(self, protocol: str) -> None:
+    def _pending_points(self) -> int:
+        return sum(part.count("\n") + 1 for part in self._buffer)
+
+    def _absorb_queue(self) -> None:
+        """Pasa lo encolado al buffer sin escribir todavia."""
+        while True:
+            try:
+                self._buffer.append(self._queue.get_nowait())
+            except queue.Empty:
+                return
+
+    def flush_buffer(self) -> int:
+        """Escribe lo que hay en el buffer. No toca la cola: escribirla aqui
+        mezclaria todos los lotes pendientes en una sola llamada y perderia el
+        vaciado incremental por umbral de filas."""
+        with self._lock:
+            pending, self._buffer = self._buffer, []
+        if not pending:
+            return 0
+        return self._consume("\n".join(pending))
+
+    def drain_and_flush(self) -> int:
+        """Vuelca cola y buffer en una sola escritura (fin de vida del escritor)."""
+        self._absorb_queue()
+        return self.flush_buffer()
+
+    def _consume(self, protocol: str) -> int:
         try:
             self._write(protocol)
         except Exception:  # noqa: BLE001 - Influx es best-effort; las filas ya estan en memoria
             with self._lock:
                 self._failed_batches += 1
             log.exception("influx write failed; rows kept in the memory store")
-            return
+            return 0
+        points = protocol.count("\n") + 1
         with self._lock:
             self._written_batches += 1
-            self._written_points += protocol.count("\n") + 1
+            self._written_points += points
+        return points
 
     def start(self) -> threading.Thread:
         if self._thread is not None:
@@ -229,15 +268,8 @@ class InfluxWriter:
         self._thread = None
         if thread is not None and thread.is_alive():
             thread.join(timeout=timeout)
-        drained = 0
-        while True:
-            try:
-                protocol = self._queue.get_nowait()
-            except queue.Empty:
-                break
-            self._consume(protocol)
-            drained += 1
-        return drained
+        self.drain_and_flush()
+        return 1
 
     # -- observabilidad -----------------------------------------------------
 
@@ -269,6 +301,12 @@ class InfluxWriter:
                 "dropped_points": self._dropped_points,
                 "failed_batches": self._failed_batches,
             }
+
+    def buffered_points(self) -> int:
+        """Puntos aun no escritos, contando los que siguen en la cola."""
+        with self._lock:
+            buffered = self._pending_points()
+        return buffered + self._queue.qsize()
 
     def reset(self) -> None:
         with self._lock:

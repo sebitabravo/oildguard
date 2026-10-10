@@ -144,7 +144,9 @@ def test_writer_never_blocks_the_submitter_when_the_writer_is_slow():
 
     assert elapsed < 0.2, f"submit tardó {elapsed:.3f}s: el ingest espera a Influx"
     writer.stop(timeout=2)
-    assert len(calls) == 5
+    # Coalescidos: cinco lotes de una fila salen como una sola escritura.
+    assert len(calls) == 1
+    assert calls[0].count("\n") + 1 == 5
 
 
 def test_submit_reports_false_when_it_drops_a_batch():
@@ -192,8 +194,15 @@ def test_a_failing_write_is_counted_and_does_not_kill_the_writer():
     writer.submit([row(seq=2)])
     writer.stop(timeout=2)
 
+    # Coalescidos en una escritura: el fallo se cuenta una vez.
+    assert state["calls"] == 1
     assert writer.failed_batches() == 1
-    assert writer.written_batches() >= 1
+    assert writer.written_batches() == 0
+
+    # Y el escritor sigue vivo para el siguiente lote.
+    writer.submit([row(seq=3)])
+    writer.stop(timeout=2)
+    assert writer.written_batches() == 1
 
 
 def test_stop_flushes_everything_queued():
@@ -204,8 +213,57 @@ def test_stop_flushes_everything_queued():
 
     writer.stop(timeout=5)
 
-    assert len(calls) == 10
+    assert len(calls) == 1
+    assert calls[0].count("\n") + 1 == 10  # ningun punto se pierde
     assert writer.pending() == 0
+    assert writer.buffered_points() == 0
+
+
+def test_small_batches_are_coalesced_into_one_write():
+    """1000 mensajes de 10 filas serian 1000 escrituras: se agrupan en una."""
+    write, calls = slow_writer(0.0)
+    writer = InfluxWriter(write=write, max_batches=4096, flush_rows=50, flush_seconds=60.0)
+
+    for seq in range(100):
+        writer.submit([row(seq=seq)])
+
+    assert calls == [], "escribio antes de vaciar el buffer"
+    assert writer.buffered_points() == 100  # pendiente, en cola o en buffer
+
+    writer.drain_and_flush()
+
+    assert len(calls) == 1
+    assert calls[0].count("\n") + 1 == 100
+    assert writer.buffered_points() == 0
+
+
+def test_worker_flushes_when_the_buffer_crosses_the_row_threshold():
+    write, calls = slow_writer(0.0)
+    writer = InfluxWriter(write=write, max_batches=256, flush_rows=5, flush_seconds=60.0)
+    writer.start()
+    for seq in range(15):
+        writer.submit([row(seq=seq)])
+
+    deadline = time.time() + 5
+    while time.time() < deadline and len(calls) < 3:
+        time.sleep(0.01)
+    writer.stop(timeout=5)
+
+    # 15 puntos con umbral 5: se escriben por tandas, no de uno en uno.
+    assert len(calls) >= 3, f"solo {len(calls)} escritura(s) para 15 puntos"
+    assert all(call.count("\n") + 1 <= 5 for call in calls)
+
+
+def test_flush_happens_on_the_time_threshold_too():
+    write, calls = slow_writer(0.0)
+    writer = InfluxWriter(write=write, max_batches=64, flush_rows=5000, flush_seconds=0.05)
+
+    writer.start()
+    writer.submit([row()])
+    time.sleep(0.3)
+
+    assert len(calls) == 1
+    writer.stop(timeout=2)
 
 
 def test_stop_is_idempotent():
