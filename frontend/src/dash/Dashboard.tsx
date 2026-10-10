@@ -1,13 +1,13 @@
-// T11 pro dashboard (S6 slice): level + confidence band, rest-window
-// markers, N1–N4 timeline, RUL panel, sim-linked mode indicator, and the
-// one-click clean -> slow-leak -> abrupt-drop -> N4 demo scenario.
+// Detalle de rueda (T11 + restyle F3f): nivel + banda de confianza, ventanas de
+// reposo, escalera N1–N4, fusión de canales, panel de RUL, indicador de modo
+// enlazado al simulador y el recorrido demo clean -> slow-leak -> abrupt-drop -> N4.
 //
-// Data: S4 API via sim/api.ts (GET /level /alerts /rul /windows). When the
-// backend is down the view falls back to local DEMO data and says so —
-// the DEMO badge is never silent. Model label everywhere:
-// `synthetic-proxy` (UNPROVEN until S7 bench drain-and-weigh).
+// Datos: API S4 vía sim/api.ts (GET /level /alerts /rul /windows) solo para la rueda
+// en vivo (`wheel-RH-01`). Si el backend cae, o la rueda no tiene dispositivo, la
+// vista usa datos DEMO locales y lo dice: la insignia DEMO nunca es silenciosa.
+// Etiqueta de modelo en todas partes: `synthetic-proxy` (NO PROBADO hasta el banco).
 
-import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import {
   getAlerts,
   getHealth,
@@ -18,6 +18,7 @@ import {
   type AlertsResponse,
   type BackendMessage,
   type LevelResponse,
+  type LevelSeriesPoint,
   type RulResponse,
   type SigningStatus,
   type WindowsResponse,
@@ -44,6 +45,25 @@ import { analyzerUnavailableNotice } from "./analyzerAvailability";
 import { mergeLevelSeries } from "./levelSeries";
 import { formatDemoLabNote } from "./demoCopy";
 import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
+import { DEMO_REFERENCE_MS, demoDataset } from "../demo/dataset";
+import { AlertBanner, Button, Notice, PageHeader, SyntheticBadge } from "../ui/foundation";
+import {
+  ChartLegend, FusionPanel, LadderPanel, TelemetryRow, WheelContext,
+} from "../ops/wheel/WheelPanels";
+import {
+  LIVE_WHEEL_ID,
+  alertBannerKey,
+  channelStatesFrom,
+  demoWheelTrace,
+  formatUtcTime,
+  highestLevel,
+  isLiveWheel,
+  levelValidity,
+  rawTelemetryText,
+  resolveWheel,
+  settlingTauSeconds,
+  wheelLinks,
+} from "../ops/wheel/logic";
 
 type Source = "loading" | "live" | "demo";
 type BackendNote =
@@ -78,9 +98,12 @@ function stageLabel(stage: DemoStageId, lang: Lang): string {
   return t(DEMO_LABEL_KEYS[stage], lang);
 }
 
-export default function Dashboard() {
+export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: string | null }) {
   const [lang] = useLang();
-  const [source, setSource] = useState<Source>("loading");
+  const [wheelId, setWheelId] = useState(() => resolveWheel(initialWheelId, demoDataset.wheels).id);
+  const wheel = resolveWheel(wheelId, demoDataset.wheels);
+  const live = isLiveWheel(wheel.id);
+  const [source, setSource] = useState<Source>(live ? "loading" : "demo");
   const [backendNote, setBackendNote] = useState<BackendNote>(null);
   const [analysisAvailable, setAnalysisAvailable] = useState<boolean | undefined>();
   const [signingStatus, setSigningStatus] = useState<SigningStatus | undefined>();
@@ -90,20 +113,22 @@ export default function Dashboard() {
   const [rul, setRul] = useState<RulResponse | null>(null);
   const [windows, setWindows] = useState<WindowsResponse | null>(null);
   const [history, setHistory] = useState<ChartPoint[]>([]);
+  const [rawRows, setRawRows] = useState<LevelSeriesPoint[]>([]);
   const [demoStage, setDemoStage] = useState<DemoStageId>("idle");
   const [demoTick, setDemoTick] = useState(0);
   const [fsmTick, setFsmTick] = useState(0);
   const mountT = useRef(Date.now());
 
   const fetchAll = useCallback(async () => {
+    if (!live) return;
     try {
       const [h, lv, al, ru, wi, ls] = await Promise.all([
         getHealth(),
-        getLevel(),
-        getAlerts(),
-        getRul(),
-        getWindows(50),
-        getLevelSeries(),
+        getLevel(LIVE_WHEEL_ID),
+        getAlerts(LIVE_WHEEL_ID),
+        getRul(LIVE_WHEEL_ID),
+        getWindows(50, LIVE_WHEEL_ID),
+        getLevelSeries(300, LIVE_WHEEL_ID),
       ]);
       setStoreRows(h.store_rows);
       setSigningStatus(h.signing);
@@ -112,6 +137,7 @@ export default function Dashboard() {
       setAlerts(al);
       setRul(ru);
       setWindows(wi);
+      setRawRows(ls.series.slice(-6));
       setBackendNote({
         kind: "live",
         rows: h.store_rows,
@@ -146,18 +172,29 @@ export default function Dashboard() {
       setBackendNote({ kind: "error" });
       setSource("demo");
     }
-  }, []);
+  }, [live]);
 
   useEffect(() => {
+    if (live) setSource("loading");
+    else {
+      setSource("demo");
+      setBackendNote(null);
+      setLevel(null);
+      setAlerts(null);
+      setRul(null);
+      setWindows(null);
+      setHistory([]);
+      setRawRows([]);
+    }
     void fetchAll();
     // El parámetro demo=1 inicia la demostración al abrir Monitoreo.
     if (new URLSearchParams(window.location.search).get("demo") === "1") {
       setDemoTick(0);
       setDemoStage("clean");
     }
-  }, [fetchAll]);
+  }, [fetchAll, live]);
 
-  // Live FSM clock shared with the truck sim (same stateAt vocabulary).
+  // Reloj FSM en vivo compartido con el simulador del camión (mismo vocabulario stateAt).
   useEffect(() => {
     const id = window.setInterval(() => {
       setFsmTick((Date.now() - mountT.current) / 1000);
@@ -165,7 +202,7 @@ export default function Dashboard() {
     return () => window.clearInterval(id);
   }, []);
 
-  // Demo runner: 5 s clean -> 15 s slow-leak -> 6 s abrupt-drop -> done.
+  // Runner demo: 5 s clean -> 15 s slow-leak -> 6 s abrupt-drop -> done.
   useEffect(() => {
     if (demoStage === "idle" || demoStage === "done") return;
     const id = window.setInterval(() => {
@@ -188,7 +225,7 @@ export default function Dashboard() {
     return () => window.clearInterval(id);
   }, [demoStage]);
 
-  // Drive the linked 3D oil fill on every demo tick.
+  // Mueve el llenado 3D enlazado en cada tick de la demo.
   useEffect(() => {
     if (demoStage === "idle") return;
     emitDemoOil(demoFracFor(demoStage, demoTick), demoStage);
@@ -203,6 +240,13 @@ export default function Dashboard() {
     setDemoTick(0);
     emitDemoOil(1.0, "idle");
   };
+  const selectWheel = (next: string) => {
+    resetDemo();
+    setWheelId(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set("wheel", next);
+    window.history.replaceState(null, "", url);
+  };
 
   const demoActive = demoStage !== "idle";
   const analyzerNotice = analyzerUnavailableNotice({
@@ -214,225 +258,291 @@ export default function Dashboard() {
   const fsm = stateAt(fsmTick);
   const moving = isMovingState(fsm.state);
   const recal = isRecalState(fsm.state);
+  const trace = useMemo(() => demoWheelTrace(wheel), [wheel]);
 
-  // Rendered series: live history (polled /level) or demo trace.
+  // Serie mostrada: historia en vivo (/level sondeado), la caminata demo o la traza
+  // DEMO de 60 min cuando el backend no tiene muestras suficientes (siempre rotulada).
   const demoCutoff: Record<string, number> = {
     clean: 30,
     "slow-leak": 90,
     "abrupt-drop": 120,
     done: 120,
   };
+  const liveSeries = source === "live" && history.length >= 3;
+  const usingTrace = !demoActive && !liveSeries;
   const shownPoints: ChartPoint[] = demoActive
     ? DEMO_SERIES.filter((p) => p.t_s <= (demoCutoff[demoStage] ?? 30)).slice(-90)
-    : history.length > 0
-      ? history
-      : DEMO_SERIES.slice(0, 31);
+    : liveSeries ? history : trace.points;
   const shownAlerts = demoActive
     ? demoAlertsUpTo(demoStage)
     : analyzerUnavailable ? [] : (alerts?.data.alerts ?? []);
   const shownWindows = demoActive
     ? DEMO_WINDOWS
-    : (windows?.windows ?? DEMO_WINDOWS);
-  const sigmaL =
-    alerts?.data.level?.sigma_liters ?? DEMO_SIGMA_L;
-  const confidence =
-    alerts?.data.level?.confidence ?? DEMO_CONFIDENCE;
+    : liveSeries ? (windows?.windows ?? []) : trace.windows;
+  const sigmaL = demoActive
+    ? DEMO_SIGMA_L
+    : (alerts?.data.level?.sigma_liters ?? trace.sigmaL);
+  const confidence = demoActive
+    ? DEMO_CONFIDENCE
+    : (alerts?.data.level?.confidence ?? (live && source === "live" ? Number(level?.data.confidence ?? 0) : DEMO_CONFIDENCE));
   const demoFrac = demoActive ? demoFracFor(demoStage, demoTick) : 1.0;
   const demoOilState = oilStateFor(demoFrac);
   const demoOilCss = oilCssFor(demoOilState);
   const signingBadge = signingBadgeState(signingStatus);
 
+  const liveLevel = source === "live" && level ? Number(level.data.level_liters) : null;
+  const currentLevel = demoActive
+    ? shownPoints[shownPoints.length - 1]?.liters ?? wheel.levelL
+    : liveLevel !== null && Number.isFinite(liveLevel) ? liveLevel : wheel.levelL;
+  const sensorsFromBackend = live || demoActive;
+  const regime = sensorsFromBackend ? (moving ? "movement" : "rest") : wheel.regime;
+  const validity = sensorsFromBackend
+    ? levelValidity({ moving, confidence, stale: false })
+    : wheel.validity;
+
+  // Escalera y canales: alertas reales (en vivo/demo) o las del conjunto DEMO de la rueda.
+  const demoWheelAlert = demoDataset.alerts.find((alert) => alert.wheelId === wheel.id);
+  const walkAlerts = sensorsFromBackend ? shownAlerts : [];
+  const activeLevel = sensorsFromBackend ? highestLevel(walkAlerts) : wheel.alertLevel;
+  const channelStates = sensorsFromBackend || !demoWheelAlert
+    ? channelStatesFrom(walkAlerts)
+    : channelStatesFrom([{
+        channels: Object.fromEntries(demoWheelAlert.channels.map((channel) => [channel.name, channel.state === "fired"])),
+      }]);
+  const votes = (["pressure_drop", "level_trend", "vib_impact"] as const)
+    .filter((name) => channelStates[name] === "fired").length;
+
+  const lastUpdateMs = demoActive
+    ? DEMO_REFERENCE_MS
+    : live
+      ? (level?.data.t_iso ? Date.parse(level.data.t_iso) : null)
+      : wheel.lastComm;
+  const sourceBadge = (
+    <span className={`og-badge og-badge--source og-badge--source-${source}`}>
+      {live
+        ? t(source === "loading" ? "dash.source.badge.loading" : source === "live" ? "dash.source.badge.live" : "dash.source.badge.demo", lang)
+        : t("wheel.source.demoWheel", lang)}
+    </span>
+  );
+  const links = wheelLinks(wheel.id);
+  const rawFromBackend = liveSeries && rawRows.length > 0;
+  const rawText = rawTelemetryText(
+    rawFromBackend
+      ? rawRows
+      : shownPoints.slice(-6).map((point) => ({ t_s: point.t_s, level_l: point.liters, sigma_l: sigmaL })),
+  );
+  const wheelOptions = demoDataset.wheels
+    .filter((item) => item.validated)
+    .map((item) => ({ id: item.id, label: `${item.id} · ${item.truckId} ${item.position}` }));
+
   return (
-    <div className="og-page">
+    <div className="og-page og-wheel-detail">
     <div className="og-page__inner">
-      <p style={{ margin: "0 0 12px", color: "var(--og-muted)" }}>
+      <PageHeader
+        eyebrow={t("wheel.eyebrow", lang)}
+        title={t("wheel.title", lang, { value: wheel.id })}
+        description={t("wheel.description", lang)}
+        meta={<SyntheticBadge lang={lang} />}
+      />
+
+      <WheelContext
+        lang={lang}
+        truckId={wheel.truckId}
+        wheelId={wheel.id}
+        position={wheel.position}
+        regime={regime}
+        sourceBadge={sourceBadge}
+        lastUpdate={demoActive ? `${formatUtcTime(lastUpdateMs)} · DEMO` : formatUtcTime(lastUpdateMs)}
+        wheelOptions={wheelOptions}
+        onSelectWheel={selectWheel}
+      />
+
+      <Notice lang={lang} kind="simulation">
         {t("dash.intro", lang, { model: t("rul.model.syntheticProxy", lang) })}{" "}
         {t("dash.honesty", lang)}
-      </p>
+      </Notice>
 
       {analyzerNotice && <div className="og-analyzer-notice" role="alert">{analyzerNotice}</div>}
 
-      {/* source + backend row */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12, alignItems: "center" }}>
-        <span className={`og-badge og-badge--source og-badge--source-${source}`}>
-          {t(
-            source === "loading"
-              ? "dash.source.badge.loading"
-              : source === "live"
-                ? "dash.source.badge.live"
-                : "dash.source.badge.demo",
-            lang,
-          )}
-        </span>
-        <span style={{ fontSize: 12, color: "var(--og-muted)" }}>
-          {source === "live" && backendNote?.kind === "live"
-            ? t("dash.backend.summary", lang, {
-                rows: backendNote.rows,
-                influx: localizeBackendMessage(backendNote.influxMessage, backendNote.influx, lang),
-              })
-            : t(
-                  source === "loading"
-                    ? "dash.backend.probing"
-                    : source === "live"
-                      ? "dash.backend.connected"
-                      : "dash.backend.offline",
-                  lang,
-                )}
-        </span>
-        {signingBadge && (
-          <span className={`og-badge og-badge--${signingBadge.tone}`}>
-            {signingBadge.kind === "off"
-              ? t("dash.signing.off", lang)
-              : t("dash.signing.verified", lang)}
-            {" · "}{signingBadge.rejected} {t("dash.signing.rejected", lang)}
-          </span>
-        )}
-        <button
-          type="button"
-          onClick={() => void fetchAll()}
-          className="og-btn og-btn--compact og-btn--outline-amber"
-        >
-          {t("dash.action.refresh", lang)}
-        </button>
-        {!demoActive ? (
-          <button
-            type="button"
-            onClick={startDemo}
-            className="og-btn og-btn--compact og-btn--amber"
-          >
-            {t("demo.run", lang)}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={resetDemo}
-            className="og-btn og-btn--compact og-btn--outline"
-          >
-            {t("demo.reset", lang)}
-          </button>
-        )}
-      </div>
+      {activeLevel
+        ? <AlertBanner lang={lang} severity={activeLevel}>{t(alertBannerKey(activeLevel), lang)}</AlertBanner>
+        : <Notice lang={lang} kind="info">{t("wheel.banner.none", lang)}</Notice>}
 
-      {/* demo stage stepper */}
+      <TelemetryRow
+        lang={lang}
+        level={currentLevel}
+        sigma={sigmaL}
+        confidence={confidence}
+        validity={validity}
+        pressureKpa={wheel.pressureKpa}
+        temperatureC={wheel.temperatureC}
+        vibrationG={wheel.vibRms}
+        tauS={settlingTauSeconds(wheel.temperatureC)}
+        liveChannels={false}
+      />
+
+      <section className="og-wheel-console" aria-label={t("wheel.console.title", lang)}>
+        <span className="og-label">{t("wheel.console.title", lang)}</span>
+        <span className={`og-badge og-badge--source og-badge--source-${source}`}>{t("wheel.console.demoLabel", lang)}</span>
+        <span className="og-wheel-console__spacer" />
+        {live && (
+          <Button type="button" variant="ghost" onClick={() => void fetchAll()}>
+            {t("dash.action.refresh", lang)}
+          </Button>
+        )}
+        {!demoActive ? (
+          <Button type="button" variant="primary" onClick={startDemo}>
+            {t("demo.run", lang)}
+          </Button>
+        ) : (
+          <Button type="button" variant="ghost" onClick={resetDemo}>
+            {t("demo.reset", lang)}
+          </Button>
+        )}
+      </section>
+
       {demoActive && (
-        <div
-          style={{
-            border: "1px solid var(--og-amber)",
-            borderRadius: 6,
-            padding: "10px 12px",
-            marginBottom: 12,
-            background: "var(--og-panel-dashboard)",
-          }}
-        >
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            {DEMO_STAGES.map((s) => (
-              <span
-                key={s}
-                className={`og-badge og-badge--step${s === demoStage ? " og-badge--step-active" : ""}`}
-              >
-                {stageLabel(s, lang)}
-              </span>
-            ))}
-            <span style={{ fontSize: 13, color: "var(--og-body)" }}>
-              {stageBlurb(demoStage, lang)} · {t("dash.demo.oil", lang)} {formatOilText(demoFrac, lang)} · {t("dash.demo.benchLink", lang)}
+        <div className="og-wheel-stepper">
+          {DEMO_STAGES.map((s) => (
+            <span
+              key={s}
+              className={`og-badge og-badge--step${s === demoStage ? " og-badge--step-active" : ""}`}
+            >
+              {stageLabel(s, lang)}
             </span>
-          </div>
+          ))}
+          <span className="og-wheel-stepper__blurb">
+            {stageBlurb(demoStage, lang)} · {t("dash.demo.oil", lang)} {formatOilText(demoFrac, lang)} · {t("dash.demo.benchLink", lang)}
+          </span>
         </div>
       )}
 
-      <div className="og-dashboard-panels" style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-        {/* level chart */}
-        <div className="og-dashboard-chart" style={{ flex: "2 1 560px", minWidth: 320, border: "1px solid var(--og-line-dashboard)", borderRadius: "var(--og-radius-panel)", padding: 16, background: "var(--og-panel-dashboard)" }}>
-          <h2 className="og-dashboard-sheet-title" style={{ margin: "0 0 4px" }}>
-            {t("dash.chart.title", lang)}{" "}
-            <span style={{ fontSize: 12, fontWeight: 400, color: "var(--og-muted)" }}>
-              ±{formatNumber(sigmaL, lang, 2)} L · conf {formatNumber(Number(confidence), lang, 3)} · {t("dash.chart.restWindows", lang)}
-            </span>
-          </h2>
-          <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} />
-          <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--og-muted)" }}>
-            {t("dash.footnote", lang, { pressure: formatNumber(2.6, lang, 1) })}
-          </p>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8, fontSize: 13 }}>
-            <span style={{ color: demoOilCss, fontWeight: 700 }}>
-              {demoActive
-                ? t("dash.demo.fill", lang, { value: formatOilText(demoFrac, lang) })
-                : level
-                  ? `${formatNumber(Number(level.data.level_liters), lang, 1)} L · ${formatNumber(Number(level.data.level_pct), lang, 1)}%`
-                  : "—"}
-            </span>
-            <span style={{ color: "var(--og-muted)" }}>
-              {demoActive
-                ? formatDemoLabNote(lang)
-                : `${t("dash.source.label", lang)}: ${localizeBackendMessage(level?.data.source_message, level?.data.source ?? t("dash.backend.noPayload", lang), lang)}`}
-            </span>
-          </div>
-        </div>
-
-        {/* side column */}
-        <div className="og-dashboard-side" style={{ flex: "1 1 280px", minWidth: 260, maxWidth: 400, display: "flex", flexDirection: "column", gap: 12 }}>
-          {/* mode indicator */}
-          <div style={{ border: "1px solid var(--og-line-dashboard)", borderRadius: "var(--og-radius-panel)", padding: "10px 12px", background: "var(--og-panel-dashboard)" }}>
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>
-              {t("dash.mode.title", lang)}{" "}
-              <span style={{ color: moving ? "var(--og-blue)" : "var(--og-green)" }}>
-                {t(moving ? "hud.moving" : "hud.rest", lang)}
-              </span>{" "}
-              <span style={{ fontSize: 12, color: recal ? "var(--og-green)" : "var(--og-muted)" }}>
-                {t(recal ? "dash.mode.recalibrating" : "dash.mode.recalGated", lang)}
+      <div className="og-wheel-grid og-dashboard-panels">
+        <div className="og-wheel-main">
+          <section className="og-wheel-panel og-dashboard-chart">
+            <h3 className="og-wheel-panel__title">
+              {t("wheel.chart.title", lang)}
+              <span className="og-wheel-panel__meta">
+                ±{formatNumber(sigmaL, lang, 2)} L · {t("ui.confidence", lang)} {formatNumber(Number(confidence), lang, 3)}
+              </span>
+            </h3>
+            {usingTrace && live && source === "live" && (
+              <p className="og-wheel-panel__warn">{t("wheel.chart.demoTrace", lang)}</p>
+            )}
+            <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} variant="inline" />
+            <ChartLegend lang={lang} />
+            <p className="og-wheel-panel__note">
+              {t("wheel.chart.note", lang)} {t("dash.footnote", lang, { pressure: formatNumber(wheel.pressureKpa, lang, 1) })}
+            </p>
+            <div className="og-wheel-status">
+              <span style={{ color: demoOilCss, fontWeight: 700 }}>
+                {demoActive
+                  ? t("dash.demo.fill", lang, { value: formatOilText(demoFrac, lang) })
+                  : level && live
+                    ? `${formatNumber(Number(level.data.level_liters), lang, 1)} L · ${formatNumber(Number(level.data.level_pct), lang, 1)}%`
+                    : "—"}
+              </span>
+              <span className="og-wheel-status__source">
+                {demoActive
+                  ? formatDemoLabNote(lang)
+                  : `${t("dash.source.label", lang)}: ${localizeBackendMessage(level?.data.source_message, level?.data.source ?? t("dash.backend.noPayload", lang), lang)}`}
               </span>
             </div>
-            <div style={{ fontSize: 13, color: "var(--og-body)" }}>
+          </section>
+
+          <section className="og-wheel-panel og-wheel-mode">
+            <div>
+              <span className="og-label">{t("dash.mode.title", lang)}</span>{" "}
+              <strong style={{ color: moving ? "var(--og-blue)" : "var(--og-green)" }}>
+                {t(moving ? "hud.moving" : "hud.rest", lang)}
+              </strong>{" "}
+              <small style={{ color: recal ? "var(--og-green)" : "var(--og-muted)" }}>
+                {t(recal ? "dash.mode.recalibrating" : "dash.mode.recalGated", lang)}
+              </small>
+            </div>
+            <p className="og-wheel-panel__note">
               FSM <strong>{fsm.state}</strong> (t+{formatNumber(fsmTick, lang, 0)} s {t("dash.fsm.sharedClock", lang)}) ·{" "}
               {source === "live"
                 ? t("dash.backend.windows", lang, { count: windows?.count ?? 0, rows: storeRows })
                 : t("dash.backend.localWindows", lang)}
-            </div>
-          </div>
-
-          <RulPanel
-            rul={demoActive ? demoRulFor(demoStage, lang) : (rul?.data ?? null)}
-            analyzerUnavailable={analyzerUnavailable && !demoActive}
-            evaluationReason={demoActive ? undefined : (rul?.reason ?? alerts?.reason)}
-          />
-
-          {/* N1–N4 timeline */}
-          <div style={{ border: "1px solid var(--og-line-dashboard)", borderRadius: "var(--og-radius-panel)", padding: "10px 12px", background: "var(--og-panel-dashboard)" }}>
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>
-              {t("dash.alerts.title", lang)}{" "}
-              <span style={{ fontSize: 12, fontWeight: 400, color: "var(--og-muted)" }}>
-                {(analyzerUnavailable && !demoActive ? [] : alerts?.data.escalation ?? shownAlerts.map((a) => a.level)).join(" → ") || t("dash.alerts.none", lang)}
+            </p>
+            <p className="og-wheel-panel__note">
+              <span className={`og-badge og-badge--source og-badge--source-${source}`}>
+                {source === "loading"
+                  ? t("dash.backend.probing", lang)
+                  : source === "live" && backendNote?.kind === "live"
+                    ? t("dash.backend.summary", lang, {
+                        rows: backendNote.rows,
+                        influx: localizeBackendMessage(backendNote.influxMessage, backendNote.influx, lang),
+                      })
+                    : live ? t("dash.backend.offline", lang) : t("wheel.source.demoWheel", lang)}
               </span>
-            </div>
+              {signingBadge && (
+                <span className={`og-badge og-badge--${signingBadge.tone}`}>
+                  {signingBadge.kind === "off"
+                    ? t("dash.signing.off", lang)
+                    : t("dash.signing.verified", lang)}
+                  {" · "}{signingBadge.rejected} {t("dash.signing.rejected", lang)}
+                </span>
+              )}
+            </p>
+          </section>
+        </div>
+
+        <aside className="og-wheel-side og-dashboard-side">
+          <LadderPanel lang={lang} active={activeLevel} colors={ALERT_SEVERITY_COLORS} />
+          <FusionPanel lang={lang} channels={channelStates} votes={votes} />
+          <section className="og-wheel-panel og-wheel-rul">
+            <RulPanel
+              rul={demoActive ? demoRulFor(demoStage, lang) : (rul?.data ?? null)}
+              analyzerUnavailable={analyzerUnavailable && !demoActive}
+              evaluationReason={demoActive ? undefined : (rul?.reason ?? alerts?.reason)}
+            />
+          </section>
+          <section className="og-wheel-panel">
+            <h3 className="og-wheel-panel__title">
+              {t("dash.alerts.title", lang)}
+              <span className="og-wheel-panel__meta">
+                {(analyzerUnavailable && !demoActive ? [] : demoActive ? shownAlerts.map((a) => a.level) : alerts?.data.escalation ?? shownAlerts.map((a) => a.level)).join(" → ") || t("dash.alerts.none", lang)}
+              </span>
+            </h3>
             {shownAlerts.length === 0 ? (
-              <p style={{ margin: 0, color: "var(--og-muted)", fontSize: 13 }}>
-                {t("dash.alerts.empty", lang)}
-              </p>
+              <p className="og-wheel-panel__note">{t("dash.alerts.empty", lang)}</p>
             ) : (
-              <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+              <ul className="og-wheel-alerts">
                 {shownAlerts.map((a) => (
-                  <li key={a.alert_id} style={{ marginBottom: 8, border: `1px solid ${ALERT_SEVERITY_COLORS[a.level] ?? "var(--og-line-dashboard)"}`, borderRadius: "var(--og-radius-panel)", padding: "6px 8px" }}>
+                  <li key={a.alert_id} style={`--tone: ${ALERT_SEVERITY_COLORS[a.level] ?? "var(--og-line-dashboard)"}`}>
                     <span className={`og-badge og-badge--alert og-badge--${a.level.toLowerCase()}`}>
                       {a.level}
                     </span>
-                    <strong style={{ fontSize: 13 }}>{a.alert_id}</strong>
-                    <span style={{ fontSize: 12, color: "var(--og-muted)" }}> · t {formatNumber(a.t_s, lang, 1)} s · {localizeBackendZone(a.zone, lang)}</span>
-                    <br />
-                    <span style={{ fontSize: 13, color: "var(--og-body)" }}>
-                      {localizeBackendMessage(a.reason_message, a.reason, lang)}
-                    </span>
+                    <strong>{a.alert_id}</strong>
+                    <span className="og-wheel-alerts__meta"> · t {formatNumber(a.t_s, lang, 1)} s · {localizeBackendZone(a.zone, lang)}</span>
+                    <p>{localizeBackendMessage(a.reason_message, a.reason, lang)}</p>
                   </li>
                 ))}
               </ul>
             )}
-            {alerts && !demoActive && !analyzerUnavailable && (
-              <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--og-muted)" }}>
+            {alerts && !demoActive && !analyzerUnavailable && live && (
+              <p className="og-wheel-panel__note">
                 {localizeBackendMessage(alerts.data.note_message, alerts.data.note, lang)} · {localizeBackendMessage(alerts.data.fallback_message, alerts.data.fallback, lang)}
               </p>
             )}
-          </div>
-        </div>
+          </section>
+        </aside>
       </div>
+
+      <details className="og-wheel-raw">
+        <summary>
+          {t("wheel.raw.title", lang)}
+          <span className="og-chip">{rawFromBackend ? t("wheel.raw.live", lang) : t("wheel.raw.demo", lang)}</span>
+        </summary>
+        <pre>{rawText || t("wheel.raw.empty", lang)}</pre>
+      </details>
+
+      <nav className="og-wheel-links" aria-label={t("wheel.links", lang)}>
+        <a href={links.history}>{t("wheel.link.history", lang)}</a>
+        <a href={links.alerts}>{t("wheel.link.alerts", lang)}</a>
+      </nav>
     </div>
     </div>
   );

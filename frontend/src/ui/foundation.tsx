@@ -168,14 +168,14 @@ export function ChannelFusion({
   channels?: Partial<Record<"pressure_drop" | "level_trend" | "vib_impact" | "temp_drift_veto", "fired" | "quiet" | "no-data">>;
 }) {
   const names = ["pressure_drop", "level_trend", "vib_impact"] as const;
-  const label = (name: string) => name.replace(/_/g, " ");
+  const label = (name: (typeof names)[number] | "temp_drift_veto") => t(`ui.channel.${name}`, lang);
   return (
     <div className="og-channel-fusion">
       {names.map((name) => {
         const state = channels?.[name] ?? "no-data";
-        return <div><span className={`og-status-dot og-status-dot--${state === "fired" ? "ok" : "muted"}`} />{label(name)}<b>{t(state === "fired" ? "ui.fired" : state === "quiet" ? "ui.quiet" : "ui.noData", lang)} · {t("ui.vote", lang)}</b></div>;
+        return <div><span className={`og-status-dot og-status-dot--${state === "fired" ? "fired" : "muted"}`} />{label(name)}<b>{t(state === "fired" ? "ui.fired" : state === "quiet" ? "ui.quiet" : "ui.noData", lang)} · {t("ui.vote", lang)}</b></div>;
       })}
-      <div className="og-channel-fusion__veto"><span className="og-status-dot og-status-dot--muted" />temp drift veto<b>{t(channels?.temp_drift_veto === "fired" ? "ui.fired" : channels?.temp_drift_veto === "quiet" ? "ui.quiet" : "ui.noData", lang)} · {t("ui.veto", lang)}</b></div>
+      <div className="og-channel-fusion__veto"><span className={`og-status-dot og-status-dot--${channels?.temp_drift_veto === "fired" ? "veto" : "muted"}`} />{label("temp_drift_veto")}<b>{t(channels?.temp_drift_veto === "fired" ? "ui.fired" : channels?.temp_drift_veto === "quiet" ? "ui.quiet" : "ui.noData", lang)} · {t("ui.veto", lang)}</b></div>
     </div>
   );
 }

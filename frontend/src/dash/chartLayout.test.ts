@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { chartLayoutForWidth } from "./chartLayout";
+import { chartLayoutForWidth, inlineLayoutForWidth } from "./chartLayout";
 
 describe("level chart layout", () => {
   test("matches the rendered SVG width while preserving fixed-pixel text scale", () => {
@@ -14,5 +14,12 @@ describe("level chart layout", () => {
     expect(narrow.width).toBe(320);
     expect(narrow.height).toBe(110);
     expect(narrow.scale).toBe(0.5);
+  });
+
+  test("inline layout keeps text at fixed size and bounds the height", () => {
+    expect(inlineLayoutForWidth(1000).height).toBe(320);
+    expect(inlineLayoutForWidth(1000).scale).toBe(1);
+    expect(inlineLayoutForWidth(300).height).toBe(200);
+    expect(inlineLayoutForWidth(800).padding.right).toBe(16);
   });
 });

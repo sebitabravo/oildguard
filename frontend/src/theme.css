@@ -123,6 +123,8 @@ button { font-family: inherit; }
 .og-status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--og-text-muted); }
 .og-status-dot--ok { background: var(--og-green); box-shadow: 0 0 0 3px rgba(16, 185, 129, .12); }
 .og-status-dot--muted { background: var(--og-text-muted); }
+.og-status-dot--fired { background: var(--og-orange); box-shadow: 0 0 0 3px rgba(249, 115, 22, .16); }
+.og-status-dot--veto { background: var(--og-red); box-shadow: 0 0 0 3px rgba(239, 68, 68, .16); }
 .og-backend-pill { display: inline-flex; gap: 7px; align-items: center; padding: 7px 10px; color: var(--og-text-secondary); border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-sm); font: 10px var(--og-mono); }
 .og-backend-pill--live { color: var(--og-green); }.og-backend-pill--demo { color: var(--og-accent); }.og-backend-pill--checking { color: var(--og-text-muted); }
 .og-top { position: fixed; inset: 0 0 auto 256px; z-index: 9; height: var(--og-header-h); display: flex; align-items: center; gap: 18px; padding: 0 24px; background: rgba(11, 15, 20, .94); border-bottom: 1px solid var(--og-border-subtle); backdrop-filter: blur(12px); }
