@@ -17,13 +17,237 @@ The frontend reads `PUBLIC_BACKEND_URL`; Compose sets it to
 
 | Method | Path | Status when real |
 |---|---|---|
-| GET | `/health` | `ok` or `degraded` (session store, persisted Influx count, MQTT, signing, and analyzer availability diagnostics) |
+| GET | `/health` | `ok` or `degraded` (session store, persisted Influx count, MQTT, signing, ingest metrics, and analyzer availability diagnostics) |
 | POST | `/ingest` | `ok` — accepted rows stored; per-row signature rejections returned in the ack |
+| GET | `/metrics/ingest` | `ok` — rolling row counters, queue backpressure and ingest latency p50/p95/p99 |
 | GET | `/level` | `ok` — latest ingested ground-truth row echoed; `confidence` remains the `0.0` placeholder on this endpoint (`backend/main.py:346-377`) |
 | GET | `/level/series?limit=300` | `ok` — rest-gated fused level series from the session store, evenly downsampled when needed |
 | GET | `/windows?limit=50` | `ok` — rest windows grouped from `recal_window` flags |
 | GET | `/alerts` | `ok` — T10 N1–N4 ladder over the memory store; `unavailable` when the analyzer cannot load |
 | GET | `/rul` | `ok` — T10 trend-extrapolated RUL or a precision-gated `suppressed` result; `unavailable` when the analyzer cannot load |
+| GET | `/fleet/aggregates` | `ok` — Polars windowed percentiles across the fleet or per device; `reason: "no_rows"` when the window is empty |
+| GET | `/fleet/devices` | `ok` — per-device retention, last sample and signing health; `reason: "no_rows"` when empty |
+| WS | `/ws/fleet` | one `fleet_tick` per second; the client may change the window with `{"window_s": n}` |
+
+## Device selection
+
+`/level`, `/level/series`, `/windows`, `/alerts` and `/rul` accept an optional
+`device_id`. Without it the backend resolves, in order:
+
+1. `OILGUARD_DEFAULT_DEVICE` (default `wheel-RH-01`) when that device is in the store.
+2. Otherwise the most recently updated device in the store.
+3. Otherwise the empty/no-rows response.
+
+An explicit `device_id` always wins, even when it has no rows, so querying a
+quiet device returns its own honest empty answer instead of another device's
+data. Responses for a single device are byte-compatible with the pre-fleet
+behavior; each also reports the resolved `device_id` at the top level.
+
+## Per-device store
+
+Rows are held per `device_id` in a `collections.deque` with
+`maxlen=OILGUARD_RETENTION_ROWS` (default `36000`, one hour at 10 Hz). The
+replay seen-set is bounded by the same window: when a row is evicted its
+identity is forgotten, so a legitimate store-and-forward replay from the edge
+is re-ingested instead of being rejected forever. A previously unseen device
+cannot be blocked by another device's history.
+
+`GET /health` adds `devices` (count) and `retention_rows`.
+
+## Batched ingest and backpressure
+
+The MQTT bridge subscribes to **`oilguard/signals`** (legacy single topic) and
+**`oilguard/signals/+`** (per device). It only decodes and enqueues; a single
+worker verifies signatures, appends to the store, and flushes InfluxDB in the
+background every 1 s or every 5000 points.
+
+The queue is bounded (`OILGUARD_INGEST_QUEUE`, default 1000 batches). When it
+is full the batch is **dropped and counted** — never silently: `enqueue_batch`
+returns `{"status": "dropped", "reason": "queue_full"}` and
+`GET /metrics/ingest` exposes `queue.dropped_batches`. A silent drop would be
+indistinguishable from a healthy fleet. A slow consumer degrades into visible
+loss rather than unbounded memory.
+
+`POST /ingest` is unchanged: synchronous, same response shape, and it calls the
+same `verify_and_store` core the worker uses. Signature rules are identical on
+both paths.
+
+Messages on a per-device topic only receive `device_id` from the topic when the
+payload does not carry one. It is never overwritten, because `device_id` is a
+signed field and overriding it would invalidate the HMAC of a correctly signed
+row.
+
+## GET /metrics/ingest
+
+```json
+{
+  "status": "ok",
+  "kind": "ingest-metrics",
+  "as_of": "...",
+  "ingest": {
+    "rows": {
+      "accepted_1s": 100000, "accepted_10s": 1000000,
+      "accepted_total": 42000000,
+      "rejected_1s": 0, "rejected_10s": 3, "rejected_total": 12
+    },
+    "queue": {
+      "depth": 0, "capacity": 1000, "dropped_batches": 0,
+      "accepted_batches": 42, "failed_batches": 0,
+      "pending_influx_points": 0
+    },
+    "latency": {
+      "count": 100000, "min_s": 0.004, "max_s": 0.19,
+      "mean_s": 0.031, "p50_s": 0.028, "p95_s": 0.086, "p99_s": 0.14,
+      "invalid_samples": 2, "dropped_samples": 0,
+      "unit": "s", "definition": "receive time - t_iso",
+      "percentile_method": "linear", "max_latency_s": 3600.0
+    },
+    "influx": {"enabled": true, "flush_rows": 5000, "flush_seconds": 1.0, "status": "..."},
+    "window_s": 10.0, "retention_rows": 36000, "devices": 10000
+  }
+}
+```
+
+Latency is **`receive time - t_iso`**, measured on accepted rows whose `t_iso`
+parses as ISO-8601. Values below `0` (emitter clock ahead) and above
+`max_latency_s` (3600 s, emitter stalled) are excluded and counted in
+`invalid_samples`, otherwise a single broken clock poisons p99 and makes the
+metric unusable. Percentiles use **linear interpolation**, the same method as
+`/fleet/aggregates`. The sample buffer is bounded by count as well as by time
+(100000 samples); if it overflows the oldest are dropped and counted in
+`dropped_samples`. Rows whose `t_iso` does not parse are simply not sampled,
+which shows up as `latency.count` below `rows.accepted_*`.
+
+`GET /health` carries a compact `ingest` object (`queue_depth`,
+`dropped_batches`, `accepted_rows_10s`, `rejected_rows_10s`,
+`latency_p50_s`, `latency_p95_s`, `latency_p99_s`); it deliberately does not
+duplicate the full `/metrics/ingest` payload.
+
+## GET /fleet/aggregates
+
+`GET /fleet/aggregates?window_s=10&metrics=pressure_kpa,temperature_c,vib_rms_g,level_liters&group=fleet|device&limit=200`
+
+- `window_s` — 1..300, default 10.
+- `metrics` — comma separated, deduplicated, from `pressure_kpa`,
+  `temperature_c`, `vib_rms_g`, `vib_kurtosis`, `level_liters`, `level_pct`.
+  Defaults to the four documented above. An unknown metric returns `422`.
+- `group=fleet` (default) — one block per metric. `group=device` — one block
+  per device; `limit` (default 200) truncates the list, while `devices` keeps
+  reporting the true distinct count.
+- `quantile_interpolation` — always `"linear"`, echoed in the response.
+
+The window is applied **per device** against each device's own latest `t_s`
+(falling back to arrival time when `t_s` is absent), so a device that stopped
+reporting does not push the active ones out of the window.
+
+```json
+{
+  "status": "ok",
+  "kind": "fleet-aggregates",
+  "as_of": "...",
+  "window_s": 10,
+  "metrics": ["pressure_kpa"],
+  "group": "fleet",
+  "limit": 200,
+  "rows": 600,
+  "devices": 3,
+  "quantile_interpolation": "linear",
+  "aggregates": {
+    "pressure_kpa": {"mean": 6.66, "p50": 3.5, "p95": 17.5, "p99": 19.5,
+                     "min": 1.0, "max": 20.0, "count": 600, "devices": 3}
+  },
+  "reason": null,
+  "code": null
+}
+```
+
+With `group=device`, `aggregates` is a list of
+`{"device_id", "rows", "metrics": {<metric>: <block>}}` and each block reports
+`devices: 1`.
+
+An empty window returns HTTP 200 with `aggregates` empty (`[]` for
+`group=device`) and `reason: "no_rows"`, `code: "no_rows"` — zeros would be
+indistinguishable from a fleet genuinely at rest.
+
+## GET /fleet/devices
+
+```json
+{
+  "status": "ok",
+  "kind": "fleet-devices",
+  "as_of": "...",
+  "count": 2,
+  "retention_rows": 36000,
+  "devices": [
+    {
+      "device_id": "wheel-RH-01",
+      "rows_retained": 600, "retention_rows": 36000,
+      "last_t_iso": "2026-10-09T06:24:00+00:00", "last_t_s": 599.9,
+      "rows_accepted": 600, "rows_verified": 600,
+      "rows_rejected": 0, "rows_offered": 600, "verified_ratio": 1.0,
+      "rejected_reasons": {},
+      "latest_level_liters": 94.8, "latest_level_pct": 99.8
+    }
+  ],
+  "reason": null,
+  "code": null
+}
+```
+
+`verified_ratio` is `rows_verified / rows_offered`, where `rows_offered` is
+accepted **plus** rejected. Using only accepted rows would leave a device
+sending tampered rows at `1.0`, since its rejections would be invisible.
+
+A device whose rows are **all** rejected still appears (with `rows_retained: 0`
+and `last_t_iso: null`): it never enters the store, and hiding it would hide
+exactly the device most worth seeing.
+
+An empty store returns `count: 0`, `devices: []` and `reason`/`code`
+`no_rows`.
+
+## WS /ws/fleet
+
+Every second the server pushes:
+
+```json
+{
+  "type": "fleet_tick",
+  "as_of": "...",
+  "window_s": 10,
+  "rows": 600,
+  "devices": 3,
+  "quantile_interpolation": "linear",
+  "aggregates": {"<metric>": {"mean": 0, "p50": 0, "p95": 0, "p99": 0,
+                              "min": 0, "max": 0, "count": 0, "devices": 0}},
+  "ingest": {"queue_depth": 0, "dropped_batches": 0, "latency_p95_s": 0.08}
+}
+```
+
+`aggregates` is always the **fleet** group over the tick window. The client may
+send `{"window_s": n}` with `n` between 1 and 300; invalid values are ignored
+and the stream continues. Ticks are never buffered: at most one is in flight,
+so a slow client misses samples instead of the server accumulating memory.
+Disconnect is handled cleanly and cancels the reader task.
+
+## Environment variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `OILGUARD_RETENTION_ROWS` | `36000` | rows retained per device (1 h at 10 Hz) |
+| `OILGUARD_DEFAULT_DEVICE` | `wheel-RH-01` | device used when `device_id` is omitted |
+| `OILGUARD_INGEST_QUEUE` | `1000` | bounded ingest queue, in batches |
+| `OILGUARD_INFLUX_WRITE` | `1` | `0` disables InfluxDB (load tests) |
+| `OILGUARD_INFLUX_FLUSH_ROWS` | `5000` | points buffered before a forced flush |
+| `OILGUARD_INFLUX_FLUSH_SECONDS` | `1` | max seconds a point waits in the buffer |
+| `OILGUARD_FLEET_TICK_SECONDS` | `1` | WebSocket tick period |
+| `OILGUARD_DEVICE_KEYS` | _(empty)_ | explicit `device_id:hex_key` entries |
+| `OILGUARD_DEVICE_MASTER_KEY` | _(empty)_ | hex master key for derived device keys |
+| `OILGUARD_REQUIRE_SIGNATURE` | `0` | `1` rejects unsigned rows |
+
+With `OILGUARD_INFLUX_WRITE=0` the backend never opens an InfluxDB client and
+reports `disabled (OILGUARD_INFLUX_WRITE=0); rows kept in memory`. It reuses
+the `influx_client_missing` message code: the client-visible contract is
+identical (nothing written, rows kept in memory).
 
 ## GET /health
 
@@ -37,6 +261,8 @@ not. The `analysis` object includes a boolean `available` and a diagnostic
   "status": "ok",
   "analysis": {"available": true, "reason": null},
   "store_rows": 600,
+  "devices": 1,
+  "retention_rows": 36000,
   "influx_points": 1200,
   "influx": "unknown (no ingest yet)",
   "influx_message": {"code": "influx_unknown_no_ingest", "params": {}},
@@ -46,6 +272,12 @@ not. The `analysis` object includes a boolean `available` and a diagnostic
     "verified_total": 0,
     "rejected_total": 0,
     "rejected_reasons": {}
+  },
+  "device_keys": {"explicit": 0, "master_key_configured": false},
+  "ingest": {
+    "queue_depth": 0, "dropped_batches": 0,
+    "accepted_rows_10s": 600, "rejected_rows_10s": 0,
+    "latency_p50_s": 0.002, "latency_p95_s": 0.004, "latency_p99_s": 0.005
   }
 }
 ```
@@ -184,6 +416,44 @@ not confidentiality, transport security, HTTP caller authentication, or IEC
 62443 compliance. Provisioning, secure key storage, and key rotation remain
 out of scope.
 
+### Master key and derived device keys
+
+Listing one key per device does not scale to thousands of devices, so
+`OILGUARD_DEVICE_MASTER_KEY` (hex string) enables on-demand derivation.
+For any device without an explicit `OILGUARD_DEVICE_KEYS` entry, the backend
+derives its key with `shared.signing.derive_device_key(master, device_id)`
+(HMAC-SHA256 over a domain-separated label plus the device id). The Rust
+simulator derives the same key, so both ends agree without a per-device list.
+
+Precedence, highest first:
+
+1. An explicit `OILGUARD_DEVICE_KEYS` entry for that device always wins. This
+   is the escape hatch during a rotation: pin one device to its old key while
+   every other device keeps deriving from the master.
+2. The derived key, when a master key is configured.
+3. Otherwise the row is rejected as `unknown_device` (unchanged behavior).
+
+Rows without a `device_id` are never derived and stay `unknown_device`.
+Key material is never logged and never returned by any endpoint; a malformed
+master key raises at startup instead of degrading silently.
+
+`GET /health` reports derivation without exposing keys. `signing.devices`
+counts explicit `OILGUARD_DEVICE_KEYS` entries only, so derived devices do not
+inflate the number, and a sibling top-level object carries the flag:
+
+```json
+{
+  "signing": {"enforced": true, "devices": 2},
+  "device_keys": {"explicit": 2, "master_key_configured": true}
+}
+```
+
+> **Deviation from the R2 addendum:** the flag is reported as a top-level
+> `device_keys` object rather than inside the `signing` object, because
+> `tests/test_signed_ingest.py` (outside the R2 file ownership) asserts strict
+> equality on the whole `signing` dict. Adding a key there would break it.
+> Move it inside `signing` once that assertion is updated.
+
 Migration note (breaking vs S0 stub): the S0 `POST /ingest` accepted a
 single 4-field object (`device_id`, `pressure_kpa`, `temperature_c`,
 `vibration_rms`). T8 requires the batch above; old payloads return
@@ -256,12 +526,20 @@ same contract as `sim/detect.py`). Full detector output:
 
 ## MQTT bridge (`backend/ingest_mqtt.py`)
 
-Topic `oilguard/signals` (env `MQTT_HOST`, `MQTT_PORT`, `MQTT_TOPIC`).
-Message = JSON `{"rows": [...]}` (single SignalRow object also
-accepted). Malformed messages are dropped with a warning; broker
-outages retry with 1/2/5/10/30 s backoff. The backend starts this
-bridge in a daemon thread on startup (best-effort: if the broker is
-down, `POST /ingest` still works).
+Subscribes to `oilguard/signals` (env `MQTT_HOST`, `MQTT_PORT`,
+`MQTT_TOPIC`) **and** `oilguard/signals/+`. Message = JSON `{"rows": [...]}`
+(single SignalRow object also accepted). Malformed messages are dropped with a
+warning; broker outages retry with 1/2/5/10/30 s backoff. The backend starts
+this bridge in a daemon thread on startup (best-effort: if the broker is down,
+`POST /ingest` still works). See "Batched ingest and backpressure" above for
+queueing and drop semantics.
+
+```bash
+# per-device topic (legacy single topic still works)
+curl -s 'localhost:8000/fleet/aggregates?window_s=10&metrics=level_liters'
+curl -s 'localhost:8000/fleet/devices'
+curl -s localhost:8000/metrics/ingest
+```
 
 ## curl examples
 

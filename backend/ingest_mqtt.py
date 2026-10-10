@@ -37,11 +37,39 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "oilguard/signals")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
+# El topico por dispositivo convive con el legado: el simulador Rust publica
+# oilguard/signals/<device_id> y el mock antiguo sigue en oilguard/signals.
+DEVICE_TOPIC = os.getenv("MQTT_DEVICE_TOPIC", "oilguard/signals")
+
 RECONNECT_DELAYS = (1, 2, 5, 10, 30)  # s, cycled while the broker is down
 
 
-def decode_payload(raw: bytes) -> list[dict[str, Any]]:
-    """Decode one MQTT message into SignalRow dicts (raises ValueError)."""
+def subscription_topics(topic: str = MQTT_TOPIC) -> tuple[str, ...]:
+    """Topicos a suscribir: el legado y el comodin por dispositivo."""
+    return (topic, f"{topic}/+")
+
+
+def device_from_topic(topic: str | None, base: str = DEVICE_TOPIC) -> str | None:
+    """Device_id del topico per-device, o None si no aplica."""
+    if not topic:
+        return None
+    prefix = f"{base}/"
+    if not topic.startswith(prefix):
+        return None
+    remainder = topic[len(prefix) :]
+    if not remainder or "/" in remainder:
+        return None
+    return remainder
+
+
+def decode_payload(raw: bytes, topic: str | None = None) -> list[dict[str, Any]]:
+    """Decode one MQTT message into SignalRow dicts (raises ValueError).
+
+    ``topic`` opcional: si el mensaje viene de ``oilguard/signals/<device_id>``
+    y la fila no trae ``device_id``, se completa con el del topico. Nunca se
+    sobrescribe un ``device_id`` que ya viene en el payload: es campo firmado,
+    y pisarlo invalidaria la HMAC de una fila correctamente firmada.
+    """
     try:
         body = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -54,6 +82,11 @@ def decode_payload(raw: bytes) -> list[dict[str, Any]]:
         raise ValueError('expected {"rows": [...]} or a single SignalRow object')
     if not rows:
         raise ValueError("empty batch")
+    device = device_from_topic(topic)
+    if device:
+        for row in rows:
+            if isinstance(row, dict) and not row.get("device_id"):
+                row["device_id"] = device
     return rows
 
 
@@ -114,15 +147,17 @@ def run_forever(
     client = mqtt.Client()
 
     def on_connect(_c: Any, _u: Any, _f: Any, rc: int) -> None:
+        topics = subscription_topics(topic)
         if rc == 0:
-            log.info("connected to mqtt %s:%d, subscribing %s", host, port, topic)
-            client.subscribe(topic)
+            log.info("connected to mqtt %s:%d, subscribing %s", host, port, list(topics))
+            for subscription in topics:
+                client.subscribe(subscription)
         else:
             log.warning("mqtt connect refused rc=%d", rc)
 
     def on_message(_c: Any, _u: Any, msg: Any) -> None:
         try:
-            rows = decode_payload(msg.payload)
+            rows = decode_payload(msg.payload, msg.topic)
         except ValueError as exc:
             log.warning("dropping malformed message on %s: %s", msg.topic, exc)
             return
