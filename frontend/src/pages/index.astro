@@ -1,8 +1,8 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
-import BenchView from "../sim/bench/BenchView";
+import PublicLayout from "../layouts/PublicLayout.astro";
+import Landing from "../platform/landing/Landing";
 ---
 
-<BaseLayout section="wheel">
-  <BenchView client:only="preact" />
-</BaseLayout>
+<PublicLayout title="OilGuard Mining">
+  <Landing client:load />
+</PublicLayout>
