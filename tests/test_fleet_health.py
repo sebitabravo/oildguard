@@ -8,7 +8,6 @@ al que pregunta.
 
 from __future__ import annotations
 
-import threading
 import time
 
 import pytest
@@ -28,6 +27,37 @@ class Clock:
         self.now += seconds
 
 
+class ManualExecutor:
+    """Lanzador de sondas controlado por el test: nada corre hasta que se pide.
+
+    Las pruebas de la sonda usaban esperas y sondeos sobre un hilo real, lo
+    que las hacia depender de la carga de la maquina. Aqui el test decide
+    exactamente cuando se ejecuta la sonda.
+    """
+
+    def __init__(self) -> None:
+        self.pending: list = []
+
+    def __call__(self, work) -> None:
+        self.pending.append(work)
+
+    @property
+    def launched(self) -> int:
+        return len(self.pending)
+
+    def run_all(self) -> None:
+        pending, self.pending = self.pending, []
+        for work in pending:
+            work()
+
+
+@pytest.fixture()
+def manual_probes():
+    executor = ManualExecutor()
+    backend_main._INFLUX_POINTS.set_executor(executor)
+    return executor
+
+
 @pytest.fixture()
 def client(monkeypatch):
     monkeypatch.setattr(backend_main, "_count_influx_points", lambda: 0)
@@ -36,7 +66,22 @@ def client(monkeypatch):
     return TestClient(backend_main.app)
 
 
-def test_health_never_blocks_on_a_slow_influx_counter(client, monkeypatch):
+@pytest.fixture()
+def fast_probe_wait():
+    """Tope de espera pequeno para las pruebas que usan el hilo real.
+
+    El tope por defecto (0.1 s) deja solo 2x de margen sobre el aserto de
+    200 ms, y esa asercion mide tiempo de reloj: bajo carga de otra maquina se
+    volvia intermitente sin que el codigo hubiera cambiado. Con un tope de
+    5 ms el margen es de 40x y la prueba sigue probando lo mismo: que la
+    llamada vuelve mucho antes de los 3 s que tarda el contador.
+    """
+    backend_main._INFLUX_POINTS.wait_s = 0.005
+    yield
+    backend_main._INFLUX_POINTS.wait_s = backend_main.INFLUX_COUNT_PROBE_WAIT_S
+
+
+def test_health_never_blocks_on_a_slow_influx_counter(client, monkeypatch, fast_probe_wait):
     monkeypatch.setattr(
         backend_main, "_count_influx_points", lambda: (time.sleep(3), None)[1]
     )
@@ -49,7 +94,7 @@ def test_health_never_blocks_on_a_slow_influx_counter(client, monkeypatch):
     assert elapsed < 0.2, f"/health tardó {elapsed:.3f}s: está bloqueando en Influx"
 
 
-def test_only_the_caller_that_launches_the_probe_pays_the_wait(client, monkeypatch):
+def test_only_the_caller_that_launches_the_probe_pays_the_wait(client, monkeypatch, fast_probe_wait):
     """Con una sonda colgada, el segundo /health tampoco espera el tope."""
     monkeypatch.setattr(
         backend_main, "_count_influx_points", lambda: (time.sleep(3), None)[1]
@@ -119,39 +164,61 @@ def test_health_reprobes_after_the_ttl_expires(client, monkeypatch):
     assert payload["influx_points"] == 14
 
 
-def test_cache_is_invalidated_when_the_influx_configuration_changes(client, monkeypatch):
+def test_cache_is_invalidated_when_the_influx_configuration_changes(client, monkeypatch, manual_probes):
     monkeypatch.setattr(backend_main, "_count_influx_points", lambda: 5)
+    first = client.get("/health").json()
+    manual_probes.run_all()
     assert client.get("/health").json()["influx_points"] == 5
 
     monkeypatch.setattr(backend_main, "INFLUXDB_URL", "http://otro:8086")
     monkeypatch.setattr(backend_main, "_count_influx_points", lambda: 6)
 
-    # El 5 pertenece a otra instalacion: servirlo seria mentir.
+    # El 5 pertenece a otra instalacion: servirlo seria mentir. Ademas la
+    # reconfiguracion debe lanzar una sonda nueva aunque la anterior siguiera
+    # en vuelo; si no, /health se quedaria sin dato hasta que terminara.
+    reconfigured = client.get("/health").json()
+    manual_probes.run_all()
+
+    assert reconfigured["influx_points"] is None
     assert client.get("/health").json()["influx_points"] == 6
 
 
-def test_a_slow_probe_that_lands_later_fills_the_cache(client, monkeypatch):
-    release = threading.Event()
+def test_a_probe_from_a_previous_configuration_cannot_poison_the_cache(
+    client, monkeypatch, manual_probes
+):
+    """Una sonda en vuelo de la config anterior no puede escribir su resultado.
 
-    def slow_counter() -> int:
-        release.wait(timeout=5)
-        return 99
+    Sin generacion, la sonda lenta de la instalacion vieja escribia su numero
+    encima del cache nuevo y /health servia una persistencia que no era.
+    """
+    monkeypatch.setattr(backend_main, "_count_influx_points", lambda: 111)
+    client.get("/health")  # lanza la sonda de la config vieja, queda en vuelo
+    assert manual_probes.launched == 1
 
-    monkeypatch.setattr(backend_main, "_count_influx_points", slow_counter)
+    monkeypatch.setattr(backend_main, "INFLUXDB_URL", "http://otro:8086")
+    monkeypatch.setattr(backend_main, "_count_influx_points", lambda: 222)
+    client.get("/health")  # reconfigura: lanza la sonda nueva, la vieja sigue viva
+    assert manual_probes.launched == 2
 
-    started = time.perf_counter()
+    manual_probes.run_all()  # la vieja termina tarde, despues de la nueva
+
+    assert client.get("/health").json()["influx_points"] == 222
+
+
+def test_a_slow_probe_that_lands_later_fills_the_cache(client, monkeypatch, manual_probes):
+    monkeypatch.setattr(backend_main, "_count_influx_points", lambda: 99)
+
     first = client.get("/health").json()
-    assert time.perf_counter() - started < 0.2
+
+    # La sonda esta en vuelo: la respuesta no la espera y no inventa un valor.
+    assert manual_probes.launched == 1
     assert first["influx_points"] is None
     assert first["influx_points_reason"] == "not_probed"
 
-    release.set()
-    for _ in range(100):
-        if backend_main._INFLUX_POINTS.peek()[0] == 99:
-            break
-        time.sleep(0.02)
+    manual_probes.run_all()
 
-    # El sondeo tarde no se pierde: rellena el cache para las siguientes llamadas.
+    # El sondeo tardio no se pierde: rellena el cache para las siguientes llamadas.
+    assert manual_probes.launched == 0  # el TTL evita volver a sondar
     assert client.get("/health").json()["influx_points"] == 99
 
 
