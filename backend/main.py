@@ -24,6 +24,7 @@ import csv
 import logging
 import os
 import threading
+import time
 from collections import Counter
 from datetime import datetime, timezone
 from typing import Any, Literal
@@ -37,9 +38,11 @@ from shared.messages import message
 from shared.signing import derive_device_key, parse_device_keys, verify_row
 
 try:  # paquete (pytest / uvicorn backend.main:app)
+    from .metrics import IngestMetrics
     from .pipeline import IngestPipeline
     from .store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore
 except ImportError:  # módulo suelto (Docker copia backend/ a /app)
+    from metrics import IngestMetrics  # type: ignore
     from pipeline import IngestPipeline  # type: ignore
     from store import DEFAULT_DEVICE, RETENTION_ROWS, StoreView, TelemetryStore  # type: ignore
 
@@ -334,6 +337,7 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
     camino MQTT agrupa puntos en lugar de pagar una escritura por lote.
     """
     global _verified_total, _rejected_total
+    received_at = time.time()
     prepared, rejections = verify_rows(rows)
 
     with _store_lock:
@@ -346,11 +350,22 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
         _rejected_reasons.update(rejected_reasons)
         _verified_total += sum(1 for row in accepted if row.get("sig_verified"))
 
+    rejected_count = sum(rejected_reasons.values())
+    _INGEST_METRICS.record(accepted=len(accepted), rejected=rejected_count, now=received_at)
+    _INGEST_METRICS.record_latencies(
+        [
+            received_at - stamp
+            for stamp in (_parse_t_iso(row.get("t_iso")) for row in accepted)
+            if stamp is not None
+        ],
+        now=received_at,
+    )
+
     latest_seq = max((int(r.get("seq", 0)) for r in accepted), default=0)
     log.info(
         "ingest accepted=%d rejected=%d reasons=%s latest_seq=%d store_rows=%d",
         len(accepted),
-        sum(rejected_reasons.values()),
+        rejected_count,
         dict(rejected_reasons),
         latest_seq,
         total,
@@ -399,6 +414,39 @@ _PIPELINE = IngestPipeline(
     flush_seconds=INGEST_FLUSH_SECONDS,
     influx_enabled=_INFLUX_WRITE,
 )
+
+_INGEST_METRICS = IngestMetrics(window_s=10.0)
+
+
+def queue_state() -> dict[str, Any]:
+    """Estado de la cola que consumen /metrics/ingest y /health."""
+    return {
+        "depth": _PIPELINE.depth(),
+        "capacity": _PIPELINE.capacity(),
+        "dropped_batches": _PIPELINE.dropped_batches(),
+        "accepted_batches": _PIPELINE.accepted_batches(),
+        "failed_batches": _PIPELINE.failed_batches(),
+        "pending_influx_points": _PIPELINE.pending_points(),
+    }
+
+
+def influx_state() -> dict[str, Any]:
+    return {
+        "enabled": _INFLUX_WRITE,
+        "flush_rows": INGEST_FLUSH_ROWS,
+        "flush_seconds": INGEST_FLUSH_SECONDS,
+        "status": _influx_status,
+    }
+
+
+def _parse_t_iso(value: Any) -> float | None:
+    """Epoch de ``t_iso``; None si no es ISO-8601 parseable."""
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return datetime.fromisoformat(value).timestamp()
+    except ValueError:
+        return None
 
 
 def select_device(device_id: str | None) -> str | None:
@@ -568,6 +616,7 @@ def health() -> dict:
             "explicit": len(_DEVICE_KEYS),
             "master_key_configured": bool(_DEVICE_MASTER_KEY),
         },
+        "ingest": _INGEST_METRICS.compact(queue=queue_state()),
     }
 
 
@@ -590,6 +639,22 @@ def ingest(batch: IngestBatch) -> dict:
         "kind": "ingest-ack",
         "as_of": _now_iso(),
         **result,
+    }
+
+
+@app.get("/metrics/ingest")
+def metrics_ingest() -> dict:
+    """Contadores de ingesta, contrapresion de la cola y latencia p50/p95/p99."""
+    return {
+        "status": "ok",
+        "kind": "ingest-metrics",
+        "as_of": _now_iso(),
+        "ingest": {
+            **_INGEST_METRICS.snapshot(queue=queue_state()),
+            "influx": influx_state(),
+            "retention_rows": RETENTION_ROWS,
+            "devices": len(_STORE.devices()),
+        },
     }
 
 
