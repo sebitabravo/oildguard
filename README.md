@@ -2,10 +2,9 @@
 
 Local prototype of the Komatsu 930E-4SE and GDY106 motorized wheel
 (32.62:1). The validated scope is 930E/GDY106 only; the 980E-5 (GDY108-C,
-35.02:1) remains future work. The app has mine, wheel-detail, and monitoring
-pages, with a FastAPI backend, InfluxDB, and an MQTT mock.
+35.02:1) remains future work. The frontend includes operational, 3D-twin, platform, and lab pages backed by FastAPI, InfluxDB, and a local MQTT mock. Most operational pages use live backend data when available and explicitly labeled deterministic demo data otherwise; lab outputs are synthetic, not field measurements.
 
-Feature plan: [`odd/tasks/oilguard-pro-twin.md`](odd/tasks/oilguard-pro-twin.md).
+Feature plan: [`odd/tasks/oilguard-pro-twin.md`](odd/tasks/oilguard-pro-twin.md). The current route inventory and data classes are listed in [PRODUCT.md](PRODUCT.md#capabilities-and-constraints).
 
 ## Prerequisites
 
@@ -27,9 +26,11 @@ docker compose config --quiet
 docker compose up -d --build -V
 ```
 
-- Mine: http://localhost:5173/mine
-- Wheel detail: http://localhost:5173/wheel
-- Monitoring: http://localhost:5173/monitoring
+- Landing: http://localhost:5173/
+- Fleet: http://localhost:5173/fleet
+- Wheel monitoring: http://localhost:5173/monitoring
+- GDY106 cutaway: http://localhost:5173/wheel
+- Link health: http://localhost:5173/link
 - Backend health: http://localhost:8000/health
 - Backend API docs: http://localhost:8000/docs
 - InfluxDB: http://localhost:8086 (user and org `oilguard`)
@@ -37,6 +38,32 @@ docker compose up -d --build -V
 
 The `-V` option renews the frontend's anonymous `node_modules` volume when
 rebuilding, so it does not mask dependencies in the image.
+
+## Route map
+
+“Live backend” means data returned by the local API; pages label deterministic demo fallback as `DEMO`. `SYNTHETIC-PROXY` means modeled values, not field measurements. The alert inbox and detail pages can merge live backend records with deterministic local demo alerts; the alert-rules page is read-only. Demo lifecycle changes stay in this browser, and no alert lifecycle API is available.
+
+| Route | What it shows | Data class |
+|---|---|---|
+| `/` | Product landing page and demo navigation | Static; no telemetry |
+| `/login` | Demo-only sign-in form; no authentication service | Deterministic demo UI |
+| `/fleet` | Device/wheel fleet table with live rows and local fallback rows | Live backend + deterministic demo |
+| `/monitoring` | Selected-wheel levels, sensors, alert ladder, RUL, and local leak walkthrough | Live backend when available + deterministic demo |
+| `/wheel/history` | Selectable wheel history windows and event timeline | Deterministic demo |
+| `/rul` | Wheel lubricant-condition forecasts | Live backend when available + deterministic demo |
+| `/calibration` | Pause-window status and settling-curve model | Live backend windows when available + synthetic model/demo fallback |
+| `/mine` | Procedural mine scene and simulated truck cycles | Deterministic demo |
+| `/wheel` | GDY106 cutaway and interactive oil-pool model | Synthetic-proxy demo |
+| `/alerts` | Alert inbox with level, lifecycle, truck, role, and text filters | Live backend records + deterministic demo alerts |
+| `/alerts/detail` | Selected alert, trigger evidence, timeline, and report link; demo actions stay local | Live record when available; otherwise deterministic demo evidence |
+| `/alerts/rules` | Read-only explanation of alert thresholds and voting rules | Static rule configuration; no field data |
+| `/devices` | Device inventory and signing/link context | Live backend + deterministic demo fallback |
+| `/link` | Ingest, availability, outage, and link-health view | Live backend + deterministic demo fallback |
+| `/lab/sim` | Generated scenario fixture and playback controls | Synthetic lab |
+| `/lab/validation` | Estimate-versus-generator-truth comparison; optional live rows are labeled | Synthetic lab; backend rows only when available |
+| `/lab/bench` | Parameterized bench protocol calculations | Synthetic lab |
+| `/report` | Read-only canonical synthetic leak reconstruction; the alert query parameter supplies an ID, not alert-specific measurements | Deterministic synthetic demo |
+| `/dev/ui` | Shared component catalogue and states | Synthetic catalogue |
 
 ## Load simulation
 
@@ -69,20 +96,13 @@ parity evidence, and benchmark method are documented in
 
 ## Judge path (< 5 minutes)
 
-1. Run the Compose commands above and confirm `/health` reports `status: ok`.
-2. On `/mine`, inspect the five-truck fleet, PLM III state, and available camera
-   and pause controls. Use **Open GDY106 wheel** to follow the truck-to-wheel
-   handoff.
-3. On `/wheel`, inspect the cutaway and exploded views, planetary ratio, and
-   oil-pool response to the oil control. Values and reconstructed geometry are
-   documented with their evidence labels; this is not a field-validated model.
-4. On `/monitoring`, inspect the fleet table and use **Open wheel detail** to
-   carry a truck/wheel selection into `/wheel`. The dashboard fleet metrics and
-   combined-risk rule are synthetic proxies, not live calibrated wheel data.
-5. Run the checks with `./test.sh`. CI runs the Python and frontend checks plus
-   Compose validation in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
-6. Compare the current EN/ES page captures below. The complete walkthrough is
-   in [`docs/demo-script.md`](docs/demo-script.md).
+Follow [`docs/demo-script.md`](docs/demo-script.md) for the exact five-minute
+navigation and the simulator option. The walkthrough distinguishes backend
+`LIVE` values from deterministic `DEMO` data and synthetic lab fixtures. The
+alert inbox, detail, and read-only rules pages are available; the detail page's
+Generate report link opens a canonical synthetic report, not alert-specific
+measurements. Nothing in this prototype is field-calibrated or able to control
+a truck.
 
 ### Current screenshots (1600 × 1000)
 

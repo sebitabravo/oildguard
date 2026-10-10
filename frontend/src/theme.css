@@ -146,8 +146,9 @@ button { font-family: inherit; }
   .og-mobile-menu { display: block; border: 0; background: none; color: var(--og-text-primary); font-size: 18px; }
   .og-top__crumb { font-size: 11px; }
   .og-link-pill { display: none; }
-  .og-mobile-nav { display: flex; position: fixed; inset: var(--og-header-h) 0 auto; z-index: 8; height: 44px; gap: 18px; overflow-x: auto; padding: 0 14px; align-items: center; background: var(--og-surface); border-bottom: 1px solid var(--og-border-subtle); }
-  .og-mobile-nav a { flex: 0 0 auto; color: var(--og-text-secondary); text-decoration: none; font: 11px var(--og-mono); }
+  .og-mobile-nav { display: flex; position: fixed; inset: var(--og-header-h) 0 auto; z-index: 8; width: 100%; min-width: 0; max-width: 100vw; height: 44px; gap: 18px; overflow-x: auto; overscroll-behavior-x: contain; padding: 0 14px; align-items: center; background: var(--og-surface); border-bottom: 1px solid var(--og-border-subtle); scrollbar-width: none; }
+  .og-mobile-nav::-webkit-scrollbar { display: none; }
+  .og-mobile-nav a { display: flex; flex: 0 0 auto; min-height: 44px; align-items: center; color: var(--og-text-secondary); text-decoration: none; font: 11px var(--og-mono); white-space: nowrap; }
   .og-content { margin-left: 0; padding: calc(var(--og-header-h) + 68px) 14px 24px; }
 }
 .og-foundation-card { padding: 16px; background: var(--og-surface); border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-md); }

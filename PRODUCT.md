@@ -69,13 +69,13 @@ A neighbouring product cannot truthfully copy that claim without re-deriving the
 
 **Confirmed functionality**
 
-- Three Astro page routes: `/mine` (930E mine and fleet), `/wheel` (GDY106 cutaway), and `/monitoring` (dashboard). Legacy hashes redirect to these routes; normal navigation uses paths, not hash routing.
-- The synthetic signal generator retains a four-state `LOAD | HAUL | DUMP | WAIT` telemetry loop of 29 s; AI RUL-to-warning is compared with an 8 h maintenance shift. The mine's five-truck visual fleet instead uses an eight-state PLM III FSM. These are separate simulations: the former supplies synthetic telemetry while the latter renders the mine fleet.
+- The frontend route inventory is documented in [README.md](README.md#route-map), including data class for the implemented alert inbox, detail, and read-only rules pages.
+- Operational pages (`/fleet`, `/monitoring`, `/rul`, `/calibration`, `/devices`, `/link`) query the backend where supported and use visibly labeled deterministic demo or synthetic-model fallbacks. A healthy backend connection is not evidence of field calibration.
+- `/mine` runs the local five-truck visual fleet with an eight-state PLM III FSM. `/lab/sim` uses a separate synthetic signal fixture with a four-state `LOAD | HAUL | DUMP | WAIT` loop; generated rows may be submitted to the local backend, but remain synthetic.
 - In the signal generator, the mode gate is `MOVING` over HAUL and WAIT, and `REST` over LOAD and DUMP. Recalibration is permitted only when stopped, level, and engine on.
-- Oil level derived from pressure fusion, presented with a ±σ confidence band, rest-window shading, and N1–N4 escalation plus remaining useful life.
-- Alerts ladder N1 watch → N2 warning → N3 warning → N4 critical, each carrying reason, window, and zone.
-- Combined-risk recognition: the tested dashboard `SYNTHETIC-PROXY` rule alerts when at least two `ASSUMPTION` thresholds are crossed: oil ≤ 47.5 L, temperature ≥ 90 °C, or vibration ≥ 7 mm/s. Current is displayed but is not an input. This is not the calibrated backend N1–N4 leak analysis or a field-validated risk estimate.
-- Fleet overview: `/mine` runs five simulated trucks, while `/monitoring` displays synthetic-proxy wheel rows and direct truck/wheel links to `/wheel`; these are not live calibrated fleet telemetry.
+- Wheel level from pressure fusion, confidence bands, rest-window shading, N1–N4 ladder, and RUL are available as backend analysis when populated; otherwise the interface labels deterministic demo data. The `/monitoring` leak walkthrough is an explicitly synthetic demo, not a backend or field event. `/alerts` merges backend records with deterministic demo records; demo lifecycle actions persist only in browser-local storage, while backend lifecycle actions are unavailable.
+- Combined dashboard risk is a `SYNTHETIC-PROXY` rule requiring at least two `ASSUMPTION` thresholds: oil ≤ 47.5 L, temperature ≥ 90 °C, or vibration ≥ 7 mm/s. Current is displayed but is not an input. This is separate from backend N1–N4 leak analysis and is not a field-validated risk estimate.
+- The `/wheel` cutaway and `/report` reconstruction are read-only synthetic demonstrations. The report link carries an alert ID for display, but its report measurements are the canonical synthetic scenario, not a reconstruction of alert-specific evidence. There is no telemetry from a field machine, no field calibration, and no physical or logical truck-control action.
 - Manual inspection reference chain for the GDY106, with fixed manual item numbers that must never be renumbered.
 
 **Instrumentation defined in the proposal**
