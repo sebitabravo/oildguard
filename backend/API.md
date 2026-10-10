@@ -266,21 +266,33 @@ curl -s localhost:8000/rul      # T10 RUL (suppressed + anomaly-only when gated)
 
 Both evaluate the memory store with `ai/ladder.py` (rest runs grouped
 by `recal_window`, same contract as `/windows`). Successful responses expose
-top-level `evaluated: true`, including a precision-suppressed RUL result.
-When the analyzer imports successfully but the store is empty, the endpoints
-remain `status: "ok"`, return `evaluated: false`, and preserve the existing
-empty-alert / suppressed-RUL shape. If the analyzer cannot load, both
-endpoints return HTTP 200 with top-level `status: "unavailable"` and
-`evaluated: false`; `/rul` data also uses `status: "unavailable"` rather than
-the precision-gated `suppressed` state. Its raw import reason remains in the
-API diagnostics for operators.
+top-level `evaluated: true`, including a precision-suppressed RUL result. A
+precision-gated result is an evaluated output, not an analyzer outage.
 
-`GET /alerts` returns `{status, kind, as_of, evaluated, data}` where `data`
-contains `{alerts, escalation, ladder: [N1..N4], level, rul_status, model,
-note, fallback}` when evaluated. `GET /rul` returns the same envelope around
-the RUL data (`hours`, `hours_to_warning`, `hours_to_critical`, `haul_cycles`,
-`shifts`, `confidence`, and related fields). Full method, thresholds, and
-real log excerpts: `docs/t10-rul-ladder.md`.
+Every response with `evaluated: false` includes a stable top-level `reason`:
+
+| `reason` | Meaning | Endpoint `status` |
+|---|---|---|
+| `no_rows` | The process-local session store is empty; no analysis ran. | `ok` |
+| `insufficient_rest_samples` | The analyzer loaded, but fewer than the required scored rest samples were available; the combined analysis was not considered evaluated. | `ok` |
+| `analysis_unavailable` | The analyzer could not load or evaluation failed. | `unavailable` |
+
+All three conditions return HTTP 200. `/rul` data preserves the suppressed or
+unavailable shape as applicable. When the analyzer imports successfully but
+the store is empty, the endpoints retain the existing empty-alert and
+suppressed-RUL data shapes. If evaluation succeeds but precision or trend
+gates suppress the RUL estimate, `evaluated` remains true and the endpoint
+does not include a top-level `reason`.
+
+`GET /alerts` returns `{status, kind, as_of, evaluated, reason?, data}` where
+`reason` is present only when `evaluated` is false. Its `data` contains
+`{alerts, escalation, ladder: [N1..N4], level, rul_status, model, note,
+fallback}` when evaluated. `GET /rul` returns the same envelope around the RUL
+data (`hours`, `hours_to_warning`, `hours_to_critical`, `haul_cycles`,
+`shifts`, `confidence`, and related fields). Analyzer diagnostics may remain
+in API data for operators; the frontend presents localized reason-code copy
+instead of rendering raw diagnostics. Full method, thresholds, and real log
+excerpts: `docs/t10-rul-ladder.md`.
 
 ## Round-trip (generator -> MQTT -> backend -> query)
 

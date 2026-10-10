@@ -336,12 +336,34 @@ def _t10_bundle() -> tuple[dict[str, Any] | None, str, bool, bool]:
         return None, (
             f"T10 evaluation failed ({exc}); surface anomaly-only "
             f"(ai/flags.jsonl path) instead."
-        ), True, False
-    return bundle, (
+        ), False, False
+    fallback = (
         "memory-store grouping by recal_window flags (full T7 detector: "
         "sim/detect.py); rest-gated synthetic-proxy model, UNPROVEN until "
         "S7 bench (see docs/t10-rul-ladder.md)."
-    ), True, True
+    )
+    rul_reason = str(bundle.get("rul", {}).get("reason", ""))
+    if rul_reason.startswith("insufficient rest samples"):
+        return bundle, fallback, True, False
+    return bundle, fallback, True, True
+
+
+def _unevaluated_reason(
+    bundle: dict[str, Any] | None,
+    analysis_available: bool,
+    evaluated: bool,
+) -> str | None:
+    if evaluated:
+        return None
+    if not analysis_available:
+        return "analysis_unavailable"
+    if bundle is None:
+        return "no_rows"
+    if str(bundle.get("rul", {}).get("reason", "")).startswith(
+        "insufficient rest samples"
+    ):
+        return "insufficient_rest_samples"
+    return "analysis_unavailable"
 
 
 # ---------------------------------------------------------------------------
@@ -483,6 +505,7 @@ def windows(limit: int = 50) -> dict:
 @app.get("/alerts")
 def alerts() -> dict:
     bundle, fallback, analysis_available, evaluated = _t10_bundle()
+    reason = _unevaluated_reason(bundle, analysis_available, evaluated)
     if bundle is None:
         data: dict[str, Any] = {
             "alerts": [],
@@ -503,18 +526,22 @@ def alerts() -> dict:
             "note": bundle["note"],
             "fallback": fallback,
         }
-    return {
+    response = {
         "status": "ok" if analysis_available else "unavailable",
         "kind": "alerts",
         "as_of": _now_iso(),
         "evaluated": evaluated,
         "data": data,
     }
+    if reason is not None:
+        response["reason"] = reason
+    return response
 
 
 @app.get("/rul")
 def rul() -> dict:
     bundle, fallback, analysis_available, evaluated = _t10_bundle()
+    response_reason = _unevaluated_reason(bundle, analysis_available, evaluated)
     if not analysis_available:
         reason = fallback
         data = {
@@ -559,13 +586,16 @@ def rul() -> dict:
             "note": r["note"],
             "fallback": fallback,
         }
-    return {
+    response = {
         "status": "ok" if analysis_available else "unavailable",
         "kind": "rul",
         "as_of": _now_iso(),
         "evaluated": evaluated,
         "data": data,
     }
+    if response_reason is not None:
+        response["reason"] = response_reason
+    return response
 
 
 # ---------------------------------------------------------------------------

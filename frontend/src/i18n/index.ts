@@ -111,6 +111,22 @@ export const dict = {
     en: "Analyzer unavailable: alerts and RUL cannot be computed",
     es: "Analizador no disponible: no se pueden calcular alertas ni RUL",
   },
+  "dash.evaluation.reason.noRows": {
+    en: "No rows yet; alerts and RUL have not been evaluated.",
+    es: "Aún no hay filas; no se han evaluado las alertas ni el RUL.",
+  },
+  "dash.evaluation.reason.insufficientRest": {
+    en: "Insufficient rest samples; alerts and RUL have not been evaluated.",
+    es: "Muestras de reposo insuficientes; no se han evaluado las alertas ni el RUL.",
+  },
+  "dash.evaluation.reason.unavailable": {
+    en: "Analyzer unavailable: alerts and RUL cannot be computed",
+    es: "Analizador no disponible: no se pueden calcular alertas ni RUL",
+  },
+  "dash.evaluation.reason.unknown": {
+    en: "Evaluation is unavailable; technical details are hidden.",
+    es: "La evaluación no está disponible; se ocultan los detalles técnicos.",
+  },
   "dash.signing.verified": { en: "Signatures verified", es: "Firmas verificadas" },
   "dash.signing.rejected": { en: "rejected", es: "rechazadas" },
   "dash.signing.off": { en: "Enforcement off", es: "Verificación no obligatoria" },

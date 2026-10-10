@@ -491,6 +491,7 @@ export default function Dashboard() {
           <RulPanel
             rul={demoActive ? demoRulFor(demoStage, lang) : (rul?.data ?? null)}
             analyzerUnavailable={analyzerUnavailable && !demoActive}
+            evaluationReason={demoActive ? undefined : (rul?.reason ?? alerts?.reason)}
           />
 
           {/* N1–N4 timeline */}

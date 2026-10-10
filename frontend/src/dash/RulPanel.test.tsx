@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { h } from "preact";
 import renderToString from "preact-render-to-string";
-import type { RulDataSuppressed } from "../sim/api";
+import type { RulDataSuppressed, RulDataUnavailable } from "../sim/api";
 import { t, type Lang } from "../i18n";
 import RulPanel from "./RulPanel";
 
-function renderSuppressedNote(lang: Lang, note: string): string {
+function renderSuppressedNote(lang: Lang, note: string, evaluationReason?: string): string {
   const defaultStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
@@ -23,7 +23,7 @@ function renderSuppressedNote(lang: Lang, note: string): string {
     fallback: "local DEMO fallback (backend down or demo override)",
   };
   try {
-    return renderToString(h(RulPanel, { rul }));
+    return renderToString(h(RulPanel, { rul, evaluationReason }));
   } finally {
     if (defaultStorage) Object.defineProperty(globalThis, "localStorage", defaultStorage);
     else Reflect.deleteProperty(globalThis, "localStorage");
@@ -49,5 +49,44 @@ describe("RUL suppression explanation", () => {
     expect(renderSuppressedNote("es", reason)).toContain(
       "RUL no disponible: aún no se han ingerido filas; envía lotes de SignalRow a /ingest y luego GET /alerts recorre la escalera N1–N4. En su lugar, muestra solo alertas de anomalías.",
     );
+  });
+
+  test("uses the structured localized reason instead of a raw backend diagnostic", () => {
+    const diagnostic = "RUL unavailable: insufficient rest samples (n=0 < 10); anomaly-only";
+    const html = renderSuppressedNote("es", diagnostic, "insufficient_rest_samples");
+    expect(html).toContain("Muestras de reposo insuficientes; no se han evaluado las alertas ni el RUL.");
+    expect(html.includes("insufficient rest samples")).toBe(false);
+  });
+
+  test("keeps analyzer import diagnostics out of the unavailable panel", () => {
+    const diagnostic = "RUL unavailable: ModuleNotFoundError: private internal path";
+    const defaultStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: { getItem: () => "es" },
+    });
+    const rul: RulDataUnavailable = {
+      hours: null,
+      haul_cycles: null,
+      shifts: null,
+      confidence: 0,
+      status: "unavailable",
+      anomaly_only: true,
+      model: "synthetic-proxy",
+      note: diagnostic,
+      fallback: diagnostic,
+    };
+    try {
+      const html = renderToString(h(RulPanel, {
+        rul,
+        evaluationReason: "analysis_unavailable",
+      }));
+      expect(html).toContain("Analizador no disponible: no se pueden calcular alertas ni RUL");
+      expect(html.includes("ModuleNotFoundError")).toBe(false);
+      expect(html.includes("private internal path")).toBe(false);
+    } finally {
+      if (defaultStorage) Object.defineProperty(globalThis, "localStorage", defaultStorage);
+      else Reflect.deleteProperty(globalThis, "localStorage");
+    }
   });
 });

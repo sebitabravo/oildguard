@@ -8,6 +8,7 @@ import type { CSSProperties } from "preact";
 import type { RulData } from "../sim/api";
 import { t, useLang } from "../i18n";
 import { localizeDashboardBackendText } from "./backendNotes";
+import { localizeUnevaluatedReason } from "./evaluationReason";
 
 const panel: CSSProperties = {
   border: "1px solid var(--og-line-dashboard)",
@@ -19,17 +20,20 @@ const panel: CSSProperties = {
 export default function RulPanel({
   rul,
   analyzerUnavailable = false,
+  evaluationReason,
 }: {
   rul: RulData | null;
   analyzerUnavailable?: boolean;
+  evaluationReason?: string;
 }) {
   const [lang] = useLang();
+  const reasonCopy = localizeUnevaluatedReason(evaluationReason, lang);
   if (analyzerUnavailable || rul?.status === "unavailable") {
     return (
       <div style={{ ...panel, borderColor: "var(--og-red)" }}>
         <strong>{t("rul.title", lang)}</strong>
         <p style={{ margin: "6px 0 0", color: "var(--og-body)", fontSize: 13 }}>
-          {t("dash.analyzer.unavailable", lang)}
+          {reasonCopy ?? t("dash.analyzer.unavailable", lang)}
         </p>
       </div>
     );
@@ -51,7 +55,7 @@ export default function RulPanel({
           {t("rul.suppressed", lang)}
         </div>
         <p style={{ margin: "6px 0", color: "var(--og-body)", fontSize: 13 }}>
-          {rul.note.trim() ? localizeDashboardBackendText(rul.note, lang) : t("rul.suppressedNote", lang)}
+          {reasonCopy ?? (rul.note.trim() ? localizeDashboardBackendText(rul.note, lang) : t("rul.suppressedNote", lang))}
         </p>
         <p style={{ margin: 0, color: "var(--og-muted)", fontSize: 12 }}>
           {t("rul.panel.suppressedDetail", lang, {

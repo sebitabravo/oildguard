@@ -108,6 +108,7 @@ export interface AlertsResponse {
   kind: "alerts";
   as_of: string;
   evaluated: boolean;
+  reason?: string;
   data: AlertsData;
 }
 
@@ -161,6 +162,7 @@ export interface RulResponse {
   kind: "rul";
   as_of: string;
   evaluated: boolean;
+  reason?: string;
   data: RulData;
 }
 

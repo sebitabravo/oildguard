@@ -79,10 +79,26 @@ def test_empty_store_keeps_healthy_but_unevaluated_semantics(client):
     assert health["analysis"] == {"available": True, "reason": None}
     assert alerts["status"] == "ok"
     assert alerts["evaluated"] is False
+    assert alerts["reason"] == "no_rows"
     assert alerts["data"]["escalation"] == []
     assert rul["status"] == "ok"
     assert rul["evaluated"] is False
+    assert rul["reason"] == "no_rows"
     assert rul["data"]["status"] == "suppressed"
+
+
+def test_insufficient_rest_samples_are_healthy_but_unevaluated(client):
+    assert client.post("/ingest", json=batch(seconds=0.1)).status_code == 200
+
+    alerts = client.get("/alerts").json()
+    rul = client.get("/rul").json()
+
+    assert alerts["status"] == "ok"
+    assert alerts["evaluated"] is False
+    assert alerts["reason"] == "insufficient_rest_samples"
+    assert rul["status"] == "ok"
+    assert rul["evaluated"] is False
+    assert rul["reason"] == "insufficient_rest_samples"
 
 
 def test_loaded_analyzer_reports_real_evaluation_for_alerts_and_rul(client):
@@ -95,8 +111,11 @@ def test_loaded_analyzer_reports_real_evaluation_for_alerts_and_rul(client):
     assert health["analysis"] == {"available": True, "reason": None}
     assert alerts["status"] == "ok"
     assert alerts["evaluated"] is True
+    assert "reason" not in alerts
     assert rul["status"] == "ok"
     assert rul["evaluated"] is True
+    assert "reason" not in rul
+    assert rul["data"]["status"] == "suppressed"
 
 
 def test_missing_analyzer_import_degrades_health_and_routes(client, monkeypatch):
@@ -124,9 +143,11 @@ def test_missing_analyzer_import_degrades_health_and_routes(client, monkeypatch)
     assert alerts_response.status_code == 200
     assert alerts["status"] == "unavailable"
     assert alerts["evaluated"] is False
+    assert alerts["reason"] == "analysis_unavailable"
     assert rul_response.status_code == 200
     assert rul["status"] == "unavailable"
     assert rul["evaluated"] is False
+    assert rul["reason"] == "analysis_unavailable"
 
 
 def test_legacy_four_field_payload_is_rejected(client):
