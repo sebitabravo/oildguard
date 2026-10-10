@@ -38,8 +38,6 @@ interface BenchSceneProps {
   /** Semi-transparent housing shell revealing internals + oil. */
   cutaway: boolean;
   exploded: boolean;
-  /** Controles inferiores (sliders, marcha/reposo, corte) que dibuja la vista. */
-  dock?: ComponentChildren;
   /** Insignias de honestidad visual, bajo la insignia RECAL. */
   badge?: ComponentChildren;
 }
@@ -91,7 +89,6 @@ export default function BenchScene({
   mode,
   cutaway,
   exploded,
-  dock,
   badge,
 }: BenchSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -678,7 +675,6 @@ export default function BenchScene({
           </div>
           {badge}
         </div>
-        {dock && <div className="og-dock">{dock}</div>}
       </div>
     </div>
   );

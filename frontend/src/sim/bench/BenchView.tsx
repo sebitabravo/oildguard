@@ -248,19 +248,21 @@ export default function BenchView() {
   );
 
   return (
-    <div className="og-view">
-      <div className="og-viewport">
-        <BenchScene
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          oilLevel={frac}
-          viscosityProxy={viscosity}
-          mode={mode}
-          cutaway={cutaway}
-          exploded={exploded}
-          dock={dock}
-          badge={<HonestyBadge label={t("badge.proxy", lang)} text={t("bench.honesty", lang)} />}
-        />
+    <div className="og-view og-view--wheel">
+      <div className="og-viewport og-viewport--wheel">
+        <div className="og-viewport__scene">
+          <BenchScene
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            oilLevel={frac}
+            viscosityProxy={viscosity}
+            mode={mode}
+            cutaway={cutaway}
+            exploded={exploded}
+            badge={<HonestyBadge label={t("badge.proxy", lang)} text={t("bench.honesty", lang)} />}
+          />
+        </div>
+        <div className="og-dock">{dock}</div>
       </div>
       <Drawer
         tabs={[

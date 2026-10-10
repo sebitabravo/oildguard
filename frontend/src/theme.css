@@ -161,6 +161,7 @@ input:focus-visible,
   overflow: hidden;
   background: #0b0f17;
 }
+.og-viewport__scene { position: absolute; inset: 0; }
 
 .og-scene, .og-scene__host { position: absolute; inset: 0; }
 
@@ -557,6 +558,26 @@ button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og
   .og-seg { order: 1; flex: 0 0 auto; }
   .og-hud--tl { width: calc(100% - 28px) !important; }
   .og-scene--wheel .og-stack--tr { display: none; }
+  .og-view--wheel { overflow-y: auto; }
+  .og-viewport--wheel { display: flex; flex: 0 0 auto; flex-direction: column; height: auto; min-height: 0; }
+  .og-viewport--wheel .og-viewport__scene {
+    position: relative;
+    inset: auto;
+    flex: 0 0 auto;
+    height: clamp(340px, 42vh, 360px);
+    min-height: 340px;
+    overflow: hidden;
+  }
+  .og-viewport--wheel > .og-dock {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 8px 14px;
+    justify-content: center;
+  }
   .og-scene--mine .og-stack--tr { top: auto; bottom: 120px; }
   .og-dock { flex-wrap: wrap; align-items: flex-end; }
   .og-dock > .og-hud { max-width: 100%; flex-wrap: wrap; justify-content: flex-end; }
