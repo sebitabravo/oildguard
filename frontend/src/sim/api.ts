@@ -70,6 +70,23 @@ export interface LevelResponse {
   data: LevelData;
 }
 
+export interface LevelSeriesPoint {
+  t_s: number;
+  level_l: number | null;
+  sigma_l: number | null;
+  moving: number;
+  recal_window: number;
+}
+
+export interface LevelSeriesResponse {
+  status: "ok";
+  kind: "oil-level-series";
+  as_of: string;
+  count: number;
+  reason: string | null;
+  series: LevelSeriesPoint[];
+}
+
 export interface WindowsResponse {
   status: "ok";
   kind: "rest-windows";
@@ -208,6 +225,8 @@ export async function postIngest(rows: SignalRow[]): Promise<IngestAck> {
 
 export const getHealth = (): Promise<HealthResponse> => getJson("/health");
 export const getLevel = (): Promise<LevelResponse> => getJson("/level");
+export const getLevelSeries = (limit = 300): Promise<LevelSeriesResponse> =>
+  getJson(`/level/series?limit=${limit}`);
 export const getWindows = (limit = 50): Promise<WindowsResponse> =>
   getJson(`/windows?limit=${limit}`);
 /** T10 N1–N4 ladder over the memory store (honest fallback when empty). */

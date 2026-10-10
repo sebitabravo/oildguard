@@ -12,6 +12,7 @@ import {
   getAlerts,
   getHealth,
   getLevel,
+  getLevelSeries,
   getRul,
   getWindows,
   type AlertsResponse,
@@ -41,6 +42,7 @@ import { DEMO_FLEET_WHEELS, evaluateCombinedRisk, latestWheelMetrics } from "./f
 import { localizeBackendMessage, localizeBackendZone } from "./backendNotes";
 import { signingBadgeState } from "./signingBadge";
 import { analyzerUnavailableNotice } from "./analyzerAvailability";
+import { mergeLevelSeries } from "./levelSeries";
 
 type Source = "loading" | "live" | "demo";
 type BackendNote =
@@ -101,12 +103,13 @@ export default function Dashboard() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [h, lv, al, ru, wi] = await Promise.all([
+      const [h, lv, al, ru, wi, ls] = await Promise.all([
         getHealth(),
         getLevel(),
         getAlerts(),
         getRul(),
         getWindows(50),
+        getLevelSeries(),
       ]);
       setStoreRows(h.store_rows);
       setSigningStatus(h.signing);
@@ -132,9 +135,14 @@ export default function Dashboard() {
       const lit = Number(lv.data.level_liters);
       if (Number.isFinite(lit)) {
         setHistory((prev) => {
-          const t = prev.length === 0 ? 0 : prev[prev.length - 1].t_s + 2;
-          const next = [...prev, { t_s: t, liters: lit }];
-          return next.slice(-120);
+          const seriesPoints = ls.series.flatMap((point) =>
+            point.level_l !== null && Number.isFinite(point.level_l)
+              ? [{ t_s: point.t_s, liters: point.level_l }]
+              : [],
+          );
+          const merged = mergeLevelSeries(prev, seriesPoints);
+          const t = merged.length === 0 ? 0 : merged[merged.length - 1].t_s + 2;
+          return mergeLevelSeries(merged, [{ t_s: t, liters: lit }]).slice(-300);
         });
       }
     } catch (e) {

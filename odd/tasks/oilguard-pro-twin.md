@@ -315,7 +315,7 @@ The wheel checkbox input hitbox is 44×44 in EN and ES; its separately measured 
 
 #### QA-FIX4 tasks
 
-- [ ] **Q18 — live `/level/series` chart:** add a sorted, evenly downsampled fused-level endpoint (`limit` default 300, max 2000; empty response includes `reason: no_rows`), contract tests and API docs; then load it for LIVE Dashboard initialization/refresh and merge later polled points by `t_s` without changing DEMO mode. Commits: `feat(backend): serve fused level series`; `fix(frontend): plot live level history`.
+- [x] **Q18 — live `/level/series` chart:** add a sorted, evenly downsampled fused-level endpoint (`limit` default 300, max 2000; empty response includes `reason: no_rows`), contract tests and API docs; then load it for LIVE Dashboard initialization/refresh and merge later polled points by `t_s` without changing DEMO mode. Commits: `feat(backend): serve fused level series`; `fix(frontend): plot live level history`.
 - [ ] **Q19 — locale-consistent displayed numbers:** add/test shared `formatNumber(value, lang, digits)`, use decimal commas in ES and points in EN across user-visible dashboard, RUL, alerts, wheel, HUD and chart axes, and add the direct-`toFixed()` display guard. Commit: `fix(frontend): format numbers per language`.
 - [ ] **Q20 — acknowledged R3-001 advisory:** ensure `analyzerUnavailable=true` takes precedence over a structured RUL note, with a regression test in EN/ES; record the finding text and fix commit. The committed task record describes the finding as a structured note potentially overriding the analyzer-unavailable explanation; verify behavior against source and test.
 
@@ -324,7 +324,15 @@ The wheel checkbox input hitbox is 44×44 in EN and ES; its separately measured 
 - **RED:** `python3 -m pytest tests/test_backend_smoke.py -k level_series -q` → 3 failed, 11 deselected. The empty-store and populated-store requests returned HTTP 404 because `/level/series` did not exist; the downsampling test could not find the response's `series` field.
 - **GREEN:** `python3 -m pytest tests/test_backend_smoke.py -k level_series -q` → 3 passed, 11 deselected, 3 existing deprecation warnings.
 - **Implementation:** Added `GET /level/series` with a default limit of 300 and bounds 1–2000. It snapshots rows sorted by `seq`, uses `ai.level.estimate()` with the same `recal_window` rest mapping as T10, emits the requested fused fields, preserves null levels for gated/moving rows, and evenly downsamples while retaining endpoints. Empty sessions return `reason: no_rows`; sessions without estimable rest samples return `insufficient_rest_samples`. Documented the response and limit behavior in `backend/API.md`.
-- **Commit:** `feat(backend): serve fused level series` (hash recorded in the completion handoff). Q18 remains open pending the frontend live-chart work unit.
+- **Commit:** `feat(backend): serve fused level series` (`23884b7`). RDD assessment from `c938f98`: medium, 245 changed lines across 4 paths, `review_due=false`, `under_budget`.
+
+#### Q18 frontend live-chart work unit
+
+- **RED:** `cd frontend && bun test src/dash/levelSeries.test.ts` → 0 pass, 1 fail, 1 error: `./levelSeries` did not exist yet.
+- **GREEN, focused:** `cd frontend && bun test src/dash/levelSeries.test.ts` → 1 pass, 0 fail, 1 expectation. The pure merge test verifies ascending `t_s` ordering and replacement of duplicate timestamps by the incoming sample.
+- **GREEN, build:** `cd frontend && bun run build` → pass; Astro check 0 errors, 0 warnings, 4 hints; 4 static pages built; existing large-chunk warning.
+- **Implementation:** LIVE Dashboard mount/refresh now fetches `/level/series?limit=300`, maps finite fused levels into chart points, merges them by `t_s`, appends the latest `/level` reading, and retains the newest 300 points. DEMO rendering remains unchanged.
+- **Commit:** `fix(frontend): plot live level history` (exact hash in the completion handoff).
 
 ### Q2 interim evidence — first copy migration work unit
 
