@@ -146,7 +146,7 @@ RDD outcomes: T2 slice c4a9ba6 declined; T2+T3 range lens_context_budget_exceede
 
 ## Next step
 
-Q1–Q8 are closed, and T1–T10 remain complete. Hand off to OpenCode for the final re-test; final suite results remain pending until its verifier report. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
+Q1–Q8 are closed, and T1–T10 remain complete. Q9 is in progress: the backend image package-copy guard is implemented; next add explicit analyzer-availability contracts and their tests. Q10–Q13 remain open. Keep the final QA-FIX1 verifier results below as recorded; add QA-FIX2 results only after they are observed. Engram mirror pending because memory tools and an authoritative session identity are unavailable.
 
 ## QA follow-up (2026-10-09)
 
@@ -166,6 +166,19 @@ This follow-up addresses the Playwright QA findings in `/tmp/oilguard-qa/report.
 - [x] **Q6 — A-02 page headings and table header:** Add one localized first `<h1>` to each page and label the fleet table's eighth column. Verified below.
 - [x] **Q7 — A-03, A-04 keyboard and slider semantics:** Move focus with drawer tab arrows and support Home/End using tested pure key-to-index logic; provide localized slider value text and an oil-percentage name tied to the 95 L reference. Verified below.
 - [x] **Q8 — D-06, D-07 palette and dashboard scroll:** Use neutral sensor identity cues while reserving status colors for condition; keep dashboard scrolling within `.og-page`; document both decisions in `DESIGN.md` §Colors and §Layout. Verified below.
+- [ ] **Q9 — N-01 analyzer availability and backend image:** Ship every runtime-imported package (`ai`, `shared`, `sim`) and guard Dockerfile copy coverage; expose degraded evaluator availability in `/health`, `/alerts`, and `/rul`; show a localized, non-technical frontend outage notice without leaking raw exceptions; document the contract and verify an unsigned leak scenario produces analysis. Restore the backend's original default state afterward.
+- [ ] **Q10 — N-02 reduced-motion camera behavior:** Respect `prefers-reduced-motion: reduce` for camera/UI easing across `frontend/src/sim/**` and `frontend/src/twin/**` while preserving simulated machine motion; test the pure policy helper and document that reduced motion does not pause the simulation.
+- [ ] **Q11 — N-03 mobile touch targets:** At ≤900 px, make navigation/language controls, camera presets, drawer tabs, toggles, checkbox labels, and fleet-detail links at least 44×44 px without reducing text size or changing desktop density; measure the minimum hit target at 390×844.
+- [ ] **Q12 — N-04 validated overall gear ratio:** Make Status and Notes agree on the manual-validated 32.62:1 total, show stage ratios to three decimals with an explicit rounding note, preserve Spanish decimal conventions, test the displayed total/product, and correct stale documentation.
+- [ ] **Q13 — N-05 session-scoped and persisted row counts:** Clarify that `store_rows` counts this session; add a timeout-bounded Influx point count to `/health` when reachable and report `null` on failure; test timeout/failure behavior and update API documentation.
+
+### QA-FIX2 execution constraints
+
+- **Source of truth:** `/tmp/oilguard-briefs/QA-FIX2.md`; re-test evidence: `/tmp/oilguard-qa/retest/report.md` §5, findings N-01–N-05.
+- **Route:** delegated direct; multi-file work spans backend, frontend, tests, and docs. Each Q task uses separate Conventional Commit work units; do not begin Q10–Q13 while assigned only Q9.
+- **TDD:** enabled; add failing tests before implementation and retain observed RED → GREEN evidence per work unit. Q9 package-copy test uses pytest.
+- **Checks:** `python3 -m pytest -q`; `cd frontend && bun test src`; `cd frontend && bun run build`; `actionlint .github/workflows/ci.yml`; `docker compose config --quiet`; Q9 end-to-end `/health`, `/alerts`, `/rul` evidence; Q11 390×844 touch-target measurements; `/monitoring` screenshot `/tmp/og-shots/qa-fix2-monitoring-es.png`.
+- **Safety constraints:** no new dependencies; comments in Spanish, docs/identifiers/commits in English; preserve Influx/MQTT/frontend services and named volumes; never flush persisted data or run `docker compose down -v`; restore the backend to its prior default environment after Q9 end-to-end checks. Never stage or alter `.codex/hooks.json` or the existing `BaseLayout.astro` impeccable live.js hunk. No push.
 
 ### Evidence
 
@@ -187,6 +200,7 @@ This follow-up addresses the Playwright QA findings in `/tmp/oilguard-qa/report.
 | Q6 page headings and fleet table header | `fix(frontend): add page headings and table header` (this work unit) | One localized first `<h1>` is present per `/mine`, `/wheel`, and `/monitoring`; the monitoring table's eighth column is `Detail` / `Detalle`. Chromium DOM evidence and verification below. The preceding timer-fix commit `b65b7bf` was assessed medium/under-budget (no review due). |
 | Q7 drawer tabs and slider semantics | `fix(frontend): improve tabs focus and slider semantics` (this work unit) | TDD RED→GREEN; localized EN/ES accessible slider values and labels; Chromium keyboard/focus evidence below. |
 | Q8 palette and dashboard scroll | `bd9a35f fix(frontend): keep status palette for machine state`; `docs(design): document sensor cues and dashboard scroll` (this work unit) | D-06 uses neutral numbered sensor identity cues while machine-condition colors remain state-driven. D-07 keeps dashboard content scrolling inside `.og-page`. Both rules are documented in `DESIGN.md` §Colors and §Layout; browser evidence and checks below. |
+| Q9-1 N-01 backend image package roots | `fix(backend): ship sim package in backend image` (this work unit) | **RED:** `python3 -m pytest -q tests/test_backend_image.py` → 0 passed, 1 failed; assertion showed required `{'ai', 'shared', 'sim'}` roots were only `{'ai', 'shared'}` in the Dockerfile COPY commands. **GREEN, focused:** same command → 1 passed. **GREEN, full:** `python3 -m pytest -q` → 98 passed, 3 deprecation warnings. The test parses Dockerfile COPY commands and enforces `ai`, `shared`, and `sim`; `backend/Dockerfile` now includes `COPY sim ./sim`. Q9 remains open pending its availability, UI, documentation, and runtime acceptance criteria. |
 
 ### Q2 interim evidence — first copy migration work unit
 
