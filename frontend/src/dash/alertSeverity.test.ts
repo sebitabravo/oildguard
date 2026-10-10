@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
 import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
 
@@ -12,11 +11,13 @@ describe("alert severity colors", () => {
     });
   });
 
-  test("both dashboard consumers use the shared map instead of local copies", () => {
+  test("both dashboard consumers use the shared map instead of local copies", async () => {
     for (const consumer of ["Dashboard.tsx", "LevelChart.tsx"]) {
-      const source = readFileSync(new URL(`./${consumer}`, import.meta.url), "utf8");
+      const source = await (globalThis as unknown as {
+        Bun: { file(path: URL): { text(): Promise<string> } };
+      }).Bun.file(new URL(`./${consumer}`, import.meta.url)).text();
       expect(source).toContain("ALERT_SEVERITY_COLORS");
-      expect(source).not.toMatch(/const ALERT_CSS\s*:/);
+      expect(/const ALERT_CSS\s*:/.test(source)).toBe(false);
     }
   });
 });
