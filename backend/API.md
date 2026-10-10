@@ -238,6 +238,80 @@ and the stream continues. Ticks are never buffered: at most one is in flight,
 so a slow client misses samples instead of the server accumulating memory.
 Disconnect is handled cleanly and cancels the reader task.
 
+## Ingest performance
+
+Measured in-process by `backend/bench_ingest.py`, which drives the same path
+the MQTT worker uses — decode → verify → store → metrics, Influx disabled —
+with realistic batches (10 rows per device per publish at 10 Hz). It runs
+without Docker or a broker:
+
+```bash
+python -m backend.bench_ingest --devices 1000 --ticks 30 --repeat 5
+python -m backend.bench_ingest --devices 1000 --profile     # cProfile, measured loop only
+python -m backend.ab_ingest                                 # interleaved before/after
+```
+
+Two measurement rules matter, and both were learned the hard way:
+
+- **`--profile` scopes cProfile to the measured loop.** Profiling the whole
+  script attributes 394 s of 406 s to `build_batches`: you are timing the
+  physics generator, not ingest.
+- **`--repeat` reports the median of N passes.** A single pass varies ±20% on
+  a busy machine, which is wider than several of the wins below. For the same
+  reason, `backend/ab_ingest.py` alternates baseline and current code in one
+  session instead of measuring them minutes apart.
+
+### Before / after
+
+Medians of 5 passes, interleaved against `41401bf` (the commit before this
+work), 300,000 rows per configuration:
+
+| Configuration | Before | After | Delta |
+|---|---|---|---|
+| unsigned, 100 devices | 80,643 | 136,038 | **+69 %** |
+| unsigned, 1,000 devices | 77,073 | 115,260 | **+50 %** |
+| unsigned, 5,000 devices | 68,728 | 91,373 | **+33 %** |
+| signed, 1,000 devices | 20,797 | 29,855 | **+44 %** |
+
+Throughput no longer falls off as devices grow: 1,000 → 5,000 devices moves
+from 115,260 to 91,373 rows/s in-process, with the per-batch cost amortized
+rather than paid per device.
+
+### What the profile showed, and what was changed
+
+| Cost | Evidence | Change |
+|---|---|---|
+| Per-row HMAC key derivation | `derive_device_key` 1.2 s of 13 s signed | cached per master key |
+| Per-row `time.time()` in the store | visible in `commit` | one `received_at` per batch |
+| Per-row `Counter` updates | inside `_append_locked` | accumulated per batch, flushed once |
+| Per-row `datetime.fromisoformat` | `_parse_t_iso` 0.36 s + list-comp 0.61 s per 300k rows | `TisoClock` memo + one explicit pass |
+| Per-row latency lock | `observe` 0.72 s of 5.1 s | `observe_many`, one lock per batch |
+| JSON decode | 31 % of the path after the above | `orjson` when available |
+
+### Rejected with data
+
+**N worker threads sharded by device.** The remaining hot work is pure-Python
+dict and deque manipulation, which does not release the GIL, so extra threads
+add contention and queueing without adding parallelism:
+
+| Workers | rows/s |
+|---|---|
+| 1 | 83,871 |
+| 2 | 69,995 (−17 %) |
+| 4 | 39,327 (−53 %) |
+
+Sharding would also need per-device ordering to be preserved explicitly. Not
+adopted: it is strictly slower here.
+
+### Known cost not removed
+
+The per-batch `INFO` log line (`ingest accepted=… rejected=…`) costs about
+**8 %** of the path (100,899 → 109,694 rows/s when silenced). It was left as
+is: at 1,000 devices it is 1,000 log lines per second, which is close to
+useless, but log verbosity is an operational trade-off rather than a
+correctness one, and the decision belongs to the maintainers. Setting the
+`oilguard-backend` logger to `WARNING` recovers the 8 % without a code change.
+
 ## Environment variables
 
 | Variable | Default | Purpose |
