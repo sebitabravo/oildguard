@@ -7,6 +7,11 @@ const SAMPLE_COUNT = 41;
 
 export type CalibrationVerdict = "nominal" | "slow" | "invalid" | "waiting";
 export type CalibrationWindowState = "available" | "waiting" | "motion";
+export interface CalibrationVerdictEvidence {
+  verdict: CalibrationVerdict;
+  source: "synthetic-model";
+  physicalBench: "not-evaluated";
+}
 
 export interface SettlingSample {
   timeS: number;
@@ -28,6 +33,19 @@ export function classifyCalibrationVerdict(
   }
   if (tauS < settlingTau(VISC_MIN) || tauS > settlingTau(VISC_MAX)) return "invalid";
   return tauS > settlingTau(1) + 1e-9 ? "slow" : "nominal";
+}
+
+export function calibrationVerdictEvidence(
+  tauS: number,
+  residualL: number,
+  windowState: CalibrationWindowState = "available",
+): CalibrationVerdictEvidence {
+  // Una entrada viva no valida físicamente la curva sintética ni el veredicto derivado de ella.
+  return {
+    verdict: classifyCalibrationVerdict(tauS, residualL, windowState),
+    source: "synthetic-model",
+    physicalBench: "not-evaluated",
+  };
 }
 
 export function sampleSettlingCurve({

@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useState } from "preact/hooks";
 import { demoDataset } from "../../demo/dataset";
 import { formatNumber } from "../../i18n/numberFormat";
-import { t, useLang } from "../../i18n";
+import { t } from "../../i18n";
 import { getLevelSeries, getWindows, type LevelSeriesPoint, type WindowsResponse } from "../../sim/api";
 import { settlingTau, VISC_MAX, VISC_MIN } from "../../sim/bench/settling";
 import { EmptyState, PageHeader, ProvenanceTag, SyntheticBadge, TimeSeriesChart, ValidityChip } from "../../ui/foundation";
 import { useBackendOrDemo } from "../../ui/backendOrDemo";
-import { classifyCalibrationVerdict, fitSettlingTau, sampleSettlingCurve, settlingFitResidualL, type CalibrationWindowState } from "./logic";
+import { calibrationVerdictEvidence, fitSettlingTau, sampleSettlingCurve, settlingFitResidualL, type CalibrationVerdictEvidence, type CalibrationWindowState } from "./logic";
 import "./calibration.css";
 
 const LIVE_DEVICE = "wheel-RH-01";
@@ -40,18 +40,35 @@ const demoData: LiveCalibrationData = {
   series: [{ t_s: 4, level_l: DEMO_LEVEL_L, sigma_l: DEMO_SIGMA_L, moving: 0, recal_window: 1 }],
 };
 
-function verdictCopy(verdict: "nominal" | "slow" | "invalid" | "waiting", lang: "en" | "es") {
+function verdictCopy(verdict: "nominal" | "slow" | "invalid" | "waiting") {
   const copy = {
     nominal: ["calibration.verdict.nominal", "calibration.verdict.nominalBody"],
     slow: ["calibration.verdict.slow", "calibration.verdict.slowBody"],
     invalid: ["calibration.verdict.invalid", "calibration.verdict.invalidBody"],
     waiting: ["calibration.verdict.waiting", "calibration.verdict.waitingBody"],
   } as const;
-  return [t(copy[verdict][0], lang), t(copy[verdict][1], lang)];
+  return [t(copy[verdict][0]), t(copy[verdict][1])];
+}
+
+export function CalibrationVerdictPanel({ evidence, tauS, residualL }: {
+  evidence: CalibrationVerdictEvidence;
+  tauS: number;
+  residualL: number;
+}) {
+  const [title, body] = verdictCopy(evidence.verdict);
+  return (
+    <aside className={`calibration-page__verdict calibration-page__verdict--${evidence.verdict}`} aria-live="polite">
+      <div className="calibration-page__verdict-label">{t("calibration.verdictLabel")}</div>
+      <span className="calibration-page__demo-label">{t("calibration.verdict.synthetic")}</span>
+      <h3>{title}</h3>
+      <p>{body}</p>
+      <p>{t("calibration.verdict.physicalNotEvaluated")}</p>
+      <dl><div><dt>{t("calibration.tau")}</dt><dd>{formatNumber(tauS, 2)} s</dd></div><div><dt>{t("calibration.fitResidual")}</dt><dd>{formatNumber(residualL, 3)} L</dd></div></dl>
+    </aside>
+  );
 }
 
 export default function CalibrationPage() {
-  const [lang] = useLang();
   const [wheelId, setWheelId] = useState(LIVE_DEVICE);
   const load = useCallback(async () => {
     if (wheelId !== LIVE_DEVICE) throw new Error("live calibration is available for wheel-RH-01 only");
@@ -86,8 +103,7 @@ export default function CalibrationPage() {
       : latestWindow?.state === "rest" && liveWindow !== undefined && fusedPoint !== undefined
         ? "available"
         : "waiting";
-  const verdict = classifyCalibrationVerdict(tauS, residualL, liveWindowState);
-  const [verdictTitle, verdictBody] = verdictCopy(verdict, lang);
+  const verdictEvidence = calibrationVerdictEvidence(tauS, residualL, liveWindowState);
   const values = curve.map((sample) => sample.pressureKpa);
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -96,22 +112,21 @@ export default function CalibrationPage() {
   const tauMax = settlingTau(VISC_MAX);
   const bandX = 38 + (tauMin / 4) * 294;
   const bandWidth = ((tauMax - tauMin) / 4) * 294;
-  const displayTau = formatNumber(tauS, lang, 2);
-  const displayLevel = formatNumber(resultLevel, lang, 1);
-  const displaySigma = formatNumber(resultSigma, lang, 1);
+  const displayLevel = formatNumber(resultLevel, 1);
+  const displaySigma = formatNumber(resultSigma, 1);
 
   return (
     <div className="og-page calibration-page">
       <div className="og-page__inner">
         <PageHeader
-          eyebrow={t("calibration.eyebrow", lang)}
-          title={t("calibration.title", lang)}
-          description={t("calibration.description", lang)}
-          meta={<SyntheticBadge lang={lang} />}
+          eyebrow={t("calibration.eyebrow")}
+          title={t("calibration.title")}
+          description={t("calibration.description")}
+          meta={<SyntheticBadge />}
         >
           <label className="calibration-page__selector">
-            <span>{t("calibration.wheel", lang)}</span>
-            <select value={wheelId} onChange={(event) => setWheelId(event.currentTarget.value)} aria-label={t("calibration.wheel", lang)}>
+            <span>{t("calibration.wheel")}</span>
+            <select value={wheelId} onChange={(event) => setWheelId(event.currentTarget.value)} aria-label={t("calibration.wheel")}>
               {demoDataset.wheels.map((wheel) => <option value={wheel.id}>{wheel.id}</option>)}
             </select>
           </label>
@@ -119,59 +134,54 @@ export default function CalibrationPage() {
 
         <div className="calibration-page__source">
           <span className={`calibration-page__source-dot calibration-page__source-dot--${live.source}`} />
-          <strong>{live.source === "live" ? t("calibration.source.live", lang) : t("calibration.source.demo", lang)}</strong>
-          <span>{live.source !== "live" || liveWindow ? t("calibration.autoRegime", lang) : t("calibration.waitingRegime", lang)}</span>
+          <strong>{live.source === "live" ? t("calibration.source.live") : t("calibration.source.demo")}</strong>
+          <span>{live.source !== "live" || liveWindow ? t("calibration.autoRegime") : t("calibration.waitingRegime")}</span>
         </div>
 
         <main className="calibration-page__grid">
           <section className="calibration-page__curve" aria-labelledby="calibration-curve-title">
             <div className="calibration-page__section-head">
-              <div><h3 id="calibration-curve-title">{t("calibration.curveTitle", lang)}</h3><p>{t("calibration.curveDescription", lang)}</p></div>
-              <span className="calibration-page__demo-label">{t("calibration.modelDemoBadge", lang)}</span>
-              <ProvenanceTag lang={lang} value="DERIVED" />
+              <div><h3 id="calibration-curve-title">{t("calibration.curveTitle")}</h3><p>{t("calibration.curveDescription")}</p></div>
+              <span className="calibration-page__demo-label">{t("calibration.modelDemoBadge")}</span>
+              <ProvenanceTag value="DERIVED" />
             </div>
             <div className="calibration-page__chart">
               <div className="calibration-page__chart-wrap">
-                <TimeSeriesChart lang={lang} values={values} title={t("calibration.curveTitle", lang)} events={[{ index: values.length - 1, label: t("calibration.windowEnd", lang) }]} />
+                <TimeSeriesChart values={values} title={t("calibration.curveTitle")} events={[{ index: values.length - 1, label: t("calibration.windowEnd") }]} />
                 <svg className="calibration-page__chart-overlay" viewBox="0 0 360 180" aria-hidden="true">
                   <rect x={bandX} y="12" width={bandWidth} height="144" className="calibration-page__nominal-band" />
                   <line x1="38" x2="346" y1={asymptoteY} y2={asymptoteY} className="calibration-page__asymptote" />
                 </svg>
               </div>
-              <div className="calibration-page__chart-legend"><span><i className="calibration-page__legend-line" />{t("calibration.asymptote", lang)} · {formatNumber(curve[0]?.asymptoteKpa ?? 0, lang, 3)} kPa</span><span><i className="calibration-page__legend-band" />{t("calibration.nominalBand", lang)} · {formatNumber(tauMin, lang, 2)}–{formatNumber(tauMax, lang, 2)} s</span><span><i className="calibration-page__legend-marker" />{t("calibration.windowEnd", lang)}</span></div>
-              <div className="calibration-page__chart-axis"><span>{t("calibration.pressure", lang)} · kPa</span><span>0 s — 4 s · {t("calibration.sinceStop", lang)}</span></div>
+              <div className="calibration-page__chart-legend"><span><i className="calibration-page__legend-line" />{t("calibration.asymptote")} · {formatNumber(curve[0]?.asymptoteKpa ?? 0, 3)} kPa</span><span><i className="calibration-page__legend-band" />{t("calibration.nominalBand")} · {formatNumber(tauMin, 2)}–{formatNumber(tauMax, 2)} s</span><span><i className="calibration-page__legend-marker" />{t("calibration.windowEnd")}</span></div>
+              <div className="calibration-page__chart-axis"><span>{t("calibration.pressure")} · kPa</span><span>0 s — 4 s · {t("calibration.sinceStop")}</span></div>
             </div>
-            <p className="calibration-page__model-note">{t("calibration.modelNote", lang)}</p>
+            <p className="calibration-page__model-note">{t("calibration.modelNote")}</p>
           </section>
 
-          <aside className={`calibration-page__verdict calibration-page__verdict--${verdict}`} aria-live="polite">
-            <div className="calibration-page__verdict-label">{t("calibration.verdictLabel", lang)}</div>
-            <h3>{verdictTitle}</h3>
-            <p>{verdictBody}</p>
-            <dl><div><dt>{t("calibration.tau", lang)}</dt><dd>{displayTau} s</dd></div><div><dt>{t("calibration.fitResidual", lang)}</dt><dd>{formatNumber(residualL, lang, 3)} L</dd></div></dl>
-          </aside>
+          <CalibrationVerdictPanel evidence={verdictEvidence} tauS={tauS} residualL={residualL} />
 
           <section className="calibration-page__result">
-            <div className="calibration-page__section-head"><h3>{t("calibration.resultTitle", lang)}</h3>{hasLiveEstimate ? <ValidityChip lang={lang} validity="valid" /> : <span className="calibration-page__demo-label">{t("calibration.modelDemoBadge", lang)}</span>}</div>
-            <div className="calibration-page__readout"><strong>~{displayLevel} <small>± {displaySigma} L</small></strong><span>{t("calibration.restEstimate", lang)}</span></div>
-            <div className="calibration-page__band-row"><span>{t("calibration.motionBand", lang)}</span><strong>~{displayLevel} ± {formatNumber(2.1, lang, 1)} L</strong></div>
-            <div className="calibration-page__provenance"><span>{t("calibration.modelOutput", lang)}</span><ProvenanceTag lang={lang} value="DERIVED" /><span>{t("calibration.viscosityProxy", lang)}</span><ProvenanceTag lang={lang} value="ASSUMPTION" /></div>
+            <div className="calibration-page__section-head"><h3>{t("calibration.resultTitle")}</h3>{hasLiveEstimate ? <ValidityChip validity="valid" /> : <span className="calibration-page__demo-label">{t("calibration.modelDemoBadge")}</span>}</div>
+            <div className="calibration-page__readout"><strong>~{displayLevel} <small>± {displaySigma} L</small></strong><span>{t("calibration.restEstimate")}</span></div>
+            <div className="calibration-page__band-row"><span>{t("calibration.motionBand")}</span><strong>~{displayLevel} ± {formatNumber(2.1, 1)} L</strong></div>
+            <div className="calibration-page__provenance"><span>{t("calibration.modelOutput")}</span><ProvenanceTag value="DERIVED" /><span>{t("calibration.viscosityProxy")}</span><ProvenanceTag value="ASSUMPTION" /></div>
           </section>
 
           <section className="calibration-page__window">
-            <div className="calibration-page__section-head"><h3>{t("calibration.windowTitle", lang)}</h3><ValidityChip lang={lang} validity={latestWindow?.state === "moving" ? "invalid" : live.source === "live" && liveWindow ? "valid" : "estimate"} /></div>
-            {liveWindow ? <dl><div><dt>{t("calibration.windowId", lang)}</dt><dd>{liveWindow.window_id}</dd></div><div><dt>{t("calibration.windowDuration", lang)}</dt><dd>{formatNumber(liveWindow.duration_s, lang, 1)} s</dd></div><div><dt>{t("calibration.fusedLevel", lang)}</dt><dd>{fusedPoint?.level_l === null || fusedPoint?.level_l === undefined ? t("calibration.noFusedLevel", lang) : `${formatNumber(fusedPoint.level_l, lang, 1)} ± ${formatNumber(fusedPoint.sigma_l ?? 0, lang, 1)} L`}</dd></div></dl> : <p>{t("calibration.windowDemo", lang)}</p>}
+            <div className="calibration-page__section-head"><h3>{t("calibration.windowTitle")}</h3><ValidityChip validity={latestWindow?.state === "moving" ? "invalid" : live.source === "live" && liveWindow ? "valid" : "estimate"} /></div>
+            {liveWindow ? <dl><div><dt>{t("calibration.windowId")}</dt><dd>{liveWindow.window_id}</dd></div><div><dt>{t("calibration.windowDuration")}</dt><dd>{formatNumber(liveWindow.duration_s, 1)} s</dd></div><div><dt>{t("calibration.fusedLevel")}</dt><dd>{fusedPoint?.level_l === null || fusedPoint?.level_l === undefined ? t("calibration.noFusedLevel") : `${formatNumber(fusedPoint.level_l, 1)} ± ${formatNumber(fusedPoint.sigma_l ?? 0, 1)} L`}</dd></div></dl> : <p>{t("calibration.windowDemo")}</p>}
           </section>
 
           <section className="calibration-page__reference">
-            <div className="calibration-page__section-head"><h3>{t("calibration.benchTitle", lang)}</h3><ProvenanceTag lang={lang} value="ASSUMPTION" /></div>
-            <EmptyState title={t("calibration.benchEmpty", lang)} detail="docs/calibration.md" />
+            <div className="calibration-page__section-head"><h3>{t("calibration.benchTitle")}</h3><ProvenanceTag value="ASSUMPTION" /></div>
+            <EmptyState title={t("calibration.benchEmpty")} detail="docs/calibration.md" />
           </section>
         </main>
 
-        <nav className="calibration-page__actions" aria-label={t("calibration.actions", lang)}>
-          <a href={`/wheel?id=${encodeURIComponent(wheelId)}`}>{t("calibration.openWheel", lang)}</a>
-          <a href="/wheel/history">{t("calibration.openHistory", lang)}</a>
+        <nav className="calibration-page__actions" aria-label={t("calibration.actions")}>
+          <a href={`/wheel?id=${encodeURIComponent(wheelId)}`}>{t("calibration.openWheel")}</a>
+          <a href="/wheel/history">{t("calibration.openHistory")}</a>
         </nav>
       </div>
     </div>
