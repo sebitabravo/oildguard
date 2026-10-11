@@ -32,8 +32,10 @@ Route: delegated direct, single writer (multi-file behavior/tests; parent-assign
 Engram mirror: pending; no authoritative session ID or memory tools available.
 
 ## Evidence and status
-Badge logic: `WheelPanels.tsx` `NumericEvidence`, line 69.
+Badge logic: `NumericEvidence` in `WheelPanels.tsx`; the source badge is conditional on validity.
 Evidence directory: `/tmp/og-goal/evidence/FIX-STATUS-03/`.
 Test commit: `cfaeecb` `test(ops): bind live badge to validity`.
-Fix commit: this task-document commit (`fix(ops): hide live badge on invalid readings`).
+Fix commit: `058935c` `fix(ops): hide live badge on invalid readings`.
+Parent spot-check: `cd frontend && bun test src/honesty.test.ts` — 3 pass, 0 fail; `parent-spotcheck-honesty.txt`.
+RDD: on; medium risk; `under_budget`; review not due, pending slice from `15a8f0d`.
 Status: implemented; required checks and screenshots captured.
