@@ -68,10 +68,9 @@ export const ASSEMBLY_PARTS: readonly AssemblyPart[] = [
   },
 ];
 
-// Trazabilidad B01: el total 32.62:1 es VERIFICADO (manual Komatsu, P2); los
-// conteos de dientes son ilustrativos dentro del 0.5 % (P15, geartrain.py).
+// P2 respalda la cita del total; separar el supuesto de etapas evita atribuirlo al manual.
 export const ASSEMBLY_REDUCTION_SOURCE =
-  "GDY106 32.62:1 VERIFIED per docs/thesis-annex.md:22 (P2, Komatsu 930E-5 spec sheet) " +
+  "GDY106 32.62:1 source cited in docs/thesis-annex.md:22 (P2, Komatsu 930E-5 spec sheet) " +
   "traced in docs/research/landing-claims.md §3; tooth counts illustrative ASSUMPTION " +
   "(P15, sim/geartrain.py); mirrored by frontend/src/twin/physics.ts:GEAR_RATIO.";
 

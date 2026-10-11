@@ -285,11 +285,11 @@ export default function LandingScene({
       <div className="landing__assembly-controls">
         <p className="landing__assembly-ratios">
           <strong data-reduction="overall">
-            {decimal(reduction.overall, 2)}:1
+            {decimal(reduction.overall, 2)}:1 · total publicado, fuente citada en anexo P2; sin revisión nueva aquí
           </strong>
           <span className="landing__assembly-ratios-detail">
             {decimal(reduction.highSpeed, 3)}:1 × {decimal(reduction.lowSpeed, 3)}:1 ·{" "}
-            manual Komatsu
+            supuesto de diseño
           </span>
         </p>
         <div className="landing__assembly-controls-actions">

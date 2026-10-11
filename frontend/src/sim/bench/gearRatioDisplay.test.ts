@@ -16,10 +16,10 @@ describe("GDY106 gear ratio display", () => {
       "6,750:1 × 4,833:1 ≈ 32,62:1",
     );
     expect(t("bench.readout.train", display)).toBe(
-      "Tren planetario: 6,750:1 × 4,833:1 ≈ 32,62:1 (manual Komatsu; valores de etapa redondeados a tres decimales)",
+      "Tren planetario: 6,750:1 × 4,833:1 (supuesto de diseño) ≈ 32,62:1 (total publicado, fuente citada en anexo P2; sin revisión nueva aquí; valores de etapa redondeados a tres decimales)",
     );
     expect(t("bench.notes.train", display)).toBe(
-      "Relación total validada manualmente: 6,750:1 × 4,833:1 ≈ 32,62:1 (manual Komatsu; valores de etapa redondeados a tres decimales).",
+      "Etapas (supuesto de diseño): 6,750:1 × 4,833:1 ≈ 32,62:1 (total publicado, fuente citada en anexo P2; sin revisión nueva aquí; valores de etapa redondeados a tres decimales).",
     );
     expect(numberFromDisplay(display.overall)).toBe(GEAR_RATIO);
     expect(
