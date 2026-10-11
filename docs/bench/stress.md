@@ -75,14 +75,21 @@ enabled and no other agent or dev-server load was running during the run.
 The simulator published every row in every case (`simulator_final.dropped`
 is 0; 93,373 rows/s at 10,000 devices).
 
-### Before vs after (Influx on)
+### Before vs after (Influx on, per-case recomputed)
 
-| Devices | Accepted rows/s before → after | Dropped batches before → after | p99 before → after |
-|---:|---|---|---|
-| 100 | 992 → 996 | 0 → 0 | 1.11 s → 0.94 s |
-| 1,000 | 5,150 → 9,699 (+88 %) | 23,274 → 957 | 7.18 s → 3.12 s |
-| 5,000 | 2,550 → 3,642 (+43 %) | 68,855 → 73,583 | 17.3 s → 19.4 s |
-| 10,000 | 1,630 → 1,014 | 103,876 → 115,030 | 19.4 s → 25.6 s |
+Method: each delta matches the same devices x rate before and after.
+Accepted throughput is the slope of the cumulative `accepted_total` counter
+over t >= 5.0 s (`bench/stress/run_matrix.py:summarize`), not a cumulative
+total. Recomputed slopes match the stored summaries. Reproduce with:
+
+`python3 scripts/bench/recalculate_stress_deltas.py --baseline docs/bench/stress-baseline.json --after docs/bench/stress-results.json`
+
+| Devices | Accepted rows/s before → after | Delta accepted | Dropped batches before → after | Delta dropped | p99 before → after | Delta p99 |
+|---:|---|---|---|---|---|---|
+| 100 | 992.4646 → 995.5752 | +3.1106 (+0.31%) improvement | 0 → 0 | 0 unchanged | 1.1056 s → 0.9432 s | -0.1624 s (-14.69%) improvement |
+| 1,000 | 5,149.9632 → 9,698.8481 | +4,548.8849 (+88.33%) improvement | 23,274 → 957 | -22,317 (-95.89%) improvement | 7.1787 s → 3.1177 s | -4.0611 s (-56.57%) improvement |
+| 5,000 | 2,550.0911 → 3,642.4642 | +1,092.3732 (+42.84%) throughput gain with regressions below | 68,855 → 73,583 | +4,728 (+6.87%) regression | 17.3326 s → 19.3844 s | +2.0518 s (+11.84%) regression |
+| 10,000 | 1,630.3284 → 1,014.1997 | -616.1288 (-37.79%) regression | 103,876 → 115,030 | +11,154 (+10.74%) regression | 19.3900 s → 25.6417 s | +6.2517 s (+32.24%) regression |
 
 ### Reading
 
@@ -90,10 +97,14 @@ is 0; 93,373 rows/s at 10,000 devices).
   one backend process now keeps up: 97 % of the offered rows are accepted,
   drops fall by 96 %, and p99 latency is ~3 s, of which ~0.5 s is the
   10-row batching window of the simulator.
-- Beyond that, a single Python process is CPU-bound (~80 % of the container)
+- At 5,000 devices the higher accepted rate (+42.84 %) is not a net
+  improvement: dropped batches rise (+6.87 %) and p99 latency rises (+11.84 %).
+  At 10,000 devices all three deltas are regressions: accepted rate -37.79 %,
+  dropped batches +10.74 %, p99 +32.24 %.
+  A single Python process is CPU-bound (~80 % of the container)
   and the bounded queue sheds load as counted drops instead of growing
   memory. 5,000 and 10,000 devices at 10 Hz are 5–10× above that ceiling;
-  their numbers show the backpressure behaving as designed, not a supported
+  their numbers are saturation behavior, not a supported
   operating point. The 10,000-device case also has fewer samples (22)
   because `/metrics/ingest` itself responds slowly under saturation.
 - Scaling past one process (several ingest workers sharded by device, or

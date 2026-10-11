@@ -54,6 +54,13 @@ const bannedTerms: BannedTerm[] = [
 
 const allowlist = new Map<string, string>();
 
+// Puerta de política A12: la guardia sigue siendo solo del frontend hasta
+// que el padre apruebe por escrito la remediación acotada de documentos.
+// El inventario vive en docs/integrity-inventory.md y la aprobación sigue
+// pendiente; por eso aquí no se amplía el alcance ni se agregan exenciones.
+// El cero-match crudo sigue NO RESUELTO porque los literales de
+// guardia/prueba/política existen en el repo por diseño.
+
 function normalizeForMatching(value: string): string {
   return value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 }
@@ -117,5 +124,14 @@ describe("frontend honesty guard", () => {
   test("contains no unsupported claims or machine-control actions", async () => {
     const violations = await findSourceViolations();
     if (violations.length > 0) throw new Error(violations.join("\n"));
+  });
+});
+
+// Candado A12: documenta que la lista no se redujo y que no hay exenciones
+// mientras la remediación amplia espera aprobación del padre.
+describe("integrity inventory policy gate (A12)", () => {
+  test("keeps the banned-term list unshrunk with no exemptions", () => {
+    expect(bannedTerms.length).toBe(37);
+    expect(allowlist.size).toBe(0);
   });
 });
