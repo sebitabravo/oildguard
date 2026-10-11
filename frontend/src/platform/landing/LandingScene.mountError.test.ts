@@ -1,28 +1,9 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, mock, test } from "bun:test";
 import { detectWebGL, resolveSceneState } from "./sceneHost";
 
-declare const require: (specifier: string) => unknown;
-declare const process: { env: Record<string, string | undefined> };
-const testWithSkip = test as typeof test & { skip: typeof test };
-
-// Estas rutas configurables evitan depender del equipo de quien ejecuta la prueba.
-const PLAYWRIGHT_MODULE = process.env.PLAYWRIGHT_MODULE;
-const CHROMIUM_EXECUTABLE = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
-const missingBrowserEnv = [
-  !PLAYWRIGHT_MODULE && "PLAYWRIGHT_MODULE",
-  !CHROMIUM_EXECUTABLE && "PLAYWRIGHT_CHROMIUM_EXECUTABLE",
-].filter(Boolean);
-const skipMessage = `Skipping browser test: missing ${missingBrowserEnv.join(", ")}`;
-if (missingBrowserEnv.length > 0) console.warn(skipMessage);
-const { chromium } = PLAYWRIGHT_MODULE
-  ? require(PLAYWRIGHT_MODULE) as { chromium: any }
-  : { chromium: null };
-const MOUNT_ERROR_COPY = "No se pudo cargar la vista 3D. El esquema estático permanece disponible.";
-
 describe("landing scene mount failures", () => {
-  const originalDocument = globalThis.document;
-
   test("recognizes a WebGL2-only browser context", () => {
+    const originalDocument = globalThis.document;
     const canvas = {
       getContext: (name: string) => name === "webgl2" ? {} : null,
     } as HTMLCanvasElement;
@@ -43,63 +24,97 @@ describe("landing scene mount failures", () => {
     }
   });
 
-  const browserTestName = "shows a labelled error, keeps the poster, and logs when assembly mounting throws";
-  if (missingBrowserEnv.length > 0) {
-    testWithSkip.skip(`${browserTestName} — ${skipMessage}`, () => {});
-  } else test(browserTestName, async () => {
-    const browser = await chromium.launch({ executablePath: CHROMIUM_EXECUTABLE });
-    try {
-      const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-      const page = await context.newPage();
-      const errors: string[] = [];
-      page.on("console", (message: any) => {
-        if (message.type() === "error") errors.push(message.text());
-      });
-      await page.addInitScript(() => {
-        const originalGetContext = HTMLCanvasElement.prototype.getContext;
-        HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, name: string, ...args: any[]) {
-          if (name === "webgl2" || name === "webgl" || name === "experimental-webgl") return {} as WebGLRenderingContext;
-          return originalGetContext.call(this, name, ...args);
-        } as typeof HTMLCanvasElement.prototype.getContext;
-      });
-      await page.route("**/scenes/assembly.ts*", (route: any) => route.fulfill({
-        status: 200,
-        contentType: "application/javascript",
-        body: `export const ASSEMBLY_PARTS = [];\nexport const assemblyReduction = () => ({ overall: 1, highSpeed: 1, lowSpeed: 1 });\nexport function createAssemblyControls() { return { getState: () => ({ isolated: null }) }; }\nexport function mountAssemblyScene() { window.__assemblyMountAttempts = (window.__assemblyMountAttempts || 0) + 1; throw new Error("forced mount failure"); }`,
-      }));
-      await page.goto("http://localhost:5174/", { waitUntil: "load" });
-      const scene = page.locator('figure[data-scene="assembly"]');
-      await scene.scrollIntoViewIfNeeded();
-      await page.waitForFunction(
-        () => (window as any).__assemblyMountAttempts === 1,
-        null,
-        { timeout: 3500 },
-      );
+  test("reports a mocked assembly mount failure and hides controls without a browser", async () => {
+    const stateValues: unknown[] = [];
+    const refs: Array<{ current: unknown }> = [];
+    const effects: Array<() => void | (() => void)> = [];
+    let stateCursor = 0;
+    let cleanup: void | (() => void);
 
-      const observed = await scene.evaluate((element: Element) => {
-        const error = element.querySelector('[data-scene-error="true"]');
-        return {
-          sceneState: element.getAttribute("data-scene-state"),
-          errorVisible: Boolean(error),
-          errorText: error?.textContent?.trim() ?? null,
-          posterRetained: Boolean(element.querySelector("img.landing__scene-poster")),
-          mountAttempts: (window as any).__assemblyMountAttempts ?? 0,
-        };
-      });
-      expect({
-        ...observed,
-        mountErrorReported: errors.some((message) => message.includes("forced mount failure")),
-      }).toEqual({
-        sceneState: "mount-error",
-        errorVisible: true,
-        errorText: MOUNT_ERROR_COPY,
-        posterRetained: true,
-        mountErrorReported: true,
-        mountAttempts: 1,
-      });
-      await context.close();
+    mock.module("preact/hooks", () => ({
+      useEffect: (effect: () => void | (() => void)) => effects.push(effect),
+      useRef: (initial: unknown) => {
+        const ref = { current: initial };
+        refs.push(ref);
+        return ref;
+      },
+      useState: (initial: unknown) => {
+        const index = stateCursor++;
+        if (stateValues[index] === undefined) stateValues[index] = initial;
+        return [stateValues[index], (next: unknown) => {
+          stateValues[index] = typeof next === "function"
+            ? (next as (value: unknown) => unknown)(stateValues[index])
+            : next;
+        }];
+      },
+    }));
+    mock.module(import.meta.resolve("./scenes/assembly"), () => ({
+      ASSEMBLY_PARTS: [],
+      assemblyReduction: () => ({ overall: 32.62, highSpeed: 6.75, lowSpeed: 4.833 }),
+      createAssemblyControls: () => ({ getState: () => ({ isolated: null }) }),
+      mountAssemblyScene: () => { throw new Error("forced mount failure"); },
+    }));
+
+    const originalDocument = globalThis.document;
+    const originalWindow = globalThis.window;
+    const originalObserver = globalThis.IntersectionObserver;
+    const originalConsoleError = console.error;
+    const loggedErrors: unknown[][] = [];
+    console.error = (...args: unknown[]) => loggedErrors.push(args);
+
+    class ImmediateIntersectionObserver {
+      constructor(private readonly callback: IntersectionObserverCallback) {}
+      observe(target: Element) {
+        this.callback([{ isIntersecting: true, target } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+      }
+      disconnect() {}
+    }
+
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: { createElement: () => ({ getContext: () => ({}) }) },
+    });
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: { matchMedia: () => ({ matches: false }) },
+    });
+    Object.defineProperty(globalThis, "IntersectionObserver", {
+      configurable: true,
+      value: ImmediateIntersectionObserver,
+    });
+
+    try {
+      const { default: LandingScene } = await import("./LandingScene");
+      stateCursor = 0;
+      LandingScene({ scene: "assembly" });
+      refs[0].current = {};
+      refs[1].current = {};
+      cleanup = effects[0]();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      stateCursor = 0;
+      const rendered = LandingScene({ scene: "assembly" }) as {
+        props: { "data-scene-state": string; children: unknown };
+      };
+      const visit = (node: unknown): Array<{ type?: unknown; props?: Record<string, unknown> }> => {
+        if (Array.isArray(node)) return node.flatMap(visit);
+        if (node === null || typeof node !== "object") return [];
+        const vnode = node as { type?: unknown; props?: Record<string, unknown> };
+        return [vnode, ...visit(vnode.props?.children)];
+      };
+      const nodes = visit(rendered);
+      expect(rendered.props["data-scene-state"]).toBe("mount-error");
+      expect(nodes.some((node) => node.props?.["data-scene-error"] === "true")).toBe(true);
+      expect(nodes.some((node) => node.props?.className === "landing__scene-poster")).toBe(true);
+      expect(nodes.some((node) => node.props?.className === "landing__assembly-controls")).toBe(false);
+      expect(loggedErrors).toHaveLength(1);
+      expect(loggedErrors[0][1]).toEqual(new Error("forced mount failure"));
     } finally {
-      await browser.close();
+      cleanup?.();
+      console.error = originalConsoleError;
+      Object.defineProperty(globalThis, "document", { configurable: true, value: originalDocument });
+      Object.defineProperty(globalThis, "window", { configurable: true, value: originalWindow });
+      Object.defineProperty(globalThis, "IntersectionObserver", { configurable: true, value: originalObserver });
     }
   });
 });

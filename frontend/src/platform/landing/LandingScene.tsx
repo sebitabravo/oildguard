@@ -54,7 +54,7 @@ type SceneCopy = {
 };
 
 export function reportAssemblyMountFailure(error: unknown): SceneLoadState {
-  if (import.meta.env.DEV) console.error("No se pudo montar la escena del conjunto.", error);
+  console.error("No se pudo montar la escena del conjunto.", error);
   return "mount-error";
 }
 
@@ -136,8 +136,9 @@ export default function LandingScene({
       return;
     }
     let alive = true;
+    let mountFailed = false;
     const sync = () => {
-      if (alive) setState(host.getState());
+      if (alive && !mountFailed) setState(host.getState());
     };
     // El corte del conjunto se monta solo en vista, con WebGL y sin
     // movimiento reducido; cualquier fallo conserva el póster B03.
@@ -156,6 +157,7 @@ export default function LandingScene({
             mountedRef.current = mod.mountAssemblyScene(mountEl, controls);
           } catch (error) {
             mountingRef.current = false;
+            mountFailed = true;
             setState(reportAssemblyMountFailure(error));
             return;
           }
@@ -166,7 +168,10 @@ export default function LandingScene({
         },
         (error) => {
           mountingRef.current = false;
-          if (alive) setState(reportAssemblyMountFailure(error));
+          if (alive) {
+            mountFailed = true;
+            setState(reportAssemblyMountFailure(error));
+          }
         },
       );
     };
