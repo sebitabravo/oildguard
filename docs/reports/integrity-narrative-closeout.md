@@ -87,3 +87,11 @@ The endpoint-to-commit mapping was read back from Git commit tree fields; the co
 ## Closeout verification
 
 For this document task, checks are recorded in `/tmp/og-goal/evidence/B12/`. The required frontend honesty guard is run as a closeout check; it is not a substitute for the full B12 integrated suite or human sign-off. This task's final commit and post-commit status do not retroactively prove the pre-commit clean-tree requirement.
+
+## Orchestrator decisions
+
+1. **Unreviewed range before `2ed430f` (includes `8dc5f4f`, Spanish-only, 122 files).** Functional gates accepted as the record for this range (`bun test src` 620 pass, `bun run build` 44 pages, honesty guard green). No history rewrite. The range stays unreviewed by native RDD because the review contract covers only ranges ending at HEAD and the full range exceeded the context budget (`lens_context_budget_exceeded`, observed 2026-10-11). Authority: the user delegated decisions to the orchestrator ("sientete libre de tomar decisiones"); the user may revoke this at any time.
+
+2. **GLB `docs/reference-models/komatsu_hd-465-7eo.glb`.** NOT used in the landing. Reason: third-party HD-465-7EO exterior, no internal drivetrain or motor geometry, license CC-BY-4.0 with source not independently re-verified (`docs/models.md`). The landing keeps the parametric study cutaway (`scenes/assembly.ts`, `scenes/gears.ts`). Reopen only if the license and labelling are confirmed.
+
+Still requires a human: three-minute comprehension test (B12) and visual approval of B11.
