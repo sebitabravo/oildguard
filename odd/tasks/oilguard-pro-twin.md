@@ -60,7 +60,7 @@ physically consistent digital twin that delivers what the pre-proposal
 ## Constraints
 
 - Stack: Astro 7 + Preact 10 islands + Three.js 0.169 + FastAPI + InfluxDB + MQTT + Docker.
-- Physics anchors from manuals (VERIFIED): 930E-4SE 15.29 × 8.89 × 8.10 m, body-up 14.80 m, tires 53/80R63, body 211 m³ heaped / interior width 8.15 m / depth 3.2 m / loading height 7.06 m / dump angle 45°, turning circle 30.4 m, max speed 64.5 km/h, GDY106 32.62:1, 94–95 L SAE 85W-140 per wheel, rotor ≤ 3000 RPM.
+- Physics anchors from manuals (VERIFIED): 930E-4SE 15.29 × 8.89 × 8.10 m, body-up 14.80 m, tires 53/80R63, body 211 m³ heaped / interior width 8.15 m / depth 3.2 m / loading height 7.06 m / dump angle 45°, turning circle 29.7 m, max speed 64.5 km/h, GDY106 32.62:1, 94–95 L SAE 85W-140 per wheel, rotor ≤ 3000 RPM.
 - Every non-manual number is labeled VERIFIED / DERIVED / ASSUMPTION in `docs/thesis-annex.md`.
 - Honest labeling stays: SYNTHETIC-PROXY until bench data exists.
 - Performance: truck/pit scene ≥ 30 fps on a typical laptop (instancing, merged geometry, shadow map ≤ 2048).

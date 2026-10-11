@@ -52,10 +52,12 @@ gateway (Pi + InfluxDB) → FastAPI → dashboard already mocked
 
 ## Economics (reference, not a quote)
 
-Inspections every 250 h leave a blind spot where a slow leak becomes a
-traction-motor failure. Reference scale: a single unplanned motor/downtime
-event ≈ USD 150k — the number that makes a staged anomaly-first pilot cheap
-insurance even before fusion is proven. Validate locally; bench first, then
+No cost figure is claimed here. Inspections every 250 h leave a blind spot
+where a slow leak can progress to traction-motor failure, and the staged
+pilot is justified operationally: early warning during existing LOAD/DUMP
+rest windows without claiming fused field accuracy. The previously cited
+unplanned-downtime amount is excluded from this argument because it could
+not be traced to a verifiable source. Validate locally; bench first, then
 one-truck pilot on LOAD/DUMP rest windows.
 
 Closeout: stack runs locally (`docker compose up` → judge path < 5 min),
