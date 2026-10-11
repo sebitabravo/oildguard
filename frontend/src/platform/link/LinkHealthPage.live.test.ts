@@ -11,6 +11,8 @@ describe("link live claims follow the connection state", () => {
     expect(html.includes(t("link.connection.live"))).toBe(false);
     expect(html.toLowerCase().includes("en vivo")).toBe(false);
     expect(html).toContain(t("link.connection.disconnected"));
+    expect((html.match(new RegExp(t("link.connection.disconnected"), "g")) ?? []).length).toBe(1);
+    expect((html.match(new RegExp(t("link.offlineStrip"), "g")) ?? []).length).toBe(1);
   });
 
   test("open connection preserves live wording", () => {

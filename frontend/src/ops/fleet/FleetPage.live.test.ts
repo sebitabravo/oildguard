@@ -25,6 +25,7 @@ describe("fleet telemetry live claims follow the connection state", () => {
     expect(html.includes("Al día")).toBe(false);
     expect(html.toLowerCase().includes("en vivo")).toBe(false);
     expect(html).toContain("Sin conexión");
+    expect((html.match(/Sin conexión(?=<)/g) ?? []).length).toBe(1);
   });
 
   test("open connection preserves live telemetry framing", () => {

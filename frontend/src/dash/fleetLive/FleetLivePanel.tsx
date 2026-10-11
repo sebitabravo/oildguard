@@ -108,7 +108,7 @@ export function FleetLivePanelView({ snapshot, state, previousDropped = null }: 
       </div>
       {connected && snapshot
         ? <FleetLiveTelemetryFields snapshot={snapshot} />
-        : <p className="og-fleet-live__waiting">{t("fleet.telemetry.offlineStatus")}</p>}
+        : null}
     </section>
   );
 }

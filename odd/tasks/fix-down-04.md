@@ -14,6 +14,7 @@ Remove live framing from `/link` and `/fleet` telemetry when the backend/WebSock
 - [x] Gate live wording and field badges on actual WebSocket connection state.
 - [x] Capture blocked/restored-route 1024 screenshots; run required tests/build.
 - [x] Record source, checks, screenshots, and commit identities.
+- [x] Remove repeated offline status copy and cover both telemetry views with assertions.
 
 ## Acceptance criteria
 Closed state has no `EN VIVO`, `Al día`, or `en vivo` claims in the telemetry areas; open state preserves live framing. Restored live confirmation is pending backend availability.
@@ -25,6 +26,10 @@ Closed state has no `EN VIVO`, `Al día`, or `en vivo` claims in the telemetry a
 - RED: both test imports failed before implementation; `red.txt`.
 - Browser blocked via Playwright route abort: `/tmp/og-goal/evidence/FIX-DOWN-04/link-blocked-1024.png`, `fleet-blocked-1024.png`.
 - Restored-route attempt: `link-restored-1024.png`, `fleet-restored-1024.png`; backend unavailable, so live state could not return. `backend-reachability.txt`, `browser-evidence.txt`.
+- Duplicate-copy RED: `duplicate-red.txt` showed the closed-state tests fail with repeated disconnected/offline text.
+- Correction checks: `bun-test-src-duplicate.txt` (638 pass, 0 fail), `bun-build-duplicate.txt` (exit 0), and `bun-test-honesty-duplicate.txt` (3 pass, 0 fail).
+- Updated 1024 blocked screenshots: `link-blocked-1024.png`, `fleet-blocked-1024.png`; browser summary: `browser-evidence-duplicate.txt`. Link now renders one disconnected status and one offline title; Fleet renders one exact `Sin conexión` status.
+- RDD assessment for parent review: `rdd-assessment.json` reports medium / under_budget. Restored/live state remains pending; backend reachability failure is recorded in `backend-reachability.txt`.
 
 ## TDD / route / persistence
 TDD: ON; source: `/tmp/og-goal/briefs/_rules.md`; runner: `cd frontend && bun test src`.
@@ -36,4 +41,4 @@ Engram mirror: pending; no authoritative session ID or memory tools available.
 Evidence directory: `/tmp/og-goal/evidence/FIX-DOWN-04/`.
 Test commit: `f78d61c` `test(platform): bind live claims to state`.
 Fix commit: `d19d97c` `fix(platform): gate live claims on connection`.
-Status: partial — restored/live state blocked by unavailable backend.
+Status: partial — duplicate offline status copy removed and checks pass; restored/live state remains pending because localhost:8000 is unreachable.

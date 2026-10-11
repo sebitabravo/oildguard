@@ -63,11 +63,9 @@ export function LinkFlowStatus({ connected, lastTickMs, demo }: { connected: boo
         <strong>{t(connected ? "link.liveStrip" : "link.offlineStrip")}</strong>
         <span>{t(connected ? "link.connection.live" : "link.connection.disconnected")}</span>
       </div>
-      <small>{connected && lastTickMs !== null
-        ? `${t("link.lastTick")} · ${formatTimestamp(lastTickMs)}`
-        : t(connected ? "link.noTick" : "link.connection.disconnected")}
-      </small>
-      {!connected && demo && <p><SyntheticBadge /> <span>{t("link.offlineStrip")}</span></p>}
+      {connected
+        ? <small>{lastTickMs !== null ? `${t("link.lastTick")} · ${formatTimestamp(lastTickMs)}` : t("link.noTick")}</small>
+        : demo && <p><SyntheticBadge /></p>}
     </section>
   );
 }
