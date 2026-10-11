@@ -39,10 +39,10 @@ B01 delivers a source trace only. No geometry, mount, pause, or TRL value is dec
 
 | Claim | Status | Source |
 |---|---|---|
-| GDY106 two-stage planetary reduction 32.62:1, 64.5 km/h top speed | VERIFIED (manual) | `docs/thesis-annex.md:22` (P2: Komatsu 930E-5 spec sheet + brochure PDF URLs); `docs/research/twin-reference.md:144` (CRS lines 106-109, 465; BRO) |
-| `TARGET_RATIO = 32.62` VERIFIED; tooth counts illustrative ASSUMPTION within 0.5 % | Traced | `sim/geartrain.py:10-13, 23-24, 119-124` (shared-ring-92 choice: HS 16/38/3, LS 24/34/4; error 0.015 %) |
+| GDY106 two-stage planetary reduction 32.62:1, 64.5 km/h top speed | Cited to Annex P2; primary source not re-checked here; not sourced to the GDY106 manual | `docs/thesis-annex.md:22` (P2: Komatsu 930E-5 spec sheet + brochure PDF URLs; not re-checked here); `/tmp/og-goal/evidence/CUT-01/ratio-trace.md` (the supplied GDY106 manual does not contain the reduction ratio); `docs/research/twin-reference.md:144` (CRS lines 106-109, 465; BRO) |
+| `TARGET_RATIO = 32.62`; tooth counts illustrative ASSUMPTION within 0.5 % | Internal target associated with the Annex P2 citation; not re-checked here | `sim/geartrain.py` (`TARGET_RATIO`, `GDY106_TRAIN`; shared-ring-92 choice: HS 16/38/3, LS 24/34/4; error 0.015 %) |
 | TypeScript mirror `GEAR_RATIO = 32.62`, `GDY106_TRAIN`, `stageRatio`/`trainRatio` | Traced, same assumption | `frontend/src/twin/physics.ts:7-8, 162-170` |
-| Displayed stages 6.750:1 × 4.833:1 ≈ 32.62:1 (manual-validated overall; stages rounded to three decimals); exact illustrative product 32.625:1 | Traced | `docs/thesis-annex.md:37` (P17); `frontend/src/sim/bench/gearRatioDisplay.ts:1-17`; `tests/fixtures/physics_parity.json:404` (ratio 32.62500000000001) |
+| Displayed stages 6.750:1 × 4.833:1 ≈ 32.62:1 (ASSUMPTION/design choice; stages rounded to three decimals); exact illustrative product 32.625:1 | ASSUMPTION (design choice), not stated by the manual | `sim/geartrain.py` (`GDY106_TRAIN`); `docs/thesis-annex.md:37` (P17); `frontend/src/sim/bench/gearRatioDisplay.ts:1-17`; `tests/fixtures/physics_parity.json:404` (ratio 32.62500000000001); `/tmp/og-goal/evidence/CUT-01/ratio-trace.md` |
 | Research-stage options (e.g. option A total 32.667 +0.14 %; option B 32.622 +0.007 %) are exploration, not the frozen choice | Traced, not adopted | `docs/research/twin-reference.md:206-222` ("the frozen choice lives in `sim/geartrain.py` with tests") |
 | Rotor 3000 rpm → wheel ≈ 92 rpm arithmetic | DERIVED | `docs/thesis-annex.md:23` (P3); `sim/physics.py:GEAR_RATIO`, `sim/physics.py:WHEEL_RPM_AT_MAX` |
 | Tooth counts, high-speed planet count, GDY106 outer dimensions/mass, oil level mark | UNRESOLVED — no accessible source | `docs/research/twin-reference.md:148, 341-343` (gap §7.1); `docs/thesis-annex.md:35` (P15 ASSUMPTION) |
@@ -67,8 +67,8 @@ B01 delivers a source trace only. No geometry, mount, pause, or TRL value is dec
 
 ## Checklist
 
-- [ ] Every landing claim in B02 copy traces to one row above with status VERIFIED / Traced — never to an UNPROVEN or UNRESOLVED cell.
-- [ ] B04 demonstrates 32.62:1 only from the §3 VERIFIED overall value; tooth counts stay labeled illustrative (P15).
+- [ ] Every landing claim in B02 copy traces to its §3 source or states its provenance; never to an UNPROVEN or UNRESOLVED cell.
+- [ ] B04 uses the Annex P2 citation for 32.62:1 and labels the stage split as ASSUMPTION; tooth counts stay illustrative (P15).
 - [ ] B05 sensor cards use service-point identity only; mount/install/modification detail beyond §1 stays UNPROVEN until bench data lands.
 - [ ] B06 uses exactly the two §2 pauses (LOAD/DUMP); WAIT stays a moving return leg.
 - [ ] No TRL number appears anywhere until the author decision is recorded verbatim in this report's §4 successor.
@@ -85,3 +85,7 @@ The supplied GDY106 manual text does not contain `6.750` or `4.833` as reduction
 > `L/S Ring Gear 32.6272 32.6392 0.7680 32.6948`
 
 The row is repeated on PDF page 88. Its columns are minimum, maximum, pin diameter, and condemning limit in inches. No ratio-specific assertion is supported by this trace; stage ratios and tooth-count relationships remain pending a ratio source. The generated gear tooth counts in the cutaway are visual study parameters only.
+
+## 8. Ratio provenance correction (2026-10-11)
+
+An earlier revision attributed the 32.62:1 total and displayed stage split to the GDY106 manual. This correction cites the total to Annex P2 (Komatsu 930E-5 spec sheet and brochure); the primary source was not re-checked for this correction. The supplied GDY106 manual does not contain the reduction ratio, as documented in `/tmp/og-goal/evidence/CUT-01/ratio-trace.md`. The 6.750 × 4.833 stage split remains an ASSUMPTION/design choice, not a manual result.
