@@ -2,8 +2,13 @@
 .og-fleet-header-meta { display: grid; gap: 6px; min-width: 190px; color: var(--og-text-primary); font: 11px var(--og-mono); }
 .og-fleet-header-meta i { display: inline-block; width: 7px; height: 7px; margin-right: 7px; background: var(--og-green); border-radius: 50%; }
 .og-fleet-header-meta small { color: var(--og-text-muted); }
-.og-fleet-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 24px 0; }
-.og-fleet-kpis .og-kpi-tile { min-height: 112px; }
+.og-fleet-kpi-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 24px 0; border: 1px solid var(--og-border-subtle); background: var(--og-surface); }
+.og-fleet-kpi { display: grid; align-content: center; gap: 5px; min-width: 0; padding: 12px 16px; }
+.og-fleet-kpi + .og-fleet-kpi { border-left: 1px solid var(--og-border-subtle); }
+.og-fleet-kpi .og-kpi-tile__value { font-size: var(--og-telemetry-md); }
+.og-fleet-kpi .og-kpi-tile__meta { line-height: 1.4; }
+.og-fleet-kpi--warning .og-kpi-tile__value { color: var(--og-amber); }
+.og-fleet-kpi--critical .og-kpi-tile__value { color: var(--og-red); }
 .og-fleet-state-filters { display: flex; gap: 6px; flex-wrap: wrap; }
 .og-fleet-filter-chip { min-height: 36px; padding: 0 10px; color: var(--og-text-secondary); background: var(--og-surface); border: 1px solid var(--og-border-strong); cursor: pointer; }
 .og-fleet-filter-chip.is-active { color: var(--og-text-primary); border-color: var(--og-accent); }
@@ -39,7 +44,11 @@
 .og-fleet-helper { margin: 12px 0 22px; color: var(--og-text-muted); font-size: 12px; }
 .og-fleet-empty { padding: 24px; color: var(--og-text-muted); text-align: center; }
 @media (max-width: 700px) {
-  .og-fleet-kpis { grid-template-columns: 1fr; }
+  .og-fleet-kpi-strip { grid-template-columns: 1fr; }
+  .og-fleet-kpi { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding: 10px 12px; }
+  .og-fleet-kpi .og-kpi-tile__value { grid-column: 2; grid-row: 1; }
+  .og-fleet-kpi .og-kpi-tile__meta { grid-column: 1 / -1; }
+  .og-fleet-kpi + .og-fleet-kpi { border-top: 1px solid var(--og-border-subtle); border-left: 0; }
   .og-fleet-page .og-page-header { grid-template-columns: 1fr; gap: 10px; }
   .og-fleet-page .og-page-header > * { grid-column: 1 !important; grid-row: auto !important; }
   .og-fleet-search { min-width: 100%; }

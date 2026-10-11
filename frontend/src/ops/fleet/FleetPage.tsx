@@ -4,7 +4,7 @@ import { getFleetDevices } from "../../sim/api";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t } from "../../i18n";
 import {
-  Button, FilterBar, KpiTile, LevelBar, PageHeader, RegimeChip,
+  Button, FilterBar, LevelBar, PageHeader, RegimeChip,
   SegmentedControl, SeverityBadge, Sparkline,
 } from "../../ui/foundation";
 import FleetLivePanel from "../../dash/fleetLive/FleetLivePanel";
@@ -27,6 +27,28 @@ function modelLabel(model: string): string {
 
 function rowClass(row: FleetRow): string {
   return `og-fleet-row og-fleet-row--${classifyRowState(row.wheel, row.lastComm)}`;
+}
+
+function FleetKpiStrip({ counts }: { counts: ReturnType<typeof fleetCounters> }) {
+  return (
+    <section className="og-fleet-kpi-strip" aria-label={t("fleet.kpis")}>
+      <div className="og-fleet-kpi">
+        <div className="og-label">{t("fleet.kpiMonitored")}</div>
+        <div className="og-kpi-tile__value">{formatNumber(counts.trucks, 0)}<small>{t("fleet.trucks")}</small></div>
+        <div className="og-kpi-tile__meta">{formatNumber(counts.wheels, 0)} {t("fleet.gdy106Wheels")} · {t("fleet.activeCycle")}: {formatNumber(counts.activeTrucks, 0)}</div>
+      </div>
+      <div className={`og-fleet-kpi${counts.alerts ? " og-fleet-kpi--warning" : ""}`}>
+        <div className="og-label">{t("fleet.kpiAlerts")}</div>
+        <div className="og-kpi-tile__value">{formatNumber(counts.alerts, 0)}</div>
+        <div className="og-kpi-tile__meta">{formatNumber(counts.n4, 0)} {t("fleet.n4Word")} · {formatNumber(counts.n2, 0)} {t("fleet.n2Word")}</div>
+      </div>
+      <div className={`og-fleet-kpi${counts.noLink ? " og-fleet-kpi--critical" : ""}`}>
+        <div className="og-label">{t("fleet.kpiLink")}</div>
+        <div className="og-kpi-tile__value">{formatNumber(counts.noLink, 0)}</div>
+        <div className="og-kpi-tile__meta">{formatNumber(counts.stale, 0)} {t("fleet.staleWord")} · {formatNumber(counts.linkDown, 0)} {t("fleet.linkDownWord")}</div>
+      </div>
+    </section>
+  );
 }
 
 // Cada campo muestra su procedencia junto al valor para que ningún dato DEMO
@@ -115,11 +137,7 @@ export default function FleetPage() {
           meta={<div className="og-fleet-header-meta"><span><i />{liveLoaded ? t("fleet.liveDevices", { count: formatNumber(liveDevices.length, 0) }) : t("fleet.demoSource")}</span><small>{t("fleet.sampling")}</small></div>}
         />
 
-        <section className="og-fleet-kpis" aria-label={t("fleet.kpis")}>
-          <KpiTile label={t("fleet.kpiMonitored")} value={formatNumber(counts.trucks, 0)} unit={t("fleet.trucks")} meta={`${formatNumber(counts.wheels, 0)} ${t("fleet.gdy106Wheels")} · ${t("fleet.activeCycle")}: ${formatNumber(counts.activeTrucks, 0)}`} />
-          <KpiTile label={t("fleet.kpiAlerts")} value={formatNumber(counts.alerts, 0)} meta={`${formatNumber(counts.n4, 0)} ${t("fleet.n4Word")} · ${formatNumber(counts.n2, 0)} ${t("fleet.n2Word")}`} tone={counts.alerts ? "warning" : "nominal"} />
-          <KpiTile label={t("fleet.kpiLink")} value={formatNumber(counts.noLink, 0)} meta={`${formatNumber(counts.stale, 0)} ${t("fleet.staleWord")} · ${formatNumber(counts.linkDown, 0)} ${t("fleet.linkDownWord")}`} tone={counts.noLink ? "critical" : "nominal"} />
-        </section>
+        <FleetKpiStrip counts={counts} />
 
         <FilterBar>
           <SegmentedControl
