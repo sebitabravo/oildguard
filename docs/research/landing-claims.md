@@ -77,3 +77,11 @@ B01 delivers a source trace only. No geometry, mount, pause, or TRL value is dec
 ## Next step
 
 B02 (eight semantic bilingual beats) is pending and has not started. It is unblocked on evidence but still requires the author's TRL decision if any beat needs a maturity claim, and surveyed mount data if any beat needs more than conceptual sensor positions.
+
+## 7. CUT-01 manual ratio trace (2026-10-11)
+
+The supplied GDY106 manual text does not contain `6.750` or `4.833` as reduction ratios. The only located `32.62`-like value is a dimensional tolerance row on PDF page 87 (printed page 79), not a ratio:
+
+> `L/S Ring Gear 32.6272 32.6392 0.7680 32.6948`
+
+The row is repeated on PDF page 88. Its columns are minimum, maximum, pin diameter, and condemning limit in inches. No ratio-specific assertion is supported by this trace; stage ratios and tooth-count relationships remain pending a ratio source. The generated gear tooth counts in the cutaway are visual study parameters only.
