@@ -54,3 +54,16 @@ Structural checks on the measured output:
 Verdict: every budget line passes at baseline with headroom. The 3D chunk
 does not exist yet, so there is no with-3D comparison to report here; B09
 records it against this baseline.
+
+## B09 lifecycle observation (2026-10-11, Chromium 1440 × 900)
+
+Using the local dev server at `http://localhost:5174`, a cold page load had
+zero canvases and zero pending animation-frame callbacks before scrolling to
+the assembly figure. First paint and first contentful paint were both observed
+at 136 ms. With assembly in view, one canvas was present and the instrumented
+window had one pending animation-frame callback maximum. Scrolling to the page
+to a gap beyond the assembly's viewport margin left its canvas mounted but
+dropped pending callbacks from one to zero. This is an observed browser run,
+not a GPU frame-time measurement. The 1440px screenshot and raw console capture are
+`/tmp/og-goal/evidence/B09/landing-scenes-chromium-1440.png` and
+`/tmp/og-goal/evidence/B09/console.txt`.

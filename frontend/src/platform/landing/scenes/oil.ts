@@ -240,7 +240,7 @@ export function buildOilScene(volumeL: number = OIL_REFERENCE_L): BuiltOilScene 
   return { group, pool, headM, volumeL: volume };
 }
 
-export function mountOilScene(host: HTMLElement, volumeL: number = OIL_REFERENCE_L): { dispose(): void } {
+export function mountOilScene(host: HTMLElement, volumeL: number = OIL_REFERENCE_L): { pause(): void; resume(): void; dispose(): void } {
   host.style.display = "block";
   host.style.position = "relative";
   host.style.width = "100%";
@@ -260,6 +260,12 @@ export function mountOilScene(host: HTMLElement, volumeL: number = OIL_REFERENCE
     "GDY106 oil cutaway: annular gear case with the settling pool at the reference level",
   );
   return {
+    pause() {
+      stage.pause();
+    },
+    resume() {
+      stage.resume();
+    },
     dispose() {
       stage.dispose();
     },

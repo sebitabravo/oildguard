@@ -345,6 +345,8 @@ export function applyIsolation(
 
 export interface MountedAssembly {
   syncCamera(): void;
+  pause(): void;
+  resume(): void;
   dispose(): void;
 }
 
@@ -401,6 +403,12 @@ export function mountAssemblyScene(host: HTMLElement, controls: AssemblyControls
 
   return {
     syncCamera,
+    pause() {
+      stage.pause();
+    },
+    resume() {
+      stage.resume();
+    },
     dispose() {
       stopFrame();
       stage.dispose();

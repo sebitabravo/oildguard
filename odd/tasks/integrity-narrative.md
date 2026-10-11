@@ -1697,6 +1697,8 @@ Execution is authorized by the user's explicit approval. Start with A01 only; pr
 - Human three-minute comprehension check (human evidence, never model self-review): B12.
 - No dependency without written approval: every task acceptance plus section 5.
 
+B09 observed: landing lifecycle tests 118/0, full frontend tests 615/0, build 44 pages, and 1440px browser capture showed 0→1 canvas with one active callback in view, then 1→0 pending callbacks after scrolling beyond its viewport margin; evidence is in `/tmp/og-goal/evidence/B09/`.
+
 ### B02–B08 — formal parent pass GREEN (2026-10-11; code already in tree via S01–S06 commit)
 
 Parent re-ran every B-unit focused suite plus the full gates on the clean tree (only `.codex/hooks.json` restored to committed form since): B02 beats+locale 12/0, B03 scene host 12/0, B04 assembly+scene 23/0, B05 sensors+details 16/0, B06 cycle+scene 24/0, B07 oil+plot 26/0, B08 story progress 13/0; full `bun test src` 594/0 across 97 files; `bun run build` 44 pages exit 0. Counts differ from worker-time reports because S05 rewrote the suites ES-only (same behavior coverage). B02–B08 remain formally pending as units; no scope/acceptance text changed.

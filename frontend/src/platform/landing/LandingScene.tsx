@@ -151,7 +151,7 @@ export default function LandingScene({
   const figureRef = useRef<HTMLElement | null>(null);
   const mountRef = useRef<HTMLDivElement | null>(null);
   const controlsRef = useRef<AssemblyControls | null>(null);
-  const mountedRef = useRef<{ syncCamera(): void; dispose(): void } | null>(null);
+  const mountedRef = useRef<{ syncCamera(): void; pause(): void; resume(): void; dispose(): void } | null>(null);
   const mountingRef = useRef(false);
   // Ciclo de acarreo (B06): el reproductor vive en el módulo y la UI solo
   // refleja su fase y su aceite; avanza solo en cliente y sin movimiento reducido.
@@ -162,7 +162,7 @@ export default function LandingScene({
   // Aceite en corte (B07): el 3D monta la piscina h(V) y la gráfica vive
   // junto al póster sin exigir WebGL.
   const [oilReady, setOilReady] = useState(false);
-  const oilMountedRef = useRef<{ dispose(): void } | null>(null);
+  const oilMountedRef = useRef<{ pause(): void; resume(): void; dispose(): void } | null>(null);
 
   // Números trazados al manual (B01): el total manda, las etapas van
   // redondeadas a tres decimales como en la pantalla del banco.
@@ -182,6 +182,7 @@ export default function LandingScene({
     }
     let alive = true;
     let mountFailed = false;
+    let inViewport = false;
     const sync = () => {
       if (shouldSyncSceneHostState(alive, mountFailed)) setState(host.getState());
     };
@@ -204,6 +205,7 @@ export default function LandingScene({
         const { mod, controls, mounted } = result;
         controlsRef.current = controls;
         mountedRef.current = mounted;
+        if (!inViewport) mounted.pause();
         setReduction(mod.assemblyReduction());
         setPartLabels(mod.ASSEMBLY_PARTS.map((part) => ({ id: part.id, label: part.label })));
         setIsolated(controls.getState().isolated);
@@ -223,6 +225,7 @@ export default function LandingScene({
           if (!alive) return;
           try {
             oilMountedRef.current = mod.mountOilScene(mountEl);
+            if (!inViewport) oilMountedRef.current.pause();
           } catch {
             mountingRef.current = false;
             return;
@@ -238,6 +241,14 @@ export default function LandingScene({
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
+          inViewport = entry.isIntersecting;
+          if (inViewport) {
+            mountedRef.current?.resume();
+            oilMountedRef.current?.resume();
+          } else {
+            mountedRef.current?.pause();
+            oilMountedRef.current?.pause();
+          }
           host.onViewportChange(entry.isIntersecting);
           sync();
           // El chunk B04+ resuelve async: re-sincroniza al asentarse.

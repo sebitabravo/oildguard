@@ -72,6 +72,8 @@ export interface Stage {
   setQuality(q: Quality): void;
   quality(): Quality;
   prefersReducedMotion(): boolean;
+  pause(): void;
+  resume(): void;
   dispose(): void;
 }
 
@@ -257,6 +259,7 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
   let elapsed = 0;
   let frameId = 0;
   let disposed = false;
+  let manuallyPaused = false;
   const compactViewport = window.matchMedia("(max-width: 900px)");
   const sceneLabels: CSS2DSceneObject[] = [];
   const preferredLabelCenters = new Map<CSS2DSceneObject, number>();
@@ -319,7 +322,7 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
     labels.render(scene, camera);
   };
   const start = () => {
-    if (disposed || frameId) return;
+    if (disposed || manuallyPaused || document.hidden || frameId) return;
     clock.getDelta();
     frameId = requestAnimationFrame(frame);
   };
@@ -352,6 +355,14 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
     },
     quality: () => quality,
     prefersReducedMotion: () => motionPreference.reduced,
+    pause() {
+      manuallyPaused = true;
+      stop();
+    },
+    resume() {
+      manuallyPaused = false;
+      start();
+    },
     dispose() {
       if (disposed) return;
       disposed = true;
