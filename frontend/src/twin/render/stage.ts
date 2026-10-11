@@ -112,6 +112,71 @@ function disposeMaterial(mat: THREE.Material) {
   mat.dispose();
 }
 
+export function disposeSceneResources(scene: THREE.Scene): void {
+  scene.traverse((object) => {
+    const mesh = object as THREE.Mesh;
+    mesh.geometry?.dispose();
+    const mat = mesh.material as THREE.Material | THREE.Material[] | undefined;
+    if (Array.isArray(mat)) for (const material of mat) disposeMaterial(material);
+    else if (mat) disposeMaterial(mat);
+    (object as { dispose?: () => void }).dispose?.();
+  });
+}
+
+export function disposeRendererResources(renderer: Pick<THREE.WebGLRenderer, "dispose" | "forceContextLoss">): void {
+  renderer.dispose();
+  renderer.forceContextLoss();
+}
+
+export interface RenderLoopHost {
+  requestFrame(callback: () => void): number;
+  cancelFrame(id: number): void;
+  isHidden(): boolean;
+  subscribeVisibility(callback: () => void): () => void;
+}
+
+export function createRenderLoop(render: () => void, host: RenderLoopHost) {
+  let frameId: number | null = null;
+  let disposed = false;
+  let manuallyPaused = false;
+  const schedule = () => {
+    if (disposed || manuallyPaused || host.isHidden() || frameId !== null) return;
+    frameId = host.requestFrame(frame);
+  };
+  const cancel = () => {
+    if (frameId === null) return;
+    host.cancelFrame(frameId);
+    frameId = null;
+  };
+  const frame = () => {
+    frameId = null;
+    if (disposed || manuallyPaused || host.isHidden()) return;
+    render();
+    schedule();
+  };
+  const unsubscribeVisibility = host.subscribeVisibility(() => {
+    if (host.isHidden()) cancel();
+    else schedule();
+  });
+  schedule();
+  return {
+    pause() {
+      manuallyPaused = true;
+      cancel();
+    },
+    resume() {
+      manuallyPaused = false;
+      schedule();
+    },
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      cancel();
+      unsubscribeVisibility();
+    },
+  };
+}
+
 export function createStage(host: HTMLElement, opts: StageOptions): Stage {
   const defaults = PRESET_DEFAULTS[opts.preset];
   let quality: Quality = opts.quality ?? "high";
@@ -257,9 +322,7 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
   const callbacks = new Set<FrameCallback>();
   const clock = new THREE.Clock();
   let elapsed = 0;
-  let frameId = 0;
   let disposed = false;
-  let manuallyPaused = false;
   const compactViewport = window.matchMedia("(max-width: 900px)");
   const sceneLabels: CSS2DSceneObject[] = [];
   const preferredLabelCenters = new Map<CSS2DSceneObject, number>();
@@ -312,7 +375,6 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
   };
 
   const frame = () => {
-    frameId = requestAnimationFrame(frame);
     const dt = Math.min(clock.getDelta(), MAX_DT);
     elapsed += dt;
     for (const cb of callbacks) cb(dt, elapsed);
@@ -321,18 +383,15 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
     fitSceneLabels();
     labels.render(scene, camera);
   };
-  const start = () => {
-    if (disposed || manuallyPaused || document.hidden || frameId) return;
-    clock.getDelta();
-    frameId = requestAnimationFrame(frame);
-  };
-  const stop = () => {
-    cancelAnimationFrame(frameId);
-    frameId = 0;
-  };
-  const onVisibility = () => (document.hidden ? stop() : start());
-  document.addEventListener("visibilitychange", onVisibility);
-  if (!document.hidden) start();
+  const loop = createRenderLoop(frame, {
+    requestFrame: (callback) => requestAnimationFrame(callback),
+    cancelFrame: (id) => cancelAnimationFrame(id),
+    isHidden: () => document.visibilityState === "hidden",
+    subscribeVisibility(callback) {
+      document.addEventListener("visibilitychange", callback);
+      return () => document.removeEventListener("visibilitychange", callback);
+    },
+  });
 
   return {
     scene,
@@ -355,31 +414,17 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
     },
     quality: () => quality,
     prefersReducedMotion: () => motionPreference.reduced,
-    pause() {
-      manuallyPaused = true;
-      stop();
-    },
-    resume() {
-      manuallyPaused = false;
-      start();
-    },
+    pause: loop.pause,
+    resume: loop.resume,
     dispose() {
       if (disposed) return;
       disposed = true;
-      stop();
-      document.removeEventListener("visibilitychange", onVisibility);
+      loop.dispose();
       observer.disconnect();
       callbacks.clear();
       motionPreference.dispose();
       controls.dispose();
-      scene.traverse((o) => {
-        const mesh = o as THREE.Mesh;
-        mesh.geometry?.dispose();
-        const mat = mesh.material as THREE.Material | THREE.Material[] | undefined;
-        if (Array.isArray(mat)) for (const m of mat) disposeMaterial(m);
-        else if (mat) disposeMaterial(mat);
-        (o as { dispose?: () => void }).dispose?.();
-      });
+      disposeSceneResources(scene);
       if (scene.background && (scene.background as THREE.Texture).isTexture) {
         (scene.background as THREE.Texture).dispose();
       }
@@ -387,9 +432,8 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
       for (const t of envTargets) t.dispose();
       pmrem.dispose();
       scene.clear();
-      renderer.dispose();
+      disposeRendererResources(renderer);
       // Libera el contexto GL ya mismo: los navegadores limitan los activos (~16).
-      renderer.forceContextLoss();
       renderer.domElement.remove();
       labels.domElement.remove();
     },

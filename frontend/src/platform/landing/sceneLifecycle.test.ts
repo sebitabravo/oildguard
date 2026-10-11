@@ -1,12 +1,59 @@
 import { describe, expect, test } from "bun:test";
-// @ts-expect-error Bun provee node:fs en pruebas, pero el typecheck de Astro no incluye tipos de Node.
-import { readFileSync } from "node:fs";
+import * as THREE from "three";
 import { MAX_PIXEL_RATIO, resolveQuality } from "../../twin/render/settings";
+import { createRenderLoop, disposeRendererResources, disposeSceneResources } from "../../twin/render/stage";
 
-const stageSource = readFileSync(new URL("../../twin/render/stage.ts", import.meta.url), "utf8");
-const landingSource = readFileSync(new URL("./LandingScene.tsx", import.meta.url), "utf8");
-const assemblySource = readFileSync(new URL("./scenes/assembly.ts", import.meta.url), "utf8");
-const oilSource = readFileSync(new URL("./scenes/oil.ts", import.meta.url), "utf8");
+type Frame = () => void;
+type Spy<T extends (...args: never[]) => unknown> = T & { calls: Parameters<T>[] };
+
+function spy<T extends (...args: never[]) => unknown>(implementation: T): Spy<T> {
+  const calls: Parameters<T>[] = [];
+  const wrapped = (...args: Parameters<T>): ReturnType<T> => {
+    calls.push(args);
+    return implementation(...args) as ReturnType<T>;
+  };
+  return Object.assign(wrapped, { calls }) as Spy<T>;
+}
+
+function createFrameHost() {
+  let nextId = 1;
+  const frames = new Map<number, Frame>();
+  const canceled: number[] = [];
+  let hidden = false;
+  let onVisibilityChange: (() => void) | null = null;
+  const host = {
+    requestFrame: spy((callback: Frame) => {
+      const id = nextId++;
+      frames.set(id, callback);
+      return id;
+    }),
+    cancelFrame: spy((id: number) => {
+      canceled.push(id);
+      frames.delete(id);
+    }),
+    isHidden: () => hidden,
+    subscribeVisibility: (callback: () => void) => {
+      onVisibilityChange = callback;
+      return () => {
+        onVisibilityChange = null;
+      };
+    },
+    setHidden(value: boolean) {
+      hidden = value;
+      onVisibilityChange?.();
+    },
+    flush() {
+      const next = frames.entries().next().value as [number, Frame] | undefined;
+      if (!next) return;
+      const [id, callback] = next;
+      frames.delete(id);
+      callback();
+    },
+    frames,
+    canceled,
+  };
+  return host;
+}
 
 describe("landing 3D scene lifecycle", () => {
   test("caps every renderer DPR at 2", () => {
@@ -16,35 +63,65 @@ describe("landing 3D scene lifecycle", () => {
     expect(MAX_PIXEL_RATIO).toBe(2);
   });
 
-  test("pauses landing scene loops when hidden or outside the viewport", () => {
-    expect(stageSource).toContain("pause(): void");
-    expect(stageSource).toContain("resume(): void");
-    expect(landingSource).toContain("mountedRef.current?.pause()");
-    expect(landingSource).toContain("mountedRef.current?.resume()");
-    expect(landingSource).toContain("oilMountedRef.current?.pause()");
-    expect(landingSource).toContain("oilMountedRef.current?.resume()");
-    expect(stageSource).toContain("document.hidden");
+  test("starts one RAF by default and maintains one scheduled callback", () => {
+    const host = createFrameHost();
+    const render = spy(() => {});
+    const loop = createRenderLoop(render, host);
+    expect(host.frames.size).toBe(1);
+    host.flush();
+    expect(render.calls.length).toBe(1);
+    expect(host.frames.size).toBe(1);
+    loop.dispose();
+    expect(host.frames.size).toBe(0);
   });
 
-  test("keeps one scheduled animation frame per stage", () => {
-    expect(stageSource).toContain("if (disposed || manuallyPaused || document.hidden || frameId) return");
-    expect(stageSource).toContain("frameId = requestAnimationFrame(frame)");
-    expect(stageSource).toContain("cancelAnimationFrame(frameId)");
+  test("pauses while document visibility is hidden and resumes when visible", () => {
+    const host = createFrameHost();
+    const render = spy(() => {});
+    const loop = createRenderLoop(render, host);
+    const scheduledId = host.frames.keys().next().value;
+    host.setHidden(true);
+    expect(host.frames.size).toBe(0);
+    expect(host.canceled).toContain(scheduledId);
+    host.flush();
+    expect(render.calls.length).toBe(0);
+    host.setHidden(false);
+    expect(host.frames.size).toBe(1);
+    loop.dispose();
   });
 
-  test("disposes scene resources and renderer on unmount", () => {
-    for (const source of [assemblySource, oilSource]) {
-      expect(source).toContain("stage.dispose()");
-    }
-    expect(stageSource).toContain("mesh.geometry?.dispose()");
-    expect(stageSource).toContain("mat.dispose()");
-    expect(stageSource).toContain("renderer.dispose()");
-    expect(stageSource).toContain("renderer.forceContextLoss()");
+  test("disposes geometry, material, texture, and renderer resources", () => {
+    const scene = new THREE.Scene();
+    const geometry = new THREE.BoxGeometry();
+    const texture = new THREE.Texture();
+    const material = new THREE.MeshBasicMaterial({ map: texture });
+    const renderer = { dispose: spy(() => {}), forceContextLoss: spy(() => {}) };
+    const geometryDispose = spy(geometry.dispose.bind(geometry));
+    const textureDispose = spy(texture.dispose.bind(texture));
+    const materialDispose = spy(material.dispose.bind(material));
+    geometry.dispose = geometryDispose;
+    texture.dispose = textureDispose;
+    material.dispose = materialDispose;
+    scene.add(new THREE.Mesh(geometry, material));
+
+    disposeSceneResources(scene);
+    disposeRendererResources(renderer);
+
+    expect(geometryDispose.calls.length).toBe(1);
+    expect(materialDispose.calls.length).toBe(1);
+    expect(textureDispose.calls.length).toBe(1);
+    expect(renderer.dispose.calls.length).toBe(1);
+    expect(renderer.forceContextLoss.calls.length).toBe(1);
   });
 
-  test("preserves the default unpaused render path for existing stage callers", () => {
-    expect(stageSource).toContain("if (!document.hidden) start()");
-    expect(stageSource).toContain("if (!document.hidden) start()");
-    expect(stageSource).toContain("manuallyPaused = false;");
+  test("manual pause keeps the default stage render path opt-in", () => {
+    const host = createFrameHost();
+    const loop = createRenderLoop(() => {}, host);
+    expect(host.frames.size).toBe(1);
+    loop.pause();
+    expect(host.frames.size).toBe(0);
+    loop.resume();
+    expect(host.frames.size).toBe(1);
+    loop.dispose();
   });
 });

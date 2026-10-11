@@ -241,14 +241,6 @@ export default function LandingScene({
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          inViewport = entry.isIntersecting;
-          if (inViewport) {
-            mountedRef.current?.resume();
-            oilMountedRef.current?.resume();
-          } else {
-            mountedRef.current?.pause();
-            oilMountedRef.current?.pause();
-          }
           host.onViewportChange(entry.isIntersecting);
           sync();
           // El chunk B04+ resuelve async: re-sincroniza al asentarse.
@@ -261,9 +253,23 @@ export default function LandingScene({
       { rootMargin: "200px" },
     );
     observer.observe(figure);
+    const viewportObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        inViewport = entry.isIntersecting;
+        if (inViewport) {
+          mountedRef.current?.resume();
+          oilMountedRef.current?.resume();
+        } else {
+          mountedRef.current?.pause();
+          oilMountedRef.current?.pause();
+        }
+      }
+    });
+    viewportObserver.observe(figure);
     return () => {
       alive = false;
       observer.disconnect();
+      viewportObserver.disconnect();
       host.dispose();
       mountingRef.current = false;
       mountedRef.current?.dispose();
