@@ -96,6 +96,10 @@ function horizonLabel(card: RulViewCard, unit: RulUnit): string {
   return `${formatNumber(convertRulHours(card.horizonHours, unit), unit === "hours" ? 1 : 0)} ${t(`rul.unit.${unit}`)}`;
 }
 
+function sourceLabel(source: RulViewCard["source"]): string {
+  return source === "LIVE" ? t("rul.source.live") : source;
+}
+
 type RulBackendState = "checking" | "live" | "unavailable";
 
 export function RulBackendOutageNotice({ backendState }: { backendState: RulBackendState }) {
@@ -160,7 +164,9 @@ export default function RulPage() {
             <article className={`og-rul-card og-rul-card--${card.horizonClass ?? "suppressed"}`}>
               <header className="og-rul-card__header">
                 <div><strong>{card.wheel.truckId} · {card.wheel.position}</strong><small className="og-mono">{card.wheelId}</small></div>
-                <span className={`og-rul-source og-rul-source--${card.source.toLowerCase()}`}>{card.source}</span>
+                <span className={`og-rul-source og-rul-source--${card.source.toLowerCase()}`}>
+                  {sourceLabel(card.source)}
+                </span>
               </header>
               <div className="og-rul-card__horizon">
                 <span className="og-label">{t("rul.horizon")}</span>
@@ -193,7 +199,7 @@ export default function RulPage() {
               ) : (
                 <p className="og-rul-suppressed">{t("rul.suppressed")}</p>
               )}
-              <footer><span className="og-chip">{card.source}</span><small>{card.wheel.model}</small></footer>
+              <footer><span className="og-chip">{sourceLabel(card.source)}</span><small>{card.wheel.model}</small></footer>
             </article>
           ))}
         </section>

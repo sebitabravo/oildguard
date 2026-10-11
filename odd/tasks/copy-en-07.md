@@ -21,8 +21,8 @@ QA-OPENCODE-02 found English in the Spanish-only product. `/demo` renders a serv
 
 - [x] CEN-1 — Resolve the `/demo` source decision; user authorized the specified docs translation.
 - [x] CEN-2 — Add rendered-copy regression coverage and capture RED before source changes.
-- [ ] CEN-3 — Translate the served demo script and remove visible state/source tokens within authorized scope.
-- [ ] CEN-4 — Verify zero stop-word matches on all three routes; retain before/after counts.
+- [x] CEN-3 — Translate the served demo script and remove visible state/source tokens within authorized scope.
+- [x] CEN-4 — Verify zero stop-word matches on all three routes; retain before/after counts.
 
 Acceptance: the allowed rendered text on `/demo`, `/mine` (1024 px), and `/rul` (1024 px) contains no English stop-word matches, and labels preserve their current meaning.
 
@@ -37,5 +37,11 @@ Acceptance: the allowed rendered text on `/demo`, `/mine` (1024 px), and `/rul` 
 
 - `/demo` uses `getEntry("docs", "demo-script.md")`; the authorized translation keeps structure, timings, steps, URLs, numbers, and claims. The 3rd dispatch authorizes only visible `/mine` label text in `TruckView.tsx`, retaining internal codes in `title`.
 - Focused RED is 0 pass / 3 assertion failures for `/demo`, `/mine`, and `/rul`; output is `/tmp/og-goal/evidence/COPY-EN-07/red.txt`. Fresh browser baseline is `/tmp/og-goal/evidence/COPY-EN-07/english-before.txt` (118, 9, and 2 matches respectively).
-- Application and demo source remain unchanged. Engram mirror pending because agent-attributed memory writes are unavailable in this runtime.
-- Next: commit the regression-test work unit, implement only authorized copy changes, then run listed checks and record commits/evidence.
+- CEN-2 test work unit committed as `24b6b8a test(i18n): guard Spanish-visible copy`; its pre-change RED is captured in `red.txt`.
+- CEN-3 translated `docs/demo-script.md`, removed visible PLM state suffixes while retaining codes in `title`, localized the visible RUL source badge, and labeled the `/mine` section `Medidor de carga útil III`. Docs guard preserved heading structure, timings, URLs, step counts, and command blocks.
+- CEN-4 checks: 662 tests pass (151,284 expectations); build completes with 0 errors (8 existing hints); honesty tests pass; browser stop-word scan is 0 for `/demo`, `/mine`, and `/rul`; Impeccable detector returns `[]`; `git diff --check` passes. The Spanish-visible test directly asserts the RUL LIVE label is `EN VIVO`. Full evidence and before/after screenshots are under `/tmp/og-goal/evidence/COPY-EN-07/`.
+- Fresh browser baseline counts were 118, 9, and 2 for `/demo`, `/mine`, and `/rul`; post-change counts are 0 using the documented code/URL/ID exclusions and allowing `DEMO`.
+- The authorized `/demo` translation was committed separately as `0666b5e docs(demo): translate jury demo script to spanish`.
+- After that commit, the native assessment returned medium risk and `review_due=true` (`slice_budget_reached`, 499 lines across the accumulated range); the user-selected decline was applied only to that candidate, so no review record was created. Evidence: `assess-docs-commit.txt`, `start-docs-commit.txt`, `decline-docs-commit.txt`, and `status-after-docs-decline.txt`.
+- Engram mirror pending because agent-attributed memory writes are unavailable in this runtime.
+- Next: commit the remaining authorized UI copy/test changes, record that work-unit identity, and close the task record.

@@ -102,6 +102,8 @@ export const ops = {
   "rul.filter.all": "Todas las ruedas",
   "rul.demo": "DEMO · dataset determinista de ruedas",
   "rul.live": "EN VIVO · RUL del backend",
+  "rul.source.live": "EN VIVO",
+  "truck.section.payloadMeterLabel": "Medidor de carga útil III",
   "rul.wheel": "Rueda",
   "rul.horizon": "Horizonte",
   "rul.lossRate": "Tasa de pérdida",

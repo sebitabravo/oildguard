@@ -1,9 +1,11 @@
-import { readFile } from "node:fs/promises";
 import { describe, expect, test } from "bun:test";
 import { h } from "preact";
 import renderToString from "preact-render-to-string";
+import { t } from "./index";
 import RulPage from "../ops/rul/RulPage";
 import TruckView from "../sim/truck/TruckView";
+
+declare const Bun: { file(path: URL): { text(): Promise<string> } };
 
 const englishStopWords = [
   "five-minute", "jury", "start", "stack", "healthy", "response", "proves", "only", "open", "select", "reach",
@@ -27,8 +29,12 @@ function findEnglishMatches(text: string, stopWords = englishStopWords): string[
 
 describe("Spanish-only visible copy", () => {
   test("keeps the served demo script in Spanish while allowing the DEMO loanword", async () => {
-    const script = await readFile(new URL("../../../docs/demo-script.md", import.meta.url), "utf8");
-    const renderedCopy = visibleText(script.replace(/[`*_#\[\]()>]/g, " "));
+    const script = await Bun.file(new URL("../../../docs/demo-script.md", import.meta.url)).text();
+    const copyOnly = script
+      .replace(/```[\s\S]*?```/g, " ")
+      .replace(/\[[^\]]+\]\([^)]+\)/g, " ")
+      .replace(/`([^`]+)`/g, (_match: string, value: string) => value === "DEMO" || value === "EN VIVO" ? value : " ");
+    const renderedCopy = visibleText(copyOnly.replace(/[*_#]/g, " "));
 
     expect(findEnglishMatches(renderedCopy)).toEqual([]);
   });
@@ -48,12 +54,17 @@ describe("Spanish-only visible copy", () => {
     const renderedHtml = renderToString(h(RulPage, {}));
     const sourceBadges = [...renderedHtml.matchAll(/<span class="og-rul-source[^>]*>(.*?)<\/span>/g)]
       .map((match) => visibleText(match[1] ?? ""));
-    const componentSource = await readFile(new URL("../ops/rul/RulPage.tsx", import.meta.url), "utf8");
+    const componentSource = await Bun.file(new URL("../ops/rul/RulPage.tsx", import.meta.url)).text();
 
     expect(sourceBadges.length).toBeGreaterThan(0);
+    expect(t("rul.source.live")).toBe("EN VIVO");
     expect(sourceBadges.filter((value) => value === "LIVE")).toEqual([]);
     expect(findEnglishMatches(visibleText(renderedHtml), ["live"])).toEqual([]);
     // SSR muestra el fallback DEMO; el enlace directo exponería LIVE tras el efecto del cliente.
-    expect(/className=\{`og-rul-source[^`]*`\}>\{card\.source\}<\/span>/.test(componentSource)).toBe(false);
+    const rawBadgeBindings = [
+      /className=\{`og-rul-source[^`]*`\}>\{card\.source\}<\/span>/,
+      /className="og-chip">\{card\.source\}<\/span>/,
+    ];
+    expect(rawBadgeBindings.some((pattern) => pattern.test(componentSource))).toBe(false);
   });
 });

@@ -57,7 +57,7 @@ export default function TruckView() {
 
   const status = (
     <>
-      <h2 className="og-h2">{t("truck.section.payloadMeter")}</h2>
+      <h2 className="og-h2">{t("truck.section.payloadMeterLabel")}</h2>
       <ul className="og-plain">
         {PLM_ORDER.map((s) => {
           const active = s === current;
@@ -69,8 +69,8 @@ export default function TruckView() {
               style={{ ["--tone" as string]: css }}
             >
               <span className="og-dot" style={{ marginRight: 8 }} />
-              <strong className="og-num">
-                {buildPlmStateLabel(s)} · {s}
+              <strong className="og-num" title={s}>
+                {buildPlmStateLabel(s)}
               </strong>
               <br />
               <span className="og-muted" style={{ fontSize: 13 }}>
