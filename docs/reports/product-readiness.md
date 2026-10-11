@@ -18,8 +18,8 @@ No weighed-oil calibration run is recorded. The pressure-to-volume relation uses
 
 | Provenance | Claim or measurement | Source and limit |
 |---|---|---|
-| VERIFIED | Manual-check context: 250 h interval and 20 min stabilization. | `PRODUCT.md`; describes the stated inspection process, not a field installation. |
-| VERIFIED | T9 synthetic scenario counts: 262/620 for accelerated leak; 135/228 for abrupt drop. | `docs/t9-anomaly.md`; generator scenarios and labels, not field observations. |
+| ASSUMPTION | Manual-check context: 250 h interval and 20 min stabilization. | `PRODUCT.md`; describes the stated inspection process, not a field installation. |
+| SYNTHETIC-PROXY | T9 synthetic scenario counts: 262/620 for accelerated leak; 135/228 for abrupt drop. | `docs/t9-anomaly.md`; generated simulator scenarios and labels, not field observations. |
 | DERIVED | Alert, residual, and rest-window logic can be exercised end-to-end on generated data. | `docs/feasibility.md`, `docs/t7-windows.md`, `docs/t9-anomaly.md`; logical demonstration only. |
 | ASSUMPTION | Pressure-to-level conversion uses assumed case geometry; 95 L and approximately 2.6 kPa are model anchors. | `docs/calibration.md`, `sim/geometry.py`; synthetic-proxy, pending physical calibration. |
 | SYNTHETIC-PROXY | Leak thresholds and demo risk outputs are prototype rules, not field-calibrated estimates. | `PRODUCT.md`, `docs/calibration.md`; do not interpret as site risk. |

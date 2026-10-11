@@ -58,7 +58,7 @@
 
 ## Scope deviation
 
-B09 changed shared `frontend/src/twin/render/stage.ts` beyond the additive landing-scope default. The task record calls out this deviation; the reported regression checks were 128 twin tests passing, while `/mine` and `/wheel` canvases were observed in the evidence captured during the task. The shared-stage symbols and landing imports are inventoried in `/tmp/og-goal/evidence/B09/scope-check.txt`; route build output is in `/tmp/og-goal/evidence/B09/default-order-build.txt`. The detailed 128-test and `/mine` / `/wheel` browser outputs were not present in the evidence directory supplied to this close-out, so those two outcomes remain **GAP** here rather than independently claimed.
+B09 changed shared `frontend/src/twin/render/stage.ts` beyond the additive landing-scope default. The task record calls out this deviation; the parent-verified twin suite run after commit `856154e` reported 128 pass, 0 fail across 17 files (`cd frontend && bun test src/twin`). The parent-verified browser check recorded one canvas and 31 in-view animation frames each on `/mine` and `/wheel`, with no page errors. The check script is `/tmp/og-goal/scratch/twin-check.mjs`; its screenshots are `/tmp/og-goal/evidence/B09/twin-mine.png` and `/tmp/og-goal/evidence/B09/twin-wheel.png`. The shared-stage symbols and landing imports are inventoried in `/tmp/og-goal/evidence/B09/scope-check.txt`; route build output is in `/tmp/og-goal/evidence/B09/default-order-build.txt`. These are the supplied parent verification facts and recorded screenshots, not a fresh visual run.
 
 ## Approved and acknowledged review ranges
 
