@@ -49,6 +49,8 @@ import { formatDemoLabNote } from "./demoCopy";
 import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
 import { DEMO_REFERENCE_MS, demoDataset } from "../demo/dataset";
 import { AlertBanner, Button, Notice, PageHeader, SyntheticBadge, type Severity } from "../ui/foundation";
+import BackendOutageNotice from "../ui/BackendOutageNotice";
+export { BackendOutageNotice as BackendOutageBanner };
 import {
   ChartLegend, FusionPanel, LadderPanel, NumericEvidence, TelemetryRow, WheelContext,
 } from "../ops/wheel/WheelPanels";
@@ -102,23 +104,6 @@ function stageLabel(stage: DemoStageId): string {
   return t(DEMO_LABEL_KEYS[stage]);
 }
 
-// La caída total del backend nunca debe leerse como flota sana: este aviso
-// ocupa el lugar del mensaje de calma y exige rol de alerta.
-// El título y el detalle van en un único hijo para que el flex de Notice no
-// los parta en dos columnas a 390px: así envuelven como un aviso coherente.
-export function BackendOutageBanner() {
-  return (
-    <div className="og-analyzer-notice" role="alert">
-      <Notice kind="error">
-        <span>
-          <strong>{t("dash.backend.outage.title")}</strong>{" "}
-          {t("dash.backend.outage.detail")}
-        </span>
-      </Notice>
-    </div>
-  );
-}
-
 // Tramo de avisos de disponibilidad de Dashboard en un componente renderizable:
 // la misma rama que pinta la página en producción (apagón, analizador,
 // lectura obsoleta y escalera), para cubrirla con prueba de integración sin
@@ -152,7 +137,7 @@ export function DashboardStatusNotices({ activeLevel, backendOutage, analyzerNot
   const showStale = resolvedStale && !backendOutage;
   return (
     <>
-      {backendOutage && <BackendOutageBanner />}
+      {backendOutage && <BackendOutageNotice />}
       {analyzerNotice && <div className="og-analyzer-notice" role="alert">{analyzerNotice}</div>}
       {showStale && (
         // Aviso obsoleto en su propia caja ámbar: sin el envoltorio rojo de
