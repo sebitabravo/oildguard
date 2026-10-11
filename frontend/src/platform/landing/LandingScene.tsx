@@ -283,23 +283,25 @@ export default function LandingScene({
     )}
     {showAssemblyControls && reduction && (
       <div className="landing__assembly-controls">
-        <p>
+        <p className="landing__assembly-ratios">
           <strong data-reduction="overall">
             {decimal(reduction.overall, 2)}:1
           </strong>
-          <span>
+          <span className="landing__assembly-ratios-detail">
             {decimal(reduction.highSpeed, 3)}:1 × {decimal(reduction.lowSpeed, 3)}:1 ·{" "}
             manual Komatsu
           </span>
         </p>
-        <div>
+        <div className="landing__assembly-controls-actions">
           <button
             type="button"
             className="landing__button landing__button--secondary"
             onClick={() => drive((controls) => controls.orbit(-0.4, 0))}
             aria-label="Girar a la izquierda"
           >
-            ⟲
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4 12 10 6v4h10v4H10v4z" fill="currentColor" stroke="none" />
+            </svg>
           </button>
           <button
             type="button"
@@ -307,7 +309,9 @@ export default function LandingScene({
             onClick={() => drive((controls) => controls.orbit(0.4, 0))}
             aria-label="Girar a la derecha"
           >
-            ⟳
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M20 12 14 6v4H4v4h10v4z" fill="currentColor" stroke="none" />
+            </svg>
           </button>
           <button
             type="button"
