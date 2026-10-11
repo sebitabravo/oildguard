@@ -23,14 +23,15 @@ Only Monitoring currently exposes a backend outage. QA-OPENCODE-02 confirmed Fle
 - [x] O05-2 Add failing shared-component and four page outage tests; capture RED output in `red.txt` (641 pass, 5 expected missing-export/module failures).
 - [x] O05-3 Extract notice and mount it using existing page REST outcome state. Full tests: 651 pass; build: 0 errors; honesty: 3 pass.
 - [x] O05-4 Blocked/unblocked browser probe: 5/5 blocked notices, 0/5 open notices. Screenshots and probe output are under `/tmp/og-goal/evidence/OUTAGE-SHARED-05/`.
-- [ ] O05-5 Commit the page integrations, then record all commit IDs and per-commit review status. Extraction commit `7b08f6bceda3cae9e098a28e24ce338ce3b6fc6a` was assessed as medium / `under_budget` when the untracked inventory was explicitly excluded (`assess-commit-1.txt`); no review was due for that committed range.
+- [x] O05-5 Commit the extraction and page integrations. `7b08f6bceda3cae9e098a28e24ce338ce3b6fc6a` (`refactor(ui): extract shared backend outage notice`) and `adcf757e3632f6522b31c7f67949cea7a3c0441f` (`fix(ops): show outage notice on four pages`) are medium / `under_budget`; no review was due (`assess-commit-1.txt`, `assess-commits-1-2.txt`). The second subject is concise to comply with the repo's 50-character limit; its body names Fleet, RUL, Link, and Devices.
 
 ## Verification
 - RED: `cd frontend && bun test src` with new tests before implementation; save to `/tmp/og-goal/evidence/OUTAGE-SHARED-05/red.txt`.
 - GREEN: full `bun test src`, `bun run build`, and `bun test src/honesty.test.ts`; capture each complete output under `/tmp/og-goal/evidence/OUTAGE-SHARED-05/`.
 - Browser: block `http://localhost:8000/**`, capture five 1024px route screenshots; unblock and confirm all notices disappear. Record `notice-blocked` and `notice-open` counts.
-- State sources are page-local: Fleet and RUL `backendState`; Link and Devices `useBackendOrDemo`'s `source`; Dashboard `isBackendOutage`. No new health request was added.
+- There is no global health singleton: Fleet and RUL use their page-local `backendState`; Link and Devices use `useBackendOrDemo().source`; Dashboard uses `isBackendOutage`. Each reuses its existing REST outcome. No new health request was added.
+- Browser result: `notice-blocked: 5/5`; `notice-open: 0/5` (`browser.txt`); ten route/state screenshots are present in the evidence directory.
 - Impeccable detector: no findings (`impeccable-detect.txt`).
 
 ## Next step
-Create the page-integration commit using only the allowed page and test paths. Assess its committed range with an explicit untracked inventory, record the observed review outcome, and then update this document with the resulting commit IDs. Keep the Engram mirror pending until an authoritative session identity and memory tools are available.
+Task implementation and checks are complete. The Engram mirror remains pending because no authoritative session identity or memory tools were available.
