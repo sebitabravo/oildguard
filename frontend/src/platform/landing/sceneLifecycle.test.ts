@@ -75,6 +75,18 @@ describe("landing 3D scene lifecycle", () => {
     expect(host.frames.size).toBe(0);
   });
 
+  test("resets the frame clock before scheduling the default loop", () => {
+    const order: string[] = [];
+    const host = createFrameHost();
+    host.requestFrame = spy((callback: Frame) => {
+      order.push("raf");
+      return 1;
+    });
+    const loop = createRenderLoop(() => {}, host, () => order.push("clock"));
+    expect(order).toEqual(["clock", "raf"]);
+    loop.dispose();
+  });
+
   test("pauses while document visibility is hidden and resumes when visible", () => {
     const host = createFrameHost();
     const render = spy(() => {});

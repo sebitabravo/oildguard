@@ -135,12 +135,13 @@ export interface RenderLoopHost {
   subscribeVisibility(callback: () => void): () => void;
 }
 
-export function createRenderLoop(render: () => void, host: RenderLoopHost) {
+export function createRenderLoop(render: () => void, host: RenderLoopHost, beforeSchedule?: () => void) {
   let frameId: number | null = null;
   let disposed = false;
   let manuallyPaused = false;
   const schedule = () => {
     if (disposed || manuallyPaused || host.isHidden() || frameId !== null) return;
+    beforeSchedule?.();
     frameId = host.requestFrame(frame);
   };
   const cancel = () => {
@@ -391,7 +392,7 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
       document.addEventListener("visibilitychange", callback);
       return () => document.removeEventListener("visibilitychange", callback);
     },
-  });
+  }, () => clock.getDelta());
 
   return {
     scene,
