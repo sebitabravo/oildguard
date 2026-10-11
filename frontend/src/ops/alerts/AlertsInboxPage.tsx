@@ -121,33 +121,35 @@ export default function AlertsInboxPage() {
         </section>
       </aside>
         <FilterBar>
-          <FormField label={t("alerts.filter.level")}>
-            <select value={filters.level} onChange={(event) => patch({ level: event.currentTarget.value as Level | "all" })}>
-              <option value="all">{t("alerts.filter.all")}</option>
-              {LEVELS.map((level) => <option value={level}>{level} · {t(`alerts.level.word.${level}`)}</option>)}
-            </select>
-          </FormField>
-          <FormField label={t("alerts.filter.lifecycle")}>
-            <select value={filters.lifecycle} onChange={(event) => patch({ lifecycle: event.currentTarget.value as Lifecycle | "all" })}>
-              <option value="all">{t("alerts.filter.all")}</option>
-              {LIFECYCLES.map((state) => <option value={state}>{t(`alerts.lifecycle.${state}`)}</option>)}
-            </select>
-          </FormField>
-          <FormField label={t("alerts.filter.truck")}>
-            <select value={filters.truck} onChange={(event) => patch({ truck: event.currentTarget.value })}>
-              <option value="all">{t("alerts.filter.all")}</option>
-              {trucks.map((truck) => <option value={truck}>{truck}</option>)}
-            </select>
-          </FormField>
-          <FormField label={t("alerts.filter.role")}>
-            <select value={filters.role} onChange={(event) => patch({ role: event.currentTarget.value as Role | "all" })}>
-              <option value="all">{t("alerts.filter.all")}</option>
-              {ROLES.map((role) => <option value={role}>{roleLabel(role)}</option>)}
-            </select>
-          </FormField>
-          <FormField label={t("alerts.filter.search")}>
-            <input type="search" value={filters.query} placeholder={t("alerts.filter.searchPlaceholder")} onInput={(event) => patch({ query: event.currentTarget.value })} />
-          </FormField>
+          <div className="og-alerts-filter-fields">
+            <FormField label={t("alerts.filter.level")}>
+              <select value={filters.level} onChange={(event) => patch({ level: event.currentTarget.value as Level | "all" })}>
+                <option value="all">{t("alerts.filter.all")}</option>
+                {LEVELS.map((level) => <option value={level}>{level} · {t(`alerts.level.word.${level}`)}</option>)}
+              </select>
+            </FormField>
+            <FormField label={t("alerts.filter.lifecycle")}>
+              <select value={filters.lifecycle} onChange={(event) => patch({ lifecycle: event.currentTarget.value as Lifecycle | "all" })}>
+                <option value="all">{t("alerts.filter.all")}</option>
+                {LIFECYCLES.map((state) => <option value={state}>{t(`alerts.lifecycle.${state}`)}</option>)}
+              </select>
+            </FormField>
+            <FormField label={t("alerts.filter.truck")}>
+              <select value={filters.truck} onChange={(event) => patch({ truck: event.currentTarget.value })}>
+                <option value="all">{t("alerts.filter.all")}</option>
+                {trucks.map((truck) => <option value={truck}>{truck}</option>)}
+              </select>
+            </FormField>
+            <FormField label={t("alerts.filter.role")}>
+              <select value={filters.role} onChange={(event) => patch({ role: event.currentTarget.value as Role | "all" })}>
+                <option value="all">{t("alerts.filter.all")}</option>
+                {ROLES.map((role) => <option value={role}>{roleLabel(role)}</option>)}
+              </select>
+            </FormField>
+            <FormField label={t("alerts.filter.search")}>
+              <input type="search" value={filters.query} placeholder={t("alerts.filter.searchPlaceholder")} onInput={(event) => patch({ query: event.currentTarget.value })} />
+            </FormField>
+          </div>
           {hasFilters && <Button type="button" variant="ghost" onClick={() => setFilters(NO_FILTERS)}>{t("alerts.filter.reset")}</Button>}
         </FilterBar>
         {filters.wheel && (

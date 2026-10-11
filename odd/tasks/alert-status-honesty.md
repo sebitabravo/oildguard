@@ -15,8 +15,8 @@ Make `/alerts` report backend reachability separately from alert data source and
 - Engram mirror `odd/alert-status-honesty/tasks`: pending because no registered runtime identity or memory-write tool is available.
 
 ## Checklist
-- [x] A01: Separate the backend-reachability badge from the DEMO-source notice; RED and GREEN captured at `/tmp/og-goal/evidence/ALERT-FIX-01/red.txt` and `green.txt`; commit `fix(alerts): state backend reachability and data source separately` (SHA to record during A02).
-- [ ] A02: Test and fix filter label/control layout at desktop and mobile while retaining native selects; record RED/GREEN; commit `fix(alerts): align filter labels with their controls`.
+- [x] A01: Separate the backend-reachability badge from the DEMO-source notice; RED and GREEN captured at `/tmp/og-goal/evidence/ALERT-FIX-01/red.txt` and `green.txt`; commit `b9dcfaa938ed169678c44a3e78a0a72a309fc7c5` (`fix(alerts): separate backend and data status`); native assessment against `b339eb9`: medium, `review_due:false`, `under_budget`.
+- [x] A02: Pair all five filter labels with native controls and add responsive label-over-control layout; RED and GREEN captured in `/tmp/og-goal/evidence/ALERT-FIX-01/red.txt` and `green.txt`; commit `fix(alerts): align filter labels and controls` (SHA pending closeout).
 
 ## Acceptance and Checks
 - RED tests fail before their respective UI changes; GREEN tests pass afterward.
@@ -26,4 +26,4 @@ Make `/alerts` report backend reachability separately from alert data source and
 
 ## Progress
 - Initial state: clean branch `feat/integrity-narrative`, HEAD `475e450`; RDD on by default; prior reviewed boundary `b339eb9`.
-- A01 complete; parent assessment required before A02. After A02, record both exact commit SHAs and remaining verification/screenshot observations.
+- A01 complete and assessed; A02 implementation and focused checks complete. Record its exact SHA and final verification/screenshot observations during closeout.
