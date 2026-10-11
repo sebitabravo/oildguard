@@ -386,13 +386,22 @@ pub async fn run_with_stats(
     let start = OffsetDateTime::now_utc();
     for index in 0..config.devices {
         let id = format!("{}-{:02}", config.device_prefix, index + 1);
-        let generator = Generator::new(
-            &scenarios[index],
-            config.seconds,
-            &id,
-            config.seed + index as i64,
-            config.start.unwrap_or(start),
-        );
+        let generator = if config.mode_realtime && config.seconds == 0.0 {
+            Generator::new_unbounded(
+                &scenarios[index],
+                &id,
+                config.seed + index as i64,
+                config.start.unwrap_or(start),
+            )
+        } else {
+            Generator::new(
+                &scenarios[index],
+                config.seconds,
+                &id,
+                config.seed + index as i64,
+                config.start.unwrap_or(start),
+            )
+        };
         shards[index % shard_count].push(Device {
             id,
             generator,

@@ -124,3 +124,5 @@ are handled by the edge buffer and retried on subsequent batches. The current
 stats latency sample is capped at 100,000 observations to avoid per-row
 allocation. `--seconds 0` runs indefinitely in realtime mode; offline mode
 uses a one-second smoke horizon when no finite horizon is supplied.
+
+Start the realtime simulator with `docker compose --profile sim up -d --build edge-sim`.

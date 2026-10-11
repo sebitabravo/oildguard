@@ -146,6 +146,18 @@ impl Generator {
             holdup_at_stop: 0.0,
         }
     }
+
+    pub fn new_unbounded(
+        scenario: &str,
+        device_id: &str,
+        seed: i64,
+        start: OffsetDateTime,
+    ) -> Self {
+        let mut generator = Self::new(scenario, 0.0, device_id, seed, start);
+        generator.n = usize::MAX;
+        generator
+    }
+
     pub fn next_row(&mut self) -> Option<Row> {
         self.next_row_with_time(None)
     }
