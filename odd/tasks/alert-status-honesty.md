@@ -16,7 +16,7 @@ Make `/alerts` report backend reachability separately from alert data source and
 
 ## Checklist
 - [x] A01: Separate the backend-reachability badge from the DEMO-source notice; RED and GREEN captured at `/tmp/og-goal/evidence/ALERT-FIX-01/red.txt` and `green.txt`; commit `b9dcfaa938ed169678c44a3e78a0a72a309fc7c5` (`fix(alerts): separate backend and data status`); native assessment against `b339eb9`: medium, `review_due:false`, `under_budget`.
-- [x] A02: Pair all five filter labels with native controls and add responsive label-over-control layout; RED and GREEN captured in `/tmp/og-goal/evidence/ALERT-FIX-01/red.txt` and `green.txt`; commit `fix(alerts): align filter labels and controls` (SHA pending closeout).
+- [x] A02: Pair all five filter labels with native controls and add responsive label-over-control layout; RED and GREEN captured in `/tmp/og-goal/evidence/ALERT-FIX-01/red.txt` and `green.txt`; commit `5260c99b458fc7f9e0cb9b0b2fb4843a320e5d9a` (`fix(alerts): align filter labels and controls`); native assessment against `b339eb9`: medium, `review_due:false`, `under_budget`.
 
 ## Acceptance and Checks
 - RED tests fail before their respective UI changes; GREEN tests pass afterward.
@@ -26,4 +26,8 @@ Make `/alerts` report backend reachability separately from alert data source and
 
 ## Progress
 - Initial state: clean branch `feat/integrity-narrative`, HEAD `475e450`; RDD on by default; prior reviewed boundary `b339eb9`.
-- A01 complete and assessed; A02 implementation and focused checks complete. Record its exact SHA and final verification/screenshot observations during closeout.
+- A02's first build caught unsupported matcher typings in the new test (`toBeDefined` and negated `toContain`); the A02 commit was amended with equivalent supported boolean assertions. A first GREEN run also exposed an undefined test helper; the corrected retry passes.
+- Final checks: `bun test src` 609 pass/0 fail (`bun-test-src-final.txt`); parent spot-check 609 pass/0 fail (`parent-spot-check.txt`); build exit 0, 44 pages (`build-final.txt`); honesty guard 3 pass/0 fail (`honesty-final.txt`).
+- Visual readback: 1440 screenshot shows distinct backend-available and DEMO-source messages with five aligned label/control pairs; mobile full-page screenshot shows all five controls stacked below their labels. The required 390 viewport capture does not reach the filters. The 1440 and supplemental mobile captures logged a generic resource 404; the helper did not include its URL.
+- Screenshots: `/tmp/og-goal/evidence/ALERT-FIX-01/alert-fix-chromium-1440.png`, `alert-fix-chromium-390.png`, and `alert-fix-mobile-full-chromium-390.png`.
+- Next: source work complete; Engram mirror remains pending until a registered session identity and memory tool are available.
