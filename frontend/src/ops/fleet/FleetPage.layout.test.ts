@@ -10,4 +10,14 @@ describe("fleet responsive layout", () => {
     expect(html.includes('class="og-fleet-kpi-strip" data-kpi-layout="tablet"')).toBe(true);
     expect(html.includes('class="og-fleet-table-wrap og-fleet-table-scroll"')).toBe(true);
   });
+
+  test("keeps level value and state separate from trend sparkline containers", () => {
+    const html = renderToString(h(FleetPage, {}));
+    const levelCell = html.match(/<td class="og-fleet-level-cell">([\s\S]*?)<\/td>/)?.[1] ?? "";
+    const trendCell = html.match(/<td><div class="og-fleet-level__sparkline">([\s\S]*?)<\/div><\/td>/)?.[1] ?? "";
+
+    expect(levelCell.includes('class="og-fleet-level__value og-mono"')).toBe(true);
+    expect(levelCell.includes('class="og-fleet-level__state"')).toBe(true);
+    expect(trendCell.includes("<svg")).toBe(true);
+  });
 });
