@@ -182,6 +182,7 @@ export const platform = {
   "landing.tableSensor": "SENSOR",
   "landing.tableMount": "TIPO DE MONTAJE",
   "landing.tableStatus": "ESTADO",
+  "landing.tableScrollCue": "Desliza para ver más",
   "landing.sensorPressure": "Transductor de presión",
   "landing.sensorThermocouple": "Termopar tipo K",
   "landing.sensorMems": "Acelerómetro MEMS",
