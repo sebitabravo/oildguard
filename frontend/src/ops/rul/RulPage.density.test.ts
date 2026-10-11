@@ -18,7 +18,7 @@ describe("RUL projection density", () => {
       expect(disclosure !== null).toBe(true);
       expect(disclosure?.[1]?.includes("open") ?? false).toBe(false);
       expect(disclosure?.[1]?.includes('class="og-rul-projection"') ?? false).toBe(true);
-      expect(disclosure?.[2]?.includes(`<summary>${t("rul.projection")} · 30%</summary>`) ?? false).toBe(true);
+      expect(disclosure?.[2]?.includes(`<summary>${t("rul.projection")} · 30% <span class="og-chip">CONFIGURACIÓN</span></summary>`) ?? false).toBe(true);
       expect(disclosure?.[2]?.includes("<svg") ?? false).toBe(true);
       expect(beforeDisclosure.includes('class="og-rul-card__horizon"')).toBe(true);
       expect(beforeDisclosure.includes('class="og-rul-card__metrics"')).toBe(true);
