@@ -106,6 +106,8 @@ describe("synthetic fixture run", () => {
     const pooled = fixtureScenarios().flatMap((scenario) => evaluationPairs(pairSeries(fixtureSeries(scenario).points, scenario)));
     const metrics = computeMetrics(pooled.map((pair) => pair.errorL), 0.9);
     expect(metrics.n).toBe(350);
+    // Valor agrupado que muestra la página: fijado para detectar derivas del fixture.
+    expect(metrics.rmse).toBeCloseTo(2.5152846440114875, 10);
     expect(metrics.bias).toBeCloseTo(-0.1937, 3);
     expect(metrics.mae).toBeCloseTo(1.7956, 3);
     expect(metrics.maxAbs).toBeCloseTo(6.8014, 3);
