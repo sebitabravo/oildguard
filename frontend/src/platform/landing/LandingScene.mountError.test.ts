@@ -2,11 +2,21 @@ import { describe, expect, test } from "bun:test";
 import { detectWebGL, resolveSceneState } from "./sceneHost";
 
 declare const require: (specifier: string) => unknown;
+declare const process: { env: Record<string, string | undefined> };
+const testWithSkip = test as typeof test & { skip: typeof test };
 
-const PLAYWRIGHT_MODULE = "/Users/sebitabravo/.npm/_npx/51691537fc71f2b0/node_modules/playwright";
-const requirePlaywright = require(PLAYWRIGHT_MODULE) as { chromium: any };
-const { chromium } = requirePlaywright;
-const CHROMIUM_EXECUTABLE = "/Users/sebitabravo/Library/Caches/ms-playwright/chromium-1246/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing";
+// Estas rutas configurables evitan depender del equipo de quien ejecuta la prueba.
+const PLAYWRIGHT_MODULE = process.env.PLAYWRIGHT_MODULE;
+const CHROMIUM_EXECUTABLE = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
+const missingBrowserEnv = [
+  !PLAYWRIGHT_MODULE && "PLAYWRIGHT_MODULE",
+  !CHROMIUM_EXECUTABLE && "PLAYWRIGHT_CHROMIUM_EXECUTABLE",
+].filter(Boolean);
+const skipMessage = `Skipping browser test: missing ${missingBrowserEnv.join(", ")}`;
+if (missingBrowserEnv.length > 0) console.warn(skipMessage);
+const { chromium } = PLAYWRIGHT_MODULE
+  ? require(PLAYWRIGHT_MODULE) as { chromium: any }
+  : { chromium: null };
 const MOUNT_ERROR_COPY = "No se pudo cargar la vista 3D. El esquema estático permanece disponible.";
 
 describe("landing scene mount failures", () => {
@@ -33,7 +43,10 @@ describe("landing scene mount failures", () => {
     }
   });
 
-  test("shows a labelled error, keeps the poster, and logs when assembly mounting throws", async () => {
+  const browserTestName = "shows a labelled error, keeps the poster, and logs when assembly mounting throws";
+  if (missingBrowserEnv.length > 0) {
+    testWithSkip.skip(`${browserTestName} — ${skipMessage}`, () => {});
+  } else test(browserTestName, async () => {
     const browser = await chromium.launch({ executablePath: CHROMIUM_EXECUTABLE });
     try {
       const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
