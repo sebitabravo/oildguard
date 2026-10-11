@@ -58,6 +58,30 @@ export function reportAssemblyMountFailure(error: unknown): SceneLoadState {
   return "mount-error";
 }
 
+export async function mountAssemblyWithFallback(
+  mountEl: HTMLDivElement,
+  onFailure: (state: SceneLoadState) => void,
+  loadAssembly: () => Promise<typeof import("./scenes/assembly")> = () => import("./scenes/assembly"),
+) {
+  try {
+    const mod = await loadAssembly();
+    const controls = mod.createAssemblyControls();
+    const mounted = mod.mountAssemblyScene(mountEl, controls);
+    return { mod, controls, mounted };
+  } catch (error) {
+    onFailure(reportAssemblyMountFailure(error));
+    return null;
+  }
+}
+
+export function shouldShowAssemblyControls(
+  scene: LandingSceneId,
+  state: SceneLoadState,
+  reduction: AssemblyReduction | null,
+): boolean {
+  return scene === "assembly" && state === "ready-3d" && reduction !== null;
+}
+
 const SCENE_COPY: Record<LandingSceneId, SceneCopy> = {
   assembly: {
     alt: "Diagrama de corte estático del modelo de estudio del conjunto de rueda GDY106",
@@ -148,32 +172,22 @@ export default function LandingScene({
       const mountEl = mountRef.current;
       if (!mountEl) return;
       mountingRef.current = true;
-      import("./scenes/assembly").then(
-        (mod) => {
-          if (!alive) return;
-          const controls = mod.createAssemblyControls();
-          controlsRef.current = controls;
-          try {
-            mountedRef.current = mod.mountAssemblyScene(mountEl, controls);
-          } catch (error) {
-            mountingRef.current = false;
-            mountFailed = true;
-            setState(reportAssemblyMountFailure(error));
-            return;
-          }
-          setReduction(mod.assemblyReduction());
-          setPartLabels(mod.ASSEMBLY_PARTS.map((part) => ({ id: part.id, label: part.label })));
-          setIsolated(controls.getState().isolated);
-          setState("ready-3d");
-        },
-        (error) => {
-          mountingRef.current = false;
-          if (alive) {
-            mountFailed = true;
-            setState(reportAssemblyMountFailure(error));
-          }
-        },
-      );
+      void mountAssemblyWithFallback(mountEl, (errorState) => {
+        mountingRef.current = false;
+        if (alive) {
+          mountFailed = true;
+          setState(errorState);
+        }
+      }).then((result) => {
+        if (!result || !alive) return;
+        const { mod, controls, mounted } = result;
+        controlsRef.current = controls;
+        mountedRef.current = mounted;
+        setReduction(mod.assemblyReduction());
+        setPartLabels(mod.ASSEMBLY_PARTS.map((part) => ({ id: part.id, label: part.label })));
+        setIsolated(controls.getState().isolated);
+        setState("ready-3d");
+      });
     };
     // El aceite en corte se monta solo en vista, con WebGL y sin
     // movimiento reducido; cualquier fallo conserva el póster B03.
@@ -251,7 +265,7 @@ export default function LandingScene({
     setIsolated(controls.getState().isolated);
   };
 
-  const showAssemblyControls = scene === "assembly" && state === "ready-3d" && reduction !== null;
+  const showAssemblyControls = shouldShowAssemblyControls(scene, state, reduction);
 
   // Selectores B05: viven junto al póster sin exigir WebGL, con la misma
   // verdad de origen que la tabla de puntos de servicio.
