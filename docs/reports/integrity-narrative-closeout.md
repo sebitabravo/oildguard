@@ -34,7 +34,7 @@
 | B10 | DONE (evidence summary) | `8dc5f4f` | `/tmp/og-goal/evidence/B10/audit.txt`; `bun-test.txt`; `browser.log` |
 | B10b | DONE (keyboard selector fix) | `027c4a1` | `/tmp/og-goal/evidence/B10b/green-focused.txt`; `select-check-after.txt`; `full-tests.txt` |
 | B11 | PARTIAL — human visual sign-off open | `26f70b5`, `c2a57cf` | `/tmp/og-goal/evidence/B11/`; `/tmp/og-goal/evidence/B11-FIX-01/` |
-| B12 | PARTIAL — this report; human test not run | pending | `docs/reports/integrity-narrative-closeout.md`; `/tmp/og-goal/evidence/B12/` |
+| B12 | PARTIAL — this report; human test not run | `bd9869751994f4ebbce34beb99418bc01cce6fc8` | `docs/reports/integrity-narrative-closeout.md`; `/tmp/og-goal/evidence/B12/` |
 | DASH-FIX-01 | DONE | `0841a21`, `dca2505`, `0b7d41b`, `52e607c` | `/tmp/og-goal/evidence/DASH-FIX-01/task-document-closeout-review.txt`; `bun-test-final.txt`; `build-final.txt` |
 | ALERT-FIX-01 | DONE | `b9dcfaa`, `5260c99` | `/tmp/og-goal/evidence/ALERT-FIX-01/focused-final.txt`; `bun-test-src-final.txt`; `screenshots-final.txt` |
 | ALERT-FIX-02 | DONE | `5b1a35b` | `/tmp/og-goal/evidence/ALERT-FIX-02/green.txt`; `bun-test-src.txt`; `screenshots.txt` |
