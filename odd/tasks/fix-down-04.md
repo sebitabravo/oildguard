@@ -23,7 +23,7 @@ Closed state has no `EN VIVO`, `Al día`, or `en vivo` claims in the telemetry a
 - `cd frontend && bun run build` — exit 0; `bun-build.txt`.
 - `cd frontend && bun test src/honesty.test.ts` — 3 pass, 0 fail; `bun-test-honesty.txt`.
 - RED: both test imports failed before implementation; `red.txt`.
-- Browser blocked via Playwright route abort: `link-blocked-1024.png`, `fleet-blocked-1024.png`.
+- Browser blocked via Playwright route abort: `/tmp/og-goal/evidence/FIX-DOWN-04/link-blocked-1024.png`, `fleet-blocked-1024.png`.
 - Restored-route attempt: `link-restored-1024.png`, `fleet-restored-1024.png`; backend unavailable, so live state could not return. `backend-reachability.txt`, `browser-evidence.txt`.
 
 ## TDD / route / persistence
@@ -32,8 +32,8 @@ Route: delegated direct, single writer (multi-file UI/test change).
 Engram mirror: pending; no authoritative session ID or memory tools available.
 
 ## Source and status
-`LinkHealthPage` derives `connected` from API source + WebSocket state. `FleetLivePanel.state` is live only while its socket is open; polling no longer grants live labels.
+`LinkHealthPage.connected` is read at `LinkHealthPage.tsx:178` from API source + WebSocket state. `FleetLivePanel` reads its socket-backed state at `FleetLivePanel.tsx:90` and sets it on socket open at `:173-180`; polling no longer grants live labels.
 Evidence directory: `/tmp/og-goal/evidence/FIX-DOWN-04/`.
 Test commit: `f78d61c` `test(platform): bind live claims to state`.
-Fix commit: pending.
+Fix commit: `d19d97c` `fix(platform): gate live claims on connection`.
 Status: partial — restored/live state blocked by unavailable backend.
