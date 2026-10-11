@@ -112,4 +112,17 @@ describe("landing scene mount failures", () => {
     expect(shouldSyncSceneHostState(true, true)).toBe(false);
     expect(shouldSyncSceneHostState(true, false)).toBe(true);
   });
+
+  test("hides the poster after the assembly scene is mounted", () => {
+    const reduction = {
+      overall: 32.62,
+      highSpeed: 6.75,
+      lowSpeed: 4.833,
+      illustrative: 32.625,
+      wheelRpmAt3000: 3000 / 32.62,
+      withinTolerance: true,
+    } satisfies AssemblyReduction;
+
+    expect(shouldShowScenePoster("assembly", "ready-3d", false, reduction)).toBe(false);
+  });
 });

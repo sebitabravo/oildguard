@@ -92,8 +92,9 @@ export function shouldShowScenePoster(
   scene: LandingSceneId,
   state: SceneLoadState,
   oilReady: boolean,
+  reduction: AssemblyReduction | null = null,
 ): boolean {
-  return !shouldShowAssemblyControls(scene, state, null) && !(scene === "oil" && oilReady);
+  return !shouldShowAssemblyControls(scene, state, reduction) && !(scene === "oil" && oilReady);
 }
 
 export function sceneMountErrorPresentation(scene: LandingSceneId, state: SceneLoadState) {
@@ -313,7 +314,7 @@ export default function LandingScene({
   // Sin progreso finito se informa cero en es-CL, no "0.000".
   const storyProgressText = Number.isFinite(storyProgress) ? formatNumber(storyProgress, 3) : formatNumber(0, 3);
   return <figure className="landing__scene" data-scene={scene} data-scene-state={state} data-story-beat={storyBeat ?? scene} data-story-progress={storyProgressText} data-story-active={storyActive ? "true" : "false"} ref={figureRef}>
-    {shouldShowScenePoster(scene, state, oilReady) && (
+    {shouldShowScenePoster(scene, state, oilReady, reduction) && (
       <img className="landing__scene-poster" src={SCENE_POSTER_URLS[scene]} alt={copy.alt} loading="lazy" />
     )}
     <div className="landing__scene-host" data-deferred="true" aria-hidden="true" ref={mountRef} />
