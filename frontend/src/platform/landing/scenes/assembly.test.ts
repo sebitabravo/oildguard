@@ -3,11 +3,15 @@ import * as THREE from "three";
 import {
   ASSEMBLY_PART_IDS,
   ASSEMBLY_PARTS,
+  ASSEMBLY_REDUCTION_SOURCE,
+  ASSEMBLY_TOLERANCE_PCT,
   ASSEMBLY_VIEW_LIMITS,
+  assemblyReduction,
   assertAssemblyComplete,
   buildAssemblyScene,
   cameraPositionFor,
   createAssemblyControls,
+  reductionErrorPct,
   visibleParts,
   type AssemblyPartId,
 } from "./assembly";
@@ -17,6 +21,21 @@ import {
 const REQUIRED_PARTS: readonly AssemblyPartId[] = ["hub", "carrier", "planets", "sun", "brakes", "motor"];
 
 describe("assembly cutaway parts", () => {
+  test("preserves the documented reduction and illustrative stage split", () => {
+    const reduction = assemblyReduction();
+
+    expect(reduction.overall).toBe(32.62);
+    expect(reduction.highSpeed).toBeCloseTo(6.75, 3);
+    expect(reduction.lowSpeed).toBeCloseTo(4.833, 3);
+    expect(reduction.illustrative).toBeCloseTo(32.625, 3);
+    expect(reduction.wheelRpmAt3000).toBeCloseTo(3000 / 32.62, 10);
+    expect(reduction.withinTolerance).toBe(true);
+    expect(reductionErrorPct()).toBeLessThanOrEqual(ASSEMBLY_TOLERANCE_PCT);
+    expect(ASSEMBLY_REDUCTION_SOURCE).toContain("docs/thesis-annex.md:22");
+    expect(ASSEMBLY_REDUCTION_SOURCE).toContain("docs/research/landing-claims.md");
+    expect(ASSEMBLY_REDUCTION_SOURCE).toContain("tooth counts illustrative ASSUMPTION");
+  });
+
   test("exposes exactly the six required parts", () => {
     expect([...ASSEMBLY_PART_IDS].sort()).toEqual([...REQUIRED_PARTS].sort());
     expect(ASSEMBLY_PARTS.length).toBe(6);
