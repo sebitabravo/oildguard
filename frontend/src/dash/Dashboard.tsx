@@ -48,7 +48,7 @@ import { mergeLevelSeries } from "./levelSeries";
 import { formatDemoLabNote } from "./demoCopy";
 import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
 import { DEMO_REFERENCE_MS, demoDataset } from "../demo/dataset";
-import { AlertBanner, Button, Notice, PageHeader, SyntheticBadge, type Severity } from "../ui/foundation";
+import { AlertBanner, Button, Notice, PageHeader, ProvenanceTag, SyntheticBadge, type Severity } from "../ui/foundation";
 import BackendOutageNotice from "../ui/BackendOutageNotice";
 export { BackendOutageNotice as BackendOutageBanner };
 import {
@@ -75,6 +75,13 @@ type BackendNote =
   | { kind: "live"; rows: number; influx: string; influxMessage?: BackendMessage }
   | { kind: "error" }
   | null;
+
+export function DashboardWindowsReadout({ windowCount, storeRows }: { windowCount: number; storeRows: number }) {
+  const rowToken = "__session_rows__";
+  const text = t("dash.backend.windows", { count: windowCount, rows: rowToken });
+  const rowIndex = text.indexOf(rowToken);
+  return <>{text.slice(0, rowIndex)}{storeRows} <ProvenanceTag value="EN VIVO" />{text.slice(rowIndex + rowToken.length)}</>;
+}
 
 const DEMO_STAGES: DemoStageId[] = ["clean", "slow-leak", "abrupt-drop", "done"];
 const LIVE_SENSOR_SIGNALS: LevelSeriesSignal[] = ["pressure_kpa", "temperature_c", "vib_rms_g"];
@@ -567,7 +574,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
             <p className="og-wheel-panel__note">
               FSM <strong>{fsm.state}</strong> (t+{formatNumber(fsmTick, 0)} s {t("dash.fsm.sharedClock")}) ·{" "}
               {source === "live"
-                ? t("dash.backend.windows", { count: windows?.count ?? 0, rows: storeRows })
+                ? <DashboardWindowsReadout windowCount={windows?.count ?? 0} storeRows={storeRows} />
                 : t("dash.backend.localWindows")}
             </p>
             <p className="og-wheel-panel__note">
@@ -575,10 +582,15 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
                 {source === "loading"
                   ? t("dash.backend.probing")
                   : source === "live" && backendNote?.kind === "live"
-                    ? t("dash.backend.summary", {
-                        rows: backendNote.rows,
+                    ? <>{(() => {
+                        const rowToken = "__session_rows__";
+                        const text = t("dash.backend.summary", {
+                          rows: rowToken,
                         influx: localizeBackendMessage(backendNote.influxMessage, backendNote.influx),
-                      })
+                        });
+                        const rowIndex = text.indexOf(rowToken);
+                        return <>{text.slice(0, rowIndex)}{backendNote.rows} <ProvenanceTag value="EN VIVO" />{text.slice(rowIndex + rowToken.length)}</>;
+                      })()}</>
                     : live ? t("dash.backend.offline") : t("wheel.source.demoWheel")}
               </span>
               {signingBadge && (

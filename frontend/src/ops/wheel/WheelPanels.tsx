@@ -2,7 +2,7 @@ import type { ComponentChildren } from "preact";
 import { t, type DictKey } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import {
-  ChannelFusion, RegimeChip, TelemetryCard, ValidityChip,
+  ChannelFusion, ProvenanceTag, RegimeChip, TelemetryCard, ValidityChip,
   type Severity,
 } from "../../ui/foundation";
 import { ladderRows, type LevelValidity } from "./logic";
@@ -152,7 +152,7 @@ export function FusionPanel({ channels, votes }: { channels: ChannelStates; vote
     <section className="og-wheel-panel" aria-label={t("wheel.fusion.title")}>
       <h3 className="og-wheel-panel__title">
         {t("wheel.fusion.title")}
-        <span className="og-chip">{t("wheel.fusion.summary", { count: formatNumber(votes, 0) })}</span>
+        <span className="og-chip">{t("wheel.fusion.summary", { count: formatNumber(votes, 0) })}</span> <ProvenanceTag value="DERIVED" />
       </h3>
       <ChannelFusion channels={channels} />
       <p className="og-wheel-panel__note">{t("wheel.fusion.rule")}</p>

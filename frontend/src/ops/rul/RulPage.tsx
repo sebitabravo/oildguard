@@ -5,7 +5,7 @@ import { formatNumber } from "../../i18n/numberFormat";
 import { t } from "../../i18n";
 import BackendOutageNotice from "../../ui/BackendOutageNotice";
 import {
-  FilterBar, PageHeader, SegmentedControl, SyntheticBadge, TimeSeriesChart,
+  FilterBar, PageHeader, ProvenanceTag, SegmentedControl, SyntheticBadge, TimeSeriesChart,
 } from "../../ui/foundation";
 import { classifyRulHorizon } from "../../dash/rulHorizon";
 import { convertRulHours, filterProjectedRul, sortRulCards, type RulCard, type RulUnit } from "./logic";
@@ -170,18 +170,18 @@ export default function RulPage() {
               </header>
               <div className="og-rul-card__horizon">
                 <span className="og-label">{t("rul.horizon")}</span>
-                <strong>{horizonLabel(card, unit)}</strong>
-                {card.projected && card.horizonHours !== null && <small>±{formatNumber(convertRulHours(card.horizonHours * 0.1, unit), unit === "hours" ? 1 : 0)} {t(`rul.unit.${unit}`)}</small>}
+                <strong>{horizonLabel(card, unit)} <ProvenanceTag value={card.source === "LIVE" ? "EN VIVO" : "DEMO"} /></strong>
+                {card.projected && card.horizonHours !== null && <small>±{formatNumber(convertRulHours(card.horizonHours * 0.1, unit), unit === "hours" ? 1 : 0)} {t(`rul.unit.${unit}`)} <ProvenanceTag value={card.source === "LIVE" ? "EN VIVO" : "DEMO"} /></small>}
                 {card.horizonClass && <b>{t(`rul.${card.horizonClass}`)}</b>}
               </div>
               <div className="og-rul-card__metrics">
-                <span>{t("rul.lossRate")} <b>{formatNumber(card.lossRate, 2)} L/100 h</b></span>
-                <span>{t("rul.referenceLevel")} <b>{formatNumber(card.referenceLevel, 1)} ± {formatNumber(card.sigma, 1)} L</b></span>
-                {card.confidence !== null && <span>R² <b>{formatNumber(card.confidence, 3)}</b></span>}
+                <span>{t("rul.lossRate")} <b>{formatNumber(card.lossRate, 2)} L/100 h <ProvenanceTag value={card.source === "LIVE" ? "EN VIVO" : "DEMO"} /></b></span>
+                <span>{t("rul.referenceLevel")} <b>{formatNumber(card.referenceLevel, 1)} ± {formatNumber(card.sigma, 1)} L <ProvenanceTag value={card.source === "LIVE" ? "EN VIVO" : "DEMO"} /></b></span>
+                {card.confidence !== null && <span>R² <b>{formatNumber(card.confidence, 3)} <ProvenanceTag value="EN VIVO" /></b></span>}
               </div>
               {card.projected ? (
                 <details className="og-rul-projection">
-                  <summary>{t("rul.projection")} · 30%</summary>
+                  <summary>{t("rul.projection")} · 30% <ProvenanceTag value="CONFIGURACIÓN" /></summary>
                   <TimeSeriesChart
 
                     values={card.projection}
@@ -190,8 +190,8 @@ export default function RulPage() {
                     domain={[0, 95]}
                     yUnit="L"
                     thresholds={[
-                      { value: WARNING_L, label: t("history.threshold.warning") },
-                      { value: CRITICAL_L, label: t("history.threshold.critical") },
+                      { value: WARNING_L, label: <>{t("history.threshold.warning")} <ProvenanceTag value="CONFIGURACIÓN" /></> },
+                      { value: CRITICAL_L, label: <>{t("history.threshold.critical")} <ProvenanceTag value="CONFIGURACIÓN" /></> },
                     ]}
                     height={112}
                   />
