@@ -13,7 +13,9 @@ export function createGearOutline(
   tipRadius: number,
 ): THREE.Vector2[] {
   if (!Number.isInteger(teeth) || teeth < 3) throw new Error("A gear needs at least three integer teeth");
-  if (!(rootRadius > 0) || !(tipRadius > rootRadius)) throw new Error("Gear radii must be positive and tipRadius must exceed rootRadius");
+  if (!Number.isFinite(rootRadius) || !Number.isFinite(tipRadius) || rootRadius <= 0 || tipRadius <= rootRadius) {
+    throw new Error("Gear radii must be finite and positive, with tipRadius above rootRadius");
+  }
 
   const outline: THREE.Vector2[] = [];
   const toothAngle = (Math.PI * 2) / teeth;

@@ -2,6 +2,23 @@ import { describe, expect, test } from "bun:test";
 import { createGearOutline, generateGearGeometry } from "./gears";
 
 describe("parametric gear geometry", () => {
+  test("rejects non-finite and non-positive radii", () => {
+    const invalidRadii: ReadonlyArray<readonly [number, number]> = [
+      [Number.NaN, 2],
+      [1, Number.NaN],
+      [Number.POSITIVE_INFINITY, 2],
+      [1, Number.POSITIVE_INFINITY],
+      [0, 2],
+      [-1, 2],
+      [1, 0],
+      [1, -1],
+    ];
+
+    for (const [rootRadius, tipRadius] of invalidRadii) {
+      expect(() => createGearOutline(8, rootRadius, tipRadius)).toThrow();
+    }
+  });
+
   test("generates the requested number of tooth tips and closes the outline", () => {
     const teeth = 18;
     const outline = createGearOutline(teeth, 0.42, 0.5);
