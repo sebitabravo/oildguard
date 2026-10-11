@@ -2,6 +2,7 @@ import { useMemo, useState } from "preact/hooks";
 import { t } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import { Button, FilterBar, FormField, KpiTile, Notice, PageHeader } from "../../ui/foundation";
+import { useBackendState } from "../../ui/backendOrDemo";
 import { useAlertData } from "./data";
 import { ageLabel, localizeReason, roleLabel } from "./localize";
 import {
@@ -20,6 +21,7 @@ function channelNames(record: AlertRecord): string {
 
 export default function AlertsInboxPage() {
   const { records, demoRecords, liveCount, liveLoaded } = useAlertData();
+  const backendState = useBackendState();
   const [filters, setFilters] = useState<AlertFilters>(() => ({
     ...NO_FILTERS,
     wheel: typeof window === "undefined" ? undefined : parseWheelParam(window.location.search) ?? undefined,
@@ -37,6 +39,11 @@ export default function AlertsInboxPage() {
   const hasFilters = JSON.stringify({ ...filters, wheel: filters.wheel ?? null }) !== JSON.stringify({ ...NO_FILTERS, wheel: null });
   const nowFor = (record: AlertRecord) => (record.source === "live" ? Date.now() : DEMO_NOW_MS);
   const liveMode = liveLoaded && liveCount > 0;
+  const backendStatusKey = backendState === "checking"
+    ? "alerts.source.checking"
+    : backendState === "live"
+      ? "alerts.source.live"
+      : "alerts.source.demo";
 
   return (
     <main className="og-page og-alerts-page">
@@ -45,7 +52,7 @@ export default function AlertsInboxPage() {
           eyebrow={t("alerts.eyebrow")}
           title={t("alerts.title")}
           description={t("alerts.description")}
-          meta={<span className={`og-alerts-pill og-alerts-pill--${liveMode ? "live" : "demo"}`}><i aria-hidden="true" />{t(liveMode ? "alerts.source.live" : "alerts.source.demo")}</span>}
+          meta={<span className={`og-alerts-pill og-alerts-pill--${backendState}`}><i aria-hidden="true" />{t(backendStatusKey)}</span>}
         />
         <Notice kind="info">
           {liveMode

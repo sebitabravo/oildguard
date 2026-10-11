@@ -1,8 +1,9 @@
 // Copy de las páginas de alertas: /alerts, /alerts/detail y /alerts/rules.
 export const opsAlerts = {
   // --- comunes ---
-  "alerts.source.live": "EN VIVO",
-  "alerts.source.demo": "DEMO",
+  "alerts.source.live": "Backend disponible",
+  "alerts.source.demo": "Backend no disponible",
+  "alerts.source.checking": "Comprobando backend",
   "alerts.liveDevice": "Dispositivo en vivo",
   "alerts.level.word.N1": "Tendencia",
   "alerts.level.word.N2": "Fuga confirmada",
@@ -29,8 +30,8 @@ export const opsAlerts = {
   "alerts.eyebrow": "Alertas / Bandeja",
   "alerts.title": "Bandeja de alertas",
   "alerts.description": "Cada alerta N1–N4 con sus canales, destinatario y ciclo de vida. Solo lectura: nada aquí da órdenes a un camión.",
-  "alerts.sourceNotice.live": "{count} alertas de la escalera llegan en vivo desde el backend. El ciclo de vida, los destinatarios y el historial son datos DEMO; reconocer, escalar y cerrar son acciones demo locales guardadas en este navegador.",
-  "alerts.sourceNotice.demo": "Backend no disponible o sin alertas en vivo: solo se muestran alertas DEMO. El ciclo de vida y el historial son datos demo locales y deterministas; las acciones son acciones demo locales.",
+  "alerts.sourceNotice.live": "Fuente de alertas: backend ({count} alertas en vivo). El ciclo de vida, los destinatarios y el historial son datos DEMO; reconocer, escalar y cerrar son acciones demo locales guardadas en este navegador.",
+  "alerts.sourceNotice.demo": "Fuente de alertas: DEMO. El ciclo de vida y el historial son datos demo locales y deterministas; las acciones son acciones demo locales.",
   "alerts.tiles.label": "Alertas activas por nivel",
   "alerts.tile.active": "activas, sin cerrar",
   "alerts.tile.total": "Últimos 7 días",
