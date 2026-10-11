@@ -5,6 +5,14 @@ import { Button, KpiTile, Notice, PageHeader, TimeSeriesChart } from "../../ui/f
 import { assembleSyntheticReport, localizeReport } from "./logic";
 import "./report.css";
 
+function DemoSourceLabel() {
+  return <small className="og-badge og-badge--source og-badge--source-demo" style={{ padding: "2px 4px", fontSize: "9px" }}>{t("fleet.source.demo")}</small>;
+}
+
+function ReportKpi({ label, value, tone = "nominal" }: { label: string; value: string; tone?: "nominal" | "warning" }) {
+  return <article className={`og-kpi-tile og-kpi-tile--${tone}`}><div className="og-label">{label}</div><div className="og-kpi-tile__value">{value}</div><div className="og-kpi-tile__meta"><DemoSourceLabel /></div></article>;
+}
+
 export default function ReportPage() {
   const [cursorIndex, setCursorIndex] = useState<number | null>(null);
   const alertId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("alert") ?? undefined : undefined;
@@ -33,8 +41,8 @@ export default function ReportPage() {
           <div><dt>{t("report.window")}</dt><dd>{text.window}</dd></div>
         </dl>
         <section className="og-report-kpis">
-          <KpiTile label={t("report.levelAtDetection")} value={`${formatNumber(report.levelAtDetection, 1)} L`} />
-          <KpiTile label={t("report.litresLost")} value={`${formatNumber(report.litresLost, 1)} L`} tone="warning" />
+          <ReportKpi label={t("report.levelAtDetection")} value={`${formatNumber(report.levelAtDetection, 1)} L`} />
+          <ReportKpi label={t("report.litresLost")} value={`${formatNumber(report.litresLost, 1)} L`} tone="warning" />
           <KpiTile label={t("report.timeToN4")} value={`${formatNumber(report.timeToN4Minutes, 0)} min`} />
           <KpiTile label={t("report.channels")} value={formatNumber(report.channels, 0)} />
         </section>

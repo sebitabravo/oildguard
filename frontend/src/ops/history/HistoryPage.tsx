@@ -11,6 +11,15 @@ import "./history.css";
 const windows: HistoryWindow[] = ["250h", "7d", "30d", "90d"];
 const windowHours: Record<HistoryWindow, number> = { "250h": 250, "7d": 168, "30d": 720, "90d": 2160 };
 
+function SourceLabel({ source }: { source: "demo" | "mixed" | "configuration" }) {
+  const key = source === "demo" ? "fleet.source.demo" : source === "mixed" ? "fleet.source.mixed" : "fleet.source.configuration";
+  return <small className={`og-badge og-badge--source og-badge--source-${source}`} style={{ padding: "2px 4px", fontSize: "9px" }}>{t(key)}</small>;
+}
+
+function HistoryKpi({ label, value, tone = "nominal", source = "demo" }: { label: string; value: string; tone?: "nominal" | "warning"; source?: "demo" | "mixed" }) {
+  return <article className={`og-kpi-tile og-kpi-tile--${tone}`}><div className="og-label">{label}</div><div className="og-kpi-tile__value">{value}</div><div className="og-kpi-tile__meta"><SourceLabel source={source} />{source === "mixed" && <> <span>{t("fleet.source.demo")} + {t("fleet.source.configuration")}</span></>}</div></article>;
+}
+
 function formatEvent(event: "alert" | "inspection" | "outage" | "refill"): string {
   return t(`history.event.${event === "inspection" ? "inspection" : event}`);
 }
@@ -66,10 +75,10 @@ export default function HistoryPage() {
         </div>
         <Notice kind="simulation">{t("history.syntheticNotice")}</Notice>
         <section className="og-history-kpis" aria-label={t("history.title")}>
-          <KpiTile label={t("history.levelChange")} value={kpis.levelChange === null ? "—" : `${formatNumber(kpis.levelChange, 1)} L`} tone={kpis.levelChange !== null && kpis.levelChange < 0 ? "warning" : "nominal"} />
-          <KpiTile label={t("history.meanLossRate")} value={kpis.meanLossRate === null ? "—" : `${formatNumber(kpis.meanLossRate, 2)} L/100 h`} />
+          <HistoryKpi label={t("history.levelChange")} value={kpis.levelChange === null ? "—" : `${formatNumber(kpis.levelChange, 1)} L`} tone={kpis.levelChange !== null && kpis.levelChange < 0 ? "warning" : "nominal"} />
+          <HistoryKpi label={t("history.meanLossRate")} value={kpis.meanLossRate === null ? "—" : `${formatNumber(kpis.meanLossRate, 2)} L/100 h`} source="mixed" />
           <KpiTile label={t("history.alerts")} value={formatNumber(kpis.alerts, 0)} tone={kpis.alerts ? "warning" : "nominal"} />
-          <KpiTile label={t("history.completeness")} value={`${formatNumber(kpis.completeness, 0)}%`} />
+          <HistoryKpi label={t("history.completeness")} value={`${formatNumber(kpis.completeness, 0)}%`} />
         </section>
         <section className="og-history-charts">
           <article><h3>{t("history.level")}</h3><TimeSeriesChart values={levelValues} sigma={points.map((point) => point.sigma ?? 0)} thresholds={[{ value: 47.5, label: t("history.threshold.warning") }, { value: 28.5, label: t("history.threshold.critical") }]} domain={[0, 95]} yUnit="L" xLabels={xLabels} events={chartEvents} gaps={chartGaps} title={t("history.level")} cursorIndex={cursorIndex} onCursorChange={setCursorIndex} /></article>
@@ -86,7 +95,7 @@ export default function HistoryPage() {
                   <td className="og-mono">{new Date(point.at).toISOString().slice(0, 16).replace("T", " ")}</td>
                   <td>{formatEvent(event)}</td>
                   <td>{event === "outage" ? t("history.event.outage") : event === "alert" ? `${wheel.alertLevel ?? "N2"} · ${wheel.truckId}` : event === "refill" ? t("history.event.refill") : t("history.event.inspection")}</td>
-                  <td className="og-mono">{point.liters === null ? "—" : `${formatNumber(point.liters, 1)} L`}</td>
+                  <td className="og-mono">{point.liters === null ? "—" : <>{formatNumber(point.liters, 1)} L <SourceLabel source="demo" /></>}</td>
                 </tr>
               ))}</tbody>
             </table>

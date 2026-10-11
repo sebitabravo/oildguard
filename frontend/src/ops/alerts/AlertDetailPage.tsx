@@ -19,6 +19,17 @@ import "./alerts.css";
 
 const ACTIONS: readonly LifecycleAction[] = ["acknowledge", "escalate", "close"];
 
+type FieldSource = "live" | "demo" | "configuration";
+
+function FieldSourceLabel({ source }: { source: FieldSource }) {
+  const key = source === "live" ? "fleet.source.live" : source === "demo" ? "fleet.source.demo" : "fleet.source.configuration";
+  return <small className={`og-badge og-badge--source og-badge--source-${source}`} style={{ padding: "2px 4px", fontSize: "9px" }}>{t(key)}</small>;
+}
+
+export function SourcedValue({ value, source }: { value: string; source: FieldSource }) {
+  return <span className="og-mono">{value} <FieldSourceLabel source={source} /></span>;
+}
+
 function valueText(metric: EvidenceMetric): string {
   if (metric.value === null) return "—";
   return `${formatNumber(metric.value, metric.decimals)}${metric.unit ? ` ${metric.unit}` : ""}`;
@@ -154,8 +165,8 @@ export default function AlertDetailPage() {
     cells: {
       channel: <strong>{t(`ui.channel.${row.channel}`)}</strong>,
       input: t(`alerts.metric.${metric.key}`),
-      observed: <span className="og-mono">{valueText(metric)}</span>,
-      threshold: <span className="og-mono">{thresholdText(metric)}</span>,
+      observed: <SourcedValue value={valueText(metric)} source={record.source} />,
+      threshold: <SourcedValue value={thresholdText(metric)} source="configuration" />,
       result: (
         <span className={`og-alerts-result og-alerts-result--${metric.crossed === null ? "missing" : metric.crossed ? "crossed" : "within"}`}>
           {t(metric.crossed === null ? "alerts.evidence.missing" : metric.crossed ? "alerts.evidence.crossed" : "alerts.evidence.within")}

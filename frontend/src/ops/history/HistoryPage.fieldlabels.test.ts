@@ -27,10 +27,13 @@ describe("history per-field provenance", () => {
   test("labels each KPI and event-table measurement as demo data", () => {
     const markup = html();
     const tiles = elements(markup, "article", "og-kpi-tile");
-    ["-0,3 L", "0,12 L/100 h", "92%"].forEach((value) => {
+    ["-0,3 L", "92%"].forEach((value) => {
       const tile = tiles.find((item) => item.includes(value)) ?? "";
       expect(sourceLabel.test(tile)).toBe(true);
     });
+    const rate = tiles.find((item) => item.includes("0,12 L/100 h")) ?? "";
+    expect(/og-badge--source-mixed[\s\S]*?MIXTO/.test(rate)).toBe(true);
+    expect(rate).toContain("DEMO + CONFIGURACIÓN");
     const levels = elements(markup, "td", "og-mono").filter((cell) => /\d+,\d L/.test(cell));
     expect(levels.some((cell) => cell.includes("90,4 L") && sourceLabel.test(cell))).toBe(true);
     expect(levels.some((cell) => cell.includes("92,8 L") && sourceLabel.test(cell))).toBe(true);

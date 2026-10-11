@@ -663,6 +663,7 @@ export default function BenchScene({
             <span className="og-value og-value--lg" style={{ color: oilCss }}>
               {formatOilText(clamp01(oilLevel))}
             </span>
+            <small className="og-badge og-badge--source og-badge--source-demo" style={{ padding: "2px 4px", fontSize: "9px" }}>{t("fleet.source.demo")}</small>
           </div>
           <div style={{ marginTop: 4, fontSize: 12, color: "var(--og-body)" }}>
             {oilStateLabel(oilState)}
