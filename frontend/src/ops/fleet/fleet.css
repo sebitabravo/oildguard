@@ -14,7 +14,7 @@
 .og-fleet-filter-chip.is-active { color: var(--og-text-primary); border-color: var(--og-accent); }
 .og-fleet-filter-chip b { color: var(--og-text-muted); font: 11px var(--og-mono); }
 .og-fleet-search { min-height: 36px; min-width: 220px; flex: 1; padding: 0 10px; color: var(--og-text-primary); background: var(--og-surface); border: 1px solid var(--og-border-strong); }
-.og-fleet-table-wrap { min-width: 0; max-width: 100%; margin-top: 18px; overflow-x: auto; border: 1px solid var(--og-border-subtle); background: var(--og-surface); }
+.og-fleet-table-wrap { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; margin-top: 18px; overflow-x: auto; border: 1px solid var(--og-border-subtle); background: var(--og-surface); }
 .og-fleet-table-scroll { width: 100%; }
 .og-fleet-table { width: 100%; min-width: 1120px; table-layout: fixed; border-collapse: collapse; font-size: 12px; }
 .og-fleet-col-wheel { width: 178px; }.og-fleet-col-level { width: 220px; }.og-fleet-col-trend { width: 112px; }.og-fleet-col-loss { width: 112px; }.og-fleet-col-temp { width: 92px; }.og-fleet-col-vibration { width: 104px; }.og-fleet-col-regime { width: 108px; }.og-fleet-col-alert { width: 108px; }.og-fleet-col-last { width: 150px; }
@@ -59,9 +59,11 @@
   .og-fleet-page .og-filterbar > .og-seg .og-seg__btn { flex: 1; min-height: 44px; }
 }
 
-@media (min-width: 701px) and (max-width: 900px) {
-  .og-fleet-kpi-strip--tablet .og-fleet-kpi { min-width: 0; padding-inline: 10px; }
-  .og-fleet-kpi-strip--tablet .og-label,
-  .og-fleet-kpi-strip--tablet .og-kpi-tile__value,
-  .og-fleet-kpi-strip--tablet .og-kpi-tile__meta { min-width: 0; overflow-wrap: anywhere; }
+@media (min-width: 701px) and (max-width: 1100px) {
+  .og-fleet-kpi-strip[data-kpi-layout="tablet"] .og-fleet-kpi { min-width: 0; padding-inline: 10px; }
+  .og-fleet-kpi-strip[data-kpi-layout="tablet"] .og-label,
+  .og-fleet-kpi-strip[data-kpi-layout="tablet"] .og-kpi-tile__value,
+  .og-fleet-kpi-strip[data-kpi-layout="tablet"] .og-kpi-tile__meta { min-width: 0; overflow-wrap: anywhere; }
+  .og-fleet-kpi-strip[data-kpi-layout="tablet"] .og-label { white-space: normal; }
+  .og-fleet-page .og-fleet-live__overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
