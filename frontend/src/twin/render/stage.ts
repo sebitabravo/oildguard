@@ -152,8 +152,8 @@ export function createRenderLoop(render: () => void, host: RenderLoopHost, befor
   const frame = () => {
     frameId = null;
     if (disposed || manuallyPaused || host.isHidden()) return;
+    frameId = host.requestFrame(frame);
     render();
-    schedule();
   };
   const unsubscribeVisibility = host.subscribeVisibility(() => {
     if (host.isHidden()) cancel();

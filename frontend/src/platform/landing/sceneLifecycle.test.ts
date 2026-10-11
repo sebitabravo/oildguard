@@ -75,15 +75,30 @@ describe("landing 3D scene lifecycle", () => {
     expect(host.frames.size).toBe(0);
   });
 
-  test("resets the frame clock before scheduling the default loop", () => {
+  test("preserves clock and RAF ordering on start, frame, and visibility resume", () => {
     const order: string[] = [];
     const host = createFrameHost();
+    const requestFrame = host.requestFrame;
     host.requestFrame = spy((callback: Frame) => {
       order.push("raf");
-      return 1;
+      return requestFrame(callback);
     });
-    const loop = createRenderLoop(() => {}, host, () => order.push("clock"));
-    expect(order).toEqual(["clock", "raf"]);
+    const loop = createRenderLoop(() => {
+      order.push("frame-clock");
+      order.push("render");
+    }, host, () => order.push("clock-reset"));
+    expect(order).toEqual(["clock-reset", "raf"]);
+
+    host.flush();
+    expect(order).toEqual(["clock-reset", "raf", "raf", "frame-clock", "render"]);
+    expect(host.frames.size).toBe(1);
+
+    host.setHidden(true);
+    host.setHidden(false);
+    expect(order).toEqual([
+      "clock-reset", "raf", "raf", "frame-clock", "render", "clock-reset", "raf",
+    ]);
+    expect(host.frames.size).toBe(1);
     loop.dispose();
   });
 

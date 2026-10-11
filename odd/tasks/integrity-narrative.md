@@ -1702,6 +1702,7 @@ B09 observed: landing lifecycle tests 118/0, full frontend tests 615/0, build 44
 B09 follow-up observed: at device scale 3, both mounted landing renderer backing ratios were 2; two scene canvases had 0 pending RAFs outside the real viewport, and island unmount removed both with two context-loss events. Cold first paint/FCP measured 168 ms; this is not a historical pre-change baseline.
 
 B09 correction observed: focused landing tests 119/0, full frontend tests 616/0, build 44 pages, `/Users/` grep zero matches; browser integration evidence and the clock-before-RAF regression are under `/tmp/og-goal/evidence/B09/`.
+B09 ordering correction observed: event-order regression now preserves clock reset before initial/resume RAF and queues each default RAF before frame clock/render; focused tests 119/0, full suite 616/0, build 44 pages, cold FP/FCP 280 ms, in-view one RAF and out-of-view zero; evidence `/tmp/og-goal/evidence/B09/default-order-*`.
 
 ### B02–B08 — formal parent pass GREEN (2026-10-11; code already in tree via S01–S06 commit)
 

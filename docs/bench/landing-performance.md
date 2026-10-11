@@ -79,3 +79,10 @@ RAF callbacks were pending. Dispatching the island's unmount event
 removed both canvases and produced two `webglcontextlost` events. This is a
 within-run mount comparison, not a before-code baseline or GPU timing result;
 details are in `/tmp/og-goal/evidence/B09/integration.json`.
+
+Default-loop ordering correction rerun (2026-10-11, Chromium 1440 × 900,
+device scale factor 3): cold first paint and first contentful paint were both
+280 ms. Assembly in view had one pending RAF; after scrolling outside the real
+viewport while both canvases remained mounted, pending RAFs fell to zero.
+This is a post-correction observation, not a historical before-code baseline;
+details are in `/tmp/og-goal/evidence/B09/default-order-browser-integration.txt`.
