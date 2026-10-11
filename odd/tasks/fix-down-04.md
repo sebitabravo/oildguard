@@ -29,7 +29,7 @@ Closed state has no `EN VIVO`, `Al día`, or `en vivo` claims in the telemetry a
 - Duplicate-copy RED: `duplicate-red.txt` showed the closed-state tests fail with repeated disconnected/offline text.
 - Correction checks: `bun-test-src-duplicate.txt` (638 pass, 0 fail), `bun-build-duplicate.txt` (exit 0), and `bun-test-honesty-duplicate.txt` (3 pass, 0 fail).
 - Updated 1024 blocked screenshots: `link-blocked-1024.png`, `fleet-blocked-1024.png`; browser summary: `browser-evidence-duplicate.txt`. Link now renders one disconnected status and one offline title; Fleet renders one exact `Sin conexión` status.
-- RDD assessment for parent review: `rdd-assessment.json` reports medium / under_budget. Restored/live state remains pending; backend reachability failure is recorded in `backend-reachability.txt`.
+- RDD assessment for parent review: `rdd-assessment-final.json` reports medium / under_budget, not due. Parent spot check: `parent-spotcheck-honesty-final.txt`. Restored/live state remains pending; backend reachability failure is recorded in `backend-reachability.txt`.
 
 ## TDD / route / persistence
 TDD: ON; source: `/tmp/og-goal/briefs/_rules.md`; runner: `cd frontend && bun test src`.
@@ -37,8 +37,9 @@ Route: delegated direct, single writer (multi-file UI/test change).
 Engram mirror: pending; no authoritative session ID or memory tools available.
 
 ## Source and status
-`LinkHealthPage.connected` is read at `LinkHealthPage.tsx:178` from API source + WebSocket state. `FleetLivePanel` reads its socket-backed state at `FleetLivePanel.tsx:90` and sets it on socket open at `:173-180`; polling no longer grants live labels.
+The `/link` live gate is derived by `LinkHealthPage.connected` from API source and WebSocket state. `FleetLivePanelView` derives its gate from socket-backed state, set by `FleetLivePanel` only in the WebSocket `onopen` handler; polling no longer grants live labels.
 Evidence directory: `/tmp/og-goal/evidence/FIX-DOWN-04/`.
 Test commit: `f78d61c` `test(platform): bind live claims to state`.
 Fix commit: `d19d97c` `fix(platform): gate live claims on connection`.
+Correction commit: `9ba001b` `fix(platform): remove duplicate offline status`.
 Status: partial — duplicate offline status copy removed and checks pass; restored/live state remains pending because localhost:8000 is unreachable.
