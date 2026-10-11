@@ -1,9 +1,11 @@
 // Copy de las páginas de alertas: /alerts, /alerts/detail y /alerts/rules.
 export const opsAlerts = {
   // --- comunes ---
-  "alerts.source.live": "Backend disponible",
-  "alerts.source.demo": "Backend no disponible",
-  "alerts.source.checking": "Comprobando backend",
+  "alerts.source.live": "EN VIVO",
+  "alerts.source.demo": "DEMO",
+  "alerts.backend.status.available": "Backend disponible",
+  "alerts.backend.status.unavailable": "Backend no disponible",
+  "alerts.backend.status.checking": "Comprobando backend",
   "alerts.liveDevice": "Dispositivo en vivo",
   "alerts.level.word.N1": "Tendencia",
   "alerts.level.word.N2": "Fuga confirmada",

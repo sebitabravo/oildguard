@@ -40,10 +40,10 @@ export default function AlertsInboxPage() {
   const nowFor = (record: AlertRecord) => (record.source === "live" ? Date.now() : DEMO_NOW_MS);
   const liveMode = liveLoaded && liveCount > 0;
   const backendStatusKey = backendState === "checking"
-    ? "alerts.source.checking"
+    ? "alerts.backend.status.checking"
     : backendState === "live"
-      ? "alerts.source.live"
-      : "alerts.source.demo";
+      ? "alerts.backend.status.available"
+      : "alerts.backend.status.unavailable";
 
   return (
     <main className="og-page og-alerts-page">
