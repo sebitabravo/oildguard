@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import { demoDataset } from "../../demo/dataset";
 import { getFleetDevices } from "../../sim/api";
 import { formatNumber } from "../../i18n/numberFormat";
-import { t, useLang } from "../../i18n";
+import { t } from "../../i18n";
 import {
   Button, FilterBar, KpiTile, LevelBar, PageHeader, RegimeChip,
   SegmentedControl, SeverityBadge, Sparkline,
@@ -16,13 +16,13 @@ import {
 } from "./logic";
 import "./fleet.css";
 
-function stateLabel(state: ReturnType<typeof classifyRowState>, lang: "en" | "es"): string {
+function stateLabel(state: ReturnType<typeof classifyRowState>): string {
   const key = state === "N1" ? "fleet.n1" : state === "N2" ? "fleet.n2" : state === "N4" ? "fleet.n4" : `fleet.state.${state}` as const;
-  return t(key, lang);
+  return t(key);
 }
 
-function modelLabel(model: string, lang: "en" | "es"): string {
-  return model.startsWith("980E") ? t("fleet.model980", lang) : t("fleet.model930", lang);
+function modelLabel(model: string): string {
+  return model.startsWith("980E") ? t("fleet.model980") : t("fleet.model930");
 }
 
 function rowClass(row: FleetRow): string {
@@ -31,34 +31,33 @@ function rowClass(row: FleetRow): string {
 
 // Cada campo muestra su procedencia junto al valor para que ningún dato DEMO
 // se lea como vivo en una fila LIVE; el sigma sintético lleva su propio rótulo.
-export function FleetFieldSource({ source, lang }: { source: FleetSource; lang: "en" | "es" }) {
+export function FleetFieldSource({ source }: { source: FleetSource }) {
   return (
     <small className={`og-fleet-source og-fleet-source--${source.toLowerCase()}`}>
-      {t(source === "LIVE" ? "fleet.source.live" : "fleet.source.demo", lang)}
+      {t(source === "LIVE" ? "fleet.source.live" : "fleet.source.demo")}
     </small>
   );
 }
 
-export function FleetWheelRow({ row, lang, now }: { row: FleetRow; lang: "en" | "es"; now: number }) {
+export function FleetWheelRow({ row, now }: { row: FleetRow; now: number }) {
   const rowState = classifyRowState(row.wheel, row.lastComm);
   const values = row.wheel.history["250h"].flatMap((point) => point.liters === null ? [] : [point.liters]);
   return (
     <tr className={rowClass(row)} tabIndex={0} onClick={() => { window.location.href = buildWheelDetailHref(row.id); }} onKeyDown={(event) => { if (event.key === "Enter") window.location.href = buildWheelDetailHref(row.id); }}>
-      <td className="og-fleet-wheel-cell"><strong>{row.truckId} · {row.wheel.position}</strong><span className="og-mono">{row.id}</span><FleetFieldSource source={row.source} lang={lang} /></td>
-      <td><div className="og-fleet-level"><LevelBar lang={lang} value={row.levelL} sigma={row.wheel.sigmaL} /><span className="og-mono">{formatNumber(row.levelL / 95 * 100, lang, 1)}% (~{formatNumber(row.levelL, lang, 1)} <FleetFieldSource source={row.fieldSources.level} lang={lang} /> ± {formatNumber(row.wheel.sigmaL, lang, 1)} L <FleetFieldSource source={row.fieldSources.sigma} lang={lang} />) · <b>{stateLabel(rowState, lang)}</b></span></div></td>
-      <td><Sparkline lang={lang} values={values} label={t("fleet.sparkline", lang)} /> <FleetFieldSource source={row.fieldSources.trend} lang={lang} /></td>
-      <td className="og-mono">{formatNumber(row.wheel.lossRateLPer100h, lang, 2)} L/100 h <FleetFieldSource source={row.fieldSources.lossRate} lang={lang} /></td>
-      <td className="og-mono">{formatNumber(row.wheel.temperatureC, lang, 1)} °C <FleetFieldSource source={row.fieldSources.temperature} lang={lang} /></td>
-      <td className="og-mono">{formatNumber(row.wheel.vibRms, lang, 2)} g <FleetFieldSource source={row.fieldSources.vibration} lang={lang} /></td>
-      <td><RegimeChip lang={lang} regime={row.wheel.regime} /> <FleetFieldSource source={row.fieldSources.regime} lang={lang} /></td>
-      <td>{row.wheel.alertLevel ? <SeverityBadge lang={lang} severity={row.wheel.alertLevel} /> : "—"} <FleetFieldSource source={row.fieldSources.alert} lang={lang} /></td>
-      <td className="og-fleet-last"><span>{rowState === "stale" ? t("fleet.state.stale", lang) : rowState === "link-down" ? t("fleet.state.link-down", lang) : relativeLastComm(row.lastComm, row.source === "DEMO" ? demoDataset.referenceMs : now, lang)}</span>{(rowState === "stale" || rowState === "link-down") && <small>{rowState === "stale" ? t("fleet.staleDetail", lang) : t("fleet.linkDownDetail", lang)}</small>}<FleetFieldSource source={row.fieldSources.lastComm} lang={lang} /></td>
+      <td className="og-fleet-wheel-cell"><strong>{row.truckId} · {row.wheel.position}</strong><span className="og-mono">{row.id}</span><FleetFieldSource source={row.source} /></td>
+      <td><div className="og-fleet-level"><LevelBar value={row.levelL} sigma={row.wheel.sigmaL} /><span className="og-mono">{formatNumber(row.levelL / 95 * 100, 1)}% (~{formatNumber(row.levelL, 1)} <FleetFieldSource source={row.fieldSources.level} /> ± {formatNumber(row.wheel.sigmaL, 1)} L <FleetFieldSource source={row.fieldSources.sigma} />) · <b>{stateLabel(rowState)}</b></span></div></td>
+      <td><Sparkline values={values} label={t("fleet.sparkline")} /> <FleetFieldSource source={row.fieldSources.trend} /></td>
+      <td className="og-mono">{formatNumber(row.wheel.lossRateLPer100h, 2)} L/100 h <FleetFieldSource source={row.fieldSources.lossRate} /></td>
+      <td className="og-mono">{formatNumber(row.wheel.temperatureC, 1)} °C <FleetFieldSource source={row.fieldSources.temperature} /></td>
+      <td className="og-mono">{formatNumber(row.wheel.vibRms, 2)} g <FleetFieldSource source={row.fieldSources.vibration} /></td>
+      <td><RegimeChip regime={row.wheel.regime} /> <FleetFieldSource source={row.fieldSources.regime} /></td>
+      <td>{row.wheel.alertLevel ? <SeverityBadge severity={row.wheel.alertLevel} /> : "—"} <FleetFieldSource source={row.fieldSources.alert} /></td>
+      <td className="og-fleet-last"><span>{rowState === "stale" ? t("fleet.state.stale") : rowState === "link-down" ? t("fleet.state.link-down") : relativeLastComm(row.lastComm, row.source === "DEMO" ? demoDataset.referenceMs : now)}</span>{(rowState === "stale" || rowState === "link-down") && <small>{rowState === "stale" ? t("fleet.staleDetail") : t("fleet.linkDownDetail")}</small>}<FleetFieldSource source={row.fieldSources.lastComm} /></td>
     </tr>
   );
 }
 
 export default function FleetPage() {
-  const [lang] = useLang();
   const [model, setModel] = useState("all");
   const [state, setState] = useState<FleetFilterState>("all");
   const [query, setQuery] = useState("");
@@ -110,71 +109,71 @@ export default function FleetPage() {
     <main className="og-page og-fleet-page">
       <div className="og-page__inner">
         <PageHeader
-          eyebrow={t("fleet.eyebrow", lang)}
-          title={t("fleet.title", lang)}
-          description={t("fleet.description", lang)}
-          meta={<div className="og-fleet-header-meta"><span><i />{liveLoaded ? t("fleet.liveDevices", lang, { count: formatNumber(liveDevices.length, lang, 0) }) : t("fleet.demoSource", lang)}</span><small>{t("fleet.sampling", lang)}</small></div>}
+          eyebrow={t("fleet.eyebrow")}
+          title={t("fleet.title")}
+          description={t("fleet.description")}
+          meta={<div className="og-fleet-header-meta"><span><i />{liveLoaded ? t("fleet.liveDevices", { count: formatNumber(liveDevices.length, 0) }) : t("fleet.demoSource")}</span><small>{t("fleet.sampling")}</small></div>}
         />
 
-        <section className="og-fleet-kpis" aria-label={t("fleet.kpis", lang)}>
-          <KpiTile lang={lang} label={t("fleet.kpiMonitored", lang)} value={formatNumber(counts.trucks, lang, 0)} unit={t("fleet.trucks", lang)} meta={`${formatNumber(counts.wheels, lang, 0)} ${t("fleet.gdy106Wheels", lang)} · ${t("fleet.activeCycle", lang)}: ${formatNumber(counts.activeTrucks, lang, 0)}`} />
-          <KpiTile lang={lang} label={t("fleet.kpiAlerts", lang)} value={formatNumber(counts.alerts, lang, 0)} meta={`${formatNumber(counts.n4, lang, 0)} ${t("fleet.n4Word", lang)} · ${formatNumber(counts.n2, lang, 0)} ${t("fleet.n2Word", lang)}`} tone={counts.alerts ? "warning" : "nominal"} />
-          <KpiTile lang={lang} label={t("fleet.kpiLink", lang)} value={formatNumber(counts.noLink, lang, 0)} meta={`${formatNumber(counts.stale, lang, 0)} ${t("fleet.staleWord", lang)} · ${formatNumber(counts.linkDown, lang, 0)} ${t("fleet.linkDownWord", lang)}`} tone={counts.noLink ? "critical" : "nominal"} />
+        <section className="og-fleet-kpis" aria-label={t("fleet.kpis")}>
+          <KpiTile label={t("fleet.kpiMonitored")} value={formatNumber(counts.trucks, 0)} unit={t("fleet.trucks")} meta={`${formatNumber(counts.wheels, 0)} ${t("fleet.gdy106Wheels")} · ${t("fleet.activeCycle")}: ${formatNumber(counts.activeTrucks, 0)}`} />
+          <KpiTile label={t("fleet.kpiAlerts")} value={formatNumber(counts.alerts, 0)} meta={`${formatNumber(counts.n4, 0)} ${t("fleet.n4Word")} · ${formatNumber(counts.n2, 0)} ${t("fleet.n2Word")}`} tone={counts.alerts ? "warning" : "nominal"} />
+          <KpiTile label={t("fleet.kpiLink")} value={formatNumber(counts.noLink, 0)} meta={`${formatNumber(counts.stale, 0)} ${t("fleet.staleWord")} · ${formatNumber(counts.linkDown, 0)} ${t("fleet.linkDownWord")}`} tone={counts.noLink ? "critical" : "nominal"} />
         </section>
 
         <FilterBar>
           <SegmentedControl
-            options={["all", "930E", "980E"].map((option) => option === "all" ? t("fleet.modelAll", lang) : option)}
-            value={model === "all" ? t("fleet.modelAll", lang) : model}
-            onChange={(value) => setModel(value === t("fleet.modelAll", lang) ? "all" : value)}
+            options={["all", "930E", "980E"].map((option) => option === "all" ? t("fleet.modelAll") : option)}
+            value={model === "all" ? t("fleet.modelAll") : model}
+            onChange={(value) => setModel(value === t("fleet.modelAll") ? "all" : value)}
           />
-          <div className="og-fleet-state-filters" role="group" aria-label={t("fleet.stateFilter", lang)}>
+          <div className="og-fleet-state-filters" role="group" aria-label={t("fleet.stateFilter")}>
             {(["all", "alert", "no-link", "out-of-service"] as const).map((item) => (
               <button type="button" className={`og-fleet-filter-chip ${state === item ? "is-active" : ""}`} aria-pressed={state === item} onClick={() => setState(item)}>
-                {t(`fleet.filter.${item}`, lang)} <b>{item === "all" ? counts.wheels : item === "alert" ? counts.alerts : item === "no-link" ? counts.noLink : counts.outOfService}</b>
+                {t(`fleet.filter.${item}`)} <b>{item === "all" ? counts.wheels : item === "alert" ? counts.alerts : item === "no-link" ? counts.noLink : counts.outOfService}</b>
               </button>
             ))}
           </div>
-          <input className="og-fleet-search" aria-label={t("fleet.search", lang)} placeholder={t("fleet.searchPlaceholder", lang)} value={query} onInput={(event) => setQuery(event.currentTarget.value)} />
-          <Button type="button" variant="ghost" onClick={downloadCsv}>{t("fleet.export", lang)}</Button>
+          <input className="og-fleet-search" aria-label={t("fleet.search")} placeholder={t("fleet.searchPlaceholder")} value={query} onInput={(event) => setQuery(event.currentTarget.value)} />
+          <Button type="button" variant="ghost" onClick={downloadCsv}>{t("fleet.export")}</Button>
         </FilterBar>
 
         <div className="og-fleet-table-wrap">
           <table className="og-fleet-table">
-            <caption className="og-visually-hidden">{t("fleet.tableCaption", lang)}</caption>
+            <caption className="og-visually-hidden">{t("fleet.tableCaption")}</caption>
             <colgroup>
               <col className="og-fleet-col-wheel" /><col className="og-fleet-col-level" /><col className="og-fleet-col-trend" />
               <col className="og-fleet-col-loss" /><col className="og-fleet-col-temp" /><col className="og-fleet-col-vibration" />
               <col className="og-fleet-col-regime" /><col className="og-fleet-col-alert" /><col className="og-fleet-col-last" />
             </colgroup>
             <thead><tr>
-              <th>{t("fleet.columnWheel", lang)}</th>
-              <th>{t("fleet.columnLevel", lang)}</th>
-              <th>{t("fleet.columnTrend", lang)}</th>
-              <th>{t("fleet.columnLoss", lang)}</th>
-              <th>{t("fleet.columnTemp", lang)}</th>
-              <th>{t("fleet.columnVibration", lang)}</th>
-              <th>{t("fleet.columnRegime", lang)}</th>
-              <th>{t("fleet.columnAlert", lang)}</th>
-              <th>{t("fleet.columnLast", lang)}</th>
+              <th>{t("fleet.columnWheel")}</th>
+              <th>{t("fleet.columnLevel")}</th>
+              <th>{t("fleet.columnTrend")}</th>
+              <th>{t("fleet.columnLoss")}</th>
+              <th>{t("fleet.columnTemp")}</th>
+              <th>{t("fleet.columnVibration")}</th>
+              <th>{t("fleet.columnRegime")}</th>
+              <th>{t("fleet.columnAlert")}</th>
+              <th>{t("fleet.columnLast")}</th>
             </tr></thead>
             <tbody>
               {visibleGroups.map((group) => (
                 <>
                   <tr className="og-fleet-group">
-                    <th colSpan={9}><span className="og-fleet-truck">{group.truckId}</span><span className="og-chip">{modelLabel(group.model, lang)}</span><span className="og-fleet-group-regime">{t("fleet.regimeSummary", lang)}</span><span className={`og-fleet-group-alert ${group.wheels.some((row) => ["N1", "N2", "N4", "stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm))) ? "is-attention" : "is-nominal"}`}>{group.wheels.some((row) => ["N1", "N2", "N4", "stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm))) ? t("fleet.groupAlert", lang) : t("fleet.groupNominal", lang)}</span></th>
+                    <th colSpan={9}><span className="og-fleet-truck">{group.truckId}</span><span className="og-chip">{modelLabel(group.model)}</span><span className="og-fleet-group-regime">{t("fleet.regimeSummary")}</span><span className={`og-fleet-group-alert ${group.wheels.some((row) => ["N1", "N2", "N4", "stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm))) ? "is-attention" : "is-nominal"}`}>{group.wheels.some((row) => ["N1", "N2", "N4", "stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm))) ? t("fleet.groupAlert") : t("fleet.groupNominal")}</span></th>
                   </tr>
                   {group.wheels.map((row) => (
-                    <FleetWheelRow key={row.id} row={row} lang={lang} now={now} />
+                    <FleetWheelRow key={row.id} row={row} now={now} />
                   ))}
                 </>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="og-fleet-helper">{t("fleet.helper", lang)}</p>
-        <FleetLivePanelBoundary lang={lang}><FleetLivePanel lang={lang} /></FleetLivePanelBoundary>
-        {!visibleRows.length && <p className="og-fleet-empty">{t("fleet.empty", lang)}</p>}
+        <p className="og-fleet-helper">{t("fleet.helper")}</p>
+        <FleetLivePanelBoundary><FleetLivePanel /></FleetLivePanelBoundary>
+        {!visibleRows.length && <p className="og-fleet-empty">{t("fleet.empty")}</p>}
       </div>
     </main>
   );

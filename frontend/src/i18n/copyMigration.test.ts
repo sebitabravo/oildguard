@@ -7,26 +7,27 @@ declare const Bun: {
 };
 
 describe("i18n copy migration", () => {
-  test("dictionary copy preserves matching honesty markers in Spanish", () => {
+  test("dictionary copy keeps the Spanish honesty markers", () => {
+    // Sin rama inglesa que comparar (S02): cada marcador de honestidad debe
+    // aparecer en la copia española.
     const markers = [
-      { en: /synthetic/i, es: /sintétic[oa]s?/i },
-      { en: /SYNTHETIC-PROXY/i, es: /SUSTITUTO SINTÉTICO/i },
-      { en: /ASSUMPTION/i, es: /SUPUESTO/i },
-      { en: /UNPROVEN/i, es: /NO PROBADO/i },
-      { en: /proxy/i, es: /sustituto/i },
+      /sintétic[oa]s?/i,
+      /SUSTITUTO SINTÉTICO/i,
+      /SUPUESTO/i,
+      /NO PROBADO/i,
+      /sustituto/i,
     ];
-    const violations = Object.entries(dict).flatMap(([key, copy]) =>
-      markers
-        .filter((marker) => marker.en.test(copy.en) && !marker.es.test(copy.es))
-        .map((marker) => `${key}: ${marker.en.source} is missing ${marker.es.source}`),
-    );
+    const copy = Object.values(dict).join("\n");
+    const missing = markers
+      .filter((marker) => !marker.test(copy))
+      .map((marker) => `missing ${marker.source}`);
 
-    expect(violations).toEqual([]);
+    expect(missing).toEqual([]);
   });
 
   test("parameterized mine captions interpolate fleet counts and the actual seed", () => {
-    const fleet = t("mine.hud.fleet", "es", { trucks: 5, queued: 0 });
-    const seeded = t("mine.hud.seeded", "es", { seed: 7 });
+    const fleet = t("mine.hud.fleet", { trucks: 5, queued: 0 });
+    const seeded = t("mine.hud.seeded", { seed: 7 });
 
     expect(fleet).toBe("5 camiones · 0 en cola · PLM III · sustituto sintético, datos de campo pendientes");
     expect(seeded.includes("semilla 7")).toBe(true);

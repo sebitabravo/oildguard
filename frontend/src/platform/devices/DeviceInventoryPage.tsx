@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "preact/hooks";
-import { t, useLang } from "../../i18n";
+import { t } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import { demoDataset } from "../../demo/dataset";
 import { DataTable, FilterBar, KpiTile, PageHeader, SyntheticBadge } from "../../ui/foundation";
@@ -66,21 +66,20 @@ function mapBackendDevice(device: BackendDevice): InventoryDevice {
   };
 }
 
-function relativeTime(timestamp: number | null, nowMs: number, lang: "en" | "es"): string {
-  if (timestamp === null) return t("devices.notReported", lang);
+function relativeTime(timestamp: number | null, nowMs: number): string {
+  if (timestamp === null) return t("devices.notReported");
   const seconds = Math.max(0, Math.floor((nowMs - timestamp) / 1000));
-  if (seconds < 30) return t("devices.lastSeenNow", lang);
+  if (seconds < 30) return t("devices.lastSeenNow");
   if (seconds < 60 * 60) {
     const minutes = Math.floor(seconds / 60);
     return minutes < 1
-      ? t("devices.secondsAgo", lang, { value: formatNumber(seconds, lang, 0) })
-      : t("devices.minutesAgo", lang, { value: formatNumber(minutes, lang, 0) });
+      ? t("devices.secondsAgo", { value: formatNumber(seconds, 0) })
+      : t("devices.minutesAgo", { value: formatNumber(minutes, 0) });
   }
-  return t("devices.hoursAgo", lang, { value: formatNumber(seconds / 3600, lang, 1) });
+  return t("devices.hoursAgo", { value: formatNumber(seconds / 3600, 1) });
 }
 
 export default function DeviceInventoryPage() {
-  const [lang] = useLang();
   const [filter, setFilter] = useState<DeviceFilter>("all");
   const [query, setQuery] = useState("");
   const [pageIndex, setPageIndex] = useState(1);
@@ -98,75 +97,75 @@ export default function DeviceInventoryPage() {
   const health = data.data?.health ?? null;
   const configuredKeys = Boolean(health?.device_keys?.master_key_configured || (health?.signing?.devices ?? 0) > 0);
   const signingLabel = data.source !== "live"
-    ? t("devices.demoSigning", lang)
+    ? t("devices.demoSigning")
     : health?.signing?.enforced && configuredKeys
-      ? t("devices.hmac", lang)
-      : t("devices.signingUnenforced", lang);
+      ? t("devices.hmac")
+      : t("devices.signingUnenforced");
   const filterOptions: Array<[DeviceFilter, string]> = [
-    ["all", t("devices.filterAll", lang)],
-    ["reporting", t("devices.filterReporting", lang)],
-    ["stale", t("devices.filterStale", lang)],
-    ["rejected", t("devices.filterRejected", lang)],
+    ["all", t("devices.filterAll")],
+    ["reporting", t("devices.filterReporting")],
+    ["stale", t("devices.filterStale")],
+    ["rejected", t("devices.filterRejected")],
   ];
   const columns = [
-    { key: "device", label: t("devices.device", lang) },
-    { key: "mapping", label: t("devices.mapping", lang) },
-    { key: "lastSeen", label: t("devices.lastSeen", lang) },
-    { key: "rows", label: t("devices.rowsRetained", lang) },
-    { key: "signed", label: t("devices.signedRows", lang) },
-    { key: "rejected", label: t("devices.rejectedReasons", lang) },
-    { key: "signals", label: t("devices.latestSignals", lang) },
-    { key: "alert", label: t("devices.alertLevel", lang) },
-    { key: "signing", label: t("devices.rowSigning", lang) },
-    { key: "firmware", label: t("devices.firmware", lang) },
-    { key: "certificate", label: t("devices.certificate", lang) },
+    { key: "device", label: t("devices.device") },
+    { key: "mapping", label: t("devices.mapping") },
+    { key: "lastSeen", label: t("devices.lastSeen") },
+    { key: "rows", label: t("devices.rowsRetained") },
+    { key: "signed", label: t("devices.signedRows") },
+    { key: "rejected", label: t("devices.rejectedReasons") },
+    { key: "signals", label: t("devices.latestSignals") },
+    { key: "alert", label: t("devices.alertLevel") },
+    { key: "signing", label: t("devices.rowSigning") },
+    { key: "firmware", label: t("devices.firmware") },
+    { key: "certificate", label: t("devices.certificate") },
   ];
   const rows = page.items.map((device) => {
     const mapping = mapDeviceToWheel(device.id, demoDataset.wheels.map((wheel) => ({ id: wheel.id, truckId: wheel.truckId, position: wheel.position })));
     const ratio = data.source === "demo" ? device.signedRatio ?? null : device.signedRatio ?? null;
-    const ratioText = ratio === null ? t("devices.notReported", lang) : `${formatNumber(ratio * 100, lang, 1)}%`;
+    const ratioText = ratio === null ? t("devices.notReported") : `${formatNumber(ratio * 100, 1)}%`;
     const latest = device.latest
-      ? `${formatNumber(device.latest.temperatureC, lang, 1)} °C · ${formatNumber(device.latest.vibrationRmsG, lang, 2)} g · ${formatNumber(device.latest.pressureKpa, lang, 2)} kPa`
-      : t("devices.notReported", lang);
-    const reasons = Object.entries(device.rejectedReasons).map(([reason, count]) => <span className="device-inventory__reason">{reason} · {formatNumber(count, lang, 0)}</span>);
+      ? `${formatNumber(device.latest.temperatureC, 1)} °C · ${formatNumber(device.latest.vibrationRmsG, 2)} g · ${formatNumber(device.latest.pressureKpa, 2)} kPa`
+      : t("devices.notReported");
+    const reasons = Object.entries(device.rejectedReasons).map(([reason, count]) => <span className="device-inventory__reason">{reason} · {formatNumber(count, 0)}</span>);
     return {
       id: device.id,
       state: device.lastSeenMs === null || nowMs - device.lastSeenMs > 120_000 ? "stale" as const : "nominal" as const,
       cells: {
         device: <code>{device.id}</code>,
-        mapping: mapping ? <span>{mapping.truckId} · {mapping.position}</span> : <span>{t("devices.noMapping", lang)}</span>,
-        lastSeen: relativeTime(device.lastSeenMs, nowMs, lang),
-        rows: device.rowsRetained === null ? t("devices.notReported", lang) : formatNumber(device.rowsRetained, lang, 0),
+        mapping: mapping ? <span>{mapping.truckId} · {mapping.position}</span> : <span>{t("devices.noMapping")}</span>,
+        lastSeen: relativeTime(device.lastSeenMs, nowMs),
+        rows: device.rowsRetained === null ? t("devices.notReported") : formatNumber(device.rowsRetained, 0),
         signed: <div className="device-inventory__ratio"><span>{ratioText}</span>{ratio !== null && <span className="device-inventory__bar"><i style={{ width: `${Math.max(0, Math.min(100, ratio * 100))}%` }} /></span>}</div>,
-        rejected: reasons.length ? <div className="device-inventory__reasons">{reasons}</div> : <span>{device.rejectedRows > 0 ? formatNumber(device.rejectedRows, lang, 0) : t("devices.notReported", lang)}</span>,
+        rejected: reasons.length ? <div className="device-inventory__reasons">{reasons}</div> : <span>{device.rejectedRows > 0 ? formatNumber(device.rejectedRows, 0) : t("devices.notReported")}</span>,
         signals: latest,
-        alert: device.alertLevel ? <span className={`device-inventory__alert device-inventory__alert--${device.alertLevel.toLowerCase()}`}>{device.alertLevel}</span> : device.alertLevelReason === "no_alert" ? t("devices.noAlert", lang) : t("devices.notReported", lang),
+        alert: device.alertLevel ? <span className={`device-inventory__alert device-inventory__alert--${device.alertLevel.toLowerCase()}`}>{device.alertLevel}</span> : device.alertLevelReason === "no_alert" ? t("devices.noAlert") : t("devices.notReported"),
         signing: signingLabel,
-        firmware: t("devices.notReported", lang),
-        certificate: t("devices.notReported", lang),
+        firmware: t("devices.notReported"),
+        certificate: t("devices.notReported"),
       },
     };
   });
 
   return <main className="device-inventory">
-    <PageHeader eyebrow={t("devices.eyebrow", lang)} title={t("devices.title", lang)} description={t("devices.description", lang)} meta={data.source === "demo" ? <SyntheticBadge lang={lang} /> : <span className="device-inventory__source">{t(data.source === "live" ? "devices.liveSource" : "devices.loading", lang)}</span>} />
-    <section className="device-inventory__kpis" aria-label={t("devices.title", lang)}>
-      <KpiTile lang={lang} label={t("devices.reporting", lang)} value={data.source === "loading" ? "—" : formatNumber(kpis.reporting, lang, 0)} />
-      <KpiTile lang={lang} label={t("devices.signedRatio", lang)} value={data.source === "loading" || displayedSignedRatio === null ? "—" : formatNumber(displayedSignedRatio * 100, lang, 1)} unit={data.source === "loading" || displayedSignedRatio === null ? undefined : "%"} meta={displayedSignedRatio === null || data.source === "loading" ? undefined : t(data.source === "demo" ? "devices.demoSource" : "devices.liveSource", lang)} />
-      <KpiTile lang={lang} label={t("devices.rejected", lang)} value={data.source === "loading" ? "—" : formatNumber(kpis.rejected, lang, 0)} />
-      <KpiTile lang={lang} label={t("devices.stale", lang)} value={data.source === "loading" ? "—" : formatNumber(kpis.stale, lang, 0)} />
+    <PageHeader eyebrow={t("devices.eyebrow")} title={t("devices.title")} description={t("devices.description")} meta={data.source === "demo" ? <SyntheticBadge /> : <span className="device-inventory__source">{t(data.source === "live" ? "devices.liveSource" : "devices.loading")}</span>} />
+    <section className="device-inventory__kpis" aria-label={t("devices.title")}>
+      <KpiTile label={t("devices.reporting")} value={data.source === "loading" ? "—" : formatNumber(kpis.reporting, 0)} />
+      <KpiTile label={t("devices.signedRatio")} value={data.source === "loading" || displayedSignedRatio === null ? "—" : formatNumber(displayedSignedRatio * 100, 1)} unit={data.source === "loading" || displayedSignedRatio === null ? undefined : "%"} meta={displayedSignedRatio === null || data.source === "loading" ? undefined : t(data.source === "demo" ? "devices.demoSource" : "devices.liveSource")} />
+      <KpiTile label={t("devices.rejected")} value={data.source === "loading" ? "—" : formatNumber(kpis.rejected, 0)} />
+      <KpiTile label={t("devices.stale")} value={data.source === "loading" ? "—" : formatNumber(kpis.stale, 0)} />
     </section>
-    <FilterBar><div className="device-inventory__filters" aria-label={t("devices.filterLabel", lang)}>
-      <label><span>{t("devices.filterLabel", lang)}</span><select value={filter} onChange={(event) => { setFilter((event.currentTarget as HTMLSelectElement).value as DeviceFilter); setPageIndex(1); }}>{filterOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select></label>
-      <label><span>{t("devices.search", lang)}</span><input type="search" value={query} onInput={(event) => { setQuery((event.currentTarget as HTMLInputElement).value); setPageIndex(1); }} placeholder={t("devices.search", lang)} /></label>
+    <FilterBar><div className="device-inventory__filters" aria-label={t("devices.filterLabel")}>
+      <label><span>{t("devices.filterLabel")}</span><select value={filter} onChange={(event) => { setFilter((event.currentTarget as HTMLSelectElement).value as DeviceFilter); setPageIndex(1); }}>{filterOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select></label>
+      <label><span>{t("devices.search")}</span><input type="search" value={query} onInput={(event) => { setQuery((event.currentTarget as HTMLInputElement).value); setPageIndex(1); }} placeholder={t("devices.search")} /></label>
     </div></FilterBar>
-    {data.source === "demo" && <div className="device-inventory__demo-note"><SyntheticBadge lang={lang} /><span>{t("devices.demoSigning", lang)}</span></div>}
-    <DataTable lang={lang} caption={t("devices.title", lang)} columns={columns} rows={rows} />
-    {rows.length === 0 && <p className="device-inventory__empty">{t(data.source === "loading" ? "devices.loadingNote" : "devices.empty", lang)}</p>}
-    {page.pageCount > 1 && <nav className="device-inventory__pagination" aria-label={t("devices.filterLabel", lang)}>
-      <span>{t("devices.pagination", lang)} {formatNumber((page.page - 1) * 20 + 1, lang, 0)}–{formatNumber(Math.min(page.page * 20, page.total), lang, 0)} / {formatNumber(page.total, lang, 0)}</span>
-      <div><button type="button" disabled={page.page === 1} onClick={() => setPageIndex(page.page - 1)}>{t("devices.previous", lang)}</button><span>{formatNumber(page.page, lang, 0)} / {formatNumber(page.pageCount, lang, 0)}</span><button type="button" disabled={page.page === page.pageCount} onClick={() => setPageIndex(page.page + 1)}>{t("devices.next", lang)}</button></div>
+    {data.source === "demo" && <div className="device-inventory__demo-note"><SyntheticBadge /><span>{t("devices.demoSigning")}</span></div>}
+    <DataTable caption={t("devices.title")} columns={columns} rows={rows} />
+    {rows.length === 0 && <p className="device-inventory__empty">{t(data.source === "loading" ? "devices.loadingNote" : "devices.empty")}</p>}
+    {page.pageCount > 1 && <nav className="device-inventory__pagination" aria-label={t("devices.filterLabel")}>
+      <span>{t("devices.pagination")} {formatNumber((page.page - 1) * 20 + 1, 0)}–{formatNumber(Math.min(page.page * 20, page.total), 0)} / {formatNumber(page.total, 0)}</span>
+      <div><button type="button" disabled={page.page === 1} onClick={() => setPageIndex(page.page - 1)}>{t("devices.previous")}</button><span>{formatNumber(page.page, 0)} / {formatNumber(page.pageCount, 0)}</span><button type="button" disabled={page.page === page.pageCount} onClick={() => setPageIndex(page.page + 1)}>{t("devices.next")}</button></div>
     </nav>}
-    <aside className="device-inventory__note"><strong>{t("devices.rowSigning", lang)}</strong><p>{t("devices.signingNote", lang)}</p></aside>
+    <aside className="device-inventory__note"><strong>{t("devices.rowSigning")}</strong><p>{t("devices.signingNote")}</p></aside>
   </main>;
 }

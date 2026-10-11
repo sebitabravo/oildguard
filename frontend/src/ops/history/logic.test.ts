@@ -48,19 +48,17 @@ describe("wheel history contracts", () => {
   });
 
   test("labels the 250 h window with hours before now", () => {
-    const labels = timeAxisLabels("250h", sliceHistory(wheel, "250h"), "en", "now");
+    const labels = timeAxisLabels("250h", sliceHistory(wheel, "250h"), "ahora");
     expect(labels.length).toBe(6);
     expect(labels[0]).toContain("250");
     expect(labels[0]).toContain("h");
-    expect(labels[labels.length - 1]).toBe("now");
+    expect(labels[labels.length - 1]).toBe("ahora");
   });
 
-  test("labels longer windows with localized calendar dates", () => {
-    const es = timeAxisLabels("30d", sliceHistory(wheel, "30d"), "es", "ahora");
-    const en = timeAxisLabels("30d", sliceHistory(wheel, "30d"), "en", "now");
+  test("labels longer windows with Spanish calendar dates", () => {
+    const es = timeAxisLabels("30d", sliceHistory(wheel, "30d"), "ahora");
     expect(es.length).toBe(5);
     expect(/ene|dic/i.test(es.join(" "))).toBe(true);
-    expect(/Jan|Dec/.test(en.join(" "))).toBe(true);
     expect(new Set(es).size).toBe(es.length);
   });
 });

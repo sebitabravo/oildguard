@@ -2,7 +2,7 @@ import { useEffect, useRef } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import * as THREE from "three";
 import { BENCH_SENSORS } from "./sensors";
-import { t, type DictKey, useLang } from "../../i18n";
+import { t, type DictKey } from "../../i18n";
 import { formatOilText, oilCssFor, oilStateFor, oilStateLabel } from "./oil";
 import { wobbleAt } from "./settling";
 import { createStage } from "../../twin/render/stage";
@@ -93,9 +93,6 @@ export default function BenchScene({
   badge,
 }: BenchSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const [lang] = useLang();
-  const langRef = useRef(lang);
-  langRef.current = lang;
   // Refs mirror props for use inside the three.js effect (no re-subscribe).
   const selectedRef = useRef<string | null>(selectedId);
   selectedRef.current = selectedId;
@@ -111,7 +108,7 @@ export default function BenchScene({
   cutawayRef.current = cutaway;
   const explodedRef = useRef(exploded);
   explodedRef.current = exploded;
-  const accessibilityCopy = buildWheelSceneAccessibilityCopy({ oilLevel, mode }, lang);
+  const accessibilityCopy = buildWheelSceneAccessibilityCopy({ oilLevel, mode });
   const publishedAccessibilityCopy = useThrottledSceneAccessibility(accessibilityCopy);
 
   useEffect(() => {
@@ -531,7 +528,7 @@ export default function BenchScene({
     };
     const sensorLabels = BENCH_SENSORS.map((sensor) => {
       const label = createLabel({
-        text: t(`bench.sensor.${sensor.id}.short` as DictKey, langRef.current),
+        text: t(`bench.sensor.${sensor.id}.short` as DictKey),
         color: sensor.cssColor,
         className: "og-label--sensor",
       });
@@ -622,7 +619,7 @@ export default function BenchScene({
       BENCH_SENSORS.forEach((sensor, i) => {
         setLabelText(
           sensorLabels[i],
-          t(`bench.sensor.${sensor.id}.short` as DictKey, langRef.current)
+          t(`bench.sensor.${sensor.id}.short` as DictKey)
         );
         setLabelActive(sensorLabels[i], sensor.id === selectedRef.current);
       });
@@ -660,15 +657,15 @@ export default function BenchScene({
           className="og-hud og-hud--tl"
           style={{ ["--tone" as string]: oilCss }}
         >
-          <div className="og-hud__meta">{t("hud.oil", lang)}</div>
+          <div className="og-hud__meta">{t("hud.oil")}</div>
           <div className="og-hud__title">
             <span className="og-dot" />
             <span className="og-value og-value--lg" style={{ color: oilCss }}>
-              {formatOilText(clamp01(oilLevel), lang)}
+              {formatOilText(clamp01(oilLevel))}
             </span>
           </div>
           <div style={{ marginTop: 4, fontSize: 12, color: "var(--og-body)" }}>
-            {oilStateLabel(oilState, lang)}
+            {oilStateLabel(oilState)}
           </div>
         </div>
         <div className="og-stack og-stack--tr">
@@ -676,7 +673,7 @@ export default function BenchScene({
             className={`og-badge ${resting ? "og-badge--ok" : "og-badge--ghost"}`}
             style={{ height: "auto", minHeight: 24, padding: "4px 10px", whiteSpace: "normal" }}
           >
-            {resting ? t("hud.recal", lang) : t("hud.standby", lang)}
+            {resting ? t("hud.recal") : t("hud.standby")}
           </div>
           {badge}
         </div>

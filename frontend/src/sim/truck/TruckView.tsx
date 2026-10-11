@@ -2,7 +2,7 @@ import { useState } from "preact/hooks";
 import TruckScene from "./TruckScene";
 import { HAUL_STATE_CSS, TRUCK_CALLOUTS, TRUCK_DIMS_M } from "./cycle";
 import { PLM_ORDER, type PlmState } from "../../twin/fleet/fleetSim";
-import { t, type DictKey, useLang } from "../../i18n";
+import { t, type DictKey } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import Drawer from "../../ui/Drawer";
 import HonestyBadge from "../../ui/HonestyBadge";
@@ -24,7 +24,6 @@ export default function TruckView() {
   const [stepTick, setStepTick] = useState(0);
   const [requestedTab, setRequestedTab] = useState<{ id: string; nonce: number }>({ id: "status", nonce: 0 });
   const [runId, setRunId] = useState(0);
-  const [lang] = useLang();
 
   const dock = (
     <div className="og-hud" style={{ position: "static", display: "flex", gap: "var(--og-dock-gap)" }}>
@@ -33,32 +32,32 @@ export default function TruckView() {
         className={`og-btn ${paused ? "og-btn--ok" : "og-btn--primary"}`}
         onClick={() => setPaused((p) => !p)}
       >
-        {t(paused ? "truck.action.resume" : "truck.action.pause", lang)}
+        {t(paused ? "truck.action.resume" : "truck.action.pause")}
       </button>
       <button
         type="button"
         className="og-btn"
         disabled={!paused}
-        title={t(paused ? "truck.action.stepTitle" : "truck.action.stepPausedTitle", lang)}
+        title={t(paused ? "truck.action.stepTitle" : "truck.action.stepPausedTitle")}
         onClick={() => setStepTick((n) => n + 1)}
       >
-        {t("truck.action.step", lang)}
+        {t("truck.action.step")}
       </button>
       <button type="button" className="og-btn" onClick={() => { resetFleetStore(); setRunId((n) => n + 1); }}>
-        {t("truck.restart", lang)}
+        {t("truck.restart")}
       </button>
       <a
         className="og-btn"
         href="/wheel?from=mine&truck=930E-4SE&wheel=RH&sensor=pressure&oil=66.5&mode=rest&cutaway=1"
       >
-        {t("truck.action.openWheel", lang)}
+        {t("truck.action.openWheel")}
       </a>
     </div>
   );
 
   const status = (
     <>
-      <h2 className="og-h2">{t("truck.section.payloadMeter", lang)}</h2>
+      <h2 className="og-h2">{t("truck.section.payloadMeter")}</h2>
       <ul className="og-plain">
         {PLM_ORDER.map((s) => {
           const active = s === current;
@@ -71,42 +70,42 @@ export default function TruckView() {
             >
               <span className="og-dot" style={{ marginRight: 8 }} />
               <strong className="og-num">
-                {buildPlmStateLabel(s, lang)} · {s}
+                {buildPlmStateLabel(s)} · {s}
               </strong>
               <br />
               <span className="og-muted" style={{ fontSize: 13 }}>
-                {t("truck.state.estimated", lang)}
+                {t("truck.state.estimated")}
               </span>
             </li>
           );
         })}
       </ul>
-      <h2 className="og-h2">{t("truck.state.matrixTitle", lang)}</h2>
+      <h2 className="og-h2">{t("truck.state.matrixTitle")}</h2>
       <p className="og-body">
         <span style={{ color: "var(--og-red)", fontWeight: 700 }}>STOP </span>
-        {t("truck.state.matrixBody", lang)}
+        {t("truck.state.matrixBody")}
       </p>
     </>
   );
 
   const notes = (
     <>
-      <h2 className="og-h2">{t("truck.notes.title", lang)}</h2>
+      <h2 className="og-h2">{t("truck.notes.title")}</h2>
       <p className="og-body">
-        {t("truck.notes.about", lang, {
-          length: formatNumber(TRUCK_DIMS_M.L, lang, 2),
-          width: formatNumber(TRUCK_DIMS_M.W, lang, 2),
-          height: formatNumber(TRUCK_DIMS_M.H, lang, 2),
-          bodyUp: formatNumber(TRUCK_DIMS_M.bodyUp, lang, 2),
+        {t("truck.notes.about", {
+          length: formatNumber(TRUCK_DIMS_M.L, 2),
+          width: formatNumber(TRUCK_DIMS_M.W, 2),
+          height: formatNumber(TRUCK_DIMS_M.H, 2),
+          bodyUp: formatNumber(TRUCK_DIMS_M.bodyUp, 2),
         })}
       </p>
-      <p className="og-body">{t("app.scope", lang)}</p>
-      <p className="og-body">{t("truck.honesty", lang)}</p>
-      <h2 className="og-h2">{t("truck.notes.calloutsTitle", lang)}</h2>
+      <p className="og-body">{t("app.scope")}</p>
+      <p className="og-body">{t("truck.honesty")}</p>
+      <h2 className="og-h2">{t("truck.notes.calloutsTitle")}</h2>
       <ol className="og-list">
         {TRUCK_CALLOUTS.map((c) => (
           <li key={c.n}>
-            <strong>{formatNumber(c.n, lang, 0)}.</strong> {t(`truck.callout.${c.n}` as DictKey, lang)}
+            <strong>{formatNumber(c.n, 0)}.</strong> {t(`truck.callout.${c.n}` as DictKey)}
           </li>
         ))}
       </ol>
@@ -124,9 +123,9 @@ export default function TruckView() {
           dock={dock}
           badge={
             <HonestyBadge
-              label={t("badge.model", lang)}
-              text={t("truck.model", lang)}
-              actionLabel={t("badge.model.open", lang)}
+              label={t("badge.model")}
+              text={t("truck.model")}
+              actionLabel={t("badge.model.open")}
               onAction={() => setRequestedTab((r) => ({ id: "sheet", nonce: r.nonce + 1 }))}
             />
           }
@@ -135,9 +134,9 @@ export default function TruckView() {
       <Drawer
         requestedTab={requestedTab}
         tabs={[
-          { id: "status", label: t("drawer.status", lang), content: status },
-          { id: "sheet", label: t("drawer.sheet", lang), content: <TruckSheet lang={lang} /> },
-          { id: "notes", label: t("drawer.notes", lang), content: notes },
+          { id: "status", label: t("drawer.status"), content: status },
+          { id: "sheet", label: t("drawer.sheet"), content: <TruckSheet /> },
+          { id: "notes", label: t("drawer.notes"), content: notes },
         ]}
       />
     </div>

@@ -5,8 +5,8 @@ import BenchPage from "../../lab/bench/BenchPage";
 ---
 
 <BaseLayout breadcrumb={["nav.group.lab", "nav.bench"]}>
-  <h1 class="og-visually-hidden" data-i18n-en={t("nav.bench", "en")} data-i18n-es={t("nav.bench", "es")}>
-    {t("nav.bench", "en")}
+  <h1 class="og-visually-hidden">
+    {t("nav.bench")}
   </h1>
   <BenchPage client:only="preact" />
 </BaseLayout>

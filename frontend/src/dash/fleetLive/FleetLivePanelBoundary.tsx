@@ -1,8 +1,7 @@
 import { Component, type ComponentChildren } from "preact";
-import { t, type Lang } from "../../i18n";
+import { t } from "../../i18n";
 
 interface Props {
-  lang: Lang;
   children: ComponentChildren;
 }
 
@@ -23,9 +22,9 @@ export default class FleetLivePanelBoundary extends Component<Props, State> {
     return (
       <section className="og-fleet-live og-fleet-live--fallback" aria-labelledby="og-fleet-live-title">
         <h2 id="og-fleet-live-title" className="og-dashboard-sheet-title">
-          {t("dash.live.title", this.props.lang)}
+          {t("dash.live.title")}
         </h2>
-        <p role="status">{t("dash.live.error", this.props.lang)}</p>
+        <p role="status">{t("dash.live.error")}</p>
       </section>
     );
   }

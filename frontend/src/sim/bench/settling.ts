@@ -1,4 +1,4 @@
-import { t, type Lang } from "../../i18n";
+import { t } from "../../i18n";
 
 // T3 settling-transient stub (Sim A, part 2 of 2).
 //
@@ -61,8 +61,8 @@ export function estimateSettlingMs(viscosityProxy: number): number {
 }
 
 /** Honest proxy label for the readout (never called "viscosity"). */
-export function viscosityLabel(viscosityProxy: number, lang: Lang = "en"): string {
-  if (viscosityProxy < 0.8) return t("bench.viscosity.dilute", lang);
-  if (viscosityProxy < 1.5) return t("bench.viscosity.nominal", lang);
-  return t("bench.viscosity.degraded", lang);
+export function viscosityLabel(viscosityProxy: number): string {
+  if (viscosityProxy < 0.8) return t("bench.viscosity.dilute");
+  if (viscosityProxy < 1.5) return t("bench.viscosity.nominal");
+  return t("bench.viscosity.degraded");
 }

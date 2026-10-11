@@ -1,4 +1,4 @@
-import { t, type DictKey, type Lang } from "../../i18n";
+import { t, type DictKey } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import type { PlmState } from "../../twin/fleet/fleetSim";
 
@@ -21,23 +21,23 @@ export const MINE_SCENE_LABEL_KEYS = {
 
 export type MineSceneLabelId = keyof typeof MINE_SCENE_LABEL_KEYS;
 
-export function buildMineSceneLabelText(id: MineSceneLabelId, lang: Lang): string {
-  return t(MINE_SCENE_LABEL_KEYS[id], lang);
+export function buildMineSceneLabelText(id: MineSceneLabelId): string {
+  return t(MINE_SCENE_LABEL_KEYS[id]);
 }
 
-export function buildPlmStateLabel(state: PlmState, lang: Lang): string {
-  return t(PLM_LABEL_KEYS[state], lang);
+export function buildPlmStateLabel(state: PlmState): string {
+  return t(PLM_LABEL_KEYS[state]);
 }
 
-export function buildMineHudTitle(truckId: string, state: PlmState, cycle: number, lang: Lang): string {
-  return `${truckId} · ${buildPlmStateLabel(state, lang)} · ${t("mine.hud.cycle", lang)} ${formatNumber(cycle, lang, 0)}`;
+export function buildMineHudTitle(truckId: string, state: PlmState, cycle: number): string {
+  return `${truckId} · ${buildPlmStateLabel(state)} · ${t("mine.hud.cycle")} ${formatNumber(cycle, 0)}`;
 }
 
-export function buildMineHudStatus(recal: boolean, moving: boolean, lang: Lang): string {
+export function buildMineHudStatus(recal: boolean, moving: boolean): string {
   const key = recal
     ? "mine.hud.status.recal"
     : moving
       ? "mine.hud.status.moving"
       : "mine.hud.status.standby";
-  return t(key, lang);
+  return t(key);
 }

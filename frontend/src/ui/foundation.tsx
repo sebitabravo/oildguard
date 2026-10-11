@@ -1,5 +1,5 @@
 import type { ComponentChildren, JSX } from "preact";
-import { t, useLang, type Lang } from "../i18n";
+import { t } from "../i18n";
 import { formatNumber } from "../i18n/numberFormat";
 import { useBackendState, backendStateLabel } from "./backendOrDemo";
 import { levelBarGeometry, severityColor, severityTone, type Tone } from "./logic";
@@ -9,13 +9,12 @@ import { useId, useState } from "preact/hooks";
 export type Severity = "N1" | "N2" | "N3" | "N4";
 
 export interface StatusBadgeProps {
-  lang: Lang;
   label: string;
   tone?: Tone;
   severity?: Severity;
 }
 
-export function StatusBadge({ lang, label, tone = "nominal", severity }: StatusBadgeProps) {
+export function StatusBadge({ label, tone = "nominal", severity }: StatusBadgeProps) {
   const resolvedTone = severity ? severityTone(severity) : tone;
   return (
     <span
@@ -28,29 +27,28 @@ export function StatusBadge({ lang, label, tone = "nominal", severity }: StatusB
   );
 }
 
-export function SeverityBadge({ lang, severity }: { lang: Lang; severity: Severity }) {
-  return <StatusBadge lang={lang} label={severity} severity={severity} />;
+export function SeverityBadge({ severity }: { severity: Severity }) {
+  return <StatusBadge label={severity} severity={severity} />;
 }
 
-export function RegimeChip({ lang, regime }: { lang: Lang; regime: "movement" | "rest" }) {
-  return <span className="og-chip">{t(regime === "movement" ? "ui.movement" : "ui.rest", lang)}</span>;
+export function RegimeChip({ regime }: { regime: "movement" | "rest" }) {
+  return <span className="og-chip">{t(regime === "movement" ? "ui.movement" : "ui.rest")}</span>;
 }
 
-export function ValidityChip({ lang, validity }: { lang: Lang; validity: "valid" | "estimate" | "stale" | "invalid" }) {
+export function ValidityChip({ validity }: { validity: "valid" | "estimate" | "stale" | "invalid" }) {
   const key = validity === "valid" ? "ui.valid" : validity === "estimate" ? "ui.estimate" : validity === "stale" ? "ui.stale" : "ui.invalid";
-  return <span className={`og-chip og-chip--${validity}`}>{t(key, lang)}</span>;
+  return <span className={`og-chip og-chip--${validity}`}>{t(key)}</span>;
 }
 
-export function ProvenanceTag({ lang, value = "DERIVED" }: { lang: Lang; value?: "VERIFIED" | "DERIVED" | "ASSUMPTION" }) {
+export function ProvenanceTag({ value = "DERIVED" }: { value?: "VERIFIED" | "DERIVED" | "ASSUMPTION" }) {
   return <span className="og-chip">{value}</span>;
 }
 
-export function SyntheticBadge({ lang }: { lang: Lang }) {
-  return <span className="og-chip og-chip--synthetic">{t("ui.synthetic", lang)}</span>;
+export function SyntheticBadge() {
+  return <span className="og-chip og-chip--synthetic">{t("ui.synthetic")}</span>;
 }
 
 export interface TelemetryCardProps {
-  lang: Lang;
   label: string;
   value: number | string;
   unit?: string;
@@ -59,30 +57,30 @@ export interface TelemetryCardProps {
   children?: ComponentChildren;
 }
 
-export function TelemetryCard({ lang, label, value, unit, sigma, status = "nominal", children }: TelemetryCardProps) {
-  const displayValue = typeof value === "number" ? formatNumber(value, lang, 1) : value;
+export function TelemetryCard({ label, value, unit, sigma, status = "nominal", children }: TelemetryCardProps) {
+  const displayValue = typeof value === "number" ? formatNumber(value, 1) : value;
   return (
     <article className="og-foundation-card">
       <div className="og-label">{label}</div>
       <div className={`og-telemetry-value og-telemetry-value--${status}`}>
         {displayValue}
         {unit && <small>{unit}</small>}
-        {sigma !== undefined && <small>±{formatNumber(sigma, lang, 1)}</small>}
+        {sigma !== undefined && <small>±{formatNumber(sigma, 1)}</small>}
       </div>
       {children}
     </article>
   );
 }
 
-export function LevelBar({ lang, value, max = 95, sigma = 0 }: { lang: Lang; value: number; max?: number; sigma?: number }) {
+export function LevelBar({ value, max = 95, sigma = 0 }: { value: number; max?: number; sigma?: number }) {
   const geometry = levelBarGeometry(value, max, sigma);
   return (
     <div
       className="og-levelbar"
       role="img"
-      aria-label={t("ui.ariaLevel", lang, {
-        value: formatNumber(value, lang, 1),
-        max: formatNumber(max, lang, 0),
+      aria-label={t("ui.ariaLevel", {
+        value: formatNumber(value, 1),
+        max: formatNumber(max, 0),
       })}
     >
       <span className="og-levelbar__band" style={{ left: `${geometry.bandStart}%`, width: `${geometry.bandWidth}%` }} />
@@ -94,14 +92,13 @@ export function LevelBar({ lang, value, max = 95, sigma = 0 }: { lang: Lang; val
 }
 
 export interface DataTableProps {
-  lang: Lang;
   columns: Array<{ key: string; label: string; sortable?: boolean }>;
   rows: Array<{ id: string; cells: Record<string, ComponentChildren>; state?: "nominal" | "warning" | "critical" | "stale" | "offline" }>;
   caption: string;
   compact?: boolean;
 }
 
-export function DataTable({ lang, columns, rows, caption, compact = false }: DataTableProps) {
+export function DataTable({ columns, rows, caption, compact = false }: DataTableProps) {
   return (
     <div className={`og-table-wrap ${compact ? "og-table-wrap--compact" : ""}`}>
       <table className="og-foundation-table">
@@ -111,7 +108,7 @@ export function DataTable({ lang, columns, rows, caption, compact = false }: Dat
             {columns.map((column) => (
               <th scope="col" aria-sort={column.sortable ? "none" : undefined}>
                 {column.label}
-                {column.sortable && <button type="button" className="og-table-sort" aria-label={`${column.label} ${t("ui.sort", lang)}`}>↕</button>}
+                {column.sortable && <button type="button" className="og-table-sort" aria-label={`${column.label} ${t("ui.sort")}`}>↕</button>}
               </th>
             ))}
           </tr>
@@ -129,30 +126,28 @@ export function DataTable({ lang, columns, rows, caption, compact = false }: Dat
 }
 
 export function AlertBanner({
-  lang,
   severity = "N2",
   children,
 }: {
-  lang: Lang;
   severity?: Severity;
   children: ComponentChildren;
   backendLive?: boolean;
 }) {
-  const reason = t("ui.noAlertLifecycleApi", lang);
+  const reason = t("ui.noAlertLifecycleApi");
   return (
     <div className={`og-alert-banner og-alert-banner--${severity.toLowerCase()}`}>
-      <SeverityBadge lang={lang} severity={severity} />
+      <SeverityBadge severity={severity} />
       <span>{children}</span>
       <span className="og-alert-actions">
-        <button type="button" disabled title={reason}>{t("ui.acknowledge", lang)}</button>
-        <button type="button" disabled title={reason}>{t("ui.escalate", lang)}</button>
-        <small>{reason} <a href="/alerts">{t("ui.openAlerts", lang)}</a></small>
+        <button type="button" disabled title={reason}>{t("ui.acknowledge")}</button>
+        <button type="button" disabled title={reason}>{t("ui.escalate")}</button>
+        <small>{reason} <a href="/alerts">{t("ui.openAlerts")}</a></small>
       </span>
     </div>
   );
 }
 
-export function Notice({ lang, children, kind = "info" }: { lang: Lang; children: ComponentChildren; kind?: "info" | "warning" | "error" | "simulation" | "stale" | "partial" | "analyzer-unavailable" }) {
+export function Notice({ children, kind = "info" }: { children: ComponentChildren; kind?: "info" | "warning" | "error" | "simulation" | "stale" | "partial" | "analyzer-unavailable" }) {
   return <div className={`og-notice og-notice--${kind}`}>{children}</div>;
 }
 
@@ -161,21 +156,19 @@ export function Timeline({ items }: { items: Array<{ title: string; actor: strin
 }
 
 export function ChannelFusion({
-  lang,
   channels,
 }: {
-  lang: Lang;
   channels?: Partial<Record<"pressure_drop" | "level_trend" | "vib_impact" | "temp_drift_veto", "fired" | "quiet" | "no-data">>;
 }) {
   const names = ["pressure_drop", "level_trend", "vib_impact"] as const;
-  const label = (name: (typeof names)[number] | "temp_drift_veto") => t(`ui.channel.${name}`, lang);
+  const label = (name: (typeof names)[number] | "temp_drift_veto") => t(`ui.channel.${name}`);
   return (
     <div className="og-channel-fusion">
       {names.map((name) => {
         const state = channels?.[name] ?? "no-data";
-        return <div><span className={`og-status-dot og-status-dot--${state === "fired" ? "fired" : "muted"}`} />{label(name)}<b>{t(state === "fired" ? "ui.fired" : state === "quiet" ? "ui.quiet" : "ui.noData", lang)} · {t("ui.vote", lang)}</b></div>;
+        return <div><span className={`og-status-dot og-status-dot--${state === "fired" ? "fired" : "muted"}`} />{label(name)}<b>{t(state === "fired" ? "ui.fired" : state === "quiet" ? "ui.quiet" : "ui.noData")} · {t("ui.vote")}</b></div>;
       })}
-      <div className="og-channel-fusion__veto"><span className={`og-status-dot og-status-dot--${channels?.temp_drift_veto === "fired" ? "veto" : "muted"}`} />{label("temp_drift_veto")}<b>{t(channels?.temp_drift_veto === "fired" ? "ui.fired" : channels?.temp_drift_veto === "quiet" ? "ui.quiet" : "ui.noData", lang)} · {t("ui.veto", lang)}</b></div>
+      <div className="og-channel-fusion__veto"><span className={`og-status-dot og-status-dot--${channels?.temp_drift_veto === "fired" ? "veto" : "muted"}`} />{label("temp_drift_veto")}<b>{t(channels?.temp_drift_veto === "fired" ? "ui.fired" : channels?.temp_drift_veto === "quiet" ? "ui.quiet" : "ui.noData")} · {t("ui.veto")}</b></div>
     </div>
   );
 }
@@ -184,7 +177,7 @@ export function SegmentedControl({ options, value, onChange }: { options: string
   return <div className="og-seg">{options.map((option) => <button type="button" className="og-seg__btn" aria-pressed={option === value} onClick={() => onChange?.(option)}>{option}</button>)}</div>;
 }
 
-export function Sparkline({ values, label = "Sparkline" }: { lang: Lang; values: number[]; label?: string }) {
+export function Sparkline({ values, label = "Sparkline" }: { values: number[]; label?: string }) {
   const points = scaledPoints(values, 100, 60, { left: 2, right: 2, top: 3, bottom: 3 });
   if (!points.length) return <svg className="og-sparkline" viewBox="0 0 100 60" role="img" aria-label={label} />;
   const curve = monotoneCurvePath(points);
@@ -206,7 +199,6 @@ export interface SyncChartSeries {
 }
 
 export interface SyncChartProps {
-  lang: Lang;
   series: SyncChartSeries[];
   title?: string;
   xLabels?: string[];
@@ -235,7 +227,7 @@ function seriesDomain(series: SyncChartSeries[], axis: "left" | "right"): [numbe
 }
 
 export function SyncChart({
-  lang, series, title = "Time series", xLabels = [], thresholds = [], events = [], gaps = [], regimes = [],
+  series, title = "Time series", xLabels = [], thresholds = [], events = [], gaps = [], regimes = [],
   cursorIndex, onCursorChange, height = 200, leftTicks: requestedLeftTicks,
 }: SyncChartProps) {
   const [localCursor, setLocalCursor] = useState<number | null>(null);
@@ -284,7 +276,7 @@ export function SyncChart({
       <div className="og-sync__legend" aria-label={title}>
         {series.map((item, index) => <span className="og-sync__legend-item" style={{ color: item.color ?? SERIES_COLORS[index % SERIES_COLORS.length] }}><i className={item.dashed ? "is-dashed" : ""} />{item.name}{item.unit ? ` · ${item.unit}` : ""}</span>)}
       </div>
-      <div className="og-sync__frame" onKeyDown={onKeyDown} tabIndex={0} role="application" aria-label={`${title}. ${t("ui.chartDescription", lang)}`}>
+      <div className="og-sync__frame" onKeyDown={onKeyDown} tabIndex={0} role="application" aria-label={`${title}. ${t("ui.chartDescription")}`}>
         <svg className="og-sync__svg" viewBox={`0 0 ${chart.width} ${chart.height}`} preserveAspectRatio="none" onPointerMove={onPointerMove} onPointerLeave={onPointerLeave} aria-hidden="true" focusable="false">
           <defs><pattern id={`${hatchId}-gap-hatch`} width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="6" className="og-sync__hatch-line" /></pattern></defs>
           {regimes.map((regime) => <rect x={xAt(regime.startIndex)} y={pad.top} width={Math.max(0, xAt(regime.endIndex) - xAt(regime.startIndex))} height={plotHeight} className={`og-sync__regime og-sync__regime--${regime.tone ?? "rest"}`} />)}
@@ -321,8 +313,8 @@ export function SyncChart({
           {cursorX !== null && series.map((item, index) => item.values[activeCursor ?? -1] === undefined ? null : <circle cx={cursorX} cy={yAt(item.values[activeCursor ?? 0], item.axis ?? "left", item.domain)} r="3.5" className="og-sync__cursor-point" style={{ color: item.color ?? SERIES_COLORS[index % SERIES_COLORS.length] }} />)}
         </svg>
         <div className="og-sync__labels" aria-hidden="true">
-          {leftTicks.map((tick) => <span className="og-sync__tick og-sync__tick--left" style={{ left: `${(pad.left - 8) / chart.width * 100}%`, top: `${yAt(tick, "left") / chart.height * 100}%` }}>{formatNumber(tick, lang, series.find((item) => (item.axis ?? "left") === "left")?.decimals ?? 1)}</span>)}
-          {rightTicks.map((tick) => <span className="og-sync__tick og-sync__tick--right" style={{ left: `${(chart.width - pad.right + 8) / chart.width * 100}%`, top: `${yAt(tick, "right") / chart.height * 100}%` }}>{formatNumber(tick, lang, series.find((item) => item.axis === "right")?.decimals ?? 1)}</span>)}
+          {leftTicks.map((tick) => <span className="og-sync__tick og-sync__tick--left" style={{ left: `${(pad.left - 8) / chart.width * 100}%`, top: `${yAt(tick, "left") / chart.height * 100}%` }}>{formatNumber(tick, series.find((item) => (item.axis ?? "left") === "left")?.decimals ?? 1)}</span>)}
+          {rightTicks.map((tick) => <span className="og-sync__tick og-sync__tick--right" style={{ left: `${(chart.width - pad.right + 8) / chart.width * 100}%`, top: `${yAt(tick, "right") / chart.height * 100}%` }}>{formatNumber(tick, series.find((item) => item.axis === "right")?.decimals ?? 1)}</span>)}
           {regimes.map((regime) => <span className="og-sync__regime-label" style={{ left: `${(xAt(regime.startIndex) + 5) / chart.width * 100}%`, top: `${(pad.top + 12) / chart.height * 100}%` }}>{regime.label}</span>)}
           {thresholds.map((threshold) => <span className="og-sync__threshold-label" style={{ left: `${(pad.left + 5) / chart.width * 100}%`, top: `${(yAt(threshold.value, threshold.axis ?? "left", threshold.domain) - 4) / chart.height * 100}%` }}>{threshold.label}</span>)}
           {events.map((item, index) => {
@@ -336,17 +328,16 @@ export function SyncChart({
       </div>
       {activeCursor !== null && activeCursor >= 0 && count > 0 && <div className="og-sync__tooltip" role="status"><strong>{xLabels.length ? xLabels[Math.min(xLabels.length - 1, Math.round(activeCursor / Math.max(1, count - 1) * (xLabels.length - 1)))] : `#${activeCursor + 1}`}</strong>{series.map((item, index) => {
         const value = item.values[activeCursor];
-        return value === undefined ? null : <span style={{ color: item.color ?? SERIES_COLORS[index % SERIES_COLORS.length] }}><i />{item.name}: {formatNumber(value, lang, item.decimals ?? 2)}{item.unit ? ` ${item.unit}` : ""}</span>;
+        return value === undefined ? null : <span style={{ color: item.color ?? SERIES_COLORS[index % SERIES_COLORS.length] }}><i />{item.name}: {formatNumber(value, item.decimals ?? 2)}{item.unit ? ` ${item.unit}` : ""}</span>;
       })}</div>}
     </section>
   );
 }
 
 export function TimeSeriesChart({
-  lang, values, sigma = [], thresholds = [], events = [], gaps = [], title = "Time series", xLabels = [], yTicks, yUnit, yDecimals = 0, domain, color = "var(--og-accent)",
+  values, sigma = [], thresholds = [], events = [], gaps = [], title = "Time series", xLabels = [], yTicks, yUnit, yDecimals = 0, domain, color = "var(--og-accent)",
   cursorIndex, onCursorChange, height,
 }: {
-  lang: Lang;
   values: number[];
   sigma?: number[];
   thresholds?: Array<{ value: number; label: string }>;
@@ -363,16 +354,16 @@ export function TimeSeriesChart({
   onCursorChange?: (index: number) => void;
   height?: number;
 }) {
-  return <div className="og-time-series"><SyncChart lang={lang} title={title} series={[{ name: title, values, sigma, unit: yUnit, color, domain, decimals: yDecimals }]} thresholds={thresholds} events={events} gaps={gaps} xLabels={xLabels} leftTicks={yTicks} cursorIndex={cursorIndex} onCursorChange={onCursorChange} height={height ?? 180} /></div>;
+  return <div className="og-time-series"><SyncChart title={title} series={[{ name: title, values, sigma, unit: yUnit, color, domain, decimals: yDecimals }]} thresholds={thresholds} events={events} gaps={gaps} xLabels={xLabels} leftTicks={yTicks} cursorIndex={cursorIndex} onCursorChange={onCursorChange} height={height ?? 180} /></div>;
 }
 
-export function ScatterChart({ lang, points, title = "Scatter chart", band = 0, domain, pointTones = [], xLabel, yLabel }: { lang: Lang; points: Array<[number, number]>; title?: string; band?: number; domain?: [number, number]; pointTones?: string[]; xLabel?: string; yLabel?: string }) {
+export function ScatterChart({ points, title = "Scatter chart", band = 0, domain, pointTones = [], xLabel, yLabel }: { points: Array<[number, number]>; title?: string; band?: number; domain?: [number, number]; pointTones?: string[]; xLabel?: string; yLabel?: string }) {
   const values = points.flatMap(([x, y]) => [x, y]);
   const min = domain?.[0] ?? Math.min(0, ...values);
   const max = domain?.[1] ?? Math.max(1, ...values);
   const scale = (value: number) => 8 + (value - min) / (max - min || 1) * 84;
   const bandPct = band / (max - min || 1) * 84;
-  return <svg className="og-scatter" viewBox="0 0 100 100" role="img" aria-label={title}><line x1="8" y1="92" x2="92" y2="8" className="og-identity-line" /><polygon points={`8,${92 - bandPct} 92,${8 - bandPct} 92,${8 + bandPct} 8,${92 + bandPct}`} className="og-scatter__band" />{niceTicks(min, max, 4).map((tick) => <g><line x1={scale(tick)} x2={scale(tick)} y1="8" y2="92" className="og-sync__grid" /><line x1="8" x2="92" y1={100 - scale(tick)} y2={100 - scale(tick)} className="og-sync__grid" /><text x={scale(tick)} y="98" text-anchor="middle">{formatNumber(tick, lang, 0)}</text><text x="6" y={100 - scale(tick) + 2} text-anchor="end">{formatNumber(tick, lang, 0)}</text></g>)}{points.map(([x, y], index) => <circle cx={scale(x)} cy={100 - scale(y)} r="1.5" className={pointTones[index] ? `val-dot val-dot--${pointTones[index]}` : "og-scatter__point"} />)}{xLabel && <text x="50" y="99" text-anchor="middle">{xLabel}</text>}{yLabel && <text x="2" y="50" text-anchor="middle" transform="rotate(-90 2 50)">{yLabel}</text>}</svg>;
+  return <svg className="og-scatter" viewBox="0 0 100 100" role="img" aria-label={title}><line x1="8" y1="92" x2="92" y2="8" className="og-identity-line" /><polygon points={`8,${92 - bandPct} 92,${8 - bandPct} 92,${8 + bandPct} 8,${92 + bandPct}`} className="og-scatter__band" />{niceTicks(min, max, 4).map((tick) => <g><line x1={scale(tick)} x2={scale(tick)} y1="8" y2="92" className="og-sync__grid" /><line x1="8" x2="92" y1={100 - scale(tick)} y2={100 - scale(tick)} className="og-sync__grid" /><text x={scale(tick)} y="98" text-anchor="middle">{formatNumber(tick, 0)}</text><text x="6" y={100 - scale(tick) + 2} text-anchor="end">{formatNumber(tick, 0)}</text></g>)}{points.map(([x, y], index) => <circle cx={scale(x)} cy={100 - scale(y)} r="1.5" className={pointTones[index] ? `val-dot val-dot--${pointTones[index]}` : "og-scatter__point"} />)}{xLabel && <text x="50" y="99" text-anchor="middle">{xLabel}</text>}{yLabel && <text x="2" y="50" text-anchor="middle" transform="rotate(-90 2 50)">{yLabel}</text>}</svg>;
 }
 
 export function FilterBar({ children }: { children: ComponentChildren }) { return <div className="og-filterbar">{children}</div>; }
@@ -414,8 +405,8 @@ export function Icon({ name, label }: { name: string; label?: string }) {
 }
 
 export function EmptyState({ title, detail }: { title: string; detail?: string }) { return <div className="og-empty"><strong>{title}</strong>{detail && <span>{detail}</span>}</div>; }
-export function KpiTile({ lang, label, value, unit, delta, meta, tone = "nominal" }: { lang: Lang; label: string; value: number | string; unit?: string; delta?: string; meta?: string; tone?: Tone }) {
-  const displayValue = typeof value === "number" ? formatNumber(value, lang, 1) : value;
+export function KpiTile({ label, value, unit, delta, meta, tone = "nominal" }: { label: string; value: number | string; unit?: string; delta?: string; meta?: string; tone?: Tone }) {
+  const displayValue = typeof value === "number" ? formatNumber(value, 1) : value;
   return <article className={`og-kpi-tile og-kpi-tile--${tone}`}><div className="og-label">{label}</div><div className="og-kpi-tile__value">{displayValue}{unit && <small>{unit}</small>}</div>{(delta || meta) && <div className="og-kpi-tile__meta">{delta}{delta && meta ? " · " : ""}{meta}</div>}</article>;
 }
 export function PageHeader({ eyebrow, title, description, meta, children }: { eyebrow?: string; title: string; description?: string; meta?: ComponentChildren; children?: ComponentChildren }) {
@@ -423,7 +414,6 @@ export function PageHeader({ eyebrow, title, description, meta, children }: { ey
 }
 
 export function BackendStatePill() {
-  const [lang] = useLang();
   const state = useBackendState();
-  return <span className={`og-backend-pill og-backend-pill--${state}`}><span className="og-status-dot" />{backendStateLabel(state, lang)}</span>;
+  return <span className={`og-backend-pill og-backend-pill--${state}`}><span className="og-status-dot" />{backendStateLabel(state)}</span>;
 }

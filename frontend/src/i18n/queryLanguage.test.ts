@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { languageFromQuery } from "./queryLanguage";
 
+// Solo español (S05): ?lang= se ignora siempre (decisión S01); ningún
+// valor de consulta cambia el idioma.
 describe("query language parsing", () => {
-  test("accepts supported language values", () => {
-    expect(languageFromQuery("?lang=en")).toBe("en");
-    expect(languageFromQuery("?lang=es")).toBe("es");
+  test("ignores every query value, including formerly supported codes", () => {
+    expect(languageFromQuery("?lang=es")).toBe(undefined);
+    expect(languageFromQuery("?lang=en")).toBe(undefined);
   });
 
   test("ignores missing and unsupported values", () => {
@@ -13,8 +15,8 @@ describe("query language parsing", () => {
     expect(languageFromQuery("?lang=")).toBe(undefined);
   });
 
-  test("normalizes the language value case", () => {
-    expect(languageFromQuery("?lang=ES")).toBe("es");
-    expect(languageFromQuery("?lang=eN")).toBe("en");
+  test("ignores case variants instead of normalizing them", () => {
+    expect(languageFromQuery("?lang=ES")).toBe(undefined);
+    expect(languageFromQuery("?lang=eN")).toBe(undefined);
   });
 });

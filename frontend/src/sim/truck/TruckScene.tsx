@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import * as THREE from "three";
-import { t, type DictKey, useLang } from "../../i18n";
+import { t, type DictKey } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import { createStage } from "../../twin/render/stage";
 import { createMaterials } from "../../twin/render/materials";
@@ -71,9 +71,6 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
   pausedRef.current = paused;
   const onPhaseRef = useRef(onPhase);
   onPhaseRef.current = onPhase;
-  const [lang] = useLang();
-  const langRef = useRef(lang);
-  langRef.current = lang;
   const urlRef = useRef<ReturnType<typeof readMineUrl> | null>(null);
   if (!urlRef.current) urlRef.current = readMineUrl();
   const url = urlRef.current;
@@ -86,7 +83,6 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
   const [hud, setHud] = useState({ state: "empty" as PlmState, selected: "OG-03", trucks: 5, queued: 0, recal: false, onGrade: false, cycle: 0 });
   const accessibilityCopy = buildMineSceneAccessibilityCopy(
     { truckId: hud.selected, state: hud.state, cycle: hud.cycle },
-    lang,
   );
   const publishedAccessibilityCopy = useThrottledSceneAccessibility(accessibilityCopy);
 
@@ -156,7 +152,7 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
       { id: "ramp", pos: pit.anchors.rampMid.clone().add(new THREE.Vector3(0, 9, 0)) },
     ] satisfies { id: MineSceneLabelId; pos: THREE.Vector3 }[];
     const labelledInterest = interestLabels.map((item) => {
-      const label = createLabel({ text: buildMineSceneLabelText(item.id, langRef.current), tone: "accent" });
+      const label = createLabel({ text: buildMineSceneLabelText(item.id), tone: "accent" });
       label.name = item.id;
       label.position.copy(item.pos);
       scene.add(label);
@@ -247,7 +243,7 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
         barRef.current.style.width = `${Math.round(progress * 100)}%`;
       }
       for (const item of labelledInterest) {
-        setLabelText(item.label, buildMineSceneLabelText(item.id, langRef.current));
+        setLabelText(item.label, buildMineSceneLabelText(item.id));
         setLabelActive(item.label, item.id === "shovel" ? snapshot.shovel.truckId !== null : item.id === "crusher" ? snapshot.crusherTruckId !== null : false);
       }
 
@@ -331,7 +327,7 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
 
   const css = HAUL_STATE_CSS[haulState(hud.state)];
   const moving = !hud.recal;
-  const statusLabel = buildMineHudStatus(hud.recal, moving, lang);
+  const statusLabel = buildMineHudStatus(hud.recal, moving);
   const recalLabelKey = hud.recal
     ? "mine.hud.recalReady"
     : hud.onGrade
@@ -348,26 +344,26 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
         <div className="og-hud og-hud--tl" style={{ width: 390, ["--tone" as string]: css }}>
           <div className="og-hud__title">
             <span className="og-dot" />
-            <span className="og-num">{buildMineHudTitle(hud.selected, hud.state, hud.cycle, lang)}</span>
+            <span className="og-num">{buildMineHudTitle(hud.selected, hud.state, hud.cycle)}</span>
             <span className={`og-badge ${hud.recal ? "og-badge--ok" : "og-badge--ghost"}`}>{statusLabel}</span>
           </div>
           <div className="og-progress"><div ref={barRef} className="og-progress__bar" /></div>
-          <div className="og-hud__row"><span className="og-hud__meta">{t("hud.camera", lang)}</span><div className="og-seg og-seg--sm">
-            {CAM_PRESETS.map((id) => <button key={id} type="button" className="og-seg__btn" aria-pressed={presetUi === id} onClick={() => setPreset(id)}>{t(CAM_LABEL_KEYS[id], lang)}</button>)}
+          <div className="og-hud__row"><span className="og-hud__meta">{t("hud.camera")}</span><div className="og-seg og-seg--sm">
+            {CAM_PRESETS.map((id) => <button key={id} type="button" className="og-seg__btn" aria-pressed={presetUi === id} onClick={() => setPreset(id)}>{t(CAM_LABEL_KEYS[id])}</button>)}
           </div></div>
         </div>
         <div className="og-stack og-stack--tr">
           <div className={`og-badge ${hud.recal ? "og-badge--ok" : "og-badge--ghost"}`} style={{ height: "auto", minHeight: 24, padding: "4px 10px", whiteSpace: "normal" }}>
-            {t(recalLabelKey, lang)}
+            {t(recalLabelKey)}
           </div>
           {badge}
         </div>
         <div className="og-stack og-stack--bl">
-          <div className="og-hud og-hud--caption og-num">{t("mine.hud.fleet", lang, {
-            trucks: formatNumber(hud.trucks, lang, 0),
-            queued: formatNumber(hud.queued, lang, 0),
+          <div className="og-hud og-hud--caption og-num">{t("mine.hud.fleet", {
+            trucks: formatNumber(hud.trucks, 0),
+            queued: formatNumber(hud.queued, 0),
           })}</div>
-          <div className="og-hud og-hud--caption">{t("mine.hud.seeded", lang, { seed: url.seed })}</div>
+          <div className="og-hud og-hud--caption">{t("mine.hud.seeded", { seed: url.seed })}</div>
           {url.debug && <div ref={debugRef} className="og-hud og-hud--caption og-num" />}
         </div>
         {dock && <div className="og-dock og-dock--right">{dock}</div>}

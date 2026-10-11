@@ -20,7 +20,8 @@ let pendingEffects: Array<{ index: number; callback: () => void | (() => void) }
 bunMock.module("preact/hooks", () => ({
   useState<T>(initial: T): [T, (next: T | ((previous: T) => T)) => void] {
     const index = cursor++;
-    if (!(index in slots)) slots[index] = { value: initial };
+    // Como el useState real, el inicializador funcional se invoca una vez.
+    if (!(index in slots)) slots[index] = { value: typeof initial === "function" ? (initial as () => T)() : initial };
     return [
       slots[index].value as T,
       (next) => {

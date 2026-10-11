@@ -7,29 +7,26 @@ import { activeRoute, navGroups } from "../nav";
 import { BackendStatePill } from "../ui/foundation";
 
 interface Props { section?: Section; title?: string; compact?: boolean; breadcrumb?: DictKey[]; }
+// Solo español (S03): el shell pinta español en el servidor y declara es en
+// el html. Se borró el pre-pintado por consulta/guardado y los pares de
+// traducción del marcado porque S01 ya retiró el idioma por consulta.
 const { section, title = "OilGuard Mining", compact = section === "mine" || section === "wheel", breadcrumb } = Astro.props;
 const current = activeRoute(Astro.url.pathname) ?? section ?? null;
 const defaultBreadcrumb = navGroups.flatMap((group) => group.items).find((item) => item.id === current)?.label ?? "shell.dashboard";
 const breadcrumbKeys = breadcrumb ?? [defaultBreadcrumb];
 ---
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preload" href="/fonts/Geist[wght].woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/JetBrainsMono[wght].woff2" as="font" type="font/woff2" crossorigin />
     <title>{title}</title>
-    <script is:inline>
-      document.documentElement.style.visibility = "hidden";
-      const q = new URLSearchParams(window.location.search).get("lang")?.toLowerCase();
-      try { if (q === "en" || q === "es") localStorage.setItem("oilguard-lang", q); } catch {}
-      document.documentElement.lang = q === "es" || (!q && localStorage.getItem("oilguard-lang") === "es") ? "es" : "en";
-    </script>
   </head>
   <body>
     <div class:list={["og-app", { "og-app--compact": compact }]}>
-      <aside class="og-sidebar" aria-label={t("nav.label", "en")}>
+      <aside class="og-sidebar" aria-label={t("nav.label")}>
         <a class="og-sidebar__brand" href="/">
           <span class="og-brand__mark" aria-hidden="true">OG</span>
           <span><strong>OILGUARD</strong><small>TELEMETRY CORE</small></span>
@@ -37,11 +34,11 @@ const breadcrumbKeys = breadcrumb ?? [defaultBreadcrumb];
         <div class="og-sidebar__scroll">
           {navGroups.map((group) => (
             <section class="og-nav-group">
-              <div class="og-label og-nav-group__label" data-i18n-en={t(group.label, "en")} data-i18n-es={t(group.label, "es")}>{t(group.label, "en")}</div>
+              <div class="og-label og-nav-group__label">{t(group.label)}</div>
               {group.items.map((item) => (
                 <a class:list={["og-sidebar__item", { "is-active": current === item.id }]} href={item.href} aria-current={current === item.id ? "page" : undefined}>
                   <span class="og-sidebar__dot" aria-hidden="true"></span>
-                  <span data-i18n-en={t(item.label, "en")} data-i18n-es={t(item.label, "es")}>{t(item.label, "en")}</span>
+                  <span>{t(item.label)}</span>
                 </a>
               ))}
             </section>
@@ -49,38 +46,19 @@ const breadcrumbKeys = breadcrumb ?? [defaultBreadcrumb];
         </div>
         <footer class="og-sidebar__footer">
           <BackendStatePill client:load />
-          <div class="og-label og-sidebar__footer-note" data-i18n-en={t("shell.synthetic", "en")} data-i18n-es={t("shell.synthetic", "es")}>{t("shell.synthetic", "en")}</div>
+          <div class="og-label og-sidebar__footer-note">{t("shell.synthetic")}</div>
         </footer>
       </aside>
       <header class="og-top">
-        <button class="og-mobile-menu" type="button" aria-label={t("shell.menu", "en")}>☰</button>
-        <div class="og-top__crumb"><span>OilGuard</span>{breadcrumbKeys.map((key) => <><b>/</b><strong data-i18n-en={t(key, "en")} data-i18n-es={t(key, "es")}>{t(key, "en")}</strong></>)}</div>
+        <button class="og-mobile-menu" type="button" aria-label={t("shell.menu")}>☰</button>
+        <div class="og-top__crumb"><span>OilGuard</span>{breadcrumbKeys.map((key) => <><b>/</b><strong>{t(key)}</strong></>)}</div>
         <div class="og-top__spacer"></div>
         <BackendStatePill client:load />
-        <div class="og-seg og-seg--sm" role="group" aria-label={t("lang.label", "en")}>
-          <button type="button" class="og-seg__btn" data-lang="en" aria-pressed="true">EN</button>
-          <button type="button" class="og-seg__btn" data-lang="es" aria-pressed="false">ES</button>
-        </div>
       </header>
-      <nav class="og-mobile-nav" aria-label={t("nav.label", "en")}>
-        {navGroups[0].items.slice(0, 5).map((item) => <a href={item.href} data-i18n-en={t(item.label, "en")} data-i18n-es={t(item.label, "es")}>{t(item.label, "en")}</a>)}
+      <nav class="og-mobile-nav" aria-label={t("nav.label")}>
+        {navGroups[0].items.slice(0, 5).map((item) => <a href={item.href}>{t(item.label)}</a>)}
       </nav>
       <main class="og-content"><slot /></main>
     </div>
-    <script is:inline>
-      const langKey = "oilguard-lang";
-      const update = (lang) => {
-        document.documentElement.lang = lang;
-        document.querySelectorAll("[data-i18n-en]").forEach((el) => { el.textContent = el.dataset[lang === "es" ? "i18nEs" : "i18nEn"] ?? ""; });
-        document.querySelectorAll("[data-lang]").forEach((el) => el.setAttribute("aria-pressed", String(el.dataset.lang === lang)));
-      };
-      document.querySelectorAll("[data-lang]").forEach((button) => button.addEventListener("click", () => {
-        const lang = button.dataset.lang === "es" ? "es" : "en";
-        try { localStorage.setItem(langKey, lang); } catch {}
-        update(lang); window.dispatchEvent(new CustomEvent("oilguard:lang", { detail: lang }));
-      }));
-      update(document.documentElement.lang === "es" ? "es" : "en");
-      document.documentElement.style.visibility = "";
-    </script>
   </body>
 </html>

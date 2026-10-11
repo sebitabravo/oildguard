@@ -1,8 +1,10 @@
 ---
 import PublicLayout from "../layouts/PublicLayout.astro";
 import Landing from "../platform/landing/Landing";
+// Solo español (S03): la raíz sirve español sin JS; S01 descartó /es/ sin redirección.
+const lang = "es" as const;
 ---
 
-<PublicLayout title="OilGuard Mining">
+<PublicLayout title="OilGuard Mining" lang={lang}>
   <Landing client:load />
 </PublicLayout>

@@ -1,6 +1,5 @@
 import type { DemoTruck, DemoWheel } from "../../demo/dataset";
 import { formatNumber } from "../../i18n/numberFormat";
-import type { Lang } from "../../i18n";
 
 export type FleetFilterState = "all" | "alert" | "no-link" | "out-of-service";
 export type FleetRowState = "nominal" | "N1" | "N2" | "N4" | "stale" | "link-down" | "out-of-service";
@@ -174,13 +173,13 @@ export function fleetCounters(rows: FleetRow[]) {
   };
 }
 
-export function relativeLastComm(lastComm: number | null, now: number, lang: Lang): string {
+export function relativeLastComm(lastComm: number | null, now: number): string {
   if (lastComm === null) return "link-down";
   const seconds = Math.max(0, Math.round((now - lastComm) / 1000));
-  if (seconds < 60) return `${formatNumber(seconds, lang, 0)} s`;
+  if (seconds < 60) return `${formatNumber(seconds, 0)} s`;
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${formatNumber(minutes, lang, 0)} min`;
-  return `${formatNumber(Math.round(minutes / 60), lang, 0)} h`;
+  if (minutes < 60) return `${formatNumber(minutes, 0)} min`;
+  return `${formatNumber(Math.round(minutes / 60), 0)} h`;
 }
 
 export function toCsv(rows: FleetRow[]): string {

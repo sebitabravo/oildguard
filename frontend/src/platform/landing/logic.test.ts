@@ -1,13 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { makeTelemetrySeries, resolveLandingLang } from "./logic";
+import { makeTelemetrySeries } from "./logic";
 
 describe("landing pure logic", () => {
-  test("URL language overrides stored language and normalizes supported codes", () => {
-    expect(resolveLandingLang("?lang=ES", "en")).toBe("es");
-    expect(resolveLandingLang("?lang=en", "es")).toBe("en");
-    expect(resolveLandingLang("?lang=fr", "es")).toBe("es");
-    expect(resolveLandingLang("", null)).toBe("en");
-  });
 
   test("telemetry sampling is deterministic and preserves endpoints", () => {
     const rows = [0, 1, 2, 3, 4].map((i) => ({

@@ -12,12 +12,9 @@ describe("analyzer availability notice", () => {
       note: "RUL unavailable: " + diagnostic,
     };
 
-    const english = analyzerUnavailableNotice(unavailable, "en");
-    const spanish = analyzerUnavailableNotice(unavailable, "es");
+    const spanish = analyzerUnavailableNotice(unavailable);
 
-    expect(english).toBe("Analyzer unavailable: alerts and RUL cannot be computed");
     expect(spanish).toBe("Analizador no disponible: no se pueden calcular alertas ni RUL");
-    expect(english?.includes(diagnostic)).toBe(false);
     expect(spanish?.includes(diagnostic)).toBe(false);
   });
 
@@ -28,11 +25,11 @@ describe("analyzer availability notice", () => {
       rulStatus: "suppressed",
       alertsEvaluated: false,
       rulEvaluated: false,
-    }, "en")).toBe(null);
+    })).toBe(null);
   });
 
   test("recognizes an unavailable endpoint even when health is not yet available", () => {
-    expect(analyzerUnavailableNotice({ alertStatus: "unavailable" }, "es"))
+    expect(analyzerUnavailableNotice({ alertStatus: "unavailable" }))
       .toBe("Analizador no disponible: no se pueden calcular alertas ni RUL");
   });
 });

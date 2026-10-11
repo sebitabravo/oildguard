@@ -1,4 +1,4 @@
-import { t, type DictKey, type Lang } from "../../i18n";
+import { t, type DictKey } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import { specRows, type Provenance } from "../../twin/truck930e/spec";
 
@@ -11,28 +11,28 @@ const TAG_KEY: Record<Provenance, DictKey> = {
   ASSUMPTION: "prov.assumption",
 };
 
-const fmt = (value: number, lang: Lang) =>
-  formatNumber(value, lang, 3).replace(/([,.]\d*?[1-9])0+$/, "$1").replace(/[,.]0+$/, "");
+const fmt = (value: number) =>
+  formatNumber(value, 3).replace(/([,.]\d*?[1-9])0+$/, "$1").replace(/[,.]0+$/, "");
 
-export default function ProvenanceTable({ lang }: { lang: Lang }) {
+export default function ProvenanceTable() {
   const rows = specRows();
   const count = (tag: Provenance) => rows.filter((r) => r.tag === tag).length;
   const groups = Array.from(new Set(rows.map((r) => r.group)));
   return (
     <details className="og-prov" open>
       <summary className="og-prov__summary">
-        {t("sheet.provenance", lang)} · {rows.length} · {count("VERIFIED")} {t("prov.verified", lang).toLowerCase()} ·{" "}
-        {count("DERIVED")} {t("prov.derived", lang).toLowerCase()} · {count("ASSUMPTION")}{" "}
-        {t("prov.assumption", lang).toLowerCase()}
+        {t("sheet.provenance")} · {rows.length} · {count("VERIFIED")} {t("prov.verified").toLowerCase()} ·{" "}
+        {count("DERIVED")} {t("prov.derived").toLowerCase()} · {count("ASSUMPTION")}{" "}
+        {t("prov.assumption").toLowerCase()}
       </summary>
       <table className="og-table">
         <thead>
           <tr>
-            <th>{t("prov.name", lang)}</th>
-            <th className="og-table__num">{t("prov.value", lang)}</th>
-            <th>{t("prov.unit", lang)}</th>
-            <th>{t("prov.tag", lang)}</th>
-            <th>{t("prov.source", lang)}</th>
+            <th>{t("prov.name")}</th>
+            <th className="og-table__num">{t("prov.value")}</th>
+            <th>{t("prov.unit")}</th>
+            <th>{t("prov.tag")}</th>
+            <th>{t("prov.source")}</th>
           </tr>
         </thead>
         {groups.map((g) => (
@@ -45,10 +45,10 @@ export default function ProvenanceTable({ lang }: { lang: Lang }) {
               .map((r) => (
                 <tr key={`${g}.${r.name}`}>
                   <td>{r.name}</td>
-                  <td className="og-table__num og-num">{fmt(r.value, lang)}</td>
+                  <td className="og-table__num og-num">{fmt(r.value)}</td>
                   <td>{r.unit}</td>
                   <td>
-                    <span className={`og-tag og-tag--${r.tag.toLowerCase()}`}>{t(TAG_KEY[r.tag], lang)}</span>
+                    <span className={`og-tag og-tag--${r.tag.toLowerCase()}`}>{t(TAG_KEY[r.tag])}</span>
                   </td>
                   <td className="og-table__src">{r.source}</td>
                 </tr>

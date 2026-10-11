@@ -1,4 +1,4 @@
-import { t, type Lang } from "../../i18n";
+import { t } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 
 export interface SyntheticReportEvent {
@@ -54,17 +54,17 @@ export interface LocalizedReport {
   checklist: string[];
 }
 
-export function localizeReport(report: SyntheticReport, lang: Lang): LocalizedReport {
-  const minutes = (value: number) => `${formatNumber(value, lang, 0)} min`;
+export function localizeReport(report: SyntheticReport): LocalizedReport {
+  const minutes = (value: number) => `${formatNumber(value, 0)} min`;
   return {
-    window: t("report.windowValue", lang, { value: minutes(report.windowMinutes) }),
+    window: t("report.windowValue", { value: minutes(report.windowMinutes) }),
     minuteTicks: report.timeline.map((event) => minutes(event.atMinutes)),
     timeline: report.timeline.map((event) => ({
       level: event.level,
       time: minutes(event.atMinutes),
-      role: t(`report.role.${event.roleKey}`, lang),
-      detail: t(`report.detail.${event.detailKey}`, lang),
+      role: t(`report.role.${event.roleKey}`),
+      detail: t(`report.detail.${event.detailKey}`),
     })),
-    checklist: report.checklist.map((item) => t(`report.checklist.${item}`, lang)),
+    checklist: report.checklist.map((item) => t(`report.checklist.${item}`)),
   };
 }

@@ -60,9 +60,9 @@ describe("fleet overview logic", () => {
   });
 
   test("formats ages and keeps demo telemetry within the fixed reference day", () => {
-    expect(relativeLastComm(1_000, 13_000, "en")).toBe("12 s");
-    expect(relativeLastComm(1_000, 241_000, "es")).toBe("4 min");
-    expect(relativeLastComm(1_000, 7_201_000, "en")).toBe("2 h");
+    expect(relativeLastComm(1_000, 13_000)).toBe("12 s");
+    expect(relativeLastComm(1_000, 241_000)).toBe("4 min");
+    expect(relativeLastComm(1_000, 7_201_000)).toBe("2 h");
     for (const row of rows) {
       if (row.lastComm !== null) expect(demoDataset.referenceMs - row.lastComm).toBeLessThan(86_400_000);
     }
@@ -165,11 +165,11 @@ describe("fleet per-field provenance in mergeLiveDevices", () => {
     }]);
     const row = live.find((item) => item.id === "wheel-RH-01");
     expect(row?.fieldSources.level).toBe("LIVE");
-    expect(row?.fieldSources).toMatchObject({ sigma: "DEMO" });
+    expect(row?.fieldSources.sigma).toBe("DEMO");
   });
 
   test("demo rows mark sigma DEMO", () => {
     // El sigma demo necesita procedencia propia para no leerse como vivo en una fila LIVE.
-    expect(rows[0]?.fieldSources).toMatchObject({ sigma: "DEMO" });
+    expect(rows[0]?.fieldSources.sigma).toBe("DEMO");
   });
 });

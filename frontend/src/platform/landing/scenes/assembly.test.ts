@@ -1,0 +1,154 @@
+import { describe, expect, test } from "bun:test";
+import * as THREE from "three";
+import { GEAR_RATIO, GDY106_TRAIN, stageRatio, trainRatio } from "../../../twin/physics";
+import {
+  ASSEMBLY_PART_IDS,
+  ASSEMBLY_PARTS,
+  ASSEMBLY_REDUCTION_SOURCE,
+  ASSEMBLY_VIEW_LIMITS,
+  assertAssemblyComplete,
+  assemblyReduction,
+  buildAssemblyScene,
+  cameraPositionFor,
+  createAssemblyControls,
+  reductionErrorPct,
+  visibleParts,
+  type AssemblyPartId,
+} from "./assembly";
+
+// Corte del conjunto GDY106: seis piezas legibles, reducción 32.62:1
+// trazada a la fuente B01 y controles vivos de órbita/zoom/aislado.
+const REQUIRED_PARTS: readonly AssemblyPartId[] = ["hub", "carrier", "planets", "sun", "brakes", "motor"];
+
+describe("assembly cutaway parts", () => {
+  test("exposes exactly the six required parts", () => {
+    expect([...ASSEMBLY_PART_IDS].sort()).toEqual([...REQUIRED_PARTS].sort());
+    expect(ASSEMBLY_PARTS.length).toBe(6);
+    expect(new Set(ASSEMBLY_PART_IDS).size).toBe(6);
+    assertAssemblyComplete([...ASSEMBLY_PART_IDS]);
+  });
+
+  test("every part carries a Spanish label and provenance", () => {
+    for (const part of ASSEMBLY_PARTS) {
+      expect(part.id.length).toBeGreaterThan(0);
+      expect(part.label.length).toBeGreaterThan(0);
+      expect(["VERIFIED", "DERIVED", "ASSUMPTION"] as readonly string[]).toContain(part.provenance);
+    }
+  });
+
+  test("negative: a missing part fails the completeness gate", () => {
+    const withoutBrakes = [...ASSEMBLY_PART_IDS].filter((id) => id !== "brakes");
+    expect(() => assertAssemblyComplete(withoutBrakes)).toThrow();
+    expect(() => assertAssemblyComplete([])).toThrow();
+  });
+
+  test("the built scene reads in cutaway with all six parts", () => {
+    const { group, parts, shellOpacity } = buildAssemblyScene();
+    expect(group instanceof THREE.Group).toBe(true);
+    expect(group.name).toBe("gdy106-assembly-cutaway");
+    for (const id of REQUIRED_PARTS) {
+      const part = parts[id];
+      expect(part instanceof THREE.Group).toBe(true);
+      expect(part.userData.partId).toBe(id);
+      expect(part.visible).toBe(true);
+      expect(part.children.length).toBeGreaterThan(0);
+    }
+    // Corte: la carcasa queda translúcida para que los internos se lean.
+    expect(shellOpacity).toBeLessThan(1);
+    expect(shellOpacity).toBeGreaterThan(0);
+    // Los planetas de alta (3) y baja (4) del tren GDY106 suman 7 piñones.
+    expect(parts.planets.children.length).toBeGreaterThanOrEqual(7);
+  });
+});
+
+describe("assembly reduction 32.62:1", () => {
+  test("traces the overall ratio to the B01-verified source, not an invention", () => {
+    const reduction = assemblyReduction();
+    expect(reduction.overall).toBe(GEAR_RATIO);
+    expect(reduction.overall).toBe(32.62);
+    expect(reduction.highSpeed).toBeCloseTo(stageRatio(GDY106_TRAIN.hs), 10);
+    expect(reduction.lowSpeed).toBeCloseTo(stageRatio(GDY106_TRAIN.ls), 10);
+    expect(reduction.highSpeed).toBeCloseTo(6.75, 10);
+    expect(reduction.illustrative).toBeCloseTo(trainRatio(GDY106_TRAIN), 10);
+    expect(reduction.illustrative).toBeCloseTo(32.625, 10);
+    // Etapas redondeadas a tres decimales, como la pantalla del banco.
+    expect(`${reduction.highSpeed.toFixed(3)} × ${reduction.lowSpeed.toFixed(3)}`).toBe("6.750 × 4.833");
+    expect(reduction.overall.toFixed(2)).toBe("32.62");
+    expect(reduction.withinTolerance).toBe(true);
+    // 3000 rpm del rotor caen a unas 92 rpm de rueda.
+    expect(reduction.wheelRpmAt3000).toBeCloseTo(91.97, 1);
+    expect(ASSEMBLY_REDUCTION_SOURCE).toContain("thesis-annex");
+    expect(ASSEMBLY_REDUCTION_SOURCE).toContain("32.62");
+  });
+
+  test("negative: a broken tooth-count train breaks the tolerance gate", () => {
+    expect(reductionErrorPct(GDY106_TRAIN, GEAR_RATIO)).toBeLessThanOrEqual(0.5);
+    const broken = { hs: { ...GDY106_TRAIN.hs, zs: 15 }, ls: GDY106_TRAIN.ls };
+    expect(reductionErrorPct(broken, GEAR_RATIO)).toBeGreaterThan(0.5);
+    expect(assemblyReduction(broken).withinTolerance).toBe(false);
+  });
+});
+
+describe("assembly controls", () => {
+  test("orbit moves the camera and clamps the polar angle", () => {
+    const controls = createAssemblyControls();
+    const before = controls.getState();
+    controls.orbit(0.4, 0.2);
+    const after = controls.getState();
+    expect(after.azimuth).not.toBe(before.azimuth);
+    expect(after.polar).not.toBe(before.polar);
+    controls.orbit(0, 100);
+    expect(controls.getState().polar).toBeLessThanOrEqual(ASSEMBLY_VIEW_LIMITS.maxPolarAngle);
+    controls.orbit(0, -100);
+    expect(controls.getState().polar).toBeGreaterThanOrEqual(ASSEMBLY_VIEW_LIMITS.minPolarAngle);
+  });
+
+  test("zoom moves the distance and clamps to the stage limits", () => {
+    const controls = createAssemblyControls();
+    const before = controls.getState().distance;
+    controls.zoom(0.5);
+    expect(controls.getState().distance).toBeLessThan(before);
+    controls.zoom(2);
+    expect(controls.getState().distance).toBeCloseTo(before, 10);
+    controls.zoom(0.0001);
+    expect(controls.getState().distance).toBe(ASSEMBLY_VIEW_LIMITS.minDistance);
+    controls.zoom(1000);
+    expect(controls.getState().distance).toBe(ASSEMBLY_VIEW_LIMITS.maxDistance);
+  });
+
+  test("isolate solos one part and restores the full set", () => {
+    const controls = createAssemblyControls();
+    for (const id of REQUIRED_PARTS) {
+      controls.isolate(id);
+      expect(controls.getState().isolated).toBe(id);
+      expect([...visibleParts(controls.getState())]).toEqual([id]);
+    }
+    controls.isolate(null);
+    expect(controls.getState().isolated).toBe(null);
+    expect([...visibleParts(controls.getState())].sort()).toEqual([...REQUIRED_PARTS].sort());
+    controls.isolate("sun");
+    controls.reset();
+    expect(controls.getState().isolated).toBe(null);
+  });
+
+  test("negative: isolating an unknown part throws instead of silently dying", () => {
+    const controls = createAssemblyControls();
+    expect(() => controls.isolate("turbo" as unknown as AssemblyPartId)).toThrow();
+  });
+
+  test("negative: dead controls would fail — every control mutates observable state", () => {
+    const controls = createAssemblyControls();
+    const start = controls.getState();
+    controls.orbit(0.1, 0.05);
+    controls.zoom(0.9);
+    controls.isolate("motor");
+    const end = controls.getState();
+    expect(end.azimuth).not.toBe(start.azimuth);
+    expect(end.distance).not.toBe(start.distance);
+    expect(end.isolated).not.toBe(start.isolated);
+    const position = cameraPositionFor(end);
+    expect(Number.isFinite(position.x)).toBe(true);
+    expect(Number.isFinite(position.y)).toBe(true);
+    expect(Number.isFinite(position.z)).toBe(true);
+  });
+});

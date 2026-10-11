@@ -1,16 +1,16 @@
-import { t, type Lang } from "../../i18n";
+import { t } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import { SPEC } from "../../twin/truck930e/spec";
 import ProvenanceTable from "./ProvenanceTable";
 import { TRUCK_DIMS_M, TRUCK_WEIGHTS_KG } from "./cycle";
 
-export default function TruckSheet({ lang }: { lang: Lang }) {
-  const format = (value: number, digits: number) => formatNumber(value, lang, digits);
+export default function TruckSheet() {
+  const format = (value: number, digits: number) => formatNumber(value, digits);
   return (
     <>
-      <h2 className="og-h2">{t("truck.sheet.dimensionsTitle", lang)}</h2>
+      <h2 className="og-h2">{t("truck.sheet.dimensionsTitle")}</h2>
       <p className="og-body og-num">
-        {t("truck.sheet.dimensions", lang, {
+        {t("truck.sheet.dimensions", {
           length: format(TRUCK_DIMS_M.L, 2),
           width: format(TRUCK_DIMS_M.W, 2),
           height: format(TRUCK_DIMS_M.H, 2),
@@ -31,20 +31,20 @@ export default function TruckSheet({ lang }: { lang: Lang }) {
           overload: format(TRUCK_WEIGHTS_KG.overloadT, 0),
         })}
       </p>
-      <h2 className="og-h2">{t("truck.sheet.fluidsTitle", lang)}</h2>
-      <p className="og-body">{t("truck.sheet.fluids", lang)}</p>
-      <h2 className="og-h2">{t("truck.sheet.powertrainTitle", lang)}</h2>
+      <h2 className="og-h2">{t("truck.sheet.fluidsTitle")}</h2>
+      <p className="og-body">{t("truck.sheet.fluids")}</p>
+      <h2 className="og-h2">{t("truck.sheet.powertrainTitle")}</h2>
       <p className="og-body">
-        {t("truck.sheet.powertrain", lang, {
+        {t("truck.sheet.powertrain", {
           gridSeconds: format(0.7, 1),
           frontRatio: format(12.92, 2),
           rearRatio: format(9.4, 2),
           angle: format(6.5, 1),
         })}
       </p>
-      <h2 className="og-h2">{t("truck.sheet.brakesTitle", lang)}</h2>
-      <p className="og-body">{t("truck.sheet.brakes", lang)}</p>
-      <ProvenanceTable lang={lang} />
+      <h2 className="og-h2">{t("truck.sheet.brakesTitle")}</h2>
+      <p className="og-body">{t("truck.sheet.brakes")}</p>
+      <ProvenanceTable />
     </>
   );
 }

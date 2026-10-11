@@ -5,8 +5,8 @@ import SimPage from "../../lab/sim/SimPage";
 ---
 
 <BaseLayout breadcrumb={["nav.group.lab", "nav.simulation"]}>
-  <h1 class="og-visually-hidden" data-i18n-en={t("nav.simulation", "en")} data-i18n-es={t("nav.simulation", "es")}>
-    {t("nav.simulation", "en")}
+  <h1 class="og-visually-hidden">
+    {t("nav.simulation")}
   </h1>
   <SimPage client:only="preact" />
 </BaseLayout>

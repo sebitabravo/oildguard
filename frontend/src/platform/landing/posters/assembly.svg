@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" role="img" aria-labelledby="title desc">
+<title id="title">GDY106 wheel assembly cutaway study</title>
+<desc id="desc">Static poster: concentric cutaway of hub, sun, planets and carrier with the 32.62 to 1 reduction note.</desc>
+<rect width="800" height="450" fill="#0B0F14"/>
+<rect x="16" y="16" width="768" height="418" fill="none" stroke="#334155" stroke-width="1"/>
+<text x="40" y="52" font-family="JetBrains Mono, monospace" font-size="15" letter-spacing="2" fill="#E2E8F0">GDY106 · CUTAWAY STUDY</text>
+<text x="40" y="74" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2" fill="#8A94A6">STATIC POSTER · 3D LOADS IN VIEW</text>
+<g transform="translate(300,245)">
+<circle r="150" fill="none" stroke="#334155" stroke-width="26"/>
+<circle r="150" fill="none" stroke="#F59E0B" stroke-width="1" stroke-dasharray="3 7" opacity="0.7"/>
+<circle r="112" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="2 6"/>
+<circle r="104" fill="none" stroke="#475569" stroke-width="10"/>
+<g stroke="#475569" stroke-width="3">
+<line x1="0" y1="-104" x2="0" y2="-88"/><line x1="0" y1="88" x2="0" y2="104"/>
+<line x1="-104" y1="0" x2="-88" y2="0"/><line x1="88" y1="0" x2="104" y2="0"/>
+<line x1="-73" y1="-73" x2="-62" y2="-62"/><line x1="73" y1="73" x2="62" y2="62"/>
+<line x1="73" y1="-73" x2="62" y2="-62"/><line x1="-73" y1="73" x2="-62" y2="62"/>
+</g>
+<g fill="none" stroke="#8A94A6" stroke-width="2">
+<circle cx="0" cy="-58" r="26"/><circle cx="50" cy="29" r="26"/><circle cx="-50" cy="29" r="26"/>
+</g>
+<circle r="24" fill="#18202C" stroke="#F59E0B" stroke-width="2"/>
+<circle r="6" fill="#F59E0B"/>
+<line x1="0" y1="0" x2="0" y2="-58" stroke="#F59E0B" stroke-width="1" stroke-dasharray="4 3"/>
+</g>
+<g font-family="JetBrains Mono, monospace" font-size="12" fill="#C7D0DE">
+<text x="540" y="150">SUN · CENTER</text>
+<text x="540" y="180">PLANETS · 3 SHOWN</text>
+<text x="540" y="210">CARRIER · OUTPUT</text>
+<text x="540" y="240">RING · FIXED</text>
+</g>
+<g font-family="JetBrains Mono, monospace" font-size="12" fill="#8A94A6">
+<line x1="470" y1="146" x2="520" y2="146" stroke="#475569" stroke-width="1"/>
+<line x1="470" y1="176" x2="520" y2="176" stroke="#475569" stroke-width="1"/>
+<line x1="470" y1="206" x2="520" y2="206" stroke="#475569" stroke-width="1"/>
+<line x1="470" y1="236" x2="520" y2="236" stroke="#475569" stroke-width="1"/>
+</g>
+<text x="540" y="300" font-family="JetBrains Mono, monospace" font-size="22" fill="#F59E0B">32.62 : 1</text>
+<text x="540" y="322" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2" fill="#8A94A6">REDUCTION · STUDY MODEL</text>
+<text x="40" y="410" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2" fill="#8A94A6">SYNTHETIC-PROXY · NO FIELD DATA</text>
+</svg>

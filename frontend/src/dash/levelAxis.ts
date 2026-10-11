@@ -1,4 +1,3 @@
-import type { Lang } from "../i18n";
 import { formatNumber } from "../i18n/numberFormat";
 
 export function timeAxisTicks(tMin: number, tMax: number): Array<{ t_s: number; agoS: number }> {
@@ -9,9 +8,9 @@ export function timeAxisTicks(tMin: number, tMax: number): Array<{ t_s: number; 
   });
 }
 
-export function agoLabel(agoS: number, lang: Lang, nowLabel: string): string {
+export function agoLabel(agoS: number, nowLabel: string): string {
   if (agoS <= 0) return nowLabel;
   return agoS < 180
-    ? `−${formatNumber(agoS, lang, 0)} s`
-    : `−${formatNumber(agoS / 60, lang, 0)} min`;
+    ? `−${formatNumber(agoS, 0)} s`
+    : `−${formatNumber(agoS / 60, 0)} min`;
 }

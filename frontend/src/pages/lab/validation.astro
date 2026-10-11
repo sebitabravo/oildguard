@@ -5,8 +5,8 @@ import ValidationPage from "../../lab/validation/ValidationPage";
 ---
 
 <BaseLayout breadcrumb={["nav.group.lab", "nav.validation"]}>
-  <h1 class="og-visually-hidden" data-i18n-en={t("nav.validation", "en")} data-i18n-es={t("nav.validation", "es")}>
-    {t("nav.validation", "en")}
+  <h1 class="og-visually-hidden">
+    {t("nav.validation")}
   </h1>
   <ValidationPage client:only="preact" />
 </BaseLayout>

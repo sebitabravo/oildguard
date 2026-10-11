@@ -6,7 +6,7 @@
 
 import type { CSSProperties } from "preact";
 import type { RulData } from "../sim/api";
-import { t, useLang } from "../i18n";
+import { t } from "../i18n";
 import { formatNumber } from "../i18n/numberFormat";
 import { localizeBackendMessage } from "./backendNotes";
 import { localizeUnevaluatedReason } from "./evaluationReason";
@@ -28,24 +28,23 @@ export default function RulPanel({
   analyzerUnavailable?: boolean;
   evaluationReason?: string;
 }) {
-  const [lang] = useLang();
-  const reasonCopy = localizeUnevaluatedReason(evaluationReason, lang);
+  const reasonCopy = localizeUnevaluatedReason(evaluationReason);
   const noteCopy = rul
-    ? localizeBackendMessage(rul.note_message, rul.note, lang)
+    ? localizeBackendMessage(rul.note_message, rul.note)
     : undefined;
   const detailCopy = rul?.reason_message
-    ? localizeBackendMessage(rul.reason_message, rul.reason ?? "", lang)
+    ? localizeBackendMessage(rul.reason_message, rul.reason ?? "")
     : undefined;
   if (analyzerUnavailable || rul?.status === "unavailable") {
     return (
       <div style={{ ...panel, borderColor: "var(--og-red)" }}>
-        <strong>{t("rul.title", lang)}</strong>
+        <strong>{t("rul.title")}</strong>
         <p style={{ margin: "6px 0 0", color: "var(--og-body)", fontSize: 13 }}>
           {analyzerUnavailable
-            ? reasonCopy ?? t("dash.analyzer.unavailable", lang)
+            ? reasonCopy ?? t("dash.analyzer.unavailable")
             : rul?.note_message
               ? noteCopy
-              : reasonCopy ?? t("dash.analyzer.unavailable", lang)}
+              : reasonCopy ?? t("dash.analyzer.unavailable")}
         </p>
       </div>
     );
@@ -53,9 +52,9 @@ export default function RulPanel({
   if (!rul) {
     return (
       <div style={panel}>
-        <strong>{t("rul.title", lang)}</strong>
+        <strong>{t("rul.title")}</strong>
         <p style={{ margin: "6px 0 0", color: "var(--og-muted)", fontSize: 13 }}>
-          {t("rul.unavailable", lang)}
+          {t("rul.unavailable")}
         </p>
       </div>
     );
@@ -64,12 +63,12 @@ export default function RulPanel({
     return (
       <div style={{ ...panel, borderColor: "var(--og-amber)" }}>
         <div style={{ fontWeight: 700 }}>
-          {t("rul.suppressed", lang)}
+          {t("rul.suppressed")}
         </div>
         <p style={{ margin: "6px 0", color: "var(--og-body)", fontSize: 13 }}>
           {rul.note_message
             ? noteCopy
-            : reasonCopy ?? (noteCopy?.trim() ? noteCopy : t("rul.suppressedNote", lang))}
+            : reasonCopy ?? (noteCopy?.trim() ? noteCopy : t("rul.suppressedNote"))}
         </p>
         {detailCopy && (
           <p style={{ margin: "0 0 6px", color: "var(--og-body)", fontSize: 13 }}>
@@ -77,9 +76,9 @@ export default function RulPanel({
           </p>
         )}
         <p style={{ margin: 0, color: "var(--og-muted)", fontSize: 12 }}>
-          {t("rul.panel.suppressedDetail", lang, {
-            model: rul.model === "synthetic-proxy" ? t("rul.model.syntheticProxy", lang) : rul.model,
-            qualifier: t("rul.unproven", lang),
+          {t("rul.panel.suppressedDetail", {
+            model: rul.model === "synthetic-proxy" ? t("rul.model.syntheticProxy") : rul.model,
+            qualifier: t("rul.unproven"),
           })}
         </p>
       </div>
@@ -94,12 +93,12 @@ export default function RulPanel({
   return (
     <div style={{ ...panel, borderColor: horizon.color }}>
       <div style={{ fontWeight: 700 }}>
-        {t("rul.title", lang)} ·{" "}
+        {t("rul.title")} ·{" "}
         <span style={{ color: horizon.color }}>
-          {t("rul.panel.hoursToCritical", lang, { hours: formatNumber(rul.hours, lang, 2) })}
+          {t("rul.panel.hoursToCritical", { hours: formatNumber(rul.hours, 2) })}
         </span>{" "}
         <span role="status" style={{ color: horizon.color, fontSize: 12 }}>
-          {t(horizon.copy, lang)}
+          {t(horizon.copy)}
         </span>
       </div>
       <div
@@ -113,25 +112,25 @@ export default function RulPanel({
         }}
       >
         <span>
-          {t("rul.panel.warningIn", lang, { hours: formatNumber(rul.hours_to_warning, lang, 2) })}
+          {t("rul.panel.warningIn", { hours: formatNumber(rul.hours_to_warning, 2) })}
         </span>
         <span>
-          {t("rul.panel.haulCycles", lang, { cycles: formatNumber(rul.haul_cycles, lang, 1) })}
+          {t("rul.panel.haulCycles", { cycles: formatNumber(rul.haul_cycles, 1) })}
         </span>
         <span>
-          {t("rul.panel.shifts", lang, { shifts: formatNumber(rul.shifts, lang, 2) })}
+          {t("rul.panel.shifts", { shifts: formatNumber(rul.shifts, 2) })}
         </span>
         <span>
-          {t("rul.panel.confidenceValue", lang, { confidence: formatNumber(rul.confidence, lang, 3) })}
+          {t("rul.panel.confidenceValue", { confidence: formatNumber(rul.confidence, 3) })}
         </span>
       </div>
       <p style={{ margin: "8px 0 0", color: "var(--og-muted)", fontSize: 12 }}>
-        {t("rul.panel.summary", lang, {
-          slope: formatNumber(rul.slope_L_per_h, lang, 3),
-          r2: formatNumber(rul.r2, lang, 3),
-          level: formatNumber(rul.current_level_L, lang, 3),
-          model: rul.model === "synthetic-proxy" ? t("rul.model.syntheticProxy", lang) : rul.model,
-          qualifier: t("rul.unproven", lang),
+        {t("rul.panel.summary", {
+          slope: formatNumber(rul.slope_L_per_h, 3),
+          r2: formatNumber(rul.r2, 3),
+          level: formatNumber(rul.current_level_L, 3),
+          model: rul.model === "synthetic-proxy" ? t("rul.model.syntheticProxy") : rul.model,
+          qualifier: t("rul.unproven"),
         })}
       </p>
     </div>

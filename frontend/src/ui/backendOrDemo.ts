@@ -1,5 +1,4 @@
 import { useEffect, useState } from "preact/hooks";
-import type { Lang } from "../i18n";
 import { getHealth } from "../sim/api";
 
 export type DataSource = "loading" | "live" | "demo";
@@ -100,10 +99,10 @@ export function useBackendState(timeoutMs = 4_000): BackendState {
   return state;
 }
 
-export function backendStateLabel(state: BackendState, lang: Lang): string {
+export function backendStateLabel(state: BackendState): string {
   return state === "live"
-    ? lang === "es" ? "Backend en vivo" : "Backend live"
+    ? "Backend en vivo"
     : state === "demo"
-      ? lang === "es" ? "Datos demo locales" : "Local demo data"
-      : lang === "es" ? "Comprobando backend" : "Checking backend";
+      ? "Datos demo locales"
+      : "Comprobando backend";
 }

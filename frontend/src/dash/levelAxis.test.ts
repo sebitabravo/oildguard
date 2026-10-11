@@ -13,9 +13,9 @@ describe("level chart time axis", () => {
   });
 
   test("labels spans in seconds below three minutes and minutes above", () => {
-    expect(agoLabel(0, "en", "now")).toBe("now");
-    expect(agoLabel(90, "en", "now")).toBe("−90 s");
-    expect(agoLabel(900, "en", "now")).toBe("−15 min");
-    expect(agoLabel(2700, "es", "ahora")).toBe("−45 min");
+    expect(agoLabel(0, "ahora")).toBe("ahora");
+    expect(agoLabel(90, "ahora")).toBe("−90 s");
+    expect(agoLabel(900, "ahora")).toBe("−15 min");
+    expect(agoLabel(2700, "ahora")).toBe("−45 min");
   });
 });

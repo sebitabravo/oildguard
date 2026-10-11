@@ -4,8 +4,8 @@ import { t } from "../../i18n";
 import AlertsInboxPage from "../../ops/alerts/AlertsInboxPage";
 ---
 <BaseLayout breadcrumb={["nav.group.alerts", "nav.alerts"]}>
-  <h1 class="og-visually-hidden" data-i18n-en={t("alerts.title", "en")} data-i18n-es={t("alerts.title", "es")}>
-    {t("alerts.title", "en")}
+  <h1 class="og-visually-hidden">
+    {t("alerts.title")}
   </h1>
   <AlertsInboxPage client:only="preact" />
 </BaseLayout>

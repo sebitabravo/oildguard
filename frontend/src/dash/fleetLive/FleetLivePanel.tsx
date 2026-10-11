@@ -5,7 +5,7 @@ import {
   getIngestMetrics,
 } from "../../sim/api";
 import { formatNumber } from "../../i18n/numberFormat";
-import { t, type DictKey, type Lang } from "../../i18n";
+import { t, type DictKey } from "../../i18n";
 import {
   classifyLiveStatus,
   deriveFleetWebSocketUrl,
@@ -18,10 +18,6 @@ import {
   type LiveMetric,
   type LiveStatus,
 } from "./logic";
-
-interface Props {
-  lang: Lang;
-}
 
 const METRIC_LABELS: Record<LiveMetric, string> = {
   pressure_kpa: "dash.live.metric.pressure",
@@ -41,29 +37,27 @@ function metricDigits(metric: LiveMetric): number {
   return metric === "temperature_c" || metric === "level_liters" ? 1 : 2;
 }
 
-function statusLabel(status: LiveStatus, lang: Lang): string {
+function statusLabel(status: LiveStatus): string {
   return t(
     status === "backpressure"
       ? "dash.live.status.backpressure"
       : status === "lagging"
         ? "dash.live.status.lagging"
         : "dash.live.status.keepingUp",
-    lang,
   );
 }
 
-function stateLabel(state: LiveConnectionState, lang: Lang): string {
+function stateLabel(state: LiveConnectionState): string {
   return t(
     state === "connecting"
       ? "dash.live.waiting"
       : state === "polling"
         ? "dash.live.polling"
         : "dash.live.connected",
-    lang,
   );
 }
 
-export default function FleetLivePanel({ lang }: Props) {
+export default function FleetLivePanel() {
   const [snapshot, setSnapshot] = useState<FleetLiveSnapshot | null>(null);
   const [state, setState] = useState<LiveConnectionState>("connecting");
   const [previousDropped, setPreviousDropped] = useState<number | null>(null);
@@ -172,30 +166,30 @@ export default function FleetLivePanel({ lang }: Props) {
       <div className="og-fleet-live__heading">
         <div>
           <h2 id="og-fleet-live-title" className="og-dashboard-sheet-title">
-            {t("dash.live.title", lang)}
+            {t("dash.live.title")}
           </h2>
-          <p>{t("dash.live.caption", lang)}</p>
+          <p>{t("dash.live.caption")}</p>
         </div>
         <span className={`og-fleet-live__status ${statusClass}`}>
-          <span aria-hidden="true">●</span> {status ? statusLabel(status, lang) : stateLabel(state, lang)}
+          <span aria-hidden="true">●</span> {status ? statusLabel(status) : stateLabel(state)}
         </span>
       </div>
       {!snapshot ? (
-        <p className="og-fleet-live__waiting">{stateLabel(state, lang)}</p>
+        <p className="og-fleet-live__waiting">{stateLabel(state)}</p>
       ) : (
         <>
           <div className="og-fleet-live__meta">
-            <span>{t("dash.live.window", lang, { value: formatNumber(snapshot.windowS, lang, 0) })}</span>
-            <span>{t("dash.live.asOf", lang, { value: snapshot.asOf })}</span>
+            <span>{t("dash.live.window", { value: formatNumber(snapshot.windowS, 0) })}</span>
+            <span>{t("dash.live.asOf", { value: snapshot.asOf })}</span>
           </div>
           <div className="og-fleet-live__overview">
-            <div><strong>{formatNumber(snapshot.devices, lang, 0)}</strong><span>{t("dash.live.devices", lang)}</span></div>
-            <div><strong>{formatNumber(snapshot.acceptedRowsPerS, lang, 1)}</strong><span>{t("dash.live.accepted", lang)}</span></div>
-            <div><strong>{formatNumber(snapshot.rejectedRowsPerS, lang, 1)}</strong><span>{t("dash.live.rejected", lang)}</span></div>
-            <div><strong>{formatNumber(snapshot.droppedBatches, lang, 0)}</strong><span>{t("dash.live.dropped", lang)}</span></div>
-            <div><strong>{snapshot.latencyP50S === null ? "—" : formatNumber(snapshot.latencyP50S, lang, 3)}</strong><span>{t("dash.live.p50", lang)}</span></div>
-            <div><strong>{snapshot.latencyP99S === null ? "—" : formatNumber(snapshot.latencyP99S, lang, 3)}</strong><span>{t("dash.live.p99", lang)}</span></div>
-            <div><strong>{formatNumber(snapshot.queueDepth, lang, 0)} / {formatNumber(snapshot.queueCapacity, lang, 0)}</strong><span>{t("dash.live.queue", lang)}</span></div>
+            <div><strong>{formatNumber(snapshot.devices, 0)}</strong><span>{t("dash.live.devices")}</span></div>
+            <div><strong>{formatNumber(snapshot.acceptedRowsPerS, 1)}</strong><span>{t("dash.live.accepted")}</span></div>
+            <div><strong>{formatNumber(snapshot.rejectedRowsPerS, 1)}</strong><span>{t("dash.live.rejected")}</span></div>
+            <div><strong>{formatNumber(snapshot.droppedBatches, 0)}</strong><span>{t("dash.live.dropped")}</span></div>
+            <div><strong>{snapshot.latencyP50S === null ? "—" : formatNumber(snapshot.latencyP50S, 3)}</strong><span>{t("dash.live.p50")}</span></div>
+            <div><strong>{snapshot.latencyP99S === null ? "—" : formatNumber(snapshot.latencyP99S, 3)}</strong><span>{t("dash.live.p99")}</span></div>
+            <div><strong>{formatNumber(snapshot.queueDepth, 0)} / {formatNumber(snapshot.queueCapacity, 0)}</strong><span>{t("dash.live.queue")}</span></div>
           </div>
           <div className="og-fleet-live__metrics">
             {Object.entries(METRIC_LABELS).map(([metric, label]) => {
@@ -204,11 +198,11 @@ export default function FleetLivePanel({ lang }: Props) {
               if (!values) return null;
               return (
                 <div className="og-fleet-live__metric" key={key}>
-                  <h3>{t(label as DictKey, lang)} <span>({metricUnit(key)})</span></h3>
+                  <h3>{t(label as DictKey)} <span>({metricUnit(key)})</span></h3>
                   <div>
-                    <span><strong>{formatNumber(values.p50, lang, metricDigits(key))}</strong><small>{t("dash.live.p50", lang)}</small></span>
-                    <span><strong>{formatNumber(values.p95, lang, metricDigits(key))}</strong><small>{t("dash.live.p95", lang)}</small></span>
-                    <span><strong>{formatNumber(values.p99, lang, metricDigits(key))}</strong><small>{t("dash.live.p99", lang)}</small></span>
+                    <span><strong>{formatNumber(values.p50, metricDigits(key))}</strong><small>{t("dash.live.p50")}</small></span>
+                    <span><strong>{formatNumber(values.p95, metricDigits(key))}</strong><small>{t("dash.live.p95")}</small></span>
+                    <span><strong>{formatNumber(values.p99, metricDigits(key))}</strong><small>{t("dash.live.p99")}</small></span>
                   </div>
                 </div>
               );

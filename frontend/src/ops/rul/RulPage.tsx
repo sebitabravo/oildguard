@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import { demoDataset, type DemoWheel } from "../../demo/dataset";
 import { getRul, type RulData } from "../../sim/api";
 import { formatNumber } from "../../i18n/numberFormat";
-import { t, useLang } from "../../i18n";
+import { t } from "../../i18n";
 import {
   FilterBar, PageHeader, SegmentedControl, SyntheticBadge, TimeSeriesChart,
 } from "../../ui/foundation";
@@ -90,13 +90,12 @@ function liveCard(wheel: DemoWheel, data: RulData): RulViewCard {
   };
 }
 
-function horizonLabel(card: RulViewCard, lang: "en" | "es", unit: RulUnit): string {
-  if (!card.projected || card.horizonHours === null) return t("rul.suppressed", lang);
-  return `${formatNumber(convertRulHours(card.horizonHours, unit), lang, unit === "hours" ? 1 : 0)} ${t(`rul.unit.${unit}`, lang)}`;
+function horizonLabel(card: RulViewCard, unit: RulUnit): string {
+  if (!card.projected || card.horizonHours === null) return t("rul.suppressed");
+  return `${formatNumber(convertRulHours(card.horizonHours, unit), unit === "hours" ? 1 : 0)} ${t(`rul.unit.${unit}`)}`;
 }
 
 export default function RulPage() {
-  const [lang] = useLang();
   const [unit, setUnit] = useState<RulUnit>("hours");
   const [onlyProjected, setOnlyProjected] = useState(false);
   const [liveRul, setLiveRul] = useState<RulData | null>(null);
@@ -129,26 +128,26 @@ export default function RulPage() {
     <main className="og-page og-rul-page">
       <div className="og-page__inner">
         <PageHeader
-          eyebrow={t("rul.eyebrow", lang)}
-          title={t("rul.title", lang)}
-          description={t("rul.description", lang)}
-          meta={<div className="og-rul-header-meta"><SyntheticBadge lang={lang} /><small>{liveLoaded ? t("rul.live", lang) : t("rul.demo", lang)}</small></div>}
+          eyebrow={t("rul.eyebrow")}
+          title={t("rul.title")}
+          description={t("rul.description")}
+          meta={<div className="og-rul-header-meta"><SyntheticBadge /><small>{liveLoaded ? t("rul.live") : t("rul.demo")}</small></div>}
         />
-        <p className="og-rul-scope">{t("rul.scope", lang)}</p>
+        <p className="og-rul-scope">{t("rul.scope")}</p>
         <FilterBar>
           <SegmentedControl
-            options={(["hours", "cycles", "shifts"] as RulUnit[]).map((option) => t(`rul.unit.${option}`, lang))}
-            value={t(`rul.unit.${unit}`, lang)}
+            options={(["hours", "cycles", "shifts"] as RulUnit[]).map((option) => t(`rul.unit.${option}`))}
+            value={t(`rul.unit.${unit}`)}
             onChange={(value) => {
-              const next = (["hours", "cycles", "shifts"] as RulUnit[]).find((option) => t(`rul.unit.${option}`, lang) === value);
+              const next = (["hours", "cycles", "shifts"] as RulUnit[]).find((option) => t(`rul.unit.${option}`) === value);
               if (next) setUnit(next);
             }}
           />
           <button type="button" className={`og-rul-filter ${onlyProjected ? "is-active" : ""}`} aria-pressed={onlyProjected} onClick={() => setOnlyProjected((value) => !value)}>
-            {onlyProjected ? t("rul.filter.projected", lang) : t("rul.filter.all", lang)}
+            {onlyProjected ? t("rul.filter.projected") : t("rul.filter.all")}
           </button>
         </FilterBar>
-        <section className="og-rul-grid" aria-label={t("rul.title", lang)}>
+        <section className="og-rul-grid" aria-label={t("rul.title")}>
           {cards.map((card) => (
             <article className={`og-rul-card og-rul-card--${card.horizonClass ?? "suppressed"}`}>
               <header className="og-rul-card__header">
@@ -156,43 +155,43 @@ export default function RulPage() {
                 <span className={`og-rul-source og-rul-source--${card.source.toLowerCase()}`}>{card.source}</span>
               </header>
               <div className="og-rul-card__horizon">
-                <span className="og-label">{t("rul.horizon", lang)}</span>
-                <strong>{horizonLabel(card, lang, unit)}</strong>
-                {card.projected && card.horizonHours !== null && <small>±{formatNumber(convertRulHours(card.horizonHours * 0.1, unit), lang, unit === "hours" ? 1 : 0)} {t(`rul.unit.${unit}`, lang)}</small>}
-                {card.horizonClass && <b>{t(`rul.${card.horizonClass}`, lang)}</b>}
+                <span className="og-label">{t("rul.horizon")}</span>
+                <strong>{horizonLabel(card, unit)}</strong>
+                {card.projected && card.horizonHours !== null && <small>±{formatNumber(convertRulHours(card.horizonHours * 0.1, unit), unit === "hours" ? 1 : 0)} {t(`rul.unit.${unit}`)}</small>}
+                {card.horizonClass && <b>{t(`rul.${card.horizonClass}`)}</b>}
               </div>
               <div className="og-rul-card__metrics">
-                <span>{t("rul.lossRate", lang)} <b>{formatNumber(card.lossRate, lang, 2)} L/100 h</b></span>
-                <span>{t("rul.referenceLevel", lang)} <b>{formatNumber(card.referenceLevel, lang, 1)} ± {formatNumber(card.sigma, lang, 1)} L</b></span>
-                {card.confidence !== null && <span>R² <b>{formatNumber(card.confidence, lang, 3)}</b></span>}
+                <span>{t("rul.lossRate")} <b>{formatNumber(card.lossRate, 2)} L/100 h</b></span>
+                <span>{t("rul.referenceLevel")} <b>{formatNumber(card.referenceLevel, 1)} ± {formatNumber(card.sigma, 1)} L</b></span>
+                {card.confidence !== null && <span>R² <b>{formatNumber(card.confidence, 3)}</b></span>}
               </div>
               {card.projected ? (
                 <div className="og-rul-projection">
                   <TimeSeriesChart
-                    lang={lang}
+
                     values={card.projection}
                     sigma={card.source === "DEMO" ? card.projection.map(() => card.sigma) : []}
-                    title={`${t("rul.projection", lang)} ${card.wheelId}`}
+                    title={`${t("rul.projection")} ${card.wheelId}`}
                     domain={[0, 95]}
                     yUnit="L"
                     thresholds={[
-                      { value: WARNING_L, label: t("history.threshold.warning", lang) },
-                      { value: CRITICAL_L, label: t("history.threshold.critical", lang) },
+                      { value: WARNING_L, label: t("history.threshold.warning") },
+                      { value: CRITICAL_L, label: t("history.threshold.critical") },
                     ]}
                     height={112}
                   />
-                  <small>{t("rul.projection", lang)} · 30%</small>
+                  <small>{t("rul.projection")} · 30%</small>
                 </div>
               ) : (
-                <p className="og-rul-suppressed">{t("rul.suppressed", lang)}</p>
+                <p className="og-rul-suppressed">{t("rul.suppressed")}</p>
               )}
               <footer><span className="og-chip">{card.source}</span><small>{card.wheel.model}</small></footer>
             </article>
           ))}
         </section>
         <section className="og-rul-assumptions">
-          <h3>{t("rul.assumptions", lang)}</h3>
-          <p>{t("rul.assumptionsText", lang)}</p>
+          <h3>{t("rul.assumptions")}</h3>
+          <p>{t("rul.assumptionsText")}</p>
         </section>
       </div>
     </main>

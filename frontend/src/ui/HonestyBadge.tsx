@@ -1,5 +1,5 @@
 import { useId, useState } from "preact/hooks";
-import { t, useLang } from "../i18n";
+import { t } from "../i18n";
 
 // Insignia compacta de honestidad visual (SYNTHETIC-PROXY, modelo provisional):
 // siempre visible, la nota completa se expande al hacer clic y vive en el title.
@@ -14,7 +14,6 @@ interface HonestyBadgeProps {
 
 export default function HonestyBadge({ label, text, actionLabel, onAction }: HonestyBadgeProps) {
   const [open, setOpen] = useState(false);
-  const [lang] = useLang();
   const id = useId();
   return (
     <div className="og-honesty">
@@ -45,7 +44,7 @@ export default function HonestyBadge({ label, text, actionLabel, onAction }: Hon
               </button>
             )}
             <button type="button" className="og-btn og-btn--sm" onClick={() => setOpen(false)}>
-              {t("badge.close", lang)}
+              {t("badge.close")}
             </button>
           </div>
         </div>

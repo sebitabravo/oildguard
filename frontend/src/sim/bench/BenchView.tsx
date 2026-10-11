@@ -18,7 +18,7 @@ import { DEMO_OIL_EVENT, parseDemoOil } from "../../dash/demoBus";
 import { CAPACITY_L } from "../../twin/physics";
 import { parseWheelUrl } from "./wheelUrl";
 import { buildGearRatioDisplay } from "./gearRatioDisplay";
-import { t, type DictKey, useLang } from "../../i18n";
+import { t, type DictKey } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import Drawer from "../../ui/Drawer";
 import HonestyBadge from "../../ui/HonestyBadge";
@@ -46,8 +46,7 @@ export default function BenchView() {
   const [mode, setMode] = useState<BenchMode>(initial.mode);
   const [cutaway, setCutaway] = useState(initial.cutaway);
   const [exploded, setExploded] = useState(initial.exploded);
-  const [lang] = useLang();
-  const gearRatioDisplay = buildGearRatioDisplay(lang);
+  const gearRatioDisplay = buildGearRatioDisplay();
 
   useEffect(() => {
     const onDemoOil = (e: Event) => {
@@ -61,20 +60,20 @@ export default function BenchView() {
   const frac = clamp01(oilPct / 100);
   const oilState = oilStateFor(frac);
   const oilCss = oilCssFor(oilState);
-  const oilLitresText = formatNumber(frac * CAPACITY_L, lang, 1);
-  const oilValueText = t("bench.field.oilValueText", lang, {
+  const oilLitresText = formatNumber(frac * CAPACITY_L, 1);
+  const oilValueText = t("bench.field.oilValueText", {
     litres: oilLitresText,
-    percent: formatNumber(oilPct, lang, 0),
+    percent: formatNumber(oilPct, 0),
   });
-  const viscosityValue = formatNumber(viscosity, lang, 2);
+  const viscosityValue = formatNumber(viscosity, 2);
   const viscosityStateKey = viscosity < 0.8
     ? "bench.viscosity.state.dilute"
     : viscosity < 1.5
       ? "bench.viscosity.state.nominal"
       : "bench.viscosity.state.degraded";
-  const viscosityValueText = t("bench.field.viscosityValueText", lang, {
+  const viscosityValueText = t("bench.field.viscosityValueText", {
     value: viscosityValue,
-    state: t(viscosityStateKey, lang),
+    state: t(viscosityStateKey),
   });
   const settlingMs = estimateSettlingMs(viscosity);
   const resting = mode === "rest";
@@ -85,8 +84,8 @@ export default function BenchView() {
     >
       <label className="og-field">
         <span className="og-field__label">
-          <span>{t("bench.field.oil", lang)}</span>
-          <span className="og-num" style={{ color: oilCss }}>{formatOilText(frac, lang)}</span>
+          <span>{t("bench.field.oil")}</span>
+          <span className="og-num" style={{ color: oilCss }}>{formatOilText(frac)}</span>
         </span>
         <input
           type="range"
@@ -94,15 +93,15 @@ export default function BenchView() {
           max={100}
           step={1}
           value={oilPct}
-          aria-label={t("bench.field.oilAccessible", lang)}
+          aria-label={t("bench.field.oilAccessible")}
           aria-valuetext={oilValueText}
           onInput={(e) => setOilPct(Number(e.currentTarget.value))}
         />
       </label>
       <label className="og-field">
         <span className="og-field__label">
-          <span>{t("bench.field.viscosity", lang)}</span>
-          <span className="og-num">{formatNumber(viscosity, lang, 2)} ({viscosityLabel(viscosity, lang)})</span>
+          <span>{t("bench.field.viscosity")}</span>
+          <span className="og-num">{formatNumber(viscosity, 2)} ({viscosityLabel(viscosity)})</span>
         </span>
         <input
           type="range"
@@ -110,7 +109,7 @@ export default function BenchView() {
           max={VISC_MAX}
           step={0.05}
           value={viscosity}
-          aria-label={t("bench.field.viscosity", lang)}
+          aria-label={t("bench.field.viscosity")}
           aria-valuetext={viscosityValueText}
           onInput={(e) => setViscosity(Number(e.currentTarget.value))}
         />
@@ -120,7 +119,7 @@ export default function BenchView() {
         className={`og-btn ${resting ? "og-btn--ok" : "og-btn--primary"}`}
         onClick={() => setMode(resting ? "move" : "rest")}
       >
-        {t(resting ? "bench.action.startMove" : "bench.action.stopForRest", lang)}
+        {t(resting ? "bench.action.startMove" : "bench.action.stopForRest")}
       </button>
       <label className="og-check">
         <input
@@ -128,7 +127,7 @@ export default function BenchView() {
           checked={cutaway}
           onChange={(e) => setCutaway(e.currentTarget.checked)}
         />
-        {t("bench.action.cutaway", lang)}
+        {t("bench.action.cutaway")}
       </label>
       <label className="og-check">
         <input
@@ -136,35 +135,35 @@ export default function BenchView() {
           checked={exploded}
           onChange={(e) => setExploded(e.currentTarget.checked)}
         />
-        {t("bench.action.exploded", lang)}
+        {t("bench.action.exploded")}
       </label>
     </div>
   );
 
   const status = (
     <>
-      <h2 className="og-h2">{t("bench.readout.title", lang)}</h2>
+      <h2 className="og-h2">{t("bench.readout.title")}</h2>
       {initial.truckId && initial.wheelId && (
         <p className="og-body og-num" aria-live="polite">
-          {t("wheel.fleetContext", lang)}: {initial.truckId} · {initial.wheelId}
+          {t("wheel.fleetContext")}: {initial.truckId} · {initial.wheelId}
         </p>
       )}
       <div className="og-card og-card--tone" style={{ ["--tone" as string]: oilCss }}>
         <div className="og-value og-value--lg" style={{ color: oilCss }}>
-          {formatOilText(frac, lang)}
+          {formatOilText(frac)}
         </div>
         <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
-          {oilStateLabel(oilState, lang)} · {t("wheel.reference", lang)}
+          {oilStateLabel(oilState)} · {t("wheel.reference")}
         </div>
         <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
-          {t("bench.readout.settling", lang, {
-            milliseconds: formatNumber(settlingMs, lang, 0),
-            value: formatNumber(viscosity, lang, 2),
-            label: viscosityLabel(viscosity, lang),
+          {t("bench.readout.settling", {
+            milliseconds: formatNumber(settlingMs, 0),
+            value: formatNumber(viscosity, 2),
+            label: viscosityLabel(viscosity),
           })}
         </div>
         <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
-          {t("bench.readout.train", lang, gearRatioDisplay)}
+          {t("bench.readout.train", gearRatioDisplay)}
         </div>
         <div
           style={{
@@ -175,11 +174,11 @@ export default function BenchView() {
           }}
         >
           {resting
-            ? t("hud.recal", lang)
-            : t("bench.readout.moving", lang)}
+            ? t("hud.recal")
+            : t("bench.readout.moving")}
         </div>
       </div>
-      <h2 className="og-h2">{t("bench.sensor.title", lang)}</h2>
+      <h2 className="og-h2">{t("bench.sensor.title")}</h2>
       <ul className="og-plain">
         {BENCH_SENSORS.map((sensor) => {
           const active = sensor.id === selectedId;
@@ -192,14 +191,14 @@ export default function BenchView() {
                 onClick={() => setSelectedId(active ? null : sensor.id)}
               >
                 <span className="og-sensor-id" aria-hidden="true">{sensor.identityCue}</span>
-                <strong>{t(`bench.sensor.${sensor.id}.label` as DictKey, lang)}</strong>
+                <strong>{t(`bench.sensor.${sensor.id}.label` as DictKey)}</strong>
                 <br />
                 <span className="og-muted" style={{ fontSize: 13 }}>
-                  {t(`bench.sensor.${sensor.id}.signal` as DictKey, lang)}
+                  {t(`bench.sensor.${sensor.id}.signal` as DictKey)}
                 </span>
                 <br />
                 <span style={{ color: "var(--og-body)", fontSize: 13 }}>
-                  {t(`bench.sensor.${sensor.id}.mount` as DictKey, lang)}
+                  {t(`bench.sensor.${sensor.id}.mount` as DictKey)}
                 </span>
               </button>
             </li>
@@ -211,33 +210,33 @@ export default function BenchView() {
 
   const sheet = (
     <>
-      <h2 className="og-h2">{t("bench.chain.title", lang)}</h2>
+      <h2 className="og-h2">{t("bench.chain.title")}</h2>
       <ol className="og-list">
         {GDY106_CHAIN_PARTS.map((part) => (
-          <li key={part}>{t(`bench.chain.${part}` as DictKey, lang)}</li>
+          <li key={part}>{t(`bench.chain.${part}` as DictKey)}</li>
         ))}
       </ol>
-      <p className="og-body og-muted">{t("bench.narrative.oilDuct", lang)}</p>
-      <p className="og-body">{t("bench.narrative.noDrill", lang)}</p>
+      <p className="og-body og-muted">{t("bench.narrative.oilDuct")}</p>
+      <p className="og-body">{t("bench.narrative.noDrill")}</p>
     </>
   );
 
   const notes = (
     <>
-      <h2 className="og-h2">{t("bench.notes.title", lang)}</h2>
-      <p className="og-body">{t("bench.notes.about", lang)}</p>
-      <p className="og-body og-num">{t("bench.notes.train", lang, gearRatioDisplay)}</p>
-      <p className="og-body">{t("app.scope", lang)}</p>
-      <p className="og-body">{t("bench.honesty", lang)}</p>
-      <h2 className="og-h2">{t("bench.inspection.title", lang)}</h2>
+      <h2 className="og-h2">{t("bench.notes.title")}</h2>
+      <p className="og-body">{t("bench.notes.about")}</p>
+      <p className="og-body og-num">{t("bench.notes.train", gearRatioDisplay)}</p>
+      <p className="og-body">{t("app.scope")}</p>
+      <p className="og-body">{t("bench.honesty")}</p>
+      <h2 className="og-h2">{t("bench.inspection.title")}</h2>
       <ol className="og-list">
         {INSPECTION_STEPS.map((s) => (
           <li key={s.n}>
-            <strong>{t("bench.inspection.stepLabel", lang, { number: s.n })}</strong> {t(`bench.inspection.step.${s.n}` as DictKey, lang)}
+            <strong>{t("bench.inspection.stepLabel", { number: s.n })}</strong> {t(`bench.inspection.step.${s.n}` as DictKey)}
           </li>
         ))}
       </ol>
-      <p className="og-note">{t("bench.environment.note", lang)}</p>
+      <p className="og-note">{t("bench.environment.note")}</p>
     </>
   );
 
@@ -253,16 +252,16 @@ export default function BenchView() {
             mode={mode}
             cutaway={cutaway}
             exploded={exploded}
-            badge={<HonestyBadge label={t("badge.proxy", lang)} text={t("bench.honesty", lang)} />}
+            badge={<HonestyBadge label={t("badge.proxy")} text={t("bench.honesty")} />}
           />
         </div>
         <div className="og-dock">{dock}</div>
       </div>
       <Drawer
         tabs={[
-          { id: "status", label: t("drawer.status", lang), content: status },
-          { id: "sheet", label: t("drawer.sheet", lang), content: sheet },
-          { id: "notes", label: t("drawer.notes", lang), content: notes },
+          { id: "status", label: t("drawer.status"), content: status },
+          { id: "sheet", label: t("drawer.sheet"), content: sheet },
+          { id: "notes", label: t("drawer.notes"), content: notes },
         ]}
       />
     </div>

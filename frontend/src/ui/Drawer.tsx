@@ -1,6 +1,6 @@
 import { useId, useState } from "preact/hooks";
 import type { ComponentChildren, JSX } from "preact";
-import { t, useLang } from "../i18n";
+import { t } from "../i18n";
 import { drawerTabIndexForKey } from "./drawerTabNavigation";
 
 // Panel lateral con pestañas y colapso. Las vistas le pasan el contenido
@@ -20,7 +20,6 @@ interface DrawerProps {
 }
 
 export default function Drawer({ tabs, defaultOpen = true, requestedTab }: DrawerProps) {
-  const [lang] = useLang();
   const [open, setOpen] = useState(defaultOpen);
   const [active, setActive] = useState(tabs[0]?.id ?? "");
   const [seenNonce, setSeenNonce] = useState(0);
@@ -45,15 +44,15 @@ export default function Drawer({ tabs, defaultOpen = true, requestedTab }: Drawe
   return (
     <aside
       className={open ? "og-drawer" : "og-drawer og-drawer--closed"}
-      aria-label={t("drawer.label", lang)}
+      aria-label={t("drawer.label")}
     >
       <div className="og-drawer__bar">
         <button
           type="button"
           className="og-icon-btn"
           aria-expanded={open}
-          aria-label={open ? t("drawer.collapse", lang) : t("drawer.expand", lang)}
-          title={open ? t("drawer.collapse", lang) : t("drawer.expand", lang)}
+          aria-label={open ? t("drawer.collapse") : t("drawer.expand")}
+          title={open ? t("drawer.collapse") : t("drawer.expand")}
           onClick={() => setOpen((o) => !o)}
         >
           {open ? "›" : "‹"}

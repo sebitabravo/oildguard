@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { formatNumber } from "../../i18n/numberFormat";
-import { t, useLang, type Lang } from "../../i18n";
+import { t } from "../../i18n";
 import { postIngest } from "../../sim/api";
 import type { ScenarioName } from "../../sim/signals";
 import { Button, PageHeader, RegimeChip, SyntheticBadge, TimeSeriesChart, Icon, SegmentedControl } from "../../ui/foundation";
@@ -37,7 +37,6 @@ type SendState =
   | { status: "error"; message: string };
 
 function SimChart({
-  lang,
   title,
   readout,
   values,
@@ -50,7 +49,6 @@ function SimChart({
   domain,
   ticks,
 }: {
-  lang: Lang;
   title: string;
   readout: string;
   values: number[];
@@ -72,7 +70,6 @@ function SimChart({
       </div>
       <div className="sim-chart__frame">
         <TimeSeriesChart
-          lang={lang}
           values={values}
           title={title}
           xLabels={xLabels}
@@ -108,7 +105,6 @@ function downloadCsv(fileName: string, text: string) {
 }
 
 export default function SimPage() {
-  const [lang] = useLang();
   const [scenario, setScenario] = useState<ScenarioName>("slow-leak");
   const [seed, setSeed] = useState(fixtureSeed("slow-leak"));
   const [durationS, setDurationS] = useState(DEFAULT_DURATION_S);
@@ -134,8 +130,8 @@ export default function SimPage() {
   const counts = countLabels(rows, index + 1);
   const totals = countLabels(rows);
   const current = rows[Math.min(index, rows.length - 1)];
-  const cursorLabel = `${formatNumber(current.t_s, lang, 1)} s`;
-  const xLabels = [0, FIXTURE_SECONDS / 2, FIXTURE_SECONDS].map((value) => `${formatNumber(value, lang, 0)} s`);
+  const cursorLabel = `${formatNumber(current.t_s, 1)} s`;
+  const xLabels = [0, FIXTURE_SECONDS / 2, FIXTURE_SECONDS].map((value) => `${formatNumber(value, 0)} s`);
 
   useEffect(() => {
     if (!playing) return undefined;
@@ -176,58 +172,58 @@ export default function SimPage() {
   return (
     <div className="og-page lab-page sim-page">
       <div className="og-page__inner">
-        <LabBanner lang={lang} title={t("lab.sim.banner", lang)} detail={t("lab.sim.bannerDetail", lang)} />
+        <LabBanner title={t("lab.sim.banner")} detail={t("lab.sim.bannerDetail")} />
         <PageHeader
-          eyebrow={t("lab.eyebrow", lang)}
-          title={t("lab.sim.title", lang)}
-          description={t("lab.sim.description", lang)}
-          meta={<SyntheticBadge lang={lang} />}
+          eyebrow={t("lab.eyebrow")}
+          title={t("lab.sim.title")}
+          description={t("lab.sim.description")}
+          meta={<SyntheticBadge />}
         />
 
         <div className="sim-page__grid">
           <div className="sim-page__col">
           <section className="lab-panel sim-page__params" aria-labelledby="sim-params-title">
-            <div className="lab-panel__head"><h3 id="sim-params-title">{t("lab.sim.params.title", lang)}</h3></div>
+            <div className="lab-panel__head"><h3 id="sim-params-title">{t("lab.sim.params.title")}</h3></div>
             <div className="sim-page__fields">
               <label className="lab-field sim-page__field-wide">
-                <span>{t("lab.sim.params.scenario", lang)}</span>
+                <span>{t("lab.sim.params.scenario")}</span>
                 <select value={scenario} onChange={(event) => chooseScenario(event.currentTarget.value as ScenarioName)}>
-                  {SCENARIOS.map((name) => <option value={name}>{t(`lab.sim.scenario.${name}`, lang)}</option>)}
+                  {SCENARIOS.map((name) => <option value={name}>{t(`lab.sim.scenario.${name}`)}</option>)}
                 </select>
               </label>
               <label className="lab-field">
-                <span>{t("lab.sim.params.seed", lang)}</span>
+                <span>{t("lab.sim.params.seed")}</span>
                 <input type="number" min={0} step={1} value={seed} onInput={(event) => setSeed(Number(event.currentTarget.value))} />
               </label>
               <label className="lab-field">
-                <span>{t("lab.sim.params.duration", lang)}</span>
+                <span>{t("lab.sim.params.duration")}</span>
                 <input type="number" min={1} max={3600} step={1} value={durationS} onInput={(event) => setDurationS(Number(event.currentTarget.value))} />
               </label>
               <label className="lab-field">
-                <span>{t("lab.sim.params.rate", lang)}</span>
+                <span>{t("lab.sim.params.rate")}</span>
                 <input type="number" min={1} max={1000} step={1} value={rateHz} onInput={(event) => setRateHz(Number(event.currentTarget.value))} />
               </label>
             </div>
-            <p className="lab-note">{t("lab.sim.params.rateNote", lang)}</p>
+            <p className="lab-note">{t("lab.sim.params.rateNote")}</p>
             <p className={`sim-page__pinned${matches ? " is-match" : ""}`}>
-              {t(matches ? "lab.sim.pinnedMatch" : "lab.sim.pinned", lang, { seed: fixtureSeedValue })}
+              {t(matches ? "lab.sim.pinnedMatch" : "lab.sim.pinned", { seed: fixtureSeedValue })}
             </p>
           </section>
 
           <section className="lab-panel sim-page__faults" aria-labelledby="sim-faults-title">
             <div className="lab-panel__head">
-              <h3 id="sim-faults-title">{t("lab.sim.faults.title", lang)}</h3>
-              <span className="lab-chip-status">{t("lab.sim.faults.label", lang)}</span>
+              <h3 id="sim-faults-title">{t("lab.sim.faults.title")}</h3>
+              <span className="lab-chip-status">{t("lab.sim.faults.label")}</span>
             </div>
             <ul className="sim-faults">
               {SCENARIOS.map((name) => (
                 <li>
                   <button type="button" className="sim-fault" aria-pressed={name === scenario} onClick={() => chooseScenario(name)}>
                     <span className="sim-fault__top">
-                      <strong>{t(`lab.sim.scenario.${name}`, lang)}</strong>
+                      <strong>{t(`lab.sim.scenario.${name}`)}</strong>
                       <code className="sim-fault__label">{SCENARIO_LABEL[name]}</code>
                     </span>
-                    <span className="sim-fault__effect">{t(`lab.sim.effect.${name}`, lang)}</span>
+                    <span className="sim-fault__effect">{t(`lab.sim.effect.${name}`)}</span>
                   </button>
                 </li>
               ))}
@@ -239,50 +235,50 @@ export default function SimPage() {
           <section className="lab-panel sim-page__preview" aria-labelledby="sim-preview-title">
             <div className="lab-panel__head">
               <div>
-                <h3 id="sim-preview-title">{t("lab.sim.preview.title", lang)}</h3>
-                <p>{t("lab.sim.preview.subtitle", lang)}</p>
+                <h3 id="sim-preview-title">{t("lab.sim.preview.title")}</h3>
+                <p>{t("lab.sim.preview.subtitle")}</p>
               </div>
-              <span className="sim-legend"><i className="sim-legend__hatch" />{t("lab.sim.legend.link", lang)}</span>
+              <span className="sim-legend"><i className="sim-legend__hatch" />{t("lab.sim.legend.link")}</span>
             </div>
             <SimChart
-              lang={lang} title={t("lab.sim.signal.level", lang)} readout={`${formatNumber(current.level_liters, lang, 1)} L`}
+              title={t("lab.sim.signal.level")} readout={`${formatNumber(current.level_liters, 1)} L`}
               values={series.level} cursor={index} cursorLabel={cursorLabel} hatch={hatch}
               xLabels={[]} unit="L" decimals={0} domain={[70, 100]} ticks={[70, 80, 90, 100]}
             />
             <SimChart
-              lang={lang} title={t("lab.sim.signal.pressure", lang)} readout={`${formatNumber(current.pressure_kpa, lang, 3)} kPa`}
+              title={t("lab.sim.signal.pressure")} readout={`${formatNumber(current.pressure_kpa, 3)} kPa`}
               values={series.pressure} cursor={index} cursorLabel="" hatch={hatch}
               xLabels={[]} unit="kPa" decimals={2}
             />
             <SimChart
-              lang={lang} title={t("lab.sim.signal.temperature", lang)} readout={`${formatNumber(current.temperature_c, lang, 2)} °C`}
+              title={t("lab.sim.signal.temperature")} readout={`${formatNumber(current.temperature_c, 2)} °C`}
               values={series.temperature} cursor={index} cursorLabel="" hatch={hatch}
               xLabels={[]} unit="°C" decimals={1}
             />
             <SimChart
-              lang={lang} title={t("lab.sim.signal.vibration", lang)} readout={`${formatNumber(current.vib_rms_g, lang, 3)} g`}
+              title={t("lab.sim.signal.vibration")} readout={`${formatNumber(current.vib_rms_g, 3)} g`}
               values={series.vibration} cursor={index} cursorLabel="" hatch={hatch}
               xLabels={xLabels} unit="g" decimals={2}
             />
             <div className="sim-transport">
               <Button type="button" variant="primary" onClick={() => setPlaying((value) => !value)} aria-pressed={playing}>
-                {t(playing ? "lab.sim.pause" : "lab.sim.play", lang)}
+                {t(playing ? "lab.sim.pause" : "lab.sim.play")}
               </Button>
-              <Button type="button" variant="ghost" onClick={() => { setIndex(0); }}>{t("lab.sim.restart", lang)}</Button>
+              <Button type="button" variant="ghost" onClick={() => { setIndex(0); }}>{t("lab.sim.restart")}</Button>
               <label className="lab-field sim-transport__cursor">
-                <span>{t("lab.sim.cursor", lang)} · {cursorLabel}</span>
+                <span>{t("lab.sim.cursor")} · {cursorLabel}</span>
                 <input
                   type="range"
                   min={0}
                   max={rows.length - 1}
                   step={1}
                   value={index}
-                  aria-label={t("lab.sim.cursor", lang)}
+                  aria-label={t("lab.sim.cursor")}
                   aria-valuetext={cursorLabel}
                   onInput={(event) => setIndex(Number(event.currentTarget.value))}
                 />
               </label>
-              <div className="sim-transport__speed" role="group" aria-label={t("lab.sim.speed", lang)}>
+              <div className="sim-transport__speed" role="group" aria-label={t("lab.sim.speed")}>
                 <SegmentedControl options={[...SPEEDS]} value={speed} onChange={(value) => setSpeed(value as (typeof SPEEDS)[number])} />
               </div>
             </div>
@@ -292,9 +288,9 @@ export default function SimPage() {
           <div className="sim-page__col">
           <section className="lab-panel sim-page__counter" aria-labelledby="sim-counter-title">
             <div className="lab-panel__head">
-              <h3 id="sim-counter-title">{t("lab.sim.counter.title", lang)}</h3>
+              <h3 id="sim-counter-title">{t("lab.sim.counter.title")}</h3>
               <span className="lab-mono sim-counter__played">
-                {formatNumber(Math.min(index + 1, rows.length), lang, 0)} / {formatNumber(rows.length, lang, 0)} {t("lab.sim.counter.played", lang)}
+                {formatNumber(Math.min(index + 1, rows.length), 0)} / {formatNumber(rows.length, 0)} {t("lab.sim.counter.played")}
               </span>
             </div>
             <ul className="sim-counter">
@@ -302,7 +298,7 @@ export default function SimPage() {
                 <li className={totals[label] === 0 ? "is-empty" : undefined}>
                   <div className="sim-counter__row">
                     <code>{label}</code>
-                    <span className="lab-mono">{formatNumber(counts[label], lang, 0)} / {formatNumber(totals[label], lang, 0)}</span>
+                    <span className="lab-mono">{formatNumber(counts[label], 0)} / {formatNumber(totals[label], 0)}</span>
                   </div>
                   <span className="sim-counter__bar" aria-hidden="true">
                     <i style={{ width: `${rows.length ? (counts[label] / rows.length) * 100 : 0}%` }} />
@@ -314,63 +310,63 @@ export default function SimPage() {
 
           <section className="lab-panel sim-page__readout" aria-labelledby="sim-readout-title">
             <div className="lab-panel__head">
-              <h3 id="sim-readout-title">{t("lab.sim.cursorAt", lang)}</h3>
+              <h3 id="sim-readout-title">{t("lab.sim.cursorAt")}</h3>
               <span className="lab-mono">{cursorLabel}</span>
             </div>
             <dl className="sim-readout">
-              <div><dt>{t("lab.sim.readout.state", lang)}</dt><dd><code>{current.fsm_state}</code> <RegimeChip lang={lang} regime={current.moving === 1 ? "movement" : "rest"} /></dd></div>
-              <div><dt>{t("lab.sim.readout.label", lang)}</dt><dd><code>{current.label}</code></dd></div>
-              <div><dt>{t("lab.sim.signal.level", lang)}</dt><dd className="lab-mono">{formatNumber(current.level_liters, lang, 1)} L</dd></div>
-              <div><dt>{t("lab.sim.signal.pressure", lang)}</dt><dd className="lab-mono">{formatNumber(current.pressure_kpa, lang, 3)} kPa</dd></div>
+              <div><dt>{t("lab.sim.readout.state")}</dt><dd><code>{current.fsm_state}</code> <RegimeChip regime={current.moving === 1 ? "movement" : "rest"} /></dd></div>
+              <div><dt>{t("lab.sim.readout.label")}</dt><dd><code>{current.label}</code></dd></div>
+              <div><dt>{t("lab.sim.signal.level")}</dt><dd className="lab-mono">{formatNumber(current.level_liters, 1)} L</dd></div>
+              <div><dt>{t("lab.sim.signal.pressure")}</dt><dd className="lab-mono">{formatNumber(current.pressure_kpa, 3)} kPa</dd></div>
             </dl>
           </section>
 
           <section className="lab-panel sim-page__export" aria-labelledby="sim-export-title">
-            <div className="lab-panel__head"><h3 id="sim-export-title">{t("lab.sim.export.title", lang)}</h3></div>
+            <div className="lab-panel__head"><h3 id="sim-export-title">{t("lab.sim.export.title")}</h3></div>
             <div className="sim-export">
               <Button
                 type="button"
                 variant="primary"
                 onClick={() => downloadCsv(`oilguard-sim-${scenario}-seed${fixtureSeedValue}.csv`, rowsToCsv(rows))}
               >
-                <Icon name="download" /> {t("lab.sim.export.csv", lang)}
+                <Icon name="download" /> {t("lab.sim.export.csv")}
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 disabled={!live || send.status === "sending"}
-                title={live ? undefined : t("lab.sim.send.reason", lang)}
+                title={live ? undefined : t("lab.sim.send.reason")}
                 onClick={() => void sendToBackend()}
               >
-                {t(send.status === "sending" ? "lab.sim.sending" : "lab.sim.send", lang)}
+                {t(send.status === "sending" ? "lab.sim.sending" : "lab.sim.send")}
               </Button>
             </div>
-            <p className="lab-note">{t("lab.sim.export.note", lang)}</p>
-            {!live && <p className="lab-note sim-export__reason">{t("lab.sim.send.reason", lang)}</p>}
-            {live && <p className="lab-note">{t("lab.sim.send.note", lang)}</p>}
+            <p className="lab-note">{t("lab.sim.export.note")}</p>
+            {!live && <p className="lab-note sim-export__reason">{t("lab.sim.send.reason")}</p>}
+            {live && <p className="lab-note">{t("lab.sim.send.note")}</p>}
             <p className="lab-note" aria-live="polite">
-              {send.status === "done" && t("lab.sim.send.result", lang, { count: formatNumber(send.accepted, lang, 0), rows: formatNumber(send.rejected, lang, 0) })}
-              {send.status === "error" && t("lab.sim.send.failed", lang, { message: send.message })}
+              {send.status === "done" && t("lab.sim.send.result", { count: formatNumber(send.accepted, 0), rows: formatNumber(send.rejected, 0) })}
+              {send.status === "error" && t("lab.sim.send.failed", { message: send.message })}
             </p>
           </section>
           </div>
 
           <section className="lab-panel sim-page__cli" aria-labelledby="sim-cli-title">
-            <div className="lab-panel__head"><h3 id="sim-cli-title">{t("lab.sim.cli.title", lang)}</h3></div>
+            <div className="lab-panel__head"><h3 id="sim-cli-title">{t("lab.sim.cli.title")}</h3></div>
             <div className="sim-cli">
               {(["python", "rust"] as const).map((kind) => (
                 <div className="sim-cli__block">
                   <div className="sim-cli__head">
-                    <span className="og-label">{t(`lab.sim.cli.${kind}`, lang)}</span>
+                    <span className="og-label">{t(`lab.sim.cli.${kind}`)}</span>
                     <Button type="button" variant="ghost" onClick={() => void copy(kind)}>
-                      {t(copied === kind ? "lab.sim.cli.copied" : "lab.sim.cli.copy", lang)}
+                      {t(copied === kind ? "lab.sim.cli.copied" : "lab.sim.cli.copy")}
                     </Button>
                   </div>
                   <pre tabIndex={0}><code>{commands[kind]}</code></pre>
                 </div>
               ))}
             </div>
-            <p className="lab-note">{t("lab.sim.cli.note", lang)}</p>
+            <p className="lab-note">{t("lab.sim.cli.note")}</p>
           </section>
         </div>
       </div>

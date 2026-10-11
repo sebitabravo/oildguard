@@ -1,4 +1,4 @@
-import { t, type Lang } from "../i18n";
+import { t } from "../i18n";
 
 export interface AnalyzerAvailabilityState {
   analysisAvailable?: boolean;
@@ -16,9 +16,8 @@ export function isAnalyzerUnavailable(state: AnalyzerAvailabilityState): boolean
 
 export function analyzerUnavailableNotice(
   state: AnalyzerAvailabilityState,
-  lang: Lang,
 ): string | null {
-  return isAnalyzerUnavailable(state) ? t("dash.analyzer.unavailable", lang) : null;
+  return isAnalyzerUnavailable(state) ? t("dash.analyzer.unavailable") : null;
 }
 
 // La caída total solo existe para la rueda en vivo con el backend caído: así

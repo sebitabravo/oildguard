@@ -1,5 +1,4 @@
 import { ALERT_SEVERITY_COLORS } from "../dash/alertSeverity";
-import type { Lang } from "../i18n";
 import { formatNumber } from "../i18n/numberFormat";
 
 export type Tone = "nominal" | "warning" | "critical" | "info";
@@ -33,8 +32,8 @@ export function levelBarGeometry(value: number, max: number, sigma: number) {
   };
 }
 
-export function formatTick(value: number, lang: Lang): string {
-  return formatNumber(value, lang, 1);
+export function formatTick(value: number): string {
+  return formatNumber(value, 1);
 }
 
 export function chartPoints(values: readonly (number | null)[], width: number, height: number) {
