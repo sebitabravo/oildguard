@@ -12,6 +12,8 @@
 .og-rul-metrics {}
 .og-rul-card__metrics { display: grid; gap: 5px; color: var(--og-text-muted); font-size: 11px; }.og-rul-card__metrics b { color: var(--og-text-secondary); font-family: var(--og-mono); font-weight: 500; }
 .og-rul-projection { display: grid; gap: 5px; color: var(--og-text-muted); font: 10px var(--og-mono); }.og-rul-projection .og-sparkline { width: 100%; height: 48px; color: var(--og-accent); }
+.og-rul-projection > summary { cursor: pointer; }
+.og-rul-projection > summary:focus-visible { outline: 2px solid var(--og-accent); outline-offset: 3px; }
 .og-rul-suppressed { min-height: 48px; margin: 0; color: var(--og-amber); font: 11px var(--og-mono); }
 .og-rul-card footer { display: flex; justify-content: space-between; align-items: center; color: var(--og-text-muted); font: 10px var(--og-mono); }
 .og-rul-assumptions { margin-top: 20px; padding: 16px; background: var(--og-panel-inset); border: 1px solid var(--og-border-subtle); }.og-rul-assumptions h3 { margin: 0 0 7px; color: var(--og-text-primary); font-size: 14px; }.og-rul-assumptions p { max-width: 78ch; margin: 0; color: var(--og-text-secondary); font-size: 12px; line-height: 1.55; }

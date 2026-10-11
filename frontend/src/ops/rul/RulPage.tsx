@@ -166,7 +166,8 @@ export default function RulPage() {
                 {card.confidence !== null && <span>R² <b>{formatNumber(card.confidence, 3)}</b></span>}
               </div>
               {card.projected ? (
-                <div className="og-rul-projection">
+                <details className="og-rul-projection">
+                  <summary>{t("rul.projection")} · 30%</summary>
                   <TimeSeriesChart
 
                     values={card.projection}
@@ -180,8 +181,7 @@ export default function RulPage() {
                     ]}
                     height={112}
                   />
-                  <small>{t("rul.projection")} · 30%</small>
-                </div>
+                </details>
               ) : (
                 <p className="og-rul-suppressed">{t("rul.suppressed")}</p>
               )}

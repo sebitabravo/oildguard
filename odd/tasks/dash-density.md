@@ -16,8 +16,8 @@ The DASH-AUD-01 audit ranked three repeated/oversized dashboard regions as the c
 
 ## Tasks
 - [x] D01 Fleet: add a compact KPI strip retaining all three values and per-field provenance; add failing-then-passing density test; commit `refactor(fleet): merge top kpi cards into one strip` (`0841a213250171fa663bf86f0f94f2c968e35d7d`).
-- [x] D02 Alerts: collapse recurrence ranking behind a one-click disclosure by default; retain filtering; add density test; commit `feat(alerts): collapse recurrence ranking behind disclosure` (commit identity pending).
-- [ ] D03 RUL: collapse per-wheel charts behind a disclosure; keep horizon/status/provenance visible; add density test; commit `feat(rul): collapse per-wheel projection charts behind disclosure`.
+- [x] D02 Alerts: collapse recurrence ranking behind a one-click disclosure by default; retain filtering; add density test; commit `feat(alerts): collapse recurrence ranking behind disclosure` (`dca25057c76b5e2e004c3eb2abe2e5d8ca876dc8`).
+- [x] D03 RUL: collapse per-wheel charts behind a disclosure; keep horizon/status/provenance visible; add density test; commit `feat(rul): collapse per-wheel projection charts behind disclosure` (commit identity pending).
 
 ## Acceptance and Checks
 - Each density test fails on the unmodified UI, then passes after its change.
@@ -30,7 +30,10 @@ The DASH-AUD-01 audit ranked three repeated/oversized dashboard regions as the c
 - D01: `FleetPage.density.test.ts` failed before the strip existed and passes after implementation (16 assertions); outputs: `/tmp/og-goal/evidence/DASH-FIX-01/red-fleet.txt` and `/tmp/og-goal/evidence/DASH-FIX-01/green-fleet.txt`.
 - D01 assessment: medium risk, `review_due: false`, `review_due_reason: under_budget`, assessed against `b339eb9`; last reviewed boundary remains `b339eb9`.
 - D01 commit rollback boundary: `FleetPage.tsx`, `fleet.css`, and `FleetPage.density.test.ts`.
-- D02: `AlertsInboxPage.density.test.ts` failed before the disclosure existed and passes after implementation (5 assertions); outputs: `/tmp/og-goal/evidence/DASH-FIX-01/red-alerts.txt` and `/tmp/og-goal/evidence/DASH-FIX-01/green-alerts.txt`. Recurrence rank buttons retain their wheel-filter action; runtime screenshot not repeated because the dispatch restricted checks to the focused test.
-- D02 commit identity and assessment: pending. Rollback boundary: `AlertsInboxPage.tsx`, `alerts.css`, and `AlertsInboxPage.density.test.ts`.
+- D02: `AlertsInboxPage.density.test.ts` failed before the disclosure existed and passes after implementation (5 assertions); outputs: `/tmp/og-goal/evidence/DASH-FIX-01/red-alerts.txt` and `/tmp/og-goal/evidence/DASH-FIX-01/green-alerts.txt`. Recurrence rank buttons retain their wheel-filter action.
+- D02 assessment: medium risk, `review_due: false`, `review_due_reason: under_budget`, assessed against `b339eb9`; last reviewed boundary remains `b339eb9`. The Impeccable detector reported the unchanged existing `side-tab` warning at `alerts.css:138`.
+- D02 rollback boundary: `AlertsInboxPage.tsx`, `alerts.css`, and `AlertsInboxPage.density.test.ts`.
+- D03: `RulPage.density.test.ts` failed before disclosure controls existed and passes after implementation (82 assertions); outputs: `/tmp/og-goal/evidence/DASH-FIX-01/red-rul.txt` and `/tmp/og-goal/evidence/DASH-FIX-01/green-rul.txt`. Each projected card's native disclosure is closed by default; horizon, status, source, metrics, and the visible 30% label remain outside or in the summary.
+- D03 commit identity and assessment: pending. Rollback boundary: `RulPage.tsx`, `rul.css`, and `RulPage.density.test.ts`.
 - Before screenshots exist for all three routes at 1440 and 390. After screenshots remain pending; the dev server is running.
-- Next step: reconcile D02 commit identity and assessment, then proceed to D03.
+- Next step: reconcile D03 commit identity and assessment, then capture after screenshots and run final checks.
