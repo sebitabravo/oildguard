@@ -55,6 +55,23 @@ function statusLabel(status: "keeping-up" | "backpressure" | "lagging"): string 
   return t(status === "backpressure" ? "link.status.backpressure" : status === "lagging" ? "link.status.lagging" : "link.status.keepingUp");
 }
 
+export function LinkFlowStatus({ connected, lastTickMs, demo }: { connected: boolean; lastTickMs: number | null; demo: boolean }) {
+  return (
+    <section className="link-health__feed" aria-live="polite">
+      <div>
+        <span className={`link-health__dot link-health__dot--${connected ? "live" : "demo"}`} />
+        <strong>{t(connected ? "link.liveStrip" : "link.offlineStrip")}</strong>
+        <span>{t(connected ? "link.connection.live" : "link.connection.disconnected")}</span>
+      </div>
+      <small>{connected && lastTickMs !== null
+        ? `${t("link.lastTick")} · ${formatTimestamp(lastTickMs)}`
+        : t(connected ? "link.noTick" : "link.connection.disconnected")}
+      </small>
+      {!connected && demo && <p><SyntheticBadge /> <span>{t("link.offlineStrip")}</span></p>}
+    </section>
+  );
+}
+
 export default function LinkHealthPage() {
   const [connection, setConnection] = useState<"connecting" | "live" | "polling">("connecting");
   const [lastTickMs, setLastTickMs] = useState<number | null>(null);
@@ -158,19 +175,15 @@ export default function LinkHealthPage() {
     };
   });
   const outagePage = useMemo(() => paginateLinkItems(tableRows, outagePageIndex, 20), [tableRows, outagePageIndex]);
-  const connectionKey = data.source === "demo" ? "link.connection.demo" : connection === "live" ? "link.connection.live" : connection === "polling" ? "link.connection.polling" : "link.connection.connecting";
-  const liveStatus = payload?.kpis ? statusLabel(payload.kpis.status) : t("link.demoMetrics");
+  const connected = data.source === "live" && connection === "live";
+  const liveStatus = connected && payload?.kpis ? statusLabel(payload.kpis.status) : t("link.connection.disconnected");
 
   return <main className="link-health">
-    <PageHeader eyebrow={t("link.eyebrow")} title={t("link.title")} description={t("link.description")} meta={data.source === "demo" ? <SyntheticBadge /> : <span className="link-health__source">{t(data.source === "live" ? "devices.liveSource" : "link.loading")}</span>} />
+    <PageHeader eyebrow={t("link.eyebrow")} title={t("link.title")} description={t("link.description")} meta={data.source === "demo" ? <SyntheticBadge /> : <span className="link-health__source">{t(connected ? "devices.liveSource" : data.source === "live" ? "link.connection.disconnected" : "link.loading")}</span>} />
     <section className="link-health__kpis" aria-label={t("link.title")}>
-      {labels.map(({ key, value, unit }) => <KpiTile label={t(`link.${key}` as "link.latency")} value={value} unit={unit} meta={key.startsWith("demo") ? t("link.demoProvenance") : key === "queue" && payload?.kpis ? liveStatus : undefined} tone={payload?.kpis?.status === "lagging" ? "warning" : payload?.kpis?.status === "backpressure" ? "critical" : "nominal"} />)}
+      {labels.map(({ key, value, unit }) => <KpiTile label={t(`link.${key}` as "link.latency")} value={value} unit={unit} meta={key.startsWith("demo") ? t("link.demoProvenance") : key === "queue" && payload?.kpis ? liveStatus : undefined} tone={connected && payload?.kpis?.status === "lagging" ? "warning" : connected && payload?.kpis?.status === "backpressure" ? "critical" : "nominal"} />)}
     </section>
-    <section className="link-health__feed" aria-live="polite">
-      <div><span className={`link-health__dot link-health__dot--${data.source === "demo" ? "demo" : connection}`} /><strong>{t("link.liveStrip")}</strong><span>{t(connectionKey)}</span></div>
-      <small>{lastTickMs === null ? t("link.noTick") : `${t("link.lastTick")} · ${formatTimestamp(lastTickMs)}`}</small>
-    </section>
-    {data.source === "demo" && <div className="link-health__demo-note"><SyntheticBadge /><span>{t("link.demoMetrics")}</span></div>}
+    <LinkFlowStatus connected={connected} lastTickMs={lastTickMs} demo={data.source === "demo"} />
     <section className="link-health__timeline" aria-labelledby="link-timeline-title">
       <div className="link-health__section-head"><h3 id="link-timeline-title">{t("link.availabilityTitle")}</h3><div className="link-health__legend"><span><i className="link-health__legend-available" />{t("link.availableLegend")}</span><span><i className="link-health__legend-outage" />{t("link.outageLegend")}</span></div></div>
       <div className="link-health__time-scale"><span>−60 min</span><span>−30 min</span><span>{t("devices.lastSeenNow")}</span></div>

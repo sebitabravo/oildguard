@@ -1,0 +1,39 @@
+# FIX-DOWN-04 — Gate live claims on connection state
+
+## Objective
+Remove live framing from `/link` and `/fleet` telemetry when the backend/WebSocket is not actually connected; restore it when connected.
+
+## Scope
+- `frontend/src/platform/link/LinkHealthPage.tsx` and `LinkHealthPage.live.test.ts`.
+- `frontend/src/ops/fleet/FleetPage.tsx` telemetry child `frontend/src/dash/fleetLive/FleetLivePanel.tsx` and `FleetPage.live.test.ts`.
+- `frontend/src/i18n/dict/ops.ts` / `platform.ts` for Spanish labels only.
+- No backend, protocol, polling interval, or value changes.
+
+## Checklist
+- [x] Render tests for closed/open state on both pages; RED captured first.
+- [x] Gate live wording and field badges on actual WebSocket connection state.
+- [x] Capture blocked/restored-route 1024 screenshots; run required tests/build.
+- [x] Record source, checks, screenshots, and commit identities.
+
+## Acceptance criteria
+Closed state has no `EN VIVO`, `Al día`, or `en vivo` claims in the telemetry areas; open state preserves live framing. Restored live confirmation is pending backend availability.
+
+## Checks and evidence
+- `cd frontend && bun test src` — 638 pass, 0 fail; `bun-test-src.txt`.
+- `cd frontend && bun run build` — exit 0; `bun-build.txt`.
+- `cd frontend && bun test src/honesty.test.ts` — 3 pass, 0 fail; `bun-test-honesty.txt`.
+- RED: both test imports failed before implementation; `red.txt`.
+- Browser blocked via Playwright route abort: `link-blocked-1024.png`, `fleet-blocked-1024.png`.
+- Restored-route attempt: `link-restored-1024.png`, `fleet-restored-1024.png`; backend unavailable, so live state could not return. `backend-reachability.txt`, `browser-evidence.txt`.
+
+## TDD / route / persistence
+TDD: ON; source: `/tmp/og-goal/briefs/_rules.md`; runner: `cd frontend && bun test src`.
+Route: delegated direct, single writer (multi-file UI/test change).
+Engram mirror: pending; no authoritative session ID or memory tools available.
+
+## Source and status
+`LinkHealthPage` derives `connected` from API source + WebSocket state. `FleetLivePanel.state` is live only while its socket is open; polling no longer grants live labels.
+Evidence directory: `/tmp/og-goal/evidence/FIX-DOWN-04/`.
+Test commit: `f78d61c` `test(platform): bind live claims to state`.
+Fix commit: pending.
+Status: partial — restored/live state blocked by unavailable backend.

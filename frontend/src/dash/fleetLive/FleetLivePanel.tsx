@@ -85,13 +85,31 @@ function statusLabel(status: LiveStatus): string {
   );
 }
 
-function stateLabel(state: LiveConnectionState): string {
-  return t(
-    state === "connecting"
-      ? "dash.live.waiting"
-      : state === "polling"
-        ? "dash.live.polling"
-        : "dash.live.connected",
+export function FleetLivePanelView({ snapshot, state, previousDropped = null }: { snapshot: FleetLiveSnapshot | null; state: LiveConnectionState; previousDropped?: number | null }) {
+  if (state === "empty" && !snapshot) return null;
+  const connected = state === "live";
+  const status = snapshot && connected ? classifyLiveStatus(snapshot, previousDropped) : null;
+  const statusClass = !connected || status === "backpressure" || status === "lagging"
+    ? "og-fleet-live__status--amber"
+    : "og-fleet-live__status--green";
+
+  return (
+    <section className="og-fleet-live" aria-labelledby="og-fleet-live-title">
+      <div className="og-fleet-live__heading">
+        <div>
+          <h2 id="og-fleet-live-title" className="og-dashboard-sheet-title">
+            {t(connected ? "dash.live.title" : "fleet.telemetry.offlineTitle")}
+          </h2>
+          <p>{t(connected ? "dash.live.caption" : "fleet.telemetry.offlineCaption")}</p>
+        </div>
+        <span className={`og-fleet-live__status ${statusClass}`}>
+          <span aria-hidden="true">●</span> {connected ? status ? statusLabel(status) : t("dash.live.connected") : t("fleet.telemetry.offlineStatus")}
+        </span>
+      </div>
+      {connected && snapshot
+        ? <FleetLiveTelemetryFields snapshot={snapshot} />
+        : <p className="og-fleet-live__waiting">{t("fleet.telemetry.offlineStatus")}</p>}
+    </section>
   );
 }
 
@@ -107,7 +125,7 @@ export default function FleetLivePanel() {
     let reconnectTimer: number | undefined;
     let pollTimer: number | undefined;
 
-    const applyPayload = (payload: unknown) => {
+    const applyPayload = (payload: unknown, fromSocket = false) => {
       if (disposed) return;
       if (isNoRowsPayload(payload)) {
         setSnapshot(null);
@@ -118,7 +136,7 @@ export default function FleetLivePanel() {
       if (!parsed) return;
       setSnapshot((current) => mergeFleetSnapshots(current, parsed));
       setPreviousDropped((current) => parsed.droppedBatches || current);
-      setState("live");
+      setState(fromSocket ? "live" : "polling");
     };
 
     const poll = async () => {
@@ -140,6 +158,7 @@ export default function FleetLivePanel() {
     };
 
     const startPolling = () => {
+      setState("polling");
       if (pollTimer === undefined) {
         void poll();
         pollTimer = window.setInterval(() => void poll(), 2000);
@@ -161,7 +180,7 @@ export default function FleetLivePanel() {
         };
         socket.onmessage = (event) => {
           try {
-            applyPayload(JSON.parse(event.data as string));
+            applyPayload(JSON.parse(event.data as string), true);
           } catch {
             // El backend puede cerrar una conexión con un mensaje incompleto.
           }
@@ -191,32 +210,5 @@ export default function FleetLivePanel() {
     };
   }, []);
 
-  if (state === "empty" && !snapshot) return null;
-  const status = snapshot ? classifyLiveStatus(snapshot, previousDropped) : null;
-  const statusClass = status === "backpressure"
-    ? "og-fleet-live__status--amber"
-    : status === "lagging"
-      ? "og-fleet-live__status--amber"
-      : "og-fleet-live__status--green";
-
-  return (
-    <section className="og-fleet-live" aria-labelledby="og-fleet-live-title">
-      <div className="og-fleet-live__heading">
-        <div>
-          <h2 id="og-fleet-live-title" className="og-dashboard-sheet-title">
-            {t("dash.live.title")}
-          </h2>
-          <p>{t("dash.live.caption")}</p>
-        </div>
-        <span className={`og-fleet-live__status ${statusClass}`}>
-          <span aria-hidden="true">●</span> {status ? statusLabel(status) : stateLabel(state)}
-        </span>
-      </div>
-      {!snapshot ? (
-        <p className="og-fleet-live__waiting">{stateLabel(state)}</p>
-      ) : (
-        <FleetLiveTelemetryFields snapshot={snapshot} />
-      )}
-    </section>
-  );
+  return <FleetLivePanelView snapshot={snapshot} state={state} previousDropped={previousDropped} />;
 }

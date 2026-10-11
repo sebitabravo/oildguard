@@ -371,6 +371,8 @@ export const platform = {
   "link.connection.live": "WebSocket conectado",
   "link.connection.polling": "Consulta periódica alternativa",
   "link.connection.demo": "Datos demo locales",
+  "link.connection.disconnected": "Sin conexión",
+  "link.offlineStrip": "Flujo de flota sin conexión",
   "link.lastTick": "Última actualización de flota",
   "link.noTick": "Esperando la primera actualización",
   "link.availabilityTitle": "Disponibilidad de dispositivos · última hora",
