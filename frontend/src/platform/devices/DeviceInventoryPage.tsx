@@ -3,7 +3,8 @@ import { t } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import { demoDataset } from "../../demo/dataset";
 import { DataTable, FilterBar, KpiTile, PageHeader, SyntheticBadge } from "../../ui/foundation";
-import { useBackendOrDemo } from "../../ui/backendOrDemo";
+import { useBackendOrDemo, type DataSource } from "../../ui/backendOrDemo";
+import BackendOutageNotice from "../../ui/BackendOutageNotice";
 import { getFleetDevices, getPlatformHealth, type BackendDevice, type PlatformHealthResponse } from "../api";
 import { deriveDeviceKpis, deriveSignedRowsRatio, filterDevices, mapDeviceToWheel, paginateDevices, type DeviceFilter, type InventoryDevice } from "./logic";
 import "./devices.css";
@@ -41,6 +42,10 @@ function demoInventory(): PageData {
   return { devices, health: null };
 }
 const DEMO_INVENTORY_DATA = demoInventory();
+
+export function DeviceInventoryBackendOutageNotice({ source }: { source: DataSource }) {
+  return source === "demo" ? <BackendOutageNotice /> : null;
+}
 
 function mapBackendDevice(device: BackendDevice): InventoryDevice {
   return {
@@ -149,6 +154,7 @@ export default function DeviceInventoryPage() {
 
   return <main className="device-inventory">
     <PageHeader eyebrow={t("devices.eyebrow")} title={t("devices.title")} description={t("devices.description")} meta={data.source === "demo" ? <SyntheticBadge /> : <span className="device-inventory__source">{t(data.source === "live" ? "devices.liveSource" : "devices.loading")}</span>} />
+    <DeviceInventoryBackendOutageNotice source={data.source} />
     <section className="device-inventory__kpis" aria-label={t("devices.title")}>
       <KpiTile label={t("devices.reporting")} value={data.source === "loading" ? "—" : formatNumber(kpis.reporting, 0)} />
       <KpiTile label={t("devices.signedRatio")} value={data.source === "loading" || displayedSignedRatio === null ? "—" : formatNumber(displayedSignedRatio * 100, 1)} unit={data.source === "loading" || displayedSignedRatio === null ? undefined : "%"} meta={displayedSignedRatio === null || data.source === "loading" ? undefined : t(data.source === "demo" ? "devices.demoSource" : "devices.liveSource")} />

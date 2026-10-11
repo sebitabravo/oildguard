@@ -3,7 +3,8 @@ import { t } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import { demoDataset } from "../../demo/dataset";
 import { DataTable, KpiTile, PageHeader, SyntheticBadge } from "../../ui/foundation";
-import { useBackendOrDemo } from "../../ui/backendOrDemo";
+import { useBackendOrDemo, type DataSource } from "../../ui/backendOrDemo";
+import BackendOutageNotice from "../../ui/BackendOutageNotice";
 import { getFleetDevices, getFleetOutages, getIngestMetrics, getPlatformHealth, fleetWebSocketUrl, type PlatformHealthResponse } from "../api";
 import { deriveAvailabilitySegments, deriveDemoLinkKpis, deriveLinkKpis, paginateLinkItems, type LinkMetrics, type OutageRecord } from "./logic";
 import "./link.css";
@@ -68,6 +69,10 @@ export function LinkFlowStatus({ connected, lastTickMs, demo }: { connected: boo
         : demo && <p><SyntheticBadge /></p>}
     </section>
   );
+}
+
+export function LinkBackendOutageNotice({ source }: { source: DataSource }) {
+  return source === "demo" ? <BackendOutageNotice /> : null;
 }
 
 export default function LinkHealthPage() {
@@ -178,6 +183,7 @@ export default function LinkHealthPage() {
 
   return <main className="link-health">
     <PageHeader eyebrow={t("link.eyebrow")} title={t("link.title")} description={t("link.description")} meta={data.source === "demo" ? <SyntheticBadge /> : <span className="link-health__source">{t(connected ? "devices.liveSource" : data.source === "live" ? "link.connection.disconnected" : "link.loading")}</span>} />
+    <LinkBackendOutageNotice source={data.source} />
     <section className="link-health__kpis" aria-label={t("link.title")}>
       {labels.map(({ key, value, unit }) => <KpiTile label={t(`link.${key}` as "link.latency")} value={value} unit={unit} meta={key.startsWith("demo") ? t("link.demoProvenance") : key === "queue" && payload?.kpis ? liveStatus : undefined} tone={connected && payload?.kpis?.status === "lagging" ? "warning" : connected && payload?.kpis?.status === "backpressure" ? "critical" : "nominal"} />)}
     </section>

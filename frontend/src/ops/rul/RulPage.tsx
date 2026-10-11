@@ -3,6 +3,7 @@ import { demoDataset, type DemoWheel } from "../../demo/dataset";
 import { getRul, type RulData } from "../../sim/api";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t } from "../../i18n";
+import BackendOutageNotice from "../../ui/BackendOutageNotice";
 import {
   FilterBar, PageHeader, SegmentedControl, SyntheticBadge, TimeSeriesChart,
 } from "../../ui/foundation";
@@ -95,21 +96,27 @@ function horizonLabel(card: RulViewCard, unit: RulUnit): string {
   return `${formatNumber(convertRulHours(card.horizonHours, unit), unit === "hours" ? 1 : 0)} ${t(`rul.unit.${unit}`)}`;
 }
 
+type RulBackendState = "checking" | "live" | "unavailable";
+
+export function RulBackendOutageNotice({ backendState }: { backendState: RulBackendState }) {
+  return backendState === "unavailable" ? <BackendOutageNotice /> : null;
+}
+
 export default function RulPage() {
   const [unit, setUnit] = useState<RulUnit>("hours");
   const [onlyProjected, setOnlyProjected] = useState(false);
   const [liveRul, setLiveRul] = useState<RulData | null>(null);
-  const [liveLoaded, setLiveLoaded] = useState(false);
+  const [backendState, setBackendState] = useState<RulBackendState>("checking");
 
   useEffect(() => {
     let active = true;
     void getRul("wheel-RH-01").then((response) => {
       if (active) {
         setLiveRul(response.data);
-        setLiveLoaded(true);
+        setBackendState("live");
       }
     }).catch(() => {
-      if (active) setLiveLoaded(false);
+      if (active) setBackendState("unavailable");
     });
     return () => { active = false; };
   }, []);
@@ -131,8 +138,9 @@ export default function RulPage() {
           eyebrow={t("rul.eyebrow")}
           title={t("rul.title")}
           description={t("rul.description")}
-          meta={<div className="og-rul-header-meta"><SyntheticBadge /><small>{liveLoaded ? t("rul.live") : t("rul.demo")}</small></div>}
+          meta={<div className="og-rul-header-meta"><SyntheticBadge /><small>{backendState === "live" ? t("rul.live") : t("rul.demo")}</small></div>}
         />
+        <RulBackendOutageNotice backendState={backendState} />
         <p className="og-rul-scope">{t("rul.scope")}</p>
         <FilterBar>
           <SegmentedControl

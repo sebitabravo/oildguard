@@ -3,6 +3,7 @@ import { demoDataset } from "../../demo/dataset";
 import { getFleetDevices } from "../../sim/api";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t } from "../../i18n";
+import BackendOutageNotice from "../../ui/BackendOutageNotice";
 import {
   Button, FilterBar, LevelBar, PageHeader, RegimeChip,
   SegmentedControl, SeverityBadge, Sparkline,
@@ -84,6 +85,12 @@ export function FleetKpiStrip({ counts, rows, liveConnected = true }: { counts: 
   );
 }
 
+type FleetBackendState = "checking" | "live" | "unavailable";
+
+export function FleetBackendOutageNotice({ backendState }: { backendState: FleetBackendState }) {
+  return backendState === "unavailable" ? <BackendOutageNotice /> : null;
+}
+
 // Cada campo muestra su procedencia junto al valor para que ningún dato DEMO
 // se lea como vivo en una fila LIVE; el sigma sintético lleva su propio rótulo.
 export function FleetFieldSource({ source, liveConnected = true }: { source: FleetSource | "MIXED" | "CONFIGURATION"; liveConnected?: boolean }) {
@@ -127,8 +134,9 @@ export default function FleetPage() {
   const [state, setState] = useState<FleetFilterState>("all");
   const [query, setQuery] = useState("");
   const [liveDevices, setLiveDevices] = useState<Parameters<typeof mergeLiveDevices>[1]>([]);
-  const [liveLoaded, setLiveLoaded] = useState(false);
+  const [backendState, setBackendState] = useState<FleetBackendState>("checking");
   const [socketConnected, setSocketConnected] = useState(false);
+  const liveLoaded = backendState === "live";
   const liveConnected = liveLoaded && socketConnected;
   const [now, setNow] = useState(() => Date.now());
 
@@ -139,10 +147,10 @@ export default function FleetPage() {
         const response = await getFleetDevices() as unknown as { devices?: Parameters<typeof mergeLiveDevices>[1] };
         if (active) {
           setLiveDevices(response.devices ?? []);
-          setLiveLoaded(true);
+          setBackendState("live");
         }
       } catch {
-        if (active) setLiveLoaded(false);
+        if (active) setBackendState("unavailable");
       }
     };
     void refresh();
@@ -193,6 +201,8 @@ export default function FleetPage() {
           description={t("fleet.description")}
           meta={<FleetHeaderMeta liveLoaded={liveLoaded} deviceCount={liveDevices.length} liveConnected={liveConnected} />}
         />
+
+        <FleetBackendOutageNotice backendState={backendState} />
 
         <FleetKpiStrip counts={counts} rows={allRows} liveConnected={liveConnected} />
 
