@@ -84,6 +84,24 @@ export function shouldShowAssemblyControls(
   return scene === "assembly" && state === "ready-3d" && reduction !== null;
 }
 
+export function shouldSyncSceneHostState(alive: boolean, mountFailed: boolean): boolean {
+  return alive && !mountFailed;
+}
+
+export function shouldShowScenePoster(
+  scene: LandingSceneId,
+  state: SceneLoadState,
+  oilReady: boolean,
+): boolean {
+  return !shouldShowAssemblyControls(scene, state, null) && !(scene === "oil" && oilReady);
+}
+
+export function sceneMountErrorPresentation(scene: LandingSceneId, state: SceneLoadState) {
+  return scene === "assembly" && state === "mount-error"
+    ? { role: "status" as const, message: t("landing.scene.mountError") }
+    : null;
+}
+
 const SCENE_COPY: Record<LandingSceneId, SceneCopy> = {
   assembly: {
     alt: "Diagrama de corte estático del modelo de estudio del conjunto de rueda GDY106",
@@ -164,7 +182,7 @@ export default function LandingScene({
     let alive = true;
     let mountFailed = false;
     const sync = () => {
-      if (alive && !mountFailed) setState(host.getState());
+      if (shouldSyncSceneHostState(alive, mountFailed)) setState(host.getState());
     };
     // El corte del conjunto se monta solo en vista, con WebGL y sin
     // movimiento reducido; cualquier fallo conserva el póster B03.
@@ -279,7 +297,7 @@ export default function LandingScene({
   // Aceite B07: la gráfica de sensibilidad vive junto al póster sin exigir
   // WebGL; el canvas 3D solo reemplaza al póster cuando monta la piscina.
   const showOilDetails = scene === "oil";
-  const showOilCanvas = scene === "oil" && oilReady;
+  const mountError = sceneMountErrorPresentation(scene, state);
   const cyclePhase = cyclePlayerRef.current?.getPhase();
   const cycleVisual =
     cyclePhase !== undefined ? haulOilVisual(cyclePhase.state) : null;
@@ -295,12 +313,12 @@ export default function LandingScene({
   // Sin progreso finito se informa cero en es-CL, no "0.000".
   const storyProgressText = Number.isFinite(storyProgress) ? formatNumber(storyProgress, 3) : formatNumber(0, 3);
   return <figure className="landing__scene" data-scene={scene} data-scene-state={state} data-story-beat={storyBeat ?? scene} data-story-progress={storyProgressText} data-story-active={storyActive ? "true" : "false"} ref={figureRef}>
-    {!showAssemblyControls && !showOilCanvas && (
+    {shouldShowScenePoster(scene, state, oilReady) && (
       <img className="landing__scene-poster" src={SCENE_POSTER_URLS[scene]} alt={copy.alt} loading="lazy" />
     )}
     <div className="landing__scene-host" data-deferred="true" aria-hidden="true" ref={mountRef} />
-    {scene === "assembly" && state === "mount-error" && (
-      <p role="status" data-scene-error="true">{t("landing.scene.mountError")}</p>
+    {mountError !== null && (
+      <p role={mountError.role} data-scene-error="true">{mountError.message}</p>
     )}
     {showAssemblyControls && reduction && (
       <div className="landing__assembly-controls">

@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
   mountAssemblyWithFallback,
+  sceneMountErrorPresentation,
+  shouldShowScenePoster,
+  shouldSyncSceneHostState,
   shouldShowAssemblyControls,
 } from "./LandingScene";
 import type { AssemblyReduction } from "./scenes/assembly";
@@ -93,8 +96,20 @@ describe("landing scene mount failures", () => {
     alive = false;
     resolveModule(loadedModule);
 
-    await expect(pendingMount).resolves.toBe(null);
+    const result = await pendingMount;
+    expect(result).toBe(null);
     expect(createdControls).toBe(0);
     expect(mountedScene).toBe(0);
+  });
+
+  test("keeps the labelled mount error and poster while host sync is guarded", () => {
+    const presentation = sceneMountErrorPresentation("assembly", "mount-error");
+
+    expect(presentation?.role).toBe("status");
+    expect(typeof presentation?.message).toBe("string");
+    expect(presentation?.message.length).toBeGreaterThan(0);
+    expect(shouldShowScenePoster("assembly", "mount-error", false)).toBe(true);
+    expect(shouldSyncSceneHostState(true, true)).toBe(false);
+    expect(shouldSyncSceneHostState(true, false)).toBe(true);
   });
 });
