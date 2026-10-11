@@ -3,7 +3,7 @@ import { formatNumber } from "../../i18n/numberFormat";
 import { t } from "../../i18n";
 import { postIngest } from "../../sim/api";
 import type { ScenarioName } from "../../sim/signals";
-import { Button, PageHeader, RegimeChip, SyntheticBadge, TimeSeriesChart, Icon, SegmentedControl } from "../../ui/foundation";
+import { Button, PageHeader, ProvenanceTag, RegimeChip, SyntheticBadge, TimeSeriesChart, Icon, SegmentedControl } from "../../ui/foundation";
 import { useBackendState } from "../../ui/backendOrDemo";
 import { LabBanner } from "../shared/LabBanner";
 import {
@@ -66,7 +66,7 @@ function SimChart({
     <section className="sim-chart" aria-label={title}>
       <div className="sim-chart__head">
         <h4>{title}</h4>
-        <span className="lab-mono">{readout}</span>
+        <span className="lab-mono">{readout} <ProvenanceTag value="SYNTHETIC-PROXY" /></span>
       </div>
       <div className="sim-chart__frame">
         <TimeSeriesChart
@@ -193,20 +193,20 @@ export default function SimPage() {
               </label>
               <label className="lab-field">
                 <span>{t("lab.sim.params.seed")}</span>
-                <input type="number" min={0} step={1} value={seed} onInput={(event) => setSeed(Number(event.currentTarget.value))} />
+                <input type="number" min={0} step={1} value={seed} onInput={(event) => setSeed(Number(event.currentTarget.value))} /> <ProvenanceTag value="CONFIGURACIÓN" />
               </label>
               <label className="lab-field">
                 <span>{t("lab.sim.params.duration")}</span>
-                <input type="number" min={1} max={3600} step={1} value={durationS} onInput={(event) => setDurationS(Number(event.currentTarget.value))} />
+                <input type="number" min={1} max={3600} step={1} value={durationS} onInput={(event) => setDurationS(Number(event.currentTarget.value))} /> <ProvenanceTag value="CONFIGURACIÓN" />
               </label>
               <label className="lab-field">
                 <span>{t("lab.sim.params.rate")}</span>
-                <input type="number" min={1} max={1000} step={1} value={rateHz} onInput={(event) => setRateHz(Number(event.currentTarget.value))} />
+                <input type="number" min={1} max={1000} step={1} value={rateHz} onInput={(event) => setRateHz(Number(event.currentTarget.value))} /> <ProvenanceTag value="CONFIGURACIÓN" />
               </label>
             </div>
             <p className="lab-note">{t("lab.sim.params.rateNote")}</p>
             <p className={`sim-page__pinned${matches ? " is-match" : ""}`}>
-              {t(matches ? "lab.sim.pinnedMatch" : "lab.sim.pinned", { seed: fixtureSeedValue })}
+              {t(matches ? "lab.sim.pinnedMatch" : "lab.sim.pinned", { seed: fixtureSeedValue })} <ProvenanceTag value="CONFIGURACIÓN" />
             </p>
           </section>
 
@@ -223,7 +223,7 @@ export default function SimPage() {
                       <strong>{t(`lab.sim.scenario.${name}`)}</strong>
                       <code className="sim-fault__label">{SCENARIO_LABEL[name]}</code>
                     </span>
-                    <span className="sim-fault__effect">{t(`lab.sim.effect.${name}`)}</span>
+                    <span className="sim-fault__effect">{t(`lab.sim.effect.${name}`)} <ProvenanceTag value="SYNTHETIC-PROXY" /></span>
                   </button>
                 </li>
               ))}
@@ -266,7 +266,7 @@ export default function SimPage() {
               </Button>
               <Button type="button" variant="ghost" onClick={() => { setIndex(0); }}>{t("lab.sim.restart")}</Button>
               <label className="lab-field sim-transport__cursor">
-                <span>{t("lab.sim.cursor")} · {cursorLabel}</span>
+                <span>{t("lab.sim.cursor")} · {cursorLabel} <ProvenanceTag value="SYNTHETIC-PROXY" /></span>
                 <input
                   type="range"
                   min={0}
@@ -290,7 +290,7 @@ export default function SimPage() {
             <div className="lab-panel__head">
               <h3 id="sim-counter-title">{t("lab.sim.counter.title")}</h3>
               <span className="lab-mono sim-counter__played">
-                {formatNumber(Math.min(index + 1, rows.length), 0)} / {formatNumber(rows.length, 0)} {t("lab.sim.counter.played")}
+                {formatNumber(Math.min(index + 1, rows.length), 0)} / {formatNumber(rows.length, 0)} {t("lab.sim.counter.played")} <ProvenanceTag value="SYNTHETIC-PROXY" />
               </span>
             </div>
             <ul className="sim-counter">
@@ -298,7 +298,7 @@ export default function SimPage() {
                 <li className={totals[label] === 0 ? "is-empty" : undefined}>
                   <div className="sim-counter__row">
                     <code>{label}</code>
-                    <span className="lab-mono">{formatNumber(counts[label], 0)} / {formatNumber(totals[label], 0)}</span>
+                    <span className="lab-mono">{formatNumber(counts[label], 0)} / {formatNumber(totals[label], 0)} <ProvenanceTag value="SYNTHETIC-PROXY" /></span>
                   </div>
                   <span className="sim-counter__bar" aria-hidden="true">
                     <i style={{ width: `${rows.length ? (counts[label] / rows.length) * 100 : 0}%` }} />
@@ -311,13 +311,13 @@ export default function SimPage() {
           <section className="lab-panel sim-page__readout" aria-labelledby="sim-readout-title">
             <div className="lab-panel__head">
               <h3 id="sim-readout-title">{t("lab.sim.cursorAt")}</h3>
-              <span className="lab-mono">{cursorLabel}</span>
+              <span className="lab-mono">{cursorLabel} <ProvenanceTag value="SYNTHETIC-PROXY" /></span>
             </div>
             <dl className="sim-readout">
               <div><dt>{t("lab.sim.readout.state")}</dt><dd><code>{current.fsm_state}</code> <RegimeChip regime={current.moving === 1 ? "movement" : "rest"} /></dd></div>
               <div><dt>{t("lab.sim.readout.label")}</dt><dd><code>{current.label}</code></dd></div>
-              <div><dt>{t("lab.sim.signal.level")}</dt><dd className="lab-mono">{formatNumber(current.level_liters, 1)} L</dd></div>
-              <div><dt>{t("lab.sim.signal.pressure")}</dt><dd className="lab-mono">{formatNumber(current.pressure_kpa, 3)} kPa</dd></div>
+              <div><dt>{t("lab.sim.signal.level")}</dt><dd className="lab-mono">{formatNumber(current.level_liters, 1)} L <ProvenanceTag value="SYNTHETIC-PROXY" /></dd></div>
+              <div><dt>{t("lab.sim.signal.pressure")}</dt><dd className="lab-mono">{formatNumber(current.pressure_kpa, 3)} kPa <ProvenanceTag value="SYNTHETIC-PROXY" /></dd></div>
             </dl>
           </section>
 

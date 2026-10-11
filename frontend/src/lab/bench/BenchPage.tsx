@@ -1,7 +1,7 @@
 import { useMemo, useState } from "preact/hooks";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t } from "../../i18n";
-import { DataTable, PageHeader, Button, Slider, StatusBadge, SyntheticBadge, TelemetryCard, TimeSeriesChart } from "../../ui/foundation";
+import { DataTable, PageHeader, Button, ProvenanceTag, Slider, StatusBadge, SyntheticBadge, TelemetryCard, TimeSeriesChart } from "../../ui/foundation";
 import { LabBanner } from "../shared/LabBanner";
 import {
   BENCH_DEFAULTS,
@@ -38,7 +38,7 @@ function BenchSlider({
     <label className="lab-field bench-slider">
       <span className="bench-slider__head">
         <span>{label}</span>
-        <strong className="lab-mono">{formatNumber(value, digits)} {unit}</strong>
+        <strong className="lab-mono">{formatNumber(value, digits)} {unit} <ProvenanceTag value="CONFIGURACIÓN" /></strong>
       </span>
       <Slider
         min={limits.min}
@@ -49,9 +49,9 @@ function BenchSlider({
         onInput={(event) => onChange(field, Number(event.currentTarget.value))}
       />
       <span className="bench-slider__range">
-        <span>{formatNumber(limits.min, 0)}</span>
+        <span>{formatNumber(limits.min, 0)} <ProvenanceTag value="CONFIGURACIÓN" /></span>
         {hint && <em>{hint}</em>}
-        <span>{formatNumber(limits.max, 0)}</span>
+        <span>{formatNumber(limits.max, 0)} <ProvenanceTag value="CONFIGURACIÓN" /></span>
       </span>
     </label>
   );
@@ -77,9 +77,9 @@ export default function BenchPage() {
   const stepRows = steps.map((step) => ({
     id: String(step.volumeL),
     cells: {
-      volume: <span className="lab-mono">{formatNumber(step.volumeL, 1)}</span>,
-      percent: <span className="lab-mono">{formatNumber(step.percent, 0)}</span>,
-      expected: <span className="lab-mono">{formatNumber(step.pressureKpa, 3)}</span>,
+      volume: <span className="lab-mono">{formatNumber(step.volumeL, 1)} <ProvenanceTag value="CONFIGURACIÓN" /></span>,
+      percent: <span className="lab-mono">{formatNumber(step.percent, 0)} <ProvenanceTag value="CONFIGURACIÓN" /></span>,
+      expected: <span className="lab-mono">{formatNumber(step.pressureKpa, 3)} <ProvenanceTag value="ASSUMPTION" /></span>,
       measured: <span className="lab-chip-status">{t("lab.pending")}</span>,
     },
   }));
@@ -130,16 +130,16 @@ export default function BenchPage() {
                   />
                 </div>
                 <div className="bench-page__cards">
-                  <TelemetryCard label={t("lab.bench.reading.rest")} value={formatNumber(reading.restPressureKpa, 3)} unit="kPa" />
-                  <TelemetryCard label={t("lab.bench.reading.now")} value={formatNumber(reading.pressureNowKpa, 3)} unit="kPa" />
-                  <TelemetryCard label={t("lab.bench.reading.head")} value={formatNumber(reading.headMm, 0)} unit="mm" />
+                  <TelemetryCard label={t("lab.bench.reading.rest")} value={formatNumber(reading.restPressureKpa, 3)} unit="kPa"><ProvenanceTag value="ASSUMPTION" /></TelemetryCard>
+                  <TelemetryCard label={t("lab.bench.reading.now")} value={formatNumber(reading.pressureNowKpa, 3)} unit="kPa"><ProvenanceTag value="ASSUMPTION" /></TelemetryCard>
+                  <TelemetryCard label={t("lab.bench.reading.head")} value={formatNumber(reading.headMm, 0)} unit="mm"><ProvenanceTag value="DERIVED" /></TelemetryCard>
                 </div>
                 <dl className="bench-page__facts">
-                  <div><dt>{t("lab.bench.reading.density")}</dt><dd className="lab-mono">{formatNumber(reading.densityKgM3, 0)} kg/m³</dd></div>
-                  <div><dt>{t("lab.bench.reading.holdUp")}</dt><dd className="lab-mono">{formatNumber(reading.holdUpL, 1)} L</dd></div>
-                  <div><dt>{t("lab.bench.reading.viscosity")}</dt><dd className="lab-mono">{formatNumber(reading.viscosityProxy, 2)}</dd></div>
-                  <div><dt>{t("lab.bench.reading.tau")}</dt><dd className="lab-mono">{formatNumber(reading.tauS, 2)} s</dd></div>
-                  <div><dt>{t("lab.bench.reading.settle")}</dt><dd className="lab-mono">{formatNumber(reading.settleMs / 1000, 1)} s</dd></div>
+                  <div><dt>{t("lab.bench.reading.density")}</dt><dd className="lab-mono">{formatNumber(reading.densityKgM3, 0)} kg/m³ <ProvenanceTag value="DERIVED" /></dd></div>
+                  <div><dt>{t("lab.bench.reading.holdUp")}</dt><dd className="lab-mono">{formatNumber(reading.holdUpL, 1)} L <ProvenanceTag value="DERIVED" /></dd></div>
+                  <div><dt>{t("lab.bench.reading.viscosity")}</dt><dd className="lab-mono">{formatNumber(reading.viscosityProxy, 2)} <ProvenanceTag value="ASSUMPTION" /></dd></div>
+                  <div><dt>{t("lab.bench.reading.tau")}</dt><dd className="lab-mono">{formatNumber(reading.tauS, 2)} s <ProvenanceTag value="ASSUMPTION" /></dd></div>
+                  <div><dt>{t("lab.bench.reading.settle")}</dt><dd className="lab-mono">{formatNumber(reading.settleMs / 1000, 1)} s <ProvenanceTag value="DERIVED" /></dd></div>
                   <div><dt>{t("lab.bench.reading.regime")}</dt><dd>{t(`lab.bench.regime.${reading.regime}`)}</dd></div>
                 </dl>
               </section>
@@ -164,7 +164,7 @@ export default function BenchPage() {
                   thresholds={[{ value: asymptote, label: t("lab.bench.curve.asymptote") }]}
                 />
               </div>
-              <p className="lab-note bench-page__axis">{t("lab.bench.curve.axis")}</p>
+              <p className="lab-note bench-page__axis">{t("lab.bench.curve.axis")} <ProvenanceTag value="CONFIGURACIÓN" /></p>
             </section>
 
             <section className="lab-panel" aria-labelledby="bench-steps-title">
@@ -195,7 +195,7 @@ export default function BenchPage() {
               {PROTOCOL_STEP_IDS.map((id) => (
                 <li>
                   <span className="bench-protocol__box" aria-hidden="true">{formatNumber(id, 0)}</span>
-                  <span className="bench-protocol__text">{t(`lab.bench.protocol.step.${id}`)}</span>
+                  <span className="bench-protocol__text">{t(`lab.bench.protocol.step.${id}`)} <ProvenanceTag value="CONFIGURACIÓN" /></span>
                   <span className="lab-chip-status">{t("lab.pending")}</span>
                 </li>
               ))}

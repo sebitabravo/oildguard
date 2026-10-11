@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "preact/hooks";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t } from "../../i18n";
 import { useBackendOrDemo } from "../../ui/backendOrDemo";
-import { DataTable, KpiTile, PageHeader, ScatterChart, SegmentedControl, SyntheticBadge } from "../../ui/foundation";
+import { DataTable, KpiTile, PageHeader, ProvenanceTag, ScatterChart, SegmentedControl, SyntheticBadge } from "../../ui/foundation";
 import { LabBanner } from "../shared/LabBanner";
 import { getValidationSeries } from "./api";
 import {
@@ -166,7 +166,7 @@ export default function ValidationPage() {
             label={t("lab.validation.metric.within")}
             value={metrics.withinShare === null ? "—" : formatNumber(metrics.withinShare * 100, 1)}
             unit={metrics.withinShare === null ? undefined : "%"}
-            meta={bandL === null ? emptyMeta : t("lab.validation.metric.withinMeta", { value: formatNumber(bandL, 2) })}
+            meta={bandL === null ? emptyMeta : <>{t("lab.validation.metric.withinMeta", { value: formatNumber(bandL, 2) })} <ProvenanceTag value="DERIVED" /></>}
           />
         </div>
         {/* Procedencia del fixture y falsador no evaluado en banco: acompaña al RMSE agrupado. */}
@@ -183,8 +183,8 @@ export default function ValidationPage() {
             <ul>
               <li>{t("lab.validation.notes.error")}</li>
               <li>{t("lab.validation.notes.gated")}</li>
-              <li>{t("lab.validation.notes.band")}</li>
-              <li>{t("lab.validation.notes.baseline")}</li>
+              <li>{t("lab.validation.notes.band")} <ProvenanceTag value="DERIVED" /></li>
+              <li>{t("lab.validation.notes.baseline")} <ProvenanceTag value="CONFIGURACIÓN" /></li>
               <li>{t("lab.validation.notes.settling")}</li>
               {showDriftNote && <li>{t("lab.validation.notes.drift")}</li>}
             </ul>
