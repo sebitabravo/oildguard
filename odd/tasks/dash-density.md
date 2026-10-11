@@ -17,7 +17,7 @@ The DASH-AUD-01 audit ranked three repeated/oversized dashboard regions as the c
 ## Tasks
 - [x] D01 Fleet: add a compact KPI strip retaining all three values and per-field provenance; add failing-then-passing density test; commit `refactor(fleet): merge top kpi cards into one strip` (`0841a213250171fa663bf86f0f94f2c968e35d7d`).
 - [x] D02 Alerts: collapse recurrence ranking behind a one-click disclosure by default; retain filtering; add density test; commit `feat(alerts): collapse recurrence ranking behind disclosure` (`dca25057c76b5e2e004c3eb2abe2e5d8ca876dc8`).
-- [x] D03 RUL: collapse per-wheel charts behind a disclosure; keep horizon/status/provenance visible; add density test; commit `feat(rul): collapse per-wheel projection charts behind disclosure` (commit identity pending).
+- [x] D03 RUL: collapse per-wheel charts behind a disclosure; keep horizon/status/provenance visible; add density test; commit `feat(rul): collapse per-wheel projection charts behind disclosure` (`0b7d41b74ce0d9bb81d1752a01b93f97faa3bbdc`).
 
 ## Acceptance and Checks
 - Each density test fails on the unmodified UI, then passes after its change.
@@ -34,6 +34,9 @@ The DASH-AUD-01 audit ranked three repeated/oversized dashboard regions as the c
 - D02 assessment: medium risk, `review_due: false`, `review_due_reason: under_budget`, assessed against `b339eb9`; last reviewed boundary remains `b339eb9`. The Impeccable detector reported the unchanged existing `side-tab` warning at `alerts.css:138`.
 - D02 rollback boundary: `AlertsInboxPage.tsx`, `alerts.css`, and `AlertsInboxPage.density.test.ts`.
 - D03: `RulPage.density.test.ts` failed before disclosure controls existed and passes after implementation (82 assertions); outputs: `/tmp/og-goal/evidence/DASH-FIX-01/red-rul.txt` and `/tmp/og-goal/evidence/DASH-FIX-01/green-rul.txt`. Each projected card's native disclosure is closed by default; horizon, status, source, metrics, and the visible 30% label remain outside or in the summary.
-- D03 commit identity and assessment: pending. Rollback boundary: `RulPage.tsx`, `rul.css`, and `RulPage.density.test.ts`.
-- Before screenshots exist for all three routes at 1440 and 390. After screenshots remain pending; the dev server is running.
-- Next step: reconcile D03 commit identity and assessment, then capture after screenshots and run final checks.
+- D03 assessment: medium risk, `review_due: false`, `review_due_reason: under_budget`, assessed against `b339eb9`; last reviewed boundary remains `b339eb9`.
+- D03 rollback boundary: `RulPage.tsx`, `rul.css`, and `RulPage.density.test.ts`.
+- Final verification correction: Astro check rejected `.toContain` and `.toBeNull` in the D02/D03 density tests (four TS2339 errors; original output retained at `/tmp/og-goal/evidence/DASH-FIX-01/build.txt`). Replaced those matchers with boolean/string checks using `.toBe`; no UI code changed.
+- Correction verification: focused D02/D03 tests: 2 pass, 0 fail (`density-tests-final.txt`); full suite: 607 pass, 0 fail (`bun-test-final.txt`); build: exit 0 (`build-final.txt`); honesty: 3 pass, 0 fail (`honesty-final.txt`). Build has existing unused/deprecation hints and Vite dynamic-import/chunk-size warnings.
+- Correction commit: pending. Screenshots and visual readback were completed by the parent; dev server remains running.
+- Next step: parent review and final closeout.

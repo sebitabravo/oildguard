@@ -10,19 +10,19 @@ describe("RUL projection density", () => {
     const cards = [...html.matchAll(/<article class="og-rul-card[^>]*>([\s\S]*?)<\/article>/g)].map((match) => match[1] ?? "");
     const projectedCards = cards.filter((card) => card.includes('class="og-rul-projection"'));
 
-    expect(projectedCards.length).toBeGreaterThan(0);
-    expect(cards.length).toBeGreaterThan(projectedCards.length);
+    expect(projectedCards.length > 0).toBe(true);
+    expect(cards.length > projectedCards.length).toBe(true);
     for (const card of projectedCards) {
       const disclosure = card.match(/<details\b([^>]*)>([\s\S]*?)<\/details>/);
       const beforeDisclosure = card.split("<details")[0] ?? "";
-      expect(disclosure).not.toBeNull();
-      expect(disclosure?.[1]).not.toContain("open");
-      expect(disclosure?.[1]).toContain('class="og-rul-projection"');
-      expect(disclosure?.[2]).toContain(`<summary>${t("rul.projection")} · 30%</summary>`);
-      expect(disclosure?.[2]).toContain("<svg");
-      expect(beforeDisclosure).toContain('class="og-rul-card__horizon"');
-      expect(beforeDisclosure).toContain('class="og-rul-card__metrics"');
-      expect(beforeDisclosure).toContain('class="og-rul-source');
+      expect(disclosure !== null).toBe(true);
+      expect(disclosure?.[1]?.includes("open") ?? false).toBe(false);
+      expect(disclosure?.[1]?.includes('class="og-rul-projection"') ?? false).toBe(true);
+      expect(disclosure?.[2]?.includes(`<summary>${t("rul.projection")} · 30%</summary>`) ?? false).toBe(true);
+      expect(disclosure?.[2]?.includes("<svg") ?? false).toBe(true);
+      expect(beforeDisclosure.includes('class="og-rul-card__horizon"')).toBe(true);
+      expect(beforeDisclosure.includes('class="og-rul-card__metrics"')).toBe(true);
+      expect(beforeDisclosure.includes('class="og-rul-source')).toBe(true);
     }
   });
 });
