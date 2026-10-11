@@ -1697,6 +1697,10 @@ Execution is authorized by the user's explicit approval. Start with A01 only; pr
 - Human three-minute comprehension check (human evidence, never model self-review): B12.
 - No dependency without written approval: every task acceptance plus section 5.
 
+### B02–B08 — formal parent pass GREEN (2026-10-11; code already in tree via S01–S06 commit)
+
+Parent re-ran every B-unit focused suite plus the full gates on the clean tree (only `.codex/hooks.json` restored to committed form since): B02 beats+locale 12/0, B03 scene host 12/0, B04 assembly+scene 23/0, B05 sensors+details 16/0, B06 cycle+scene 24/0, B07 oil+plot 26/0, B08 story progress 13/0; full `bun test src` 594/0 across 97 files; `bun run build` 44 pages exit 0. Counts differ from worker-time reports because S05 rewrote the suites ES-only (same behavior coverage). B02–B08 remain formally pending as units; no scope/acceptance text changed.
+
 ## Recovery footer
 
 No authoritative runtime memory identity was available in this pane, so no Engram mirror or session-summary writes were made and no substitute session IDs were invented. The existing historical TDD-on note is not proof of global config; every behavior-changing task in this plan proposes RED-GREEN-REFACTOR with a negative test replayed in a disposable copy first, subject to plan approval. About 400 authored lines per task is advisory only; never delete tests, whitespace, comments, or blank lines for size, and never split or pad work to fit the heuristic. Provisional total forecast (estimate only): 2500–5000 authored lines including tests, docs, and i18n. Delivery strategy defaults to `ask-on-risk`; the user resolved the chain strategy as `feature-branch-chain` before the A02 work-unit commit (no PR boundaries or remote actions are currently authorized). Receipt-driven development is currently on by default; this plan leaves the switch unchanged and treats native candidate consent as separate. This checked-in feature record carries the approved scope; each task still requires its own observed outcome, applicable proof, parent readback, and work-unit commit.
