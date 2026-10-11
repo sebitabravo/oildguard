@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "preact/hooks";
 import { t } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import { demoDataset } from "../../demo/dataset";
-import { DataTable, FilterBar, KpiTile, PageHeader, SyntheticBadge } from "../../ui/foundation";
+import { DataTable, FilterBar, KpiTile, PageHeader, ProvenanceTag, SyntheticBadge } from "../../ui/foundation";
 import { useBackendOrDemo, type DataSource } from "../../ui/backendOrDemo";
 import BackendOutageNotice from "../../ui/BackendOutageNotice";
 import { getFleetDevices, getPlatformHealth, type BackendDevice, type PlatformHealthResponse } from "../api";
@@ -159,7 +159,7 @@ export default function DeviceInventoryPage() {
       <KpiTile label={t("devices.reporting")} value={data.source === "loading" ? "—" : formatNumber(kpis.reporting, 0)} />
       <KpiTile label={t("devices.signedRatio")} value={data.source === "loading" || displayedSignedRatio === null ? "—" : formatNumber(displayedSignedRatio * 100, 1)} unit={data.source === "loading" || displayedSignedRatio === null ? undefined : "%"} meta={displayedSignedRatio === null || data.source === "loading" ? undefined : t(data.source === "demo" ? "devices.demoSource" : "devices.liveSource")} />
       <KpiTile label={t("devices.rejected")} value={data.source === "loading" ? "—" : formatNumber(kpis.rejected, 0)} />
-      <KpiTile label={t("devices.stale")} value={data.source === "loading" ? "—" : formatNumber(kpis.stale, 0)} />
+      <KpiTile label={<>{t("devices.stale")} <ProvenanceTag value="CONFIGURACIÓN" /></>} value={data.source === "loading" ? "—" : formatNumber(kpis.stale, 0)} />
     </section>
     <FilterBar><div className="device-inventory__filters" aria-label={t("devices.filterLabel")}>
       <label><span>{t("devices.filterLabel")}</span><select value={filter} onChange={(event) => { setFilter((event.currentTarget as HTMLSelectElement).value as DeviceFilter); setPageIndex(1); }}>{filterOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select></label>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks"
 import { t } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import { demoDataset } from "../../demo/dataset";
-import { DataTable, KpiTile, PageHeader, SyntheticBadge } from "../../ui/foundation";
+import { DataTable, KpiTile, PageHeader, ProvenanceTag, SyntheticBadge } from "../../ui/foundation";
 import { useBackendOrDemo, type DataSource } from "../../ui/backendOrDemo";
 import BackendOutageNotice from "../../ui/BackendOutageNotice";
 import { getFleetDevices, getFleetOutages, getIngestMetrics, getPlatformHealth, fleetWebSocketUrl, type PlatformHealthResponse } from "../api";
@@ -73,6 +73,10 @@ export function LinkFlowStatus({ connected, lastTickMs, demo }: { connected: boo
 
 export function LinkBackendOutageNotice({ source }: { source: DataSource }) {
   return source === "demo" ? <BackendOutageNotice /> : null;
+}
+
+export function LinkQueueTile({ depth, capacity, status }: { depth: number; capacity: number; status: string }) {
+  return <KpiTile label={t("link.queue")} value={`${numberOrDash(depth, 0)} / ${numberOrDash(capacity, 0)}`} meta={<>{status} · <ProvenanceTag value="MIXTO" /></>} />;
 }
 
 export default function LinkHealthPage() {
@@ -185,12 +189,14 @@ export default function LinkHealthPage() {
     <PageHeader eyebrow={t("link.eyebrow")} title={t("link.title")} description={t("link.description")} meta={data.source === "demo" ? <SyntheticBadge /> : <span className="link-health__source">{t(connected ? "devices.liveSource" : data.source === "live" ? "link.connection.disconnected" : "link.loading")}</span>} />
     <LinkBackendOutageNotice source={data.source} />
     <section className="link-health__kpis" aria-label={t("link.title")}>
-      {labels.map(({ key, value, unit }) => <KpiTile label={t(`link.${key}` as "link.latency")} value={value} unit={unit} meta={key.startsWith("demo") ? t("link.demoProvenance") : key === "queue" && payload?.kpis ? liveStatus : undefined} tone={connected && payload?.kpis?.status === "lagging" ? "warning" : connected && payload?.kpis?.status === "backpressure" ? "critical" : "nominal"} />)}
+      {labels.map(({ key, value, unit }) => key === "queue" && payload?.kpis
+        ? <LinkQueueTile depth={payload.kpis.queueDepth} capacity={payload.kpis.queueCapacity} status={liveStatus} />
+        : <KpiTile label={t(`link.${key}` as "link.latency")} value={value} unit={unit} meta={key.startsWith("demo") ? t("link.demoProvenance") : undefined} tone={connected && payload?.kpis?.status === "lagging" ? "warning" : connected && payload?.kpis?.status === "backpressure" ? "critical" : "nominal"} />)}
     </section>
     <LinkFlowStatus connected={connected} lastTickMs={lastTickMs} demo={data.source === "demo"} />
     <section className="link-health__timeline" aria-labelledby="link-timeline-title">
       <div className="link-health__section-head"><h3 id="link-timeline-title">{t("link.availabilityTitle")}</h3><div className="link-health__legend"><span><i className="link-health__legend-available" />{t("link.availableLegend")}</span><span><i className="link-health__legend-outage" />{t("link.outageLegend")}</span></div></div>
-      <div className="link-health__time-scale"><span>−60 min</span><span>−30 min</span><span>{t("devices.lastSeenNow")}</span></div>
+      <div className="link-health__time-scale"><span>−60 min <ProvenanceTag value="CONFIGURACIÓN" /></span><span>−30 min <ProvenanceTag value="CONFIGURACIÓN" /></span><span>{t("devices.lastSeenNow")}</span></div>
       {timelinePage.items.map((deviceId) => <div className="link-health__device-row"><code>{deviceId}</code><div className="link-health__track"><span className="link-health__available" />{segments.filter((segment) => segment.deviceId === deviceId).map((segment) => <i className="link-health__outage" style={{ left: `${segment.leftPct}%`, width: `${segment.widthPct}%` }} />)}</div></div>)}
       {devices.length === 0 && <p className="link-health__empty">{t("link.emptyDevices")}</p>}
       {timelinePage.pageCount > 1 && <nav className="link-health__pagination" aria-label={t("link.availabilityTitle")}><span>{t("link.pagination")} {formatNumber((timelinePage.page - 1) * 12 + 1, 0)}–{formatNumber(Math.min(timelinePage.page * 12, timelinePage.total), 0)} / {formatNumber(timelinePage.total, 0)}</span><div><button type="button" disabled={timelinePage.page === 1} onClick={() => setTimelinePageIndex(timelinePage.page - 1)}>{t("link.previous")}</button><span>{formatNumber(timelinePage.page, 0)} / {formatNumber(timelinePage.pageCount, 0)}</span><button type="button" disabled={timelinePage.page === timelinePage.pageCount} onClick={() => setTimelinePageIndex(timelinePage.page + 1)}>{t("link.next")}</button></div></nav>}

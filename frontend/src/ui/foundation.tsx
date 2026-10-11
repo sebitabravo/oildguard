@@ -40,7 +40,7 @@ export function ValidityChip({ validity }: { validity: "valid" | "estimate" | "s
   return <span className={`og-chip og-chip--${validity}`}>{t(key)}</span>;
 }
 
-export function ProvenanceTag({ value = "DERIVED" }: { value?: "VERIFIED" | "DERIVED" | "ASSUMPTION" }) {
+export function ProvenanceTag({ value = "DERIVED" }: { value?: "VERIFIED" | "DERIVED" | "ASSUMPTION" | "DEMO" | "EN VIVO" | "MIXTO" | "CONFIGURACIÓN" | "GAP" | "SYNTHETIC-PROXY" | "SUSTITUTO SINTÉTICO" }) {
   return <span className="og-chip">{value}</span>;
 }
 
@@ -203,7 +203,7 @@ export interface SyncChartProps {
   title?: string;
   xLabels?: string[];
   leftTicks?: number[];
-  thresholds?: Array<{ value: number; label: string; axis?: "left" | "right"; domain?: [number, number] }>;
+  thresholds?: Array<{ value: number; label: ComponentChildren; axis?: "left" | "right"; domain?: [number, number] }>;
   events?: Array<{ index: number; label: string; color?: string }>;
   gaps?: number[];
   regimes?: Array<{ startIndex: number; endIndex: number; label: string; tone?: "rest" | "movement" }>;
@@ -340,7 +340,7 @@ export function TimeSeriesChart({
 }: {
   values: number[];
   sigma?: number[];
-  thresholds?: Array<{ value: number; label: string }>;
+  thresholds?: Array<{ value: number; label: ComponentChildren }>;
   events?: Array<{ index: number; label: string }>;
   gaps?: number[];
   title?: string;
@@ -405,7 +405,7 @@ export function Icon({ name, label }: { name: string; label?: string }) {
 }
 
 export function EmptyState({ title, detail }: { title: string; detail?: string }) { return <div className="og-empty"><strong>{title}</strong>{detail && <span>{detail}</span>}</div>; }
-export function KpiTile({ label, value, unit, delta, meta, tone = "nominal" }: { label: string; value: number | string; unit?: string; delta?: string; meta?: string; tone?: Tone }) {
+export function KpiTile({ label, value, unit, delta, meta, tone = "nominal" }: { label: ComponentChildren; value: number | string; unit?: string; delta?: string; meta?: ComponentChildren; tone?: Tone }) {
   const displayValue = typeof value === "number" ? formatNumber(value, 1) : value;
   return <article className={`og-kpi-tile og-kpi-tile--${tone}`}><div className="og-label">{label}</div><div className="og-kpi-tile__value">{displayValue}{unit && <small>{unit}</small>}</div>{(delta || meta) && <div className="og-kpi-tile__meta">{delta}{delta && meta ? " · " : ""}{meta}</div>}</article>;
 }

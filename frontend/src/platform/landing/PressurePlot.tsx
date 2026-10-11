@@ -1,5 +1,6 @@
 import { t } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
+import { ProvenanceTag } from "../../ui/foundation";
 import {
   OIL_FIXED_MASS_KG,
   OIL_GATE_LEVELS_L,
@@ -138,19 +139,19 @@ export default function PressurePlot() {
               <tr key={row.volumeL} data-volume={String(row.volumeL)} data-temp={String(OIL_TABLE_TEMP_C)}>
                 <td>{t(oilGateLabelKey(row.volumeL))}</td>
                 <td data-field="volume" data-value={String(row.volumeL)}>
-                  {`${formatNumber(row.volumeL, 1)} L`}
+                  {`${formatNumber(row.volumeL, 1)} L`} <ProvenanceTag value="CONFIGURACIÓN" />
                 </td>
                 <td data-field="head" data-value={String(row.headM)}>
-                  {`${formatNumber(row.headM, 3)} m`}
+                  {`${formatNumber(row.headM, 3)} m`} <ProvenanceTag value="ASSUMPTION" />
                 </td>
                 <td data-field="pressure" data-value={String(row.pressureKpa)}>
-                  {`${formatNumber(row.pressureKpa, 3)} kPa`}
+                  {`${formatNumber(row.pressureKpa, 3)} kPa`} <ProvenanceTag value="ASSUMPTION" />
                 </td>
                 <td data-field="dvdh" data-value={String(row.dvdhLPerMm)}>
-                  {`${formatNumber(row.dvdhLPerMm, 3)} L/mm`}
+                  {`${formatNumber(row.dvdhLPerMm, 3)} L/mm`} <ProvenanceTag value="ASSUMPTION" />
                 </td>
                 <td data-field="dpdv" data-value={String(row.dpdvKpaPerL)}>
-                  {`${formatNumber(row.dpdvKpaPerL, 4)} kPa/L`}
+                  {`${formatNumber(row.dpdvKpaPerL, 4)} kPa/L`} <ProvenanceTag value="ASSUMPTION" />
                 </td>
               </tr>
             ))}
