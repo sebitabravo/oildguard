@@ -46,6 +46,11 @@ const SCENE_POSTER_URLS: Record<LandingSceneId, string> = {
 
 type SceneCopy = { readonly alt: string; readonly caption: string; readonly note: string };
 
+export function reportAssemblyMountFailure(error: unknown): SceneLoadState {
+  if (import.meta.env.DEV) console.error("No se pudo montar la escena del conjunto.", error);
+  return "mount-error";
+}
+
 // Copia solo español en línea (B03 no toca el diccionario): la portada se
 // lee sin JS ni WebGL, sin prometer el 3D que aún no existe.
 const SCENE_COPY: Record<LandingSceneId, SceneCopy> = {
@@ -138,8 +143,9 @@ export default function LandingScene({
           controlsRef.current = controls;
           try {
             mountedRef.current = mod.mountAssemblyScene(mountEl, controls);
-          } catch {
+          } catch (error) {
             mountingRef.current = false;
+            setState(reportAssemblyMountFailure(error));
             return;
           }
           setReduction(mod.assemblyReduction());
@@ -147,8 +153,9 @@ export default function LandingScene({
           setIsolated(controls.getState().isolated);
           setState("ready-3d");
         },
-        () => {
+        (error) => {
           mountingRef.current = false;
+          if (alive) setState(reportAssemblyMountFailure(error));
         },
       );
     };
@@ -260,6 +267,9 @@ export default function LandingScene({
       <img className="landing__scene-poster" src={SCENE_POSTER_URLS[scene]} alt={copy.alt} loading="lazy" />
     )}
     <div className="landing__scene-host" data-deferred="true" aria-hidden="true" ref={mountRef} />
+    {scene === "assembly" && state === "mount-error" && (
+      <p role="status" data-scene-error="true">{t("landing.scene.mountError")}</p>
+    )}
     {showAssemblyControls && reduction && (
       <div className="landing__assembly-controls">
         <p>

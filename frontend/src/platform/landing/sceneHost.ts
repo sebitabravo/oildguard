@@ -36,7 +36,7 @@ export function isSceneActiveForBeat(scene: LandingSceneId, beat: BeatId): boole
   return storySceneForBeat(beat) === scene;
 }
 
-export type SceneLoadState = "poster" | "loading-3d" | "ready-3d";
+export type SceneLoadState = "poster" | "loading-3d" | "ready-3d" | "mount-error";
 
 export type SceneVisibility = {
   readonly inViewport: boolean;
@@ -124,7 +124,11 @@ export function detectWebGL(): boolean {
   if (typeof document === "undefined") return false;
   try {
     const canvas = document.createElement("canvas");
-    return Boolean(canvas.getContext("webgl") ?? canvas.getContext("experimental-webgl"));
+    return Boolean(
+      canvas.getContext("webgl2") ??
+        canvas.getContext("webgl") ??
+        canvas.getContext("experimental-webgl"),
+    );
   } catch {
     return false;
   }

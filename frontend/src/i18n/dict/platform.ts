@@ -168,6 +168,7 @@ export const platform = {
   "landing.restTag": "ESTÁTICO / ASENTAMIENTO",
   "landing.calibrationLink": "Ver modelo de calibración en pausa",
   "landing.hardwareTitle": "Hardware en los puntos de servicio GDY106",
+  "landing.scene.mountError": "No se pudo cargar la vista 3D. El esquema estático permanece disponible.",
   "landing.hardwareBody": "Montaje y ruta de señal propuestos. La ubicación de sensores sigue siendo un supuesto de diseño pendiente de acceso físico y validación en banco.",
   "landing.tablePoint": "PUNTO",
   "landing.tableSensor": "SENSOR",
