@@ -85,9 +85,9 @@ function statusLabel(status: LiveStatus): string {
   );
 }
 
-export function FleetLivePanelView({ snapshot, state, previousDropped = null }: { snapshot: FleetLiveSnapshot | null; state: LiveConnectionState; previousDropped?: number | null }) {
+export function FleetLivePanelView({ snapshot, state, previousDropped = null, connectionAvailable = true }: { snapshot: FleetLiveSnapshot | null; state: LiveConnectionState; previousDropped?: number | null; connectionAvailable?: boolean }) {
   if (state === "empty" && !snapshot) return null;
-  const connected = state === "live";
+  const connected = state === "live" && connectionAvailable;
   const status = snapshot && connected ? classifyLiveStatus(snapshot, previousDropped) : null;
   const statusClass = !connected || status === "backpressure" || status === "lagging"
     ? "og-fleet-live__status--amber"
@@ -113,11 +113,15 @@ export function FleetLivePanelView({ snapshot, state, previousDropped = null }: 
   );
 }
 
-export default function FleetLivePanel() {
+export default function FleetLivePanel({ connectionAvailable = true, onConnectionChange }: { connectionAvailable?: boolean; onConnectionChange?: (connected: boolean) => void }) {
   const [snapshot, setSnapshot] = useState<FleetLiveSnapshot | null>(null);
   const [state, setState] = useState<LiveConnectionState>("connecting");
   const [previousDropped, setPreviousDropped] = useState<number | null>(null);
   const reconnectAttempt = useRef(0);
+
+  useEffect(() => {
+    onConnectionChange?.(state === "live");
+  }, [onConnectionChange, state]);
 
   useEffect(() => {
     let disposed = false;
@@ -210,5 +214,5 @@ export default function FleetLivePanel() {
     };
   }, []);
 
-  return <FleetLivePanelView snapshot={snapshot} state={state} previousDropped={previousDropped} />;
+  return <FleetLivePanelView snapshot={snapshot} state={state} previousDropped={previousDropped} connectionAvailable={connectionAvailable} />;
 }
