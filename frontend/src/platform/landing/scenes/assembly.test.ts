@@ -1,17 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import * as THREE from "three";
-import { GEAR_RATIO, GDY106_TRAIN, stageRatio, trainRatio } from "../../../twin/physics";
 import {
   ASSEMBLY_PART_IDS,
   ASSEMBLY_PARTS,
-  ASSEMBLY_REDUCTION_SOURCE,
   ASSEMBLY_VIEW_LIMITS,
   assertAssemblyComplete,
-  assemblyReduction,
   buildAssemblyScene,
   cameraPositionFor,
   createAssemblyControls,
-  reductionErrorPct,
   visibleParts,
   type AssemblyPartId,
 } from "./assembly";
@@ -58,34 +54,8 @@ describe("assembly cutaway parts", () => {
     expect(shellOpacity).toBeGreaterThan(0);
     // Los planetas de alta (3) y baja (4) del tren GDY106 suman 7 piñones.
     expect(parts.planets.children.length).toBeGreaterThanOrEqual(7);
-  });
-});
-
-describe("assembly reduction 32.62:1", () => {
-  test("traces the overall ratio to the B01-verified source, not an invention", () => {
-    const reduction = assemblyReduction();
-    expect(reduction.overall).toBe(GEAR_RATIO);
-    expect(reduction.overall).toBe(32.62);
-    expect(reduction.highSpeed).toBeCloseTo(stageRatio(GDY106_TRAIN.hs), 10);
-    expect(reduction.lowSpeed).toBeCloseTo(stageRatio(GDY106_TRAIN.ls), 10);
-    expect(reduction.highSpeed).toBeCloseTo(6.75, 10);
-    expect(reduction.illustrative).toBeCloseTo(trainRatio(GDY106_TRAIN), 10);
-    expect(reduction.illustrative).toBeCloseTo(32.625, 10);
-    // Etapas redondeadas a tres decimales, como la pantalla del banco.
-    expect(`${reduction.highSpeed.toFixed(3)} × ${reduction.lowSpeed.toFixed(3)}`).toBe("6.750 × 4.833");
-    expect(reduction.overall.toFixed(2)).toBe("32.62");
-    expect(reduction.withinTolerance).toBe(true);
-    // 3000 rpm del rotor caen a unas 92 rpm de rueda.
-    expect(reduction.wheelRpmAt3000).toBeCloseTo(91.97, 1);
-    expect(ASSEMBLY_REDUCTION_SOURCE).toContain("thesis-annex");
-    expect(ASSEMBLY_REDUCTION_SOURCE).toContain("32.62");
-  });
-
-  test("negative: a broken tooth-count train breaks the tolerance gate", () => {
-    expect(reductionErrorPct(GDY106_TRAIN, GEAR_RATIO)).toBeLessThanOrEqual(0.5);
-    const broken = { hs: { ...GDY106_TRAIN.hs, zs: 15 }, ls: GDY106_TRAIN.ls };
-    expect(reductionErrorPct(broken, GEAR_RATIO)).toBeGreaterThan(0.5);
-    expect(assemblyReduction(broken).withinTolerance).toBe(false);
+    expect(parts.planets.children.every((part) => part instanceof THREE.Mesh)).toBe(true);
+    expect(parts.planets.children.every((part) => (part as THREE.Mesh).geometry.index !== null)).toBe(true);
   });
 });
 

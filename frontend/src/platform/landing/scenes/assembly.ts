@@ -8,6 +8,7 @@ import {
   type GearTrain,
 } from "../../../twin/physics";
 import { createStage } from "../../../twin/render/stage";
+import { generateGearGeometry } from "./gears";
 
 // Corte del conjunto GDY106 para el landing (B04): seis piezas legibles en
 // corte, reducción 32.62:1 trazada a la fuente B01 y controles vivos de
@@ -227,7 +228,6 @@ export function buildAssemblyScene(): BuiltAssembly {
   const group = new THREE.Group();
   group.name = "gdy106-assembly-cutaway";
 
-  const steel = new THREE.MeshStandardMaterial({ color: 0x6f7886, metalness: 0.85, roughness: 0.4 });
   const gear = new THREE.MeshStandardMaterial({ color: 0x9aa7bd, metalness: 0.9, roughness: 0.35 });
   const rotorMat = new THREE.MeshStandardMaterial({ color: 0xa0622d, metalness: 0.8, roughness: 0.4 });
   const brass = new THREE.MeshStandardMaterial({ color: 0xd9b13b, metalness: 0.9, roughness: 0.3 });
@@ -240,84 +240,95 @@ export function buildAssemblyScene(): BuiltAssembly {
     opacity: CUTAWAY_SHELL_OPACITY,
   });
 
-  // Carcasa en corte: envuelve sin ocultar; no es una pieza aislable.
+  // Carcasa abierta en corte: el hueco deja legible el tren sin crear una pieza aislable.
   const shell = new THREE.Group();
   shell.name = "assembly-shell";
   shell.userData.cutaway = true;
-  cylX(shell, 0.55, 1.7, shellMat, 0, 32);
-  const gearbox = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.15, 1.15), shellMat);
-  gearbox.position.set(-1.4, ASSEMBLY_AXIS_Y, 0);
-  shell.add(gearbox);
+  const caseSection = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.78, 0.78, 1.9, 36, 1, true, Math.PI * 0.1, Math.PI * 1.55),
+    shellMat,
+  );
+  caseSection.rotation.z = Math.PI / 2;
+  caseSection.position.set(-0.7, ASSEMBLY_AXIS_Y, 0);
+  shell.add(caseSection);
   group.add(shell);
 
-  // Motor: barril del rotor sobre el eje + anillos.
+  // Proporciones de estudio, no CAD: la carcasa motor deja visible el rotor.
   const motor = partGroup("motor");
-  cylX(motor, 0.36, 1.2, rotorMat, 0, 20);
-  for (const rx of [-0.6, 0.6]) {
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.37, 0.03, 10, 24), gear);
-    ring.rotation.y = Math.PI / 2;
-    ring.position.set(rx, ASSEMBLY_AXIS_Y, 0);
-    motor.add(ring);
-  }
+  const motorShell = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.48, 0.48, 0.95, 32, 1, true, Math.PI * 0.08, Math.PI * 1.55),
+    shellMat,
+  );
+  motorShell.rotation.z = Math.PI / 2;
+  motorShell.position.set(-2.15, ASSEMBLY_AXIS_Y, 0);
+  motor.add(motorShell);
+  cylX(motor, 0.3, 0.8, rotorMat, -2.15, 24);
+  for (const rx of [-2.62, -1.68]) cylX(motor, 0.43, 0.06, gear, rx, 28);
   group.add(motor);
 
-  // Sol: eje + piñón GE1288 dentro de la caja.
+  // Sol y satélites comparten el eje axial; los conteos son sólo parámetros visuales.
   const sun = partGroup("sun");
-  cylX(sun, 0.1, 2.6, gear, -0.3, 12);
-  const sunDisc = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.14, 16), gear);
-  sunDisc.rotation.z = Math.PI / 2;
-  sunDisc.position.set(-1.4, ASSEMBLY_AXIS_Y, 0);
-  sun.add(sunDisc);
+  cylX(sun, 0.075, 1.8, gear, -1.75, 16);
+  const sunPinion = new THREE.Mesh(
+    generateGearGeometry({ teeth: 18, rootRadius: 0.19, tipRadius: 0.225, width: 0.22 }), gear,
+  );
+  sunPinion.name = "sun-pinion-teeth";
+  sunPinion.position.set(-1.45, ASSEMBLY_AXIS_Y, 0);
+  sun.add(sunPinion);
   group.add(sun);
 
-  // Planetas: 3 de alta alrededor del sol + 4 de baja; un solo grupo legible.
+  // Planetas escalonados axialmente para comunicar ambas etapas sin afirmar relaciones.
   const planets = partGroup("planets");
-  const pinion = (x: number, y: number, z: number, discR: number): void => {
-    const disc = new THREE.Mesh(new THREE.CylinderGeometry(discR, discR, 0.3, 12), gear);
-    disc.rotation.z = Math.PI / 2;
-    disc.position.set(x, y, z);
-    planets.add(disc);
+  const addPlanet = (x: number, y: number, z: number, teeth: number, rootRadius: number): void => {
+    const mesh = new THREE.Mesh(
+      generateGearGeometry({ teeth, rootRadius, tipRadius: rootRadius * 1.16, width: 0.2 }), gear,
+    );
+    mesh.name = `planet-gear-${teeth}`;
+    mesh.position.set(x, y, z);
+    planets.add(mesh);
   };
   for (let k = 0; k < GDY106_TRAIN.hs.planets; k++) {
     const a = (k / GDY106_TRAIN.hs.planets) * Math.PI * 2;
-    pinion(-1.4, ASSEMBLY_AXIS_Y + Math.cos(a) * 0.34, Math.sin(a) * 0.34, 0.11);
+    addPlanet(-1.45, ASSEMBLY_AXIS_Y + Math.cos(a) * 0.43, Math.sin(a) * 0.43, 30, 0.17);
   }
   for (let k = 0; k < GDY106_TRAIN.ls.planets; k++) {
     const a = (k / GDY106_TRAIN.ls.planets) * Math.PI * 2;
-    pinion(-1.08, ASSEMBLY_AXIS_Y + Math.cos(a) * 0.52, Math.sin(a) * 0.52, 0.13);
+    addPlanet(-0.98, ASSEMBLY_AXIS_Y + Math.cos(a) * 0.59, Math.sin(a) * 0.59, 36, 0.2);
   }
   group.add(planets);
 
-  // Portaplanetas: discos de alta y baja hacia el tubo de torsión.
+  // Portaplanetas: placas coaxiales con brazos que dejan leer los engranajes.
   const carrier = partGroup("carrier");
-  cylX(carrier, 0.28, 0.1, gear, -0.85, 18);
-  cylX(carrier, 0.44, 0.08, gear, -1.15, 20);
+  cylX(carrier, 0.16, 0.09, gear, -1.23, 20);
+  cylX(carrier, 0.28, 0.09, gear, -0.76, 24);
+  for (let k = 0; k < GDY106_TRAIN.hs.planets; k++) {
+    const a = (k / GDY106_TRAIN.hs.planets) * Math.PI * 2;
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.38, 0.055), brass);
+    arm.position.set(-1.23, ASSEMBLY_AXIS_Y + Math.cos(a) * 0.22, Math.sin(a) * 0.22);
+    arm.rotation.x = -a;
+    carrier.add(arm);
+  }
+  for (let k = 0; k < GDY106_TRAIN.ls.planets; k++) {
+    const a = (k / GDY106_TRAIN.ls.planets) * Math.PI * 2;
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.5, 0.055), brass);
+    arm.position.set(-0.76, ASSEMBLY_AXIS_Y + Math.cos(a) * 0.29, Math.sin(a) * 0.29);
+    arm.rotation.x = -a;
+    carrier.add(arm);
+  }
   group.add(carrier);
 
-  // Maza: tubo de torsión + maza sobre rodamientos cónicos + neumático.
+  // Maza: tubo de torsión, anillos de apoyo y disco de salida.
   const hub = partGroup("hub");
-  cylX(hub, 0.16, 1.1, gear, 0.75, 14);
-  cylX(hub, 0.34, 0.7, darkSteel, 0.75, 18);
-  for (const [bx, br] of [[0.45, 0.26], [1.05, 0.3]] as Array<[number, number]>) {
-    const cone = new THREE.Mesh(new THREE.CylinderGeometry(br, br * 0.78, 0.12, 16), brass);
-    cone.rotation.z = Math.PI / 2;
-    cone.position.set(bx, ASSEMBLY_AXIS_Y, 0);
-    hub.add(cone);
-  }
-  const tire = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.2, 12, 28), darkSteel);
-  tire.rotation.y = Math.PI / 2;
-  tire.position.set(1.35, ASSEMBLY_AXIS_Y, 0);
-  hub.add(tire);
+  cylX(hub, 0.15, 1.35, gear, 0.1, 20);
+  cylX(hub, 0.39, 0.52, darkSteel, 0.72, 28);
+  for (const bx of [0.42, 1.02]) cylX(hub, 0.44, 0.07, brass, bx, 28);
+  cylX(hub, 0.54, 0.12, gear, 1.12, 32);
   group.add(hub);
 
-  // Frenos húmedos: discos + pulmón del freno de estacionamiento.
+  // Frenos húmedos: paquete de discos separado del lado de salida.
   const brakes = partGroup("brakes");
-  for (const bx of [1.18, 1.28]) {
-    cylX(brakes, 0.4, 0.05, gear, bx, 20);
-  }
-  const springCan = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.22, 12), brass);
-  springCan.position.set(1.0, ASSEMBLY_AXIS_Y + 0.55, 0);
-  brakes.add(springCan);
+  for (let i = 0; i < 7; i += 1) cylX(brakes, i % 2 === 0 ? 0.46 : 0.35, 0.035, i % 2 === 0 ? gear : darkSteel, 1.38 + i * 0.055, 28);
+  cylX(brakes, 0.19, 0.23, brass, 1.62, 20);
   group.add(brakes);
 
   const parts: Record<AssemblyPartId, THREE.Group> = { motor, sun, planets, carrier, hub, brakes };
@@ -362,7 +373,7 @@ export function mountAssemblyScene(host: HTMLElement, controls: AssemblyControls
   stage.renderer.domElement.setAttribute("role", "img");
   stage.renderer.domElement.setAttribute(
     "aria-label",
-    "GDY106 assembly cutaway: motor, sun, planets, carriers, hub and wet brakes, 32.62 to 1 reduction",
+    "GDY106 assembly cutaway: motor, sun, planets, carriers, hub and wet brakes",
   );
 
   // La desmultiplicación se demuestra girando cada extremo a su velocidad:
