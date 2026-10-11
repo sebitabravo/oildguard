@@ -44,37 +44,48 @@ const SCENE_POSTER_URLS: Record<LandingSceneId, string> = {
   oil: posterUrl(oilPoster),
 };
 
-type SceneCopy = { readonly alt: string; readonly caption: string; readonly note: string };
+type SceneCopy = {
+  readonly alt: string;
+  readonly captionKey:
+    | "landing.scene.caption.assembly"
+    | "landing.scene.caption.sensors"
+    | "landing.scene.caption.cycle"
+    | "landing.scene.caption.oil";
+};
 
 export function reportAssemblyMountFailure(error: unknown): SceneLoadState {
   if (import.meta.env.DEV) console.error("No se pudo montar la escena del conjunto.", error);
   return "mount-error";
 }
 
-// Copia solo español en línea (B03 no toca el diccionario): la portada se
-// lee sin JS ni WebGL, sin prometer el 3D que aún no existe.
 const SCENE_COPY: Record<LandingSceneId, SceneCopy> = {
   assembly: {
     alt: "Diagrama de corte estático del modelo de estudio del conjunto de rueda GDY106",
-    caption: "Conjunto en estudio · vista estática",
-    note: "El 3D interactivo carga solo en vista; este póster lo reemplaza sin WebGL.",
+    captionKey: "landing.scene.caption.assembly",
   },
   sensors: {
     alt: "Diagrama estático de las cuatro entradas de señal del diseño en la rueda",
-    caption: "Entradas de señal · vista estática",
-    note: "El 3D interactivo carga solo en vista; este póster lo reemplaza sin WebGL.",
+    captionKey: "landing.scene.caption.sensors",
   },
   cycle: {
     alt: "Diagrama estático de las fases de carga, acarreo, descarga y espera",
-    caption: "Ciclo de acarreo · vista estática",
-    note: "El 3D interactivo carga solo en vista; este póster lo reemplaza sin WebGL.",
+    captionKey: "landing.scene.caption.cycle",
   },
   oil: {
     alt: "Diagrama estático del estudio de presión en ventana de asentamiento",
-    caption: "Condición del aceite · vista estática",
-    note: "El 3D interactivo carga solo en vista; este póster lo reemplaza sin WebGL.",
+    captionKey: "landing.scene.caption.oil",
   },
 };
+
+export function sceneCopyForState(scene: LandingSceneId, state: SceneLoadState) {
+  const mounted = state === "ready-3d";
+  const sceneCopy = SCENE_COPY[scene];
+  return {
+    ...sceneCopy,
+    caption: `${t(sceneCopy.captionKey)} · ${t(mounted ? "landing.scene.caption.active" : "landing.scene.caption.poster")}`,
+    note: t(mounted ? "landing.scene.note.active" : "landing.scene.note.poster"),
+  };
+}
 
 export default function LandingScene({
   scene,
@@ -87,8 +98,8 @@ export default function LandingScene({
   storyProgress?: number;
   storyActive?: boolean;
 }) {
-  const copy = SCENE_COPY[scene];
   const [state, setState] = useState<SceneLoadState>("poster");
+  const copy = sceneCopyForState(scene, state);
   const [reduction, setReduction] = useState<AssemblyReduction | null>(null);
   const [partLabels, setPartLabels] = useState<ReadonlyArray<{ id: AssemblyPartId; label: string }> | null>(null);
   const [isolated, setIsolated] = useState<AssemblyPartId | null>(null);
@@ -339,9 +350,7 @@ export default function LandingScene({
         </div>
       </div>
     )}
-    <figcaption><strong>{copy.caption}</strong><span>{showAssemblyControls
-      ? "3D interactivo · arrastra para orbitar, usa los controles para zoom y piezas."
-      : copy.note}</span></figcaption>
+    <figcaption><strong>{copy.caption}</strong><span>{copy.note}</span></figcaption>
     {showSensorDetails && <SensorDetails />}
     {showCycleDetails && cyclePhase && cycleVisual && (
       <div
