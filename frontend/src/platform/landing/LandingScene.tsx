@@ -62,9 +62,11 @@ export async function mountAssemblyWithFallback(
   mountEl: HTMLDivElement,
   onFailure: (state: SceneLoadState) => void,
   loadAssembly: () => Promise<typeof import("./scenes/assembly")> = () => import("./scenes/assembly"),
+  isAlive: () => boolean = () => true,
 ) {
   try {
     const mod = await loadAssembly();
+    if (!isAlive()) return null;
     const controls = mod.createAssemblyControls();
     const mounted = mod.mountAssemblyScene(mountEl, controls);
     return { mod, controls, mounted };
@@ -178,7 +180,7 @@ export default function LandingScene({
           mountFailed = true;
           setState(errorState);
         }
-      }).then((result) => {
+      }, undefined, () => alive).then((result) => {
         if (!result || !alive) return;
         const { mod, controls, mounted } = result;
         controlsRef.current = controls;

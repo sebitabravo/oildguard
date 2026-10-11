@@ -64,4 +64,37 @@ describe("landing scene mount failures", () => {
       console.error = originalConsoleError;
     }
   });
+
+  test("does not mount assembly after unmount while its import is pending", async () => {
+    let resolveModule!: (module: typeof import("./scenes/assembly")) => void;
+    let alive = true;
+    let createdControls = 0;
+    let mountedScene = 0;
+    const pendingModule = new Promise<typeof import("./scenes/assembly")>((resolve) => {
+      resolveModule = resolve;
+    });
+    const loadedModule = {
+      createAssemblyControls: () => {
+        createdControls += 1;
+        return { getState: () => ({ isolated: null }) };
+      },
+      mountAssemblyScene: () => {
+        mountedScene += 1;
+        return { dispose: () => undefined, syncCamera: () => undefined };
+      },
+    } as unknown as typeof import("./scenes/assembly");
+
+    const pendingMount = mountAssemblyWithFallback(
+      {} as HTMLDivElement,
+      () => undefined,
+      () => pendingModule,
+      () => alive,
+    );
+    alive = false;
+    resolveModule(loadedModule);
+
+    await expect(pendingMount).resolves.toBe(null);
+    expect(createdControls).toBe(0);
+    expect(mountedScene).toBe(0);
+  });
 });
