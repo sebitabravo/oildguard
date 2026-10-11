@@ -15,8 +15,8 @@ export function LevelTag({ level }: { level: Level }) {
   );
 }
 
-export function SourceTag({ source }: { source: AlertSource }) {
-  return <small className={`og-alerts-source og-alerts-source--${source}`}>{t(source === "live" ? "alerts.source.live" : "alerts.source.demo")}</small>;
+export function SourceTag({ source }: { source: AlertSource | "mixed" }) {
+  return <small className={`og-alerts-source og-alerts-source--${source}`}>{t(source === "live" ? "alerts.source.live" : source === "demo" ? "alerts.source.demo" : "alerts.source.mixed")}</small>;
 }
 
 export function StateChip({ state }: { state: Lifecycle }) {

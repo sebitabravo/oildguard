@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { h } from "preact";
 import renderToString from "preact-render-to-string";
-import FleetPage from "./FleetPage";
-
-const renderPage = () => renderToString(h(FleetPage, {}));
+import FleetPage, { FleetHeaderMeta, FleetKpiStrip } from "./FleetPage";
+import { createDemoDataset } from "../../demo/dataset";
+import { fleetCounters, mergeLiveDevices } from "./logic";
 
 function elements(html: string, tag: string, className: string): string[] {
   const opening = new RegExp(`<${tag}\\b[^>]*class="[^"]*${className}[^"]*"[^>]*>`, "g");
@@ -26,41 +26,62 @@ function elements(html: string, tag: string, className: string): string[] {
   return output;
 }
 
-function hasFieldSource(markup: string): boolean {
-  return /class="og-fleet-source[^\"]*"[^>]*>(?:DEMO|EN VIVO)<\/small>/.test(markup);
+function normalizedWithSourceMarkers(markup: string): string {
+  return markup
+    .replace(/<small class="og-fleet-source[^"]*">\s*(DEMO|EN VIVO|MIXTO|CONFIGURACIÓN)\s*<\/small>/g, " ⟦$1⟧")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
+function expectAdjacentSource(markup: string, fieldText: string, source: string): void {
+  expect(normalizedWithSourceMarkers(markup)).toContain(`${fieldText} ⟦${source}⟧`);
+}
+
+const renderPage = () => renderToString(h(FleetPage, {}));
+
 describe("fleet summary field provenance", () => {
-  test("labels each summary card and filter count beside its value", () => {
+  test("labels each summary-card and filter value beside its own field", () => {
     const html = renderPage();
     const cards = elements(html, "div", "og-fleet-kpi");
     const filters = elements(html, "button", "og-fleet-filter-chip");
 
     expect(cards.length).toBe(3);
-    const normalized = cards.map((card) => card.replace(/<[^>]+>/g, " ").replace(/\s+/g, " "));
-    expect(normalized[0]).toContain("6 camiones");
-    expect(normalized[0]).toContain("12 ruedas GDY106");
-    expect(normalized[0]).toContain("5");
-    expect(normalized[1]).toContain("6");
-    expect(normalized[1]).toContain("2");
-    expect(normalized[2]).toContain("3");
-    expect(normalized[2]).toContain("1");
-    expect(cards.map((card) => (card.match(/og-fleet-source/g) ?? []).length)).toEqual([3, 3, 3]);
-    for (const card of cards) expect(hasFieldSource(card)).toBe(true);
+    expectAdjacentSource(cards[0] ?? "", "6 camiones", "DEMO");
+    expectAdjacentSource(cards[0] ?? "", "12 ruedas GDY106", "DEMO");
+    expectAdjacentSource(cards[0] ?? "", "activos en ciclo: 5", "DEMO");
+    expectAdjacentSource(cards[1] ?? "", "6", "DEMO");
+    expectAdjacentSource(cards[1] ?? "", "2 N4 críticas", "DEMO");
+    expectAdjacentSource(cards[1] ?? "", "2 N2 advertencias", "DEMO");
+    expectAdjacentSource(cards[2] ?? "", "3", "DEMO");
+    expectAdjacentSource(cards[2] ?? "", "2 obsoletas", "DEMO");
+    expectAdjacentSource(cards[2] ?? "", "1 enlace caído", "DEMO");
 
     expect(filters.length).toBe(4);
-    for (const filter of filters) expect(hasFieldSource(filter)).toBe(true);
+    ["Todas 12", "Con alerta 6", "Sin enlace 3", "Fuera de servicio 2"].forEach((field) => {
+      const button = filters.find((item) => normalizedWithSourceMarkers(item).startsWith(field));
+      expectAdjacentSource(button ?? "", field, "DEMO");
+    });
   });
 
-  test("labels the sampling window and any rendered live telemetry fields", () => {
+  test("labels the fixed sampling interval at its field", () => {
     const html = renderPage();
     const header = elements(html, "div", "og-fleet-header-meta")[0] ?? "";
-    expect(header).toContain("10 s");
-    expect(hasFieldSource(header)).toBe(true);
+    expectAdjacentSource(header, "Ventana de muestreo · 10 s", "CONFIGURACIÓN");
 
-    const telemetry = elements(html, "section", "og-fleet-live")[0] ?? "";
-    for (const text of ["0 dispositivos reportando", "0 filas aceptadas", "0 filas rechazadas", "0 lotes descartados", "0 / 0", "Ventana: 10 s"]) {
-      if (telemetry.includes(text)) expect(hasFieldSource(telemetry)).toBe(true);
-    }
+    const liveHeader = renderToString(h(FleetHeaderMeta, { liveLoaded: true, deviceCount: 0 }));
+    expectAdjacentSource(liveHeader, "0 dispositivos", "EN VIVO");
+  });
+
+  test("splits fleet summary values when live and demo rows both contribute", () => {
+    const rows = mergeLiveDevices(createDemoDataset().trucks, [{
+      device_id: "wheel-RH-01",
+      truck_id: "OG-01",
+      latest_level_liters: 91.2,
+      last_t_iso: "2026-10-11T12:00:00Z",
+    }]);
+    const html = renderToString(h(FleetKpiStrip, { rows, counts: fleetCounters(rows) }));
+    expect(normalizedWithSourceMarkers(html)).toContain("6 camiones ⟦MIXTO⟧ ⟦EN VIVO⟧ 1 · ⟦DEMO⟧ 5");
+    expect(normalizedWithSourceMarkers(html)).toContain("12 ruedas GDY106 ⟦MIXTO⟧ ⟦EN VIVO⟧ 1 · ⟦DEMO⟧ 11");
   });
 });

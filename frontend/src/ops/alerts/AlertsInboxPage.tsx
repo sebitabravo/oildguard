@@ -1,7 +1,7 @@
 import { useMemo, useState } from "preact/hooks";
 import { t } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
-import { Button, FilterBar, FormField, KpiTile, Notice, PageHeader } from "../../ui/foundation";
+import { Button, FilterBar, FormField, Notice, PageHeader } from "../../ui/foundation";
 import { useBackendState } from "../../ui/backendOrDemo";
 import { useAlertData } from "./data";
 import { ageLabel, localizeReason, roleLabel } from "./localize";
@@ -14,6 +14,14 @@ import { LevelTag, SourceTag, StateChip, detailHref } from "./shared";
 import "./alerts.css";
 
 const NO_FILTERS: AlertFilters = { level: "all", lifecycle: "all", truck: "all", role: "all", query: "" };
+
+export function ActiveCountSource({ demo, live, backendLive }: { demo: number; live: number; backendLive: boolean }) {
+  if (live > 0 && demo === 0) return <SourceTag source="live" />;
+  if (live > 0 || backendLive) {
+    return <><SourceTag source="mixed" /><span className="og-alerts-source-split"><SourceTag source="live" /> {formatNumber(live, 0)} · <SourceTag source="demo" /> {formatNumber(demo, 0)}</span></>;
+  }
+  return <SourceTag source="demo" />;
+}
 
 function channelNames(record: AlertRecord): string {
   return VOTING_CHANNELS.filter((name) => record.channels[name] === "fired").map((name) => t(`ui.channel.${name}`)).join(" · ");
@@ -30,6 +38,8 @@ export default function AlertsInboxPage() {
 
   const visible = useMemo(() => sortAlerts(filterAlerts(records, filters)), [records, filters]);
   const active = countActiveByLevel(records);
+  const activeDemo = countActiveByLevel(records.filter((record) => record.source === "demo"));
+  const activeLive = countActiveByLevel(records.filter((record) => record.source === "live"));
   const distribution = useMemo(() => distribution7d(demoRecords, DEMO_NOW_MS), [demoRecords]);
   const ranking = useMemo(() => recurrenceRanking(demoRecords, 5), [demoRecords]);
   const trucks = useMemo(
@@ -62,15 +72,17 @@ export default function AlertsInboxPage() {
 
         <section className="og-alerts-tiles" aria-label={t("alerts.tiles.label")}>
           {LEVELS.map((level) => (
-            <KpiTile
-
-              label={`${level} · ${t(`alerts.level.word.${level}`)}`}
-              value={formatNumber(active[level], 0)}
-              meta={t("alerts.tile.active")}
-              tone={active[level] === 0 ? "nominal" : level === "N4" ? "critical" : "warning"}
-            />
+            <article className={`og-kpi-tile og-kpi-tile--${active[level] === 0 ? "nominal" : level === "N4" ? "critical" : "warning"}`}>
+              <div className="og-label">{`${level} · ${t(`alerts.level.word.${level}`)}`}</div>
+              <div className="og-kpi-tile__value">{formatNumber(active[level], 0)} <ActiveCountSource demo={activeDemo[level]} live={activeLive[level]} backendLive={backendState === "live"} /></div>
+              <div className="og-kpi-tile__meta">{t("alerts.tile.active")}</div>
+            </article>
           ))}
-          <KpiTile label={t("alerts.tile.total")} value={formatNumber(distribution.total, 0)} meta={t("alerts.tile.totalMeta")} />
+          <article className="og-kpi-tile og-kpi-tile--nominal">
+            <div className="og-label">{t("alerts.tile.total")}</div>
+            <div className="og-kpi-tile__value">{formatNumber(distribution.total, 0)} <SourceTag source="demo" /></div>
+            <div className="og-kpi-tile__meta">{t("alerts.tile.totalMeta")}</div>
+          </article>
         </section>
 
       <aside className="og-alerts-aside">
@@ -86,11 +98,11 @@ export default function AlertsInboxPage() {
                   <li>
                     <i className={`og-alerts-swatch og-alerts-bar__seg--${level}`} aria-hidden="true" />
                     <span>{level} · {t(`alerts.level.word.${level}`)}</span>
-                    <b className="og-mono">{formatNumber(distribution.byLevel[level].count, 0)} <small>({formatNumber(distribution.byLevel[level].share * 100, 0)}%)</small></b>
+                    <b className="og-mono">{formatNumber(distribution.byLevel[level].count, 0)} <small>({formatNumber(distribution.byLevel[level].share * 100, 0)}%)</small> <SourceTag source="demo" /></b>
                   </li>
                 ))}
               </ul>
-              <p className="og-alerts-note">{t("alerts.dist.total", { count: formatNumber(distribution.total, 0) })} · {t("alerts.dist.note")}</p>
+              <p className="og-alerts-note">{t("alerts.dist.total", { count: formatNumber(distribution.total, 0) })} <SourceTag source="demo" /> · {t("alerts.dist.note")}</p>
             </>
           ) : <p className="og-alerts-note">{t("alerts.dist.empty")}</p>}
         </section>
@@ -104,7 +116,7 @@ export default function AlertsInboxPage() {
                   <li>
                     <button type="button" aria-label={t("alerts.recur.filter", { value: entry.wheelId })} onClick={() => patch({ wheel: entry.wheelId })}>
                       <span className="og-alerts-ranking__main"><strong className="og-mono">{entry.wheelId}</strong><LevelTag level={entry.worst} /></span>
-                      <small>{entry.truckId} · {t("alerts.recur.count", { count: formatNumber(entry.count, 0) })} · {t("alerts.recur.last", { value: ageLabel(ageParts(entry.lastOpenedAt, DEMO_NOW_MS)) })}</small>
+                      <small>{entry.truckId} · {t("alerts.recur.count", { count: formatNumber(entry.count, 0) })} <SourceTag source="demo" /> · {t("alerts.recur.last", { value: ageLabel(ageParts(entry.lastOpenedAt, DEMO_NOW_MS)) })} <SourceTag source="demo" /></small>
                     </button>
                   </li>
                 ))}

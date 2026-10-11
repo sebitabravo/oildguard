@@ -29,23 +29,56 @@ function rowClass(row: FleetRow): string {
   return `og-fleet-row og-fleet-row--${classifyRowState(row.wheel, row.lastComm)}`;
 }
 
-function FleetKpiStrip({ counts }: { counts: ReturnType<typeof fleetCounters> }) {
+function FleetSourceSummary({ demo, live }: { demo: number; live: number }) {
+  if (demo > 0 && live > 0) {
+    return <><FleetFieldSource source="MIXED" /><span className="og-fleet-source-split"><FleetFieldSource source="LIVE" /> {formatNumber(live, 0)} · <FleetFieldSource source="DEMO" /> {formatNumber(demo, 0)}</span></>;
+  }
+  return <FleetFieldSource source={live > 0 ? "LIVE" : "DEMO"} />;
+}
+
+export function FleetKpiStrip({ counts, rows }: { counts: ReturnType<typeof fleetCounters>; rows: FleetRow[] }) {
+  const sourceCounts = (items: FleetRow[], source: "source" | "alert" | "lastComm") => ({
+    demo: items.filter((row) => source === "source" ? row.source === "DEMO" : row.fieldSources[source] === "DEMO").length,
+    live: items.filter((row) => source === "source" ? row.source === "LIVE" : row.fieldSources[source] === "LIVE").length,
+  });
+  const countForState = (predicate: (state: ReturnType<typeof classifyRowState>, row: FleetRow) => boolean) =>
+    rows.filter((row) => predicate(classifyRowState(row.wheel, row.lastComm), row));
+  const alertRows = countForState((state) => ["N1", "N2", "N4"].includes(state));
+  const noLinkRows = countForState((state) => state === "stale" || state === "link-down");
+  const liveLinkDown = noLinkRows.filter((row) => row.wheel.state !== "link-down" && row.fieldSources.lastComm === "LIVE");
+  const demoLinkDown = noLinkRows.filter((row) => !liveLinkDown.includes(row));
+  const noLinkSources = { demo: demoLinkDown.length, live: liveLinkDown.length };
+  const alertSources = sourceCounts(alertRows, "alert");
+  const rowSources = sourceCounts(rows, "source");
+  const truckSourceById = new Map<string, "DEMO" | "LIVE">();
+  for (const row of rows) {
+    if (row.source === "LIVE" || !truckSourceById.has(row.truckId)) truckSourceById.set(row.truckId, row.source);
+  }
+  const truckSources = {
+    demo: [...truckSourceById.values()].filter((source) => source === "DEMO").length,
+    live: [...truckSourceById.values()].filter((source) => source === "LIVE").length,
+  };
+  const staleRows = countForState((state) => state === "stale");
+  const linkDownRows = countForState((state) => state === "link-down");
+  const liveLinkDownRows = linkDownRows.filter((row) => row.wheel.state !== "link-down" && row.fieldSources.lastComm === "LIVE");
+  const linkDownSources = { demo: linkDownRows.length - liveLinkDownRows.length, live: liveLinkDownRows.length };
+
   return (
     <section className="og-fleet-kpi-strip" data-kpi-layout="tablet" aria-label={t("fleet.kpis")}>
       <div className="og-fleet-kpi">
         <div className="og-label">{t("fleet.kpiMonitored")}</div>
-        <div className="og-kpi-tile__value">{formatNumber(counts.trucks, 0)}<small>{t("fleet.trucks")}</small></div>
-        <div className="og-kpi-tile__meta">{formatNumber(counts.wheels, 0)} {t("fleet.gdy106Wheels")} · {t("fleet.activeCycle")}: {formatNumber(counts.activeTrucks, 0)}</div>
+        <div className="og-kpi-tile__value">{formatNumber(counts.trucks, 0)}<small>{t("fleet.trucks")}</small> <FleetSourceSummary {...truckSources} /></div>
+        <div className="og-kpi-tile__meta">{formatNumber(counts.wheels, 0)} {t("fleet.gdy106Wheels")} <FleetSourceSummary {...rowSources} /> · {t("fleet.activeCycle")}: {formatNumber(counts.activeTrucks, 0)} <FleetFieldSource source="DEMO" /></div>
       </div>
       <div className={`og-fleet-kpi${counts.alerts ? " og-fleet-kpi--warning" : ""}`}>
         <div className="og-label">{t("fleet.kpiAlerts")}</div>
-        <div className="og-kpi-tile__value">{formatNumber(counts.alerts, 0)}</div>
-        <div className="og-kpi-tile__meta">{formatNumber(counts.n4, 0)} {t("fleet.n4Word")} · {formatNumber(counts.n2, 0)} {t("fleet.n2Word")}</div>
+        <div className="og-kpi-tile__value">{formatNumber(counts.alerts, 0)} <FleetSourceSummary {...alertSources} /></div>
+        <div className="og-kpi-tile__meta">{formatNumber(counts.n4, 0)} {t("fleet.n4Word")} <FleetFieldSource source="DEMO" /> · {formatNumber(counts.n2, 0)} {t("fleet.n2Word")} <FleetFieldSource source="DEMO" /></div>
       </div>
       <div className={`og-fleet-kpi${counts.noLink ? " og-fleet-kpi--critical" : ""}`}>
         <div className="og-label">{t("fleet.kpiLink")}</div>
-        <div className="og-kpi-tile__value">{formatNumber(counts.noLink, 0)}</div>
-        <div className="og-kpi-tile__meta">{formatNumber(counts.stale, 0)} {t("fleet.staleWord")} · {formatNumber(counts.linkDown, 0)} {t("fleet.linkDownWord")}</div>
+        <div className="og-kpi-tile__value">{formatNumber(counts.noLink, 0)} <FleetSourceSummary {...noLinkSources} /></div>
+        <div className="og-kpi-tile__meta">{formatNumber(counts.stale, 0)} {t("fleet.staleWord")} <FleetFieldSource source="DEMO" /> · {formatNumber(counts.linkDown, 0)} {t("fleet.linkDownWord")} <FleetSourceSummary {...linkDownSources} /></div>
       </div>
     </section>
   );
@@ -53,11 +86,20 @@ function FleetKpiStrip({ counts }: { counts: ReturnType<typeof fleetCounters> })
 
 // Cada campo muestra su procedencia junto al valor para que ningún dato DEMO
 // se lea como vivo en una fila LIVE; el sigma sintético lleva su propio rótulo.
-export function FleetFieldSource({ source }: { source: FleetSource }) {
+export function FleetFieldSource({ source }: { source: FleetSource | "MIXED" | "CONFIGURATION" }) {
   return (
     <small className={`og-fleet-source og-fleet-source--${source.toLowerCase()}`}>
-      {t(source === "LIVE" ? "fleet.source.live" : "fleet.source.demo")}
+      {t(source === "LIVE" ? "fleet.source.live" : source === "DEMO" ? "fleet.source.demo" : source === "MIXED" ? "fleet.source.mixed" : "fleet.source.configuration")}
     </small>
+  );
+}
+
+export function FleetHeaderMeta({ liveLoaded, deviceCount }: { liveLoaded: boolean; deviceCount: number }) {
+  return (
+    <div className="og-fleet-header-meta">
+      <span><i />{liveLoaded ? <>{t("fleet.liveDevices", { count: formatNumber(deviceCount, 0) })} <FleetFieldSource source="LIVE" /></> : t("fleet.demoSource")}</span>
+      <small>{t("fleet.sampling")} <FleetFieldSource source="CONFIGURATION" /></small>
+    </div>
   );
 }
 
@@ -116,6 +158,18 @@ export default function FleetPage() {
   const allRows = useMemo(() => mergeLiveDevices(demoDataset.trucks, liveDevices), [liveDevices]);
   const visibleRows = useMemo(() => filterFleetRows(allRows, model, state, query), [allRows, model, state, query]);
   const counts = fleetCounters(allRows);
+  const filterRowSources = {
+    demo: allRows.filter((row) => row.source === "DEMO").length,
+    live: allRows.filter((row) => row.source === "LIVE").length,
+  };
+  const filterAlertRows = allRows.filter((row) => ["N1", "N2", "N4"].includes(classifyRowState(row.wheel, row.lastComm)));
+  const filterAlertSources = {
+    demo: filterAlertRows.filter((row) => row.fieldSources.alert === "DEMO").length,
+    live: filterAlertRows.filter((row) => row.fieldSources.alert === "LIVE").length,
+  };
+  const filterNoLinkRows = allRows.filter((row) => ["stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm)));
+  const filterLiveNoLinkRows = filterNoLinkRows.filter((row) => row.wheel.state !== "link-down" && row.fieldSources.lastComm === "LIVE");
+  const filterNoLinkSources = { demo: filterNoLinkRows.length - filterLiveNoLinkRows.length, live: filterLiveNoLinkRows.length };
   const visibleGroups = groupFleetRows(visibleRows);
   const downloadCsv = () => {
     const blob = new Blob([toCsv(visibleRows)], { type: "text/csv;charset=utf-8" });
@@ -134,10 +188,10 @@ export default function FleetPage() {
           eyebrow={t("fleet.eyebrow")}
           title={t("fleet.title")}
           description={t("fleet.description")}
-          meta={<div className="og-fleet-header-meta"><span><i />{liveLoaded ? t("fleet.liveDevices", { count: formatNumber(liveDevices.length, 0) }) : t("fleet.demoSource")}</span><small>{t("fleet.sampling")}</small></div>}
+          meta={<FleetHeaderMeta liveLoaded={liveLoaded} deviceCount={liveDevices.length} />}
         />
 
-        <FleetKpiStrip counts={counts} />
+        <FleetKpiStrip counts={counts} rows={allRows} />
 
         <FilterBar>
           <SegmentedControl
@@ -148,7 +202,7 @@ export default function FleetPage() {
           <div className="og-fleet-state-filters" role="group" aria-label={t("fleet.stateFilter")}>
             {(["all", "alert", "no-link", "out-of-service"] as const).map((item) => (
               <button type="button" className={`og-fleet-filter-chip ${state === item ? "is-active" : ""}`} aria-pressed={state === item} onClick={() => setState(item)}>
-                {t(`fleet.filter.${item}`)} <b>{item === "all" ? counts.wheels : item === "alert" ? counts.alerts : item === "no-link" ? counts.noLink : counts.outOfService}</b>
+                {t(`fleet.filter.${item}`)} <b>{item === "all" ? counts.wheels : item === "alert" ? counts.alerts : item === "no-link" ? counts.noLink : counts.outOfService}</b> {item === "all" ? <FleetSourceSummary {...filterRowSources} /> : item === "alert" ? <FleetSourceSummary {...filterAlertSources} /> : item === "no-link" ? <FleetSourceSummary {...filterNoLinkSources} /> : <FleetFieldSource source="DEMO" />}
               </button>
             ))}
           </div>

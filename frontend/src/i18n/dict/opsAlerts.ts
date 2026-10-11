@@ -3,6 +3,7 @@ export const opsAlerts = {
   // --- comunes ---
   "alerts.source.live": "EN VIVO",
   "alerts.source.demo": "DEMO",
+  "alerts.source.mixed": "MIXTO",
   "alerts.backend.status.available": "Backend disponible",
   "alerts.backend.status.unavailable": "Backend no disponible",
   "alerts.backend.status.checking": "Comprobando backend",

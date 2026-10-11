@@ -34,6 +34,8 @@
 .og-alerts-source { width: max-content; padding: 2px 4px; border: 1px solid var(--og-border-strong); font: 9px var(--og-mono); }
 .og-alerts-source--live { color: var(--og-green); }
 .og-alerts-source--demo { color: var(--og-accent); }
+.og-alerts-source--mixed { color: var(--og-orange); }
+.og-alerts-source-split { display: inline-flex; gap: 4px; align-items: center; }
 .og-alerts-wheelcell { min-width: 120px; }
 .og-alerts-wheelcell strong, .og-alerts-wheelcell span { display: block; }
 .og-alerts-wheelcell span { margin-top: 3px; color: var(--og-text-muted); font-size: 10px; }

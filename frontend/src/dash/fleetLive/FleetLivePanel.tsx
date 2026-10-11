@@ -6,6 +6,7 @@ import {
 } from "../../sim/api";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t, type DictKey } from "../../i18n";
+import { FleetFieldSource } from "../../ops/fleet/FleetPage";
 import {
   classifyLiveStatus,
   deriveFleetWebSocketUrl,
@@ -35,6 +36,43 @@ function metricUnit(metric: LiveMetric): string {
 
 function metricDigits(metric: LiveMetric): number {
   return metric === "temperature_c" || metric === "level_liters" ? 1 : 2;
+}
+
+export function FleetLiveTelemetryFields({ snapshot }: { snapshot: FleetLiveSnapshot }) {
+  return (
+    <>
+      <div className="og-fleet-live__meta">
+        <span>{t("dash.live.window", { value: formatNumber(snapshot.windowS, 0) })} <FleetFieldSource source="LIVE" /></span>
+        <span>{t("dash.live.asOf", { value: snapshot.asOf })} <FleetFieldSource source="LIVE" /></span>
+      </div>
+      <div className="og-fleet-live__overview">
+        <div><strong>{formatNumber(snapshot.devices, 0)}</strong><span>{t("dash.live.devices")}</span> <FleetFieldSource source="LIVE" /></div>
+        <div><strong>{formatNumber(snapshot.acceptedRowsPerS, 1)}</strong><span>{t("dash.live.accepted")}</span> <FleetFieldSource source="LIVE" /></div>
+        <div><strong>{formatNumber(snapshot.rejectedRowsPerS, 1)}</strong><span>{t("dash.live.rejected")}</span> <FleetFieldSource source="LIVE" /></div>
+        <div><strong>{formatNumber(snapshot.droppedBatches, 0)}</strong><span>{t("dash.live.dropped")}</span> <FleetFieldSource source="LIVE" /></div>
+        <div><strong>{snapshot.latencyP50S === null ? "—" : formatNumber(snapshot.latencyP50S, 3)}</strong><span>{t("dash.live.p50")}</span> <FleetFieldSource source="LIVE" /></div>
+        <div><strong>{snapshot.latencyP99S === null ? "—" : formatNumber(snapshot.latencyP99S, 3)}</strong><span>{t("dash.live.p99")}</span> <FleetFieldSource source="LIVE" /></div>
+        <div><strong>{formatNumber(snapshot.queueDepth, 0)} / {formatNumber(snapshot.queueCapacity, 0)}</strong><span>{t("dash.live.queue")}</span> <FleetFieldSource source="LIVE" /></div>
+      </div>
+      <div className="og-fleet-live__metrics">
+        {Object.entries(METRIC_LABELS).map(([metric, label]) => {
+          const key = metric as LiveMetric;
+          const values = snapshot.metrics[key];
+          if (!values) return null;
+          return (
+            <div className="og-fleet-live__metric" key={key}>
+              <h3>{t(label as DictKey)} <span>({metricUnit(key)})</span></h3>
+              <div>
+                <span><strong>{formatNumber(values.p50, metricDigits(key))}</strong><small>{t("dash.live.p50")}</small> <FleetFieldSource source="LIVE" /></span>
+                <span><strong>{formatNumber(values.p95, metricDigits(key))}</strong><small>{t("dash.live.p95")}</small> <FleetFieldSource source="LIVE" /></span>
+                <span><strong>{formatNumber(values.p99, metricDigits(key))}</strong><small>{t("dash.live.p99")}</small> <FleetFieldSource source="LIVE" /></span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
 }
 
 function statusLabel(status: LiveStatus): string {
@@ -177,38 +215,7 @@ export default function FleetLivePanel() {
       {!snapshot ? (
         <p className="og-fleet-live__waiting">{stateLabel(state)}</p>
       ) : (
-        <>
-          <div className="og-fleet-live__meta">
-            <span>{t("dash.live.window", { value: formatNumber(snapshot.windowS, 0) })}</span>
-            <span>{t("dash.live.asOf", { value: snapshot.asOf })}</span>
-          </div>
-          <div className="og-fleet-live__overview">
-            <div><strong>{formatNumber(snapshot.devices, 0)}</strong><span>{t("dash.live.devices")}</span></div>
-            <div><strong>{formatNumber(snapshot.acceptedRowsPerS, 1)}</strong><span>{t("dash.live.accepted")}</span></div>
-            <div><strong>{formatNumber(snapshot.rejectedRowsPerS, 1)}</strong><span>{t("dash.live.rejected")}</span></div>
-            <div><strong>{formatNumber(snapshot.droppedBatches, 0)}</strong><span>{t("dash.live.dropped")}</span></div>
-            <div><strong>{snapshot.latencyP50S === null ? "—" : formatNumber(snapshot.latencyP50S, 3)}</strong><span>{t("dash.live.p50")}</span></div>
-            <div><strong>{snapshot.latencyP99S === null ? "—" : formatNumber(snapshot.latencyP99S, 3)}</strong><span>{t("dash.live.p99")}</span></div>
-            <div><strong>{formatNumber(snapshot.queueDepth, 0)} / {formatNumber(snapshot.queueCapacity, 0)}</strong><span>{t("dash.live.queue")}</span></div>
-          </div>
-          <div className="og-fleet-live__metrics">
-            {Object.entries(METRIC_LABELS).map(([metric, label]) => {
-              const key = metric as LiveMetric;
-              const values = snapshot.metrics[key];
-              if (!values) return null;
-              return (
-                <div className="og-fleet-live__metric" key={key}>
-                  <h3>{t(label as DictKey)} <span>({metricUnit(key)})</span></h3>
-                  <div>
-                    <span><strong>{formatNumber(values.p50, metricDigits(key))}</strong><small>{t("dash.live.p50")}</small></span>
-                    <span><strong>{formatNumber(values.p95, metricDigits(key))}</strong><small>{t("dash.live.p95")}</small></span>
-                    <span><strong>{formatNumber(values.p99, metricDigits(key))}</strong><small>{t("dash.live.p99")}</small></span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
+        <FleetLiveTelemetryFields snapshot={snapshot} />
       )}
     </section>
   );
