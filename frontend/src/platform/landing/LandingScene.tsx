@@ -88,6 +88,17 @@ export function shouldSyncSceneHostState(alive: boolean, mountFailed: boolean): 
   return alive && !mountFailed;
 }
 
+export function handleAssemblyPartChange(
+  event: { currentTarget: HTMLSelectElement },
+  updateDisplayedPart: (part: AssemblyPartId | null) => void,
+  isolatePart: (part: AssemblyPartId | null) => void,
+): void {
+  const value = event.currentTarget.value;
+  const part = value === "" ? null : value as AssemblyPartId;
+  updateDisplayedPart(part);
+  isolatePart(part);
+}
+
 export function shouldShowScenePoster(
   scene: LandingSceneId,
   state: SceneLoadState,
@@ -395,10 +406,25 @@ export default function LandingScene({
             Pieza{" "}
             <select
               value={isolated ?? ""}
-              onChange={(event) => {
-                const value = (event.target as HTMLSelectElement).value;
-                drive((controls) => controls.isolate((value === "" ? null : value) as AssemblyPartId | null));
+              onKeyDown={(event) => {
+                if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+                const select = event.currentTarget;
+                const direction = event.key === "ArrowDown" ? 1 : -1;
+                const nextIndex = Math.max(0, Math.min(select.options.length - 1, select.selectedIndex + direction));
+                if (nextIndex === select.selectedIndex) return;
+                event.preventDefault();
+                select.selectedIndex = nextIndex;
+                handleAssemblyPartChange(
+                  { currentTarget: select },
+                  setIsolated,
+                  (part) => drive((controls) => controls.isolate(part)),
+                );
               }}
+              onChange={(event) => handleAssemblyPartChange(
+                event,
+                setIsolated,
+                (part) => drive((controls) => controls.isolate(part)),
+              )}
             >
               <option value="">Conjunto completo</option>
               {(partLabels ?? []).map((part) => (
