@@ -35,6 +35,7 @@ Closed state has no `EN VIVO`, `Al día`, or `en vivo` claims in the telemetry a
 - FIX-DOWN-04b reproduction: `/tmp/og-goal/evidence/FIX-DOWN-04b/panel-counts-before.txt` reports blocked panel counts 0/0/0 and restored counts 1/21/1 for heading/EN VIVO/Al día. Blocked panel `textContent` and matching text-node counts are also 0/0/0 in `leaf-node-counts.txt`; restored `/fleet` is live and backend health succeeded in `backend-reachability.txt`. Existing closed/open test passed in `parent-spotcheck-fleet-live-test.txt`. No new RED or source change was made because the reported blocked-state leak did not reproduce.
 - FIX-DOWN-04c: RED at `/tmp/og-goal/evidence/FIX-DOWN-04c/red.txt` (closed live row leaked 3 badges). Focused tests: 5 pass; full suite: 641 pass, build exit 0, honesty: 3 pass, `git diff --check` clean. Evidence files: `fleet-live-test.txt`, `bun-test-src.txt`, `bun-build.txt`, `bun-test-honesty.txt`, `git-diff-check.txt`.
 - Timing regression: `/tmp/og-goal/evidence/FIX-DOWN-04c/fleet-timing-after.txt` reports heading 0, `EN VIVO` 0, `Al día` 0 at 2s/6s/15s (offline messages remain 3). Baseline was heading 1, `EN VIVO` 21, `Al día` 0, offline 2.
+- RDD: medium / granted; native review approved and acknowledged. Advisory R3-001 is non-blocking; assessment: `/tmp/og-goal/evidence/FIX-DOWN-04c/rdd-assessment.json`.
 
 ## TDD / route / persistence
 TDD: ON; source: `/tmp/og-goal/briefs/_rules.md`; runner: `cd frontend && bun test src`.
@@ -48,4 +49,5 @@ Evidence directory: `/tmp/og-goal/evidence/FIX-DOWN-04/`.
 Test commit: `f78d61c` `test(platform): bind live claims to state`.
 Fix commit: `d19d97c` `fix(platform): gate live claims on connection`.
 Correction commit: `9ba001b` `fix(platform): remove duplicate offline status`.
+FIX-DOWN-04c commit: `84b8ee2` `fix(fleet): gate every live badge on connection state`.
 Status: original live-claim fix remains in place; FIX-DOWN-04b probe missed the timing condition, while FIX-DOWN-04c reproduced and closed the delayed HTTP/WS badge leak.
