@@ -32,14 +32,16 @@ function levelField(html: string) {
 describe("wheel live source badge validity", () => {
   test("stale live reading has no EN VIVO badge and retains stale validity", () => {
     const level = levelField(render("stale"));
-    expect(level).not.toContain(t("fleet.source.live"));
+    expect(level.includes(t("fleet.source.live"))).toBe(false);
     expect(level).toContain(t("ui.stale"));
+    expect(level).toContain(t("wheel.numeric.liveOrigin"));
   });
 
   test("invalid live reading has no EN VIVO badge and retains invalid validity", () => {
     const level = levelField(render("invalid"));
-    expect(level).not.toContain(t("fleet.source.live"));
+    expect(level.includes(t("fleet.source.live"))).toBe(false);
     expect(level).toContain(t("ui.invalid"));
+    expect(level).toContain(t("wheel.numeric.liveOrigin"));
   });
 
   test("valid live reading retains EN VIVO badge", () => {

@@ -203,6 +203,7 @@ export const ops = {
   "wheel.numeric.sigma": "Sigma",
   "wheel.numeric.unitless": "sin unidad (0–1)",
   "wheel.numeric.syntheticValidity": "Estimación sintética · solo DEMO",
+  "wheel.numeric.liveOrigin": "Origen del dato: telemetría en vivo",
   "wheel.card.pressure": "Referencia de presión",
   "wheel.card.pressureNote": "referencia en ventana de reposo",
   "wheel.card.temperature": "Temperatura del aceite",
