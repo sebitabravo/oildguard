@@ -21,17 +21,17 @@ At the specified widths, KPI labels and values collide, form labels become cramp
 - Full frontend suite and build pass; no copy/data/threshold changes or out-of-scope edits.
 
 ## Tasks and progress
-- [x] L06-1 Capture route/viewport baseline collision pairs and screenshots. `/tmp/og-goal/evidence/LAYOUT-06/collisions-before.txt`: Alerts 1024=12, Alerts 390=13, Validation 1440=2, Lab Simulation 1024=2, Monitoring 1024=1, Dev UI 390=0 pairs; Dev UI document width=453/390. Six before screenshots saved in `evidence/LAYOUT-06/shots/`.
+- [x] L06-1 Capture route/viewport baseline collision pairs and screenshots. Comparable visible-text probe (excluding closed `<details>`, SVG text, and chart furniture per QA methods) in `/tmp/og-goal/evidence/LAYOUT-06/collisions-before.txt`: Alerts 1024=12, Alerts 390=0, Validation 1440=1, Lab Simulation 1024=1, Monitoring 1024=1, Dev UI 390=0; Dev UI document width=453/390. Original unfiltered baseline is preserved in `collisions-before-unfiltered.txt`; six comparable screenshots are in `visible-before/shots/`.
 - [x] L06-2 Add failing structural layout tests for each affected page and save RED evidence. `cd frontend && bun test src` exited 1 before layout changes: 652 pass, 6 fail (one or more route-contract assertions per affected area); full output is `/tmp/og-goal/evidence/LAYOUT-06/red.txt`.
 - [x] L06-3 Apply the smallest allowed CSS/markup fixes; preserve existing visual system and content. Alerts tiles now reflow and source badges wrap; validation metrics use three columns through 1500px; simulation fields stack through 1180px; wheel evidence lines wrap as separate rows; Dev UI constrains notice/banner content in a route-local wrapper.
-- [x] L06-4 Capture after collision counts/screenshots and run all required checks. Filtered visible-text probe reports zero pairs on all six target viewports; it excludes closed `<details>` descendants and intentional SVG/chart labels (QA-OPENCODE-02 methods notes). Dev UI width is 390/390. Screenshots and counts: `/tmp/og-goal/evidence/LAYOUT-06/shots/*-after.png` and `collisions-after.txt`. `bun test src`: 659 pass, 0 fail; `bun run build`: exit 0; Impeccable layout detector: `[]`. Full output is saved in `bun-test.txt`, `build.txt`, and `impeccable-layout.txt`.
-- [ ] L06-5 Create the requested test and fix commits; record commit IDs and RDD assessment outcomes.
+- [x] L06-4 Capture after collision counts/screenshots and run all required checks. The same filtered visible-text probe reports zero pairs on all six target viewports; Dev UI document width is 390/390. Screenshots and counts: `/tmp/og-goal/evidence/LAYOUT-06/shots/*-after.png` and `collisions-after.txt`. `bun test src`: 659 pass, 0 fail; `bun run build`: exit 0; Impeccable layout detector: `[]`. Full output is saved in `bun-test.txt`, `build.txt`, and `impeccable-layout.txt`.
+- [x] L06-5 Create and record the test/fix work-unit commits: `c86bfc6678b030cefcfaa89758db9738b1403855` and `8aad9e63e5699b89d5dfd232c34b95c4e4dfb018`. RDD assessment for the cumulative committed range from `84b8ee2`: medium, `review_due=false`, `under_budget` (353 changed lines); evidence: `assess-fix-commit.txt`. `_rules.md` caps subjects at 50 characters, so the Conventional subjects were shortened and page names retained in commit bodies.
 
 ## Verification
 - `cd frontend && bun test src`; `cd frontend && bun run build`.
-- Scratch probe: leaf text boxes intersecting by more than 2px on both axes; zero expected after fix.
+- Scratch probe: visible leaf text boxes intersecting by more than 2px on both axes; same exclusions and method used before/after; zero expected after fix.
 - Impeccable layout detector before and after; explain any remaining finding.
 - Keep RED, before/after collision counts, screenshots, and full verification output in `/tmp/og-goal/evidence/LAYOUT-06/`.
 
 ## Next step
-Next: commit the layout fix work unit; parent will perform the required post-commit risk assessment.
+No further implementation work remains. The final task-record closeout is committed separately as documentation.
