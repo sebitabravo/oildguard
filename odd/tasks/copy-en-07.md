@@ -1,6 +1,6 @@
 # COPY-EN-07 — Spanish-only visible copy
 
-**Status: IN PROGRESS; the 2nd and 3rd dispatch decisions resolve the demo translation and narrow `/mine` label scope.**
+**Status: DONE; the 2nd and 3rd dispatch decisions resolve the demo translation and narrow `/mine` label scope.**
 
 ## Objective
 
@@ -41,7 +41,7 @@ Acceptance: the allowed rendered text on `/demo`, `/mine` (1024 px), and `/rul` 
 - CEN-3 translated `docs/demo-script.md`, removed visible PLM state suffixes while retaining codes in `title`, localized the visible RUL source badge, and labeled the `/mine` section `Medidor de carga útil III`. Docs guard preserved heading structure, timings, URLs, step counts, and command blocks.
 - CEN-4 checks: 662 tests pass (151,284 expectations); build completes with 0 errors (8 existing hints); honesty tests pass; browser stop-word scan is 0 for `/demo`, `/mine`, and `/rul`; Impeccable detector returns `[]`; `git diff --check` passes. The Spanish-visible test directly asserts the RUL LIVE label is `EN VIVO`. Full evidence and before/after screenshots are under `/tmp/og-goal/evidence/COPY-EN-07/`.
 - Fresh browser baseline counts were 118, 9, and 2 for `/demo`, `/mine`, and `/rul`; post-change counts are 0 using the documented code/URL/ID exclusions and allowing `DEMO`.
-- The authorized `/demo` translation was committed separately as `0666b5e docs(demo): translate jury demo script to spanish`.
-- After that commit, the native assessment returned medium risk and `review_due=true` (`slice_budget_reached`, 499 lines across the accumulated range); the user-selected decline was applied only to that candidate, so no review record was created. Evidence: `assess-docs-commit.txt`, `start-docs-commit.txt`, `decline-docs-commit.txt`, and `status-after-docs-decline.txt`.
+- The authorized `/demo` translation was committed separately as `0666b5e docs(demo): translate jury demo script to spanish`; remaining UI copy and regression coverage were committed as `7fe50b9 fix(i18n): localize mine and rul copy`.
+- Native assessments after both work-unit commits returned medium risk and `review_due=true` (`slice_budget_reached`, 499 then 534 lines across the accumulated range); the user-selected decline was applied separately to each exact candidate, so neither created a review record. Evidence: `assess-docs-commit.txt`, `start-docs-commit.txt`, `decline-docs-commit.txt`, `status-after-docs-decline.txt`, `assess-fix-commit.txt`, `start-fix-commit.txt`, `decline-fix-commit.txt`, and `status-after-fix-decline.txt`.
 - Engram mirror pending because agent-attributed memory writes are unavailable in this runtime.
-- Next: commit the remaining authorized UI copy/test changes, record that work-unit identity, and close the task record.
+- Final task-record update follows the fix commit so its commit identity can be recorded without amending or obscuring the implementation commit.
