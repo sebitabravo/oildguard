@@ -62,15 +62,15 @@ B09 changed shared `frontend/src/twin/render/stage.ts` beyond the additive landi
 
 ## Approved and acknowledged review ranges
 
-All three rows have a terminal approved capture and a matching acknowledged receipt in the cited evidence:
+Each capture records `state=approved`, and its matching acknowledgement records `action=acknowledged` and `authority=burned`. The captures bind tree endpoints; Git maps those trees to these base-exclusive, candidate-inclusive commit ranges:
 
-| Committed range | Evidence |
-|---|---|
-| `a317e3c4..b22be674` | `/tmp/og-goal/evidence/r3-capture-out.json`; `/tmp/og-goal/evidence/r3-ack-out.json` |
-| `b22be674..28446a99` | `/tmp/og-goal/evidence/r5-capture-out.json`; `/tmp/og-goal/evidence/r5-ack-out.json` |
-| `28446a99..c0ab8b9a` | `/tmp/og-goal/evidence/REV-FIX-02/capture-out.json`; `/tmp/og-goal/evidence/REV-FIX-02/ack-out.json` |
+| Commit range | Captured base tree → candidate tree | Evidence |
+|---|---|---|
+| `2ed430f..f5a8942` | `a317e3c4b05c55f090da2ec7e4d67911671fa67d` → `b22be67431afc0bfd05104d5dd064574d243f37e` | `/tmp/og-goal/evidence/r3-capture-out.json`; `/tmp/og-goal/evidence/r3-ack-out.json` |
+| `f5a8942..d548d6a` | `b22be67431afc0bfd05104d5dd064574d243f37e` → `28446a99e80163f4ff4c89ee1253ebd6924824eb` | `/tmp/og-goal/evidence/r5-capture-out.json`; `/tmp/og-goal/evidence/r5-ack-out.json` |
+| `d548d6a..b339eb9` | `28446a99e80163f4ff4c89ee1253ebd6924824eb` → `c0ab8b9a88588f3bef80c6b389224c9fb59cc8f0` | `/tmp/og-goal/evidence/REV-FIX-02/capture-out.json`; `/tmp/og-goal/evidence/REV-FIX-02/ack-out.json` |
 
-The review artifacts encode these as `base-diff:workspace` endpoints. A readback with `git cat-file -t` returns `tree` for each endpoint, not `commit`; therefore the approval and acknowledgement are evidenced, but commit-object ancestry for these ranges cannot be asserted from the current repository.
+The endpoint-to-commit mapping was read back from Git commit tree fields; the complete output is in `/tmp/og-goal/evidence/B12/review-range-map.txt`. The tree IDs themselves are not commits; the mapped Git history establishes the commit ranges.
 
 ## Open items and owners
 
