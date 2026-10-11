@@ -58,6 +58,9 @@
 .og-alerts-aside { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; margin-bottom: 20px; }
 .og-alerts-card { padding: 16px; background: var(--og-surface); border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-md); }
 .og-alerts-card h3 { margin: 0 0 12px; color: var(--og-text-primary); font-size: 13px; font-weight: 600; }
+.og-alerts-recurrence > summary { color: var(--og-text-primary); font-size: 13px; font-weight: 600; cursor: pointer; }
+.og-alerts-recurrence > summary:focus-visible { outline: 2px solid var(--og-accent); outline-offset: 3px; }
+.og-alerts-recurrence[open] > summary { margin-bottom: 12px; }
 .og-alerts-card p { margin: 0; color: var(--og-text-secondary); font-size: 12px; line-height: 1.5; }
 .og-alerts-card--rule { border-color: var(--og-accent); }
 .og-alerts-card--rule a { display: inline-block; margin-top: 10px; color: var(--og-accent); font: 12px var(--og-mono); }

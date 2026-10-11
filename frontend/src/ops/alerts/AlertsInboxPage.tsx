@@ -89,20 +89,22 @@ export default function AlertsInboxPage() {
         </section>
 
         <section className="og-alerts-card">
-          <h3>{t("alerts.recur.title")}</h3>
-          {ranking.length ? (
-            <ol className="og-alerts-ranking">
-              {ranking.map((entry) => (
-                <li>
-                  <button type="button" aria-label={t("alerts.recur.filter", { value: entry.wheelId })} onClick={() => patch({ wheel: entry.wheelId })}>
-                    <span className="og-alerts-ranking__main"><strong className="og-mono">{entry.wheelId}</strong><LevelTag level={entry.worst} /></span>
-                    <small>{entry.truckId} · {t("alerts.recur.count", { count: formatNumber(entry.count, 0) })} · {t("alerts.recur.last", { value: ageLabel(ageParts(entry.lastOpenedAt, DEMO_NOW_MS)) })}</small>
-                  </button>
-                </li>
-              ))}
-            </ol>
-          ) : <p className="og-alerts-note">{t("alerts.recur.empty")}</p>}
-          <p className="og-alerts-note">{t("alerts.recur.note")}</p>
+          <details className="og-alerts-recurrence">
+            <summary>{t("alerts.recur.title")}</summary>
+            {ranking.length ? (
+              <ol className="og-alerts-ranking">
+                {ranking.map((entry) => (
+                  <li>
+                    <button type="button" aria-label={t("alerts.recur.filter", { value: entry.wheelId })} onClick={() => patch({ wheel: entry.wheelId })}>
+                      <span className="og-alerts-ranking__main"><strong className="og-mono">{entry.wheelId}</strong><LevelTag level={entry.worst} /></span>
+                      <small>{entry.truckId} · {t("alerts.recur.count", { count: formatNumber(entry.count, 0) })} · {t("alerts.recur.last", { value: ageLabel(ageParts(entry.lastOpenedAt, DEMO_NOW_MS)) })}</small>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            ) : <p className="og-alerts-note">{t("alerts.recur.empty")}</p>}
+            <p className="og-alerts-note">{t("alerts.recur.note")}</p>
+          </details>
         </section>
 
         <section className="og-alerts-card og-alerts-card--rule">
