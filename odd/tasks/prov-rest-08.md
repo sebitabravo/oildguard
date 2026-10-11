@@ -1,6 +1,6 @@
 # PROV-REST-08 — Per-field provenance on remaining routes
 
-**Status: IMPLEMENTED — awaiting parent review and work-unit commits.**
+**Status: COMPLETE — implementation, verification, and work-unit commits are recorded.**
 
 ## Objective and problem
 
@@ -17,7 +17,7 @@ Add same-card/row/tile provenance to numeric values still missing it in VISUAL-O
 - [x] PR08-1 — Inspect every finding in live DOM/screenshots and classify existing labels; mapping/evidence recorded.
 - [x] PR08-2 — Add per-route structural regression coverage; genuine RED captured, then focused tests pass.
 - [x] PR08-3 — Add required provenance labels for V3-033..V3-040 using each field's true source.
-- [ ] PR08-4 — Verification, route counts, and screenshots are done; parent review and commit records remain pending.
+- [x] PR08-4 — Verification, route counts, screenshots, parent readback, and commit records are complete.
 
 Acceptance: V3-028..V3-032 remain unchanged; every numeric value in V3-033..V3-040 has a same-card/row/tile provenance label; text-only RUL legend/descriptions remain untagged; before/after unlabeled-number counts and 1024px screenshots are saved.
 
@@ -29,7 +29,7 @@ Acceptance: V3-028..V3-032 remain unchanged; every numeric value in V3-033..V3-0
 - Evidence: `/tmp/og-goal/evidence/PROV-REST-08/`; initial live map `/tmp/og-goal/evidence/PROV-REST-08/already-fixed.txt`.
 - Forecast: about 220 authored changed lines, excluding generated files. Delivery strategy: `ask-on-risk`.
 - RDD: on by default; branch `feat/integrity-narrative`. Review each work-unit commit against the last reviewed boundary and follow native consent/status only.
-- Commit plan: no commits by delegated writer; parent will review and commit the verified test/source work under ordinary repository policy.
+- Commit records: `bf16249` test commit; `4a7c505` task document; `79ed860` platform; `c75d17b` lab; `ea22545` operations. Native risk assessments remain `medium/under_budget` for the range from `fd61e29`; no review was due.
 
 ## Progress and next step
 
@@ -37,6 +37,6 @@ Acceptance: V3-028..V3-032 remain unchanged; every numeric value in V3-033..V3-0
 - Scope amendment: PROV-REST-08b authorizes the real `/lab/bench` protocol owner only for V3-036; do not change `frontend/src/sim/bench/BenchView.tsx`.
 - TDD evidence: `red-08b.txt` records the focused RED before UI fixes; `focused-08b-final.txt` records 9 pass/0 fail. The corrected regression targets `/lab/bench` and preserves the closed RUL disclosure expectation. All mapped target groups now report zero unlabeled values in `unlabeled-after.txt` (before totals: 15, 70, 19, 43, 2, 3, 3, 1; after unlabeled counts: 0 for each group).
 - Verification: `full-tests.txt` reports 670 pass/0 fail; `build.txt` exits 0; `honesty-test.txt` reports 3 pass/0 fail; `git-diff-check.txt` exits 0. Before/after 1024px screenshots are in `before/` and `after/`; screenshot logs record one failed 404 resource request per route, while each route rendered.
-- Uncommitted changes remain in the in-scope route owners plus the new structural test. No commits were made. Initial repository state included a pre-existing `AGENTS.md` edit; leave it untouched.
+- All in-scope route owners and the structural test are committed. The initial repository state included a pre-existing `AGENTS.md` edit; it was left untouched.
 - Engram mirror pending because this runtime exposes no memory tools or registered session identity.
-- Next: parent reviews the changed files and verification evidence, then creates the authorized work-unit commits; this writer performed no staging or commit operations.
+- Next: no remaining implementation work. The only working-tree change outside the task is the pre-existing `AGENTS.md` edit.
