@@ -38,7 +38,7 @@ import {
   demoFracFor,
 } from "./demoData";
 import { emitDemoOil, type DemoStageId } from "./demoBus";
-import { t, type DictKey, type Lang, useLang } from "../i18n";
+import { t, type DictKey } from "../i18n";
 import { formatNumber } from "../i18n/numberFormat";
 import { localizeBackendMessage, localizeBackendZone } from "./backendNotes";
 import { signingBadgeState } from "./signingBadge";
@@ -50,7 +50,7 @@ import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
 import { DEMO_REFERENCE_MS, demoDataset } from "../demo/dataset";
 import { AlertBanner, Button, Notice, PageHeader, SyntheticBadge, type Severity } from "../ui/foundation";
 import {
-  ChartLegend, FusionPanel, LadderPanel, TelemetryRow, WheelContext,
+  ChartLegend, FusionPanel, LadderPanel, NumericEvidence, TelemetryRow, WheelContext,
 } from "../ops/wheel/WheelPanels";
 import {
   LIVE_WHEEL_ID,
@@ -93,13 +93,13 @@ const DEMO_LABEL_KEYS: Record<DemoStageId, DictKey> = {
   done: "dash.demo.stage.done",
 };
 
-function stageBlurb(stage: DemoStageId, lang: Lang): string {
-  const params = stage === "slow-leak" ? { labNote: formatDemoLabNote(lang) } : undefined;
-  return t(DEMO_BLURB_KEYS[stage], lang, params);
+function stageBlurb(stage: DemoStageId): string {
+  const params = stage === "slow-leak" ? { labNote: formatDemoLabNote() } : undefined;
+  return t(DEMO_BLURB_KEYS[stage], params);
 }
 
-function stageLabel(stage: DemoStageId, lang: Lang): string {
-  return t(DEMO_LABEL_KEYS[stage], lang);
+function stageLabel(stage: DemoStageId): string {
+  return t(DEMO_LABEL_KEYS[stage]);
 }
 
 // La caída total del backend nunca debe leerse como flota sana: este aviso
@@ -107,13 +107,12 @@ function stageLabel(stage: DemoStageId, lang: Lang): string {
 // El título y el detalle van en un único hijo para que el flex de Notice no
 // los parta en dos columnas a 390px: así envuelven como un aviso coherente.
 export function BackendOutageBanner() {
-  const [lang] = useLang();
   return (
     <div className="og-analyzer-notice" role="alert">
-      <Notice lang={lang} kind="error">
+      <Notice kind="error">
         <span>
-          <strong>{t("dash.backend.outage.title", lang)}</strong>{" "}
-          {t("dash.backend.outage.detail", lang)}
+          <strong>{t("dash.backend.outage.title")}</strong>{" "}
+          {t("dash.backend.outage.detail")}
         </span>
       </Notice>
     </div>
@@ -141,7 +140,6 @@ export function DashboardStatusNotices({ activeLevel, backendOutage, analyzerNot
   lastUpdateMs?: number | null;
   nowMs?: number;
 }) {
-  const [lang] = useLang();
   const hasReadingInput = live !== undefined || demoActive !== undefined || lastUpdateMs !== undefined || nowMs !== undefined;
   const resolvedStale = hasReadingInput
     ? resolveReadingStale({
@@ -162,23 +160,22 @@ export function DashboardStatusNotices({ activeLevel, backendOutage, analyzerNot
         // reservado al apagón). El `div` solo aporta `role="status"` sin
         // clases ni CSS nuevo; la única caja visible es el Notice `stale`.
         <div role="status">
-          <Notice lang={lang} kind="stale">
+          <Notice kind="stale">
             <span>
-              <strong>{t("dash.reading.stale.title", lang)}</strong>{" "}
-              {t("dash.reading.stale.detail", lang)}
+              <strong>{t("dash.reading.stale.title")}</strong>{" "}
+              {t("dash.reading.stale.detail")}
             </span>
           </Notice>
         </div>
       )}
       {activeLevel
-        ? <AlertBanner lang={lang} severity={activeLevel}>{t(alertBannerKey(activeLevel), lang)}</AlertBanner>
-        : backendOutage || showStale ? null : <Notice lang={lang} kind="info">{t("wheel.banner.none", lang)}</Notice>}
+        ? <AlertBanner severity={activeLevel}>{t(alertBannerKey(activeLevel))}</AlertBanner>
+        : backendOutage || showStale ? null : <Notice kind="info">{t("wheel.banner.none")}</Notice>}
     </>
   );
 }
 
 export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: string | null }) {
-  const [lang] = useLang();
   const [wheelId, setWheelId] = useState(() => resolveWheel(initialWheelId, demoDataset.wheels).id);
   const wheel = resolveWheel(wheelId, demoDataset.wheels);
   const live = isLiveWheel(wheel.id);
@@ -340,7 +337,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
     analysisAvailable,
     alertStatus: alerts?.status,
     rulStatus: rul?.status,
-  }, lang);
+  });
   const analyzerUnavailable = analyzerNotice !== null;
   // Solo la rueda en vivo con el backend caído es una caída total: las ruedas
   // DEMO ya declaran su procedencia y la sonda inicial aún no falló.
@@ -383,18 +380,24 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   const shownWindows = demoActive
     ? DEMO_WINDOWS
     : liveSeries ? (windows?.windows ?? []) : trace.windows;
-  const sigmaL = demoActive
-    ? DEMO_SIGMA_L
-    : (alerts?.data.level?.sigma_liters ?? trace.sigmaL);
-  const confidence = demoActive
-    ? DEMO_CONFIDENCE
-    : (alerts?.data.level?.confidence ?? (live && source === "live" ? Number(level?.data.confidence ?? 0) : DEMO_CONFIDENCE));
+  const backendSigma = source === "live" && !demoActive && alerts?.status === "ok"
+    ? alerts.data.level?.sigma_liters : null;
+  const sigmaSource = typeof backendSigma === "number" && Number.isFinite(backendSigma) ? "LIVE" : "DEMO";
+  const sigmaL = demoActive ? DEMO_SIGMA_L : sigmaSource === "LIVE" ? backendSigma as number : trace.sigmaL;
+  const backendAlertConfidence = source === "live" && !demoActive && alerts?.status === "ok"
+    ? alerts.data.level?.confidence : null;
+  const backendLevelConfidence = source === "live" && !demoActive ? level?.data.confidence : null;
+  const backendConfidence = typeof backendAlertConfidence === "number" && Number.isFinite(backendAlertConfidence)
+    ? backendAlertConfidence : backendLevelConfidence;
+  const confidenceSource = typeof backendConfidence === "number" && Number.isFinite(backendConfidence) ? "LIVE" : "DEMO";
+  const confidence = demoActive ? DEMO_CONFIDENCE : confidenceSource === "LIVE" ? backendConfidence as number : DEMO_CONFIDENCE;
   const demoFrac = demoActive ? demoFracFor(demoStage, demoTick) : 1.0;
   const demoOilState = oilStateFor(demoFrac);
   const demoOilCss = oilCssFor(demoOilState);
   const signingBadge = signingBadgeState(signingStatus);
 
   const liveLevel = source === "live" && level ? Number(level.data.level_liters) : null;
+  const levelSource = liveLevel !== null && Number.isFinite(liveLevel) && !demoActive ? "LIVE" : "DEMO";
   const pressureKpa = latestSignals?.pressureKpa ?? wheel.pressureKpa;
   const temperatureC = latestSignals?.temperatureC ?? wheel.temperatureC;
   const vibrationG = latestSignals?.vibrationG ?? wheel.vibRms;
@@ -430,8 +433,8 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   const sourceBadge = (
     <span className={`og-badge og-badge--source og-badge--source-${source}`}>
       {live
-        ? t(source === "loading" ? "dash.source.badge.loading" : source === "live" ? "dash.source.badge.live" : "dash.source.badge.demo", lang)
-        : t("wheel.source.demoWheel", lang)}
+        ? t(source === "loading" ? "dash.source.badge.loading" : source === "live" ? "dash.source.badge.live" : "dash.source.badge.demo")
+        : t("wheel.source.demoWheel")}
     </span>
   );
   const links = wheelLinks(wheel.id);
@@ -449,14 +452,14 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
     <div className="og-page og-wheel-detail">
     <div className="og-page__inner">
       <PageHeader
-        eyebrow={t("wheel.eyebrow", lang)}
-        title={t("wheel.title", lang, { value: wheel.id })}
-        description={t("wheel.description", lang)}
-        meta={<SyntheticBadge lang={lang} />}
+        eyebrow={t("wheel.eyebrow")}
+        title={t("wheel.title", { value: wheel.id })}
+        description={t("wheel.description")}
+        meta={<SyntheticBadge />}
       />
 
       <WheelContext
-        lang={lang}
+
         truckId={wheel.truckId}
         wheelId={wheel.id}
         position={wheel.position}
@@ -467,19 +470,22 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
         onSelectWheel={selectWheel}
       />
 
-      <Notice lang={lang} kind="simulation">
-        {t("dash.intro", lang, { model: t("rul.model.syntheticProxy", lang) })}{" "}
-        {t("dash.honesty", lang)}
+      <Notice kind="simulation">
+        {t("dash.intro", { model: t("rul.model.syntheticProxy") })}{" "}
+        {t("dash.honesty")}
       </Notice>
 
       <DashboardStatusNotices activeLevel={activeLevel} backendOutage={backendOutage} analyzerNotice={analyzerNotice} live={live} demoActive={demoActive} lastUpdateMs={lastUpdateMs} nowMs={Date.now()} />
 
       <TelemetryRow
-        lang={lang}
+
         level={currentLevel}
         sigma={sigmaL}
         confidence={confidence}
         validity={validity}
+        levelSource={levelSource}
+        sigmaSource={sigmaSource}
+        confidenceSource={confidenceSource}
         pressureKpa={pressureKpa}
         temperatureC={temperatureC}
         vibrationG={vibrationG}
@@ -489,22 +495,22 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
         vibrationLive={latestSignals?.vibrationG !== undefined}
       />
 
-      <section className="og-wheel-console" aria-label={t("wheel.console.title", lang)}>
-        <span className="og-label">{t("wheel.console.title", lang)}</span>
-        <span className={`og-badge og-badge--source og-badge--source-${source}`}>{t("wheel.console.demoLabel", lang)}</span>
+      <section className="og-wheel-console" aria-label={t("wheel.console.title")}>
+        <span className="og-label">{t("wheel.console.title")}</span>
+        <span className={`og-badge og-badge--source og-badge--source-${source}`}>{t("wheel.console.demoLabel")}</span>
         <span className="og-wheel-console__spacer" />
         {live && (
           <Button type="button" variant="ghost" onClick={() => void fetchAll()}>
-            {t("dash.action.refresh", lang)}
+            {t("dash.action.refresh")}
           </Button>
         )}
         {!demoActive ? (
           <Button type="button" variant="primary" onClick={startDemo}>
-            {t("demo.run", lang)}
+            {t("demo.run")}
           </Button>
         ) : (
           <Button type="button" variant="ghost" onClick={resetDemo}>
-            {t("demo.reset", lang)}
+            {t("demo.reset")}
           </Button>
         )}
       </section>
@@ -516,11 +522,11 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
               key={s}
               className={`og-badge og-badge--step${s === demoStage ? " og-badge--step-active" : ""}`}
             >
-              {stageLabel(s, lang)}
+              {stageLabel(s)}
             </span>
           ))}
           <span className="og-wheel-stepper__blurb">
-            {stageBlurb(demoStage, lang)} · {t("dash.demo.oil", lang)} {formatOilText(demoFrac, lang)} · {t("dash.demo.benchLink", lang)}
+            {stageBlurb(demoStage)} · {t("dash.demo.oil")} {formatOilText(demoFrac)} · {t("dash.demo.benchLink")}
           </span>
         </div>
       )}
@@ -529,68 +535,73 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
         <div className="og-wheel-main">
           <section className="og-wheel-panel og-dashboard-chart">
             <h3 className="og-wheel-panel__title">
-              {t("wheel.chart.title", lang)}
+              {t("wheel.chart.title")}
               <span className="og-wheel-panel__meta">
-                ±{formatNumber(sigmaL, lang, 2)} L · {t("ui.confidence", lang)} {formatNumber(Number(confidence), lang, 3)}
+                <NumericEvidence field="sigma" source={sigmaSource} validity={validity}>
+                  {t("wheel.numeric.sigma")} ±{formatNumber(sigmaL, 1)} L
+                </NumericEvidence>{" · "}
+                <NumericEvidence field="confidence" source={confidenceSource} validity={validity}>
+                  {t("ui.confidence")} {formatNumber(confidence, 2)} {t("wheel.numeric.unitless")}
+                </NumericEvidence>
               </span>
             </h3>
             {usingTrace && live && source === "live" && (
-              <p className="og-wheel-panel__warn">{t("wheel.chart.demoTrace", lang)}</p>
+              <p className="og-wheel-panel__warn">{t("wheel.chart.demoTrace")}</p>
             )}
             <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} variant="inline" pressureValues={chartPressure} temperatureValues={chartTemperature} signalSource={signalSource} />
-            <ChartLegend lang={lang} />
+            <ChartLegend />
             <p className="og-wheel-panel__note">
-              {t("wheel.chart.note", lang)} {t("dash.footnote", lang, { pressure: formatNumber(wheel.pressureKpa, lang, 1) })}
+              {t("wheel.chart.note")} {t("dash.footnote", { pressure: formatNumber(wheel.pressureKpa, 1) })}
             </p>
             <div className="og-wheel-status">
               <span style={{ color: demoOilCss, fontWeight: 700 }}>
                 {demoActive
-                  ? t("dash.demo.fill", lang, { value: formatOilText(demoFrac, lang) })
-                  : level && live
-                    ? `${formatNumber(Number(level.data.level_liters), lang, 1)} L · ${formatNumber(Number(level.data.level_pct), lang, 1)}%`
+                  ? t("dash.demo.fill", { value: formatOilText(demoFrac) })
+                  : level && live && source === "live"
+                    ? `${formatNumber(Number(level.data.level_liters), 1)} L · ${formatNumber(Number(level.data.level_pct), 1)}%`
                     : "—"}
               </span>
               <span className="og-wheel-status__source">
                 {demoActive
-                  ? formatDemoLabNote(lang)
-                  : `${t("dash.source.label", lang)}: ${localizeBackendMessage(level?.data.source_message, level?.data.source ?? t("dash.backend.noPayload", lang), lang)}`}
+                  ? formatDemoLabNote()
+                  : `${t("dash.source.label")}: ${localizeBackendMessage(level?.data.source_message, level?.data.source ?? t("dash.backend.noPayload"))}`}
               </span>
             </div>
           </section>
 
           <section className="og-wheel-panel og-wheel-mode">
             <div>
-              <span className="og-label">{t("dash.mode.title", lang)}</span>{" "}
+              <span className="og-label">{t("dash.mode.title")}</span>{" "}
               <strong style={{ color: moving ? "var(--og-blue)" : "var(--og-green)" }}>
-                {t(moving ? "hud.moving" : "hud.rest", lang)}
+                {t(moving ? "hud.moving" : "hud.rest")}
               </strong>{" "}
               <small style={{ color: recal ? "var(--og-green)" : "var(--og-muted)" }}>
-                {t(recal ? "dash.mode.recalibrating" : "dash.mode.recalGated", lang)}
+                {t(recal ? "dash.mode.recalibrating" : "dash.mode.recalGated")}
               </small>
             </div>
             <p className="og-wheel-panel__note">
-              FSM <strong>{fsm.state}</strong> (t+{formatNumber(fsmTick, lang, 0)} s {t("dash.fsm.sharedClock", lang)}) ·{" "}
+              FSM <strong>{fsm.state}</strong> (t+{formatNumber(fsmTick, 0)} s {t("dash.fsm.sharedClock")}) ·{" "}
               {source === "live"
-                ? t("dash.backend.windows", lang, { count: windows?.count ?? 0, rows: storeRows })
-                : t("dash.backend.localWindows", lang)}
+                ? t("dash.backend.windows", { count: windows?.count ?? 0, rows: storeRows })
+                : t("dash.backend.localWindows")}
             </p>
             <p className="og-wheel-panel__note">
               <span className={`og-badge og-badge--source og-badge--source-${source}`}>
                 {source === "loading"
-                  ? t("dash.backend.probing", lang)
+                  ? t("dash.backend.probing")
                   : source === "live" && backendNote?.kind === "live"
-                    ? t("dash.backend.summary", lang, {
+                    ? t("dash.backend.summary", {
                         rows: backendNote.rows,
-                        influx: localizeBackendMessage(backendNote.influxMessage, backendNote.influx, lang),
+                        influx: localizeBackendMessage(backendNote.influxMessage, backendNote.influx),
                       })
-                    : live ? t("dash.backend.offline", lang) : t("wheel.source.demoWheel", lang)}
+                    : live ? t("dash.backend.offline") : t("wheel.source.demoWheel")}
               </span>
               {signingBadge && (
                 <span className={`og-badge og-badge--${signingBadge.tone}`}>
                   {signingBadge.kind === "off"
-                    ? t("dash.signing.off", lang)
-                    : t("dash.signing.verified", lang)}
-                  {" · "}{signingBadge.rejected} {t("dash.signing.rejected", lang)}
+                    ? t("dash.signing.off")
+                    : t("dash.signing.verified")}
+                  {" · "}{signingBadge.rejected} {t("dash.signing.rejected")}
                 </span>
               )}
             </p>
@@ -598,24 +609,24 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
         </div>
 
         <aside className="og-wheel-side og-dashboard-side">
-          <LadderPanel lang={lang} active={activeLevel} colors={ALERT_SEVERITY_COLORS} />
-          <FusionPanel lang={lang} channels={channelStates} votes={votes} />
+          <LadderPanel active={activeLevel} colors={ALERT_SEVERITY_COLORS} />
+          <FusionPanel channels={channelStates} votes={votes} />
           <section className="og-wheel-panel og-wheel-rul">
             <RulPanel
-              rul={demoActive ? demoRulFor(demoStage, lang) : (rul?.data ?? null)}
+              rul={demoActive ? demoRulFor(demoStage) : (rul?.data ?? null)}
               analyzerUnavailable={analyzerUnavailable && !demoActive}
               evaluationReason={demoActive ? undefined : (rul?.reason ?? alerts?.reason)}
             />
           </section>
           <section className="og-wheel-panel">
             <h3 className="og-wheel-panel__title">
-              {t("dash.alerts.title", lang)}
+              {t("dash.alerts.title")}
               <span className="og-wheel-panel__meta">
-                {(analyzerUnavailable && !demoActive ? [] : demoActive ? shownAlerts.map((a) => a.level) : alerts?.data.escalation ?? shownAlerts.map((a) => a.level)).join(" → ") || t("dash.alerts.none", lang)}
+                {(analyzerUnavailable && !demoActive ? [] : demoActive ? shownAlerts.map((a) => a.level) : alerts?.data.escalation ?? shownAlerts.map((a) => a.level)).join(" → ") || t("dash.alerts.none")}
               </span>
             </h3>
             {shownAlerts.length === 0 ? (
-              <p className="og-wheel-panel__note">{t("dash.alerts.empty", lang)}</p>
+              <p className="og-wheel-panel__note">{t("dash.alerts.empty")}</p>
             ) : (
               <ul className="og-wheel-alerts">
                 {shownAlerts.map((a) => (
@@ -624,15 +635,15 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
                       {a.level}
                     </span>
                     <strong>{a.alert_id}</strong>
-                    <span className="og-wheel-alerts__meta"> · t {formatNumber(a.t_s, lang, 1)} s · {localizeBackendZone(a.zone, lang)}</span>
-                    <p>{localizeBackendMessage(a.reason_message, a.reason, lang)}</p>
+                    <span className="og-wheel-alerts__meta"> · t {formatNumber(a.t_s, 1)} s · {localizeBackendZone(a.zone)}</span>
+                    <p>{localizeBackendMessage(a.reason_message, a.reason)}</p>
                   </li>
                 ))}
               </ul>
             )}
             {alerts && !demoActive && !analyzerUnavailable && live && (
               <p className="og-wheel-panel__note">
-                {localizeBackendMessage(alerts.data.note_message, alerts.data.note, lang)} · {localizeBackendMessage(alerts.data.fallback_message, alerts.data.fallback, lang)}
+                {localizeBackendMessage(alerts.data.note_message, alerts.data.note)} · {localizeBackendMessage(alerts.data.fallback_message, alerts.data.fallback)}
               </p>
             )}
           </section>
@@ -641,22 +652,22 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
 
       <details className="og-wheel-raw">
         <summary>
-          {t("wheel.raw.title", lang)}
-          <span className="og-chip">{rawFromBackend ? t("wheel.raw.live", lang) : t("wheel.raw.demo", lang)}</span>
+          {t("wheel.raw.title")}
+          <span className="og-chip">{rawFromBackend ? t("wheel.raw.live") : t("wheel.raw.demo")}</span>
         </summary>
-        <pre>{rawText || t("wheel.raw.empty", lang)}</pre>
+        <pre>{rawText || t("wheel.raw.empty")}</pre>
       </details>
 
-      <nav className="og-wheel-links" aria-label={t("wheel.links", lang)}>
-        <a href={links.history}>{t("wheel.link.history", lang)}</a>
-        <a href={links.alerts}>{t("wheel.link.alerts", lang)}</a>
+      <nav className="og-wheel-links" aria-label={t("wheel.links")}>
+        <a href={links.history}>{t("wheel.link.history")}</a>
+        <a href={links.alerts}>{t("wheel.link.alerts")}</a>
       </nav>
     </div>
     </div>
   );
 }
 
-function demoRulFor(stage: DemoStageId, lang: Lang) {
+function demoRulFor(stage: DemoStageId) {
   if (stage === "clean") {
     return {
       hours: null,
@@ -666,7 +677,7 @@ function demoRulFor(stage: DemoStageId, lang: Lang) {
       status: "suppressed" as const,
       anomaly_only: true as const,
       model: DEMO_MODEL,
-      note: t("dash.demo.rul.cleanNote", lang),
+      note: t("dash.demo.rul.cleanNote"),
       fallback: "local DEMO fallback (backend down or demo override)",
     };
   }
@@ -684,10 +695,10 @@ function demoRulFor(stage: DemoStageId, lang: Lang) {
       r2: 0.822,
       current_level_L: 90.67,
       model: DEMO_MODEL,
-      note: t("dash.demo.rul.slowNote", lang, {
-        model: t("rul.model.syntheticProxy", lang),
-        qualifier: t("rul.unproven", lang),
-        labNote: formatDemoLabNote(lang),
+      note: t("dash.demo.rul.slowNote", {
+        model: t("rul.model.syntheticProxy"),
+        qualifier: t("rul.unproven"),
+        labNote: formatDemoLabNote(),
       }),
       fallback: "local DEMO fallback (backend down or demo override)",
     };
@@ -705,9 +716,9 @@ function demoRulFor(stage: DemoStageId, lang: Lang) {
     r2: 0.713,
     current_level_L: 79.97,
     model: DEMO_MODEL,
-    note: t("dash.demo.rul.abruptNote", lang, {
-      model: t("rul.model.syntheticProxy", lang),
-      qualifier: t("rul.unproven", lang),
+    note: t("dash.demo.rul.abruptNote", {
+      model: t("rul.model.syntheticProxy"),
+      qualifier: t("rul.unproven"),
     }),
     fallback: "local DEMO fallback (backend down or demo override)",
   };
