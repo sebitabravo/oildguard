@@ -5,6 +5,7 @@ import {
   classifyRowState,
   filterFleetRows,
   fleetCounters,
+  fleetFieldSource,
   groupFleetRows,
   mergeLiveDevices,
   relativeLastComm,
@@ -65,5 +66,110 @@ describe("fleet overview logic", () => {
     for (const row of rows) {
       if (row.lastComm !== null) expect(demoDataset.referenceMs - row.lastComm).toBeLessThan(86_400_000);
     }
+  });
+});
+
+describe("fleet per-field provenance in mergeLiveDevices", () => {
+  // Cada campo conserva su procedencia: solo el nivel y la última
+  // comunicación pueden venir del backend; el resto sigue siendo DEMO.
+  test("demo rows mark every merged field DEMO", () => {
+    for (const row of rows) {
+      expect(row.fieldSources.level).toBe("DEMO");
+      expect(row.fieldSources.trend).toBe("DEMO");
+      expect(row.fieldSources.lossRate).toBe("DEMO");
+      expect(row.fieldSources.temperature).toBe("DEMO");
+      expect(row.fieldSources.vibration).toBe("DEMO");
+      expect(row.fieldSources.regime).toBe("DEMO");
+      expect(row.fieldSources.alert).toBe("DEMO");
+      expect(row.fieldSources.lastComm).toBe("DEMO");
+    }
+  });
+
+  test("live merge marks only level and last-comm LIVE, demo telemetry stays DEMO", () => {
+    const live = mergeLiveDevices(dataset.trucks, [{
+      device_id: "wheel-RH-01",
+      truck_id: "OG-01",
+      latest_level_liters: 91.2,
+      last_t_iso: "2026-10-10T09:00:00.000Z",
+    }]);
+    const row = live.find((item) => item.id === "wheel-RH-01");
+    expect(row?.source).toBe("LIVE");
+    expect(row?.fieldSources.level).toBe("LIVE");
+    expect(row?.fieldSources.lastComm).toBe("LIVE");
+    expect(row?.fieldSources.trend).toBe("DEMO");
+    expect(row?.fieldSources.lossRate).toBe("DEMO");
+    expect(row?.fieldSources.temperature).toBe("DEMO");
+    expect(row?.fieldSources.vibration).toBe("DEMO");
+    expect(row?.fieldSources.regime).toBe("DEMO");
+    expect(row?.fieldSources.alert).toBe("DEMO");
+  });
+
+  test("live device without a level keeps level DEMO while last-comm stays LIVE", () => {
+    const live = mergeLiveDevices(dataset.trucks, [{
+      device_id: "wheel-RH-01",
+      truck_id: "OG-01",
+      last_t_iso: "2026-10-10T09:00:00.000Z",
+    }]);
+    const row = live.find((item) => item.id === "wheel-RH-01");
+    expect(row?.source).toBe("LIVE");
+    expect(row?.fieldSources.level).toBe("DEMO");
+    expect(row?.fieldSources.lastComm).toBe("LIVE");
+    expect(row?.fieldSources.temperature).toBe("DEMO");
+  });
+
+  test("live-only devices mark synthesized telemetry DEMO", () => {
+    const live = mergeLiveDevices(dataset.trucks, [{
+      device_id: "wheel-XX-99",
+      truck_id: "OG-01",
+      latest_level_liters: 88.5,
+      last_t_iso: "2026-10-10T09:00:00.000Z",
+    }]);
+    const row = live.find((item) => item.id === "wheel-XX-99");
+    expect(row?.source).toBe("LIVE");
+    expect(row?.fieldSources.level).toBe("LIVE");
+    expect(row?.fieldSources.lastComm).toBe("LIVE");
+    expect(row?.fieldSources.temperature).toBe("DEMO");
+    expect(row?.fieldSources.vibration).toBe("DEMO");
+    expect(row?.fieldSources.regime).toBe("DEMO");
+    expect(row?.fieldSources.alert).toBe("DEMO");
+  });
+
+  test("negative: row-level LIVE alone would silently present demo telemetry as live", () => {
+    // La fila es LIVE pero su temperatura sigue siendo DEMO; sin procedencia
+    // por campo, el rótulo de fila bastaría para leerla como viva.
+    const live = mergeLiveDevices(dataset.trucks, [{
+      device_id: "wheel-RH-01",
+      truck_id: "OG-01",
+      latest_level_liters: 91.2,
+      last_t_iso: "2026-10-10T09:00:00.000Z",
+    }]);
+    const row = live.find((item) => item.id === "wheel-RH-01");
+    expect(row?.source).toBe("LIVE");
+    expect(row?.fieldSources.temperature).toBe("DEMO");
+  });
+
+  test("fleetFieldSource reads the per-field provenance map", () => {
+    const row = rows[0];
+    if (!row) throw new Error("missing demo row");
+    expect(fleetFieldSource(row, "level")).toBe("DEMO");
+    expect(fleetFieldSource(row, "lastComm")).toBe("DEMO");
+  });
+
+  test("live merge keeps sigma DEMO while level goes LIVE", () => {
+    // El sigma mostrado sigue siendo sintético; sin campo propio el rótulo LIVE del nivel lo cubriría.
+    const live = mergeLiveDevices(dataset.trucks, [{
+      device_id: "wheel-RH-01",
+      truck_id: "OG-01",
+      latest_level_liters: 91.2,
+      last_t_iso: "2026-10-10T09:00:00.000Z",
+    }]);
+    const row = live.find((item) => item.id === "wheel-RH-01");
+    expect(row?.fieldSources.level).toBe("LIVE");
+    expect(row?.fieldSources).toMatchObject({ sigma: "DEMO" });
+  });
+
+  test("demo rows mark sigma DEMO", () => {
+    // El sigma demo necesita procedencia propia para no leerse como vivo en una fila LIVE.
+    expect(rows[0]?.fieldSources).toMatchObject({ sigma: "DEMO" });
   });
 });

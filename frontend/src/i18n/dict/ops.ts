@@ -84,6 +84,8 @@ export const ops = {
   "fleet.linkDownDetail": { en: "link down · buffering locally", es: "enlace caído · almacenamiento local" },
   "fleet.helper": { en: "Click a row to open the wheel detail.", es: "Haz clic en una fila para abrir el detalle de la rueda." },
   "fleet.empty": { en: "No wheels match these filters.", es: "Ninguna rueda coincide con estos filtros." },
+  "fleet.source.live": { en: "LIVE", es: "EN VIVO" },
+  "fleet.source.demo": { en: "DEMO", es: "DEMO" },
   "rul.eyebrow": { en: "Operation / Remaining life", es: "Operación / Vida remanente" },
   "rul.title": { en: "Remaining useful life — lubricant condition", es: "Vida útil remanente — condición del lubricante" },
   "rul.description": { en: "A trend horizon for the lubricant condition, not a prediction of wheel service life.", es: "Un horizonte de tendencia para la condición del lubricante, no una predicción de vida útil de la rueda." },

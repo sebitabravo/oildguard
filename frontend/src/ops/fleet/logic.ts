@@ -25,7 +25,21 @@ export interface FleetRow {
   levelL: number;
   lastComm: number | null;
   liveDevice?: LiveFleetDevice;
+  fieldSources: FleetFieldSources;
 }
+
+export type FleetField =
+  | "level"
+  | "sigma"
+  | "trend"
+  | "lossRate"
+  | "temperature"
+  | "vibration"
+  | "regime"
+  | "alert"
+  | "lastComm";
+
+export type FleetFieldSources = Record<FleetField, FleetSource>;
 
 export interface FleetGroup {
   truckId: string;
@@ -41,6 +55,26 @@ export function classifyRowState(wheel: DemoWheel, lastComm = wheel.lastComm): F
   return "nominal";
 }
 
+// Cada campo conserva su procedencia: solo el nivel y la última comunicación
+// pueden venir del backend; el sigma sigue siendo DEMO porque la flota no expone sigma.
+function demoFieldSources(): FleetFieldSources {
+  return {
+    level: "DEMO",
+    sigma: "DEMO",
+    trend: "DEMO",
+    lossRate: "DEMO",
+    temperature: "DEMO",
+    vibration: "DEMO",
+    regime: "DEMO",
+    alert: "DEMO",
+    lastComm: "DEMO",
+  };
+}
+
+export function fleetFieldSource(row: FleetRow, field: FleetField): FleetSource {
+  return row.fieldSources[field];
+}
+
 export function mergeLiveDevices(trucks: DemoTruck[], devices: LiveFleetDevice[]): FleetRow[] {
   const demoRows: FleetRow[] = trucks.flatMap((truck) => truck.wheels.map((wheel) => ({
     id: wheel.id,
@@ -50,18 +84,25 @@ export function mergeLiveDevices(trucks: DemoTruck[], devices: LiveFleetDevice[]
     source: "DEMO" as const,
     levelL: wheel.levelL,
     lastComm: wheel.lastComm,
+    fieldSources: demoFieldSources(),
   })));
   const byId = new Map(demoRows.map((row) => [row.id, row]));
   for (const device of devices) {
     const existing = byId.get(device.device_id);
     const parsedLastComm = device.last_t_iso ? Date.parse(device.last_t_iso) : null;
+    const liveLevel = typeof device.latest_level_liters === "number";
     if (existing) {
       byId.set(device.device_id, {
         ...existing,
         source: "LIVE",
-        levelL: typeof device.latest_level_liters === "number" ? device.latest_level_liters : existing.levelL,
+        levelL: liveLevel ? (device.latest_level_liters as number) : existing.levelL,
         lastComm: parsedLastComm,
         liveDevice: device,
+        fieldSources: {
+          ...demoFieldSources(),
+          level: liveLevel ? "LIVE" : "DEMO",
+          lastComm: "LIVE",
+        },
       });
       continue;
     }
@@ -80,6 +121,11 @@ export function mergeLiveDevices(trucks: DemoTruck[], devices: LiveFleetDevice[]
       levelL: typeof device.latest_level_liters === "number" ? device.latest_level_liters : wheel.levelL,
       lastComm: parsedLastComm,
       liveDevice: device,
+      fieldSources: {
+        ...demoFieldSources(),
+        level: liveLevel ? "LIVE" : "DEMO",
+        lastComm: "LIVE",
+      },
     });
   }
   return [...byId.values()].map((row) => ({
