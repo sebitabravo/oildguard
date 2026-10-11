@@ -23,8 +23,8 @@ At the specified widths, KPI labels and values collide, form labels become cramp
 ## Tasks and progress
 - [x] L06-1 Capture route/viewport baseline collision pairs and screenshots. `/tmp/og-goal/evidence/LAYOUT-06/collisions-before.txt`: Alerts 1024=12, Alerts 390=13, Validation 1440=2, Lab Simulation 1024=2, Monitoring 1024=1, Dev UI 390=0 pairs; Dev UI document width=453/390. Six before screenshots saved in `evidence/LAYOUT-06/shots/`.
 - [x] L06-2 Add failing structural layout tests for each affected page and save RED evidence. `cd frontend && bun test src` exited 1 before layout changes: 652 pass, 6 fail (one or more route-contract assertions per affected area); full output is `/tmp/og-goal/evidence/LAYOUT-06/red.txt`.
-- [ ] L06-3 Apply the smallest allowed CSS/markup fixes; preserve existing visual system and content.
-- [ ] L06-4 Capture after collision counts/screenshots and run all required checks.
+- [x] L06-3 Apply the smallest allowed CSS/markup fixes; preserve existing visual system and content. Alerts tiles now reflow and source badges wrap; validation metrics use three columns through 1500px; simulation fields stack through 1180px; wheel evidence lines wrap as separate rows; Dev UI constrains notice/banner content in a route-local wrapper.
+- [x] L06-4 Capture after collision counts/screenshots and run all required checks. Filtered visible-text probe reports zero pairs on all six target viewports; it excludes closed `<details>` descendants and intentional SVG/chart labels (QA-OPENCODE-02 methods notes). Dev UI width is 390/390. Screenshots and counts: `/tmp/og-goal/evidence/LAYOUT-06/shots/*-after.png` and `collisions-after.txt`. `bun test src`: 659 pass, 0 fail; `bun run build`: exit 0; Impeccable layout detector: `[]`. Full output is saved in `bun-test.txt`, `build.txt`, and `impeccable-layout.txt`.
 - [ ] L06-5 Create the requested test and fix commits; record commit IDs and RDD assessment outcomes.
 
 ## Verification
@@ -34,4 +34,4 @@ At the specified widths, KPI labels and values collide, form labels become cramp
 - Keep RED, before/after collision counts, screenshots, and full verification output in `/tmp/og-goal/evidence/LAYOUT-06/`.
 
 ## Next step
-Commit the tests and baseline evidence references; then continue with L06-3 layout changes only.
+Next: commit the layout fix work unit; parent will perform the required post-commit risk assessment.

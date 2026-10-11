@@ -56,3 +56,7 @@
 }
 .val-tiles .og-kpi-tile { min-width: 0; }
 .val-tiles .og-label { overflow-wrap: anywhere; }
+
+@media (max-width: 1500px) {
+  .val-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

@@ -66,6 +66,7 @@
 
 /* En pantallas angostas las columnas se disuelven y cada panel ocupa su área. */
 @media (max-width: 1180px) {
+  .sim-page__fields { grid-template-columns: minmax(0, 1fr); }
   .sim-page__col { display: contents; }
   .sim-page__params { grid-area: params; }
   .sim-page__faults { grid-area: faults; }
