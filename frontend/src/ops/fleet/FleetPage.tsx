@@ -31,7 +31,7 @@ function rowClass(row: FleetRow): string {
 
 function FleetKpiStrip({ counts }: { counts: ReturnType<typeof fleetCounters> }) {
   return (
-    <section className="og-fleet-kpi-strip" aria-label={t("fleet.kpis")}>
+    <section className="og-fleet-kpi-strip og-fleet-kpi-strip--tablet" aria-label={t("fleet.kpis")}>
       <div className="og-fleet-kpi">
         <div className="og-label">{t("fleet.kpiMonitored")}</div>
         <div className="og-kpi-tile__value">{formatNumber(counts.trucks, 0)}<small>{t("fleet.trucks")}</small></div>
@@ -156,7 +156,7 @@ export default function FleetPage() {
           <Button type="button" variant="ghost" onClick={downloadCsv}>{t("fleet.export")}</Button>
         </FilterBar>
 
-        <div className="og-fleet-table-wrap">
+        <div className="og-fleet-table-wrap og-fleet-table-scroll">
           <table className="og-fleet-table">
             <caption className="og-visually-hidden">{t("fleet.tableCaption")}</caption>
             <colgroup>
