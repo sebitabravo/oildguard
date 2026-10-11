@@ -1,4 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="4" fill="#F59E0B" />
-  <text x="32" y="32" fill="#0B0F14" font-family="monospace" font-size="24" font-weight="700" letter-spacing="-0.48" text-anchor="middle" dominant-baseline="central">OG</text>
+  <defs>
+    <linearGradient id="mark" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="8" fill="url(#mark)" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="2" />
+  <text x="32" y="32" fill="#0B0F14" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="26" font-weight="700" letter-spacing="-0.52" text-anchor="middle" dominant-baseline="central">OG</text>
 </svg>
