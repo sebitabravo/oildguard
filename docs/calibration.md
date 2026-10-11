@@ -52,10 +52,13 @@ empty (no physical bench ran).
 
 Analysis per level step: mean err (bias), RMSE, ±2σ band; scatter fused vs
 weighed with y=x + confidence band; report `sigma_L` (baseline precision,
-typical synthetic ≈ 0.46 L → conf ≈ 0.91) alongside bench RMSE. Acceptance
-guide (not a pass/fail contract): bias < 1 L at 95 L, RMSE < 2 L across
-95→28.5 L, R² ≥ 0.3 on the leak trend (same gate `ai/rul.py` enforces).
+typical synthetic ≈ 0.46 L → conf ≈ 0.91) alongside bench RMSE. Bench
+criteria (not runtime gates): bias < 1 L at 95 L, RMSE < 2 L across
+95→28.5 L, R² ≥ 0.3 on the leak trend (only the R² criterion matches the
+implemented `ai/rul.py` gate).
 If unmet → pivot stands (see §3), no threshold tuning to hide it.
+
+Falsifier status: NOT EVALUATED on physical bench data; synthetic diagnostic reported separately. Of the three disputed statistical gates, only MIN_R2 is implemented; bias and RMSE gates are NOT IMPLEMENTED, not passed. Other real runtime gates elsewhere may still be cited.
 
 ## 3. Honest result on available evidence (no bench ran)
 

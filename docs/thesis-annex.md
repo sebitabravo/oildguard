@@ -18,27 +18,27 @@ value, an explicit assumption, or an empty bench slot.
 
 | # | Parameter | Value | Status | Source |
 |---|-----------|-------|--------|--------|
-| P1 | Oil capacity per wheel motor | 95 L SAE 85W-140 | VERIFIED | Komatsu 930E shop-manual set (vendor PDF, held by thesis author; paywalled — see §6). Code anchor: `sim/generate.py:37`, `ai/level.py:47`, `sim/physics.py:28` |
+| P1 | Oil capacity per wheel motor | 95 L SAE 85W-140 | VERIFIED | Komatsu 930E shop-manual set (vendor PDF, held by thesis author; paywalled — see §6). Code anchor: `sim/generate.py:CAPACITY_L`, `ai/level.py:CAPACITY_L`, `sim/physics.py:CAPACITY_L` |
 | P2 | Final drive | GDY106, 32.62:1 | VERIFIED | Komatsu 930E-5 spec sheet: "Motorized wheels: GDY106-B … Ratio: 32.62:1" — https://www.komatsu.com/en-us/products/equipment/trucks/electric-drive-mining-trucks/930e-5 and brochure PDF https://www.komatsu.com/content/dam/komatsu/sales-and-marketing-documents/brochures/trucks/930e/930e-5-aess921-01-ev1.pdf |
-| P3 | Rotor → wheel arithmetic | 3000 rpm / 32.62 ≈ 91.97 ≈ 92 rpm | VERIFIED (arithmetic) | `sim/physics.py:43-45` (`ROTOR_MAX_RPM`, `GEAR_RATIO`, `WHEEL_RPM_AT_MAX`) |
+| P3 | Rotor → wheel arithmetic | 3000 rpm / 32.62 ≈ 91.97 ≈ 92 rpm | VERIFIED (arithmetic) | `sim/physics.py:ROTOR_MAX_RPM`, `sim/physics.py:GEAR_RATIO`, `sim/physics.py:WHEEL_RPM_AT_MAX` |
 | P4 | 930E max travel speed | 64.5 km/h (40 mph) | VERIFIED | Same Komatsu 930E-5 spec sources as P2 |
-| P5 | Oil density 85W-140 | 890–912 kg/m³ @15 °C | VERIFIED | 85W-140 PDS set (vendor data sheets, held by thesis author; paywalled — see §6). Prior midpoint 901 kg/m³ in `sim/physics.py:33` |
+| P5 | Oil density 85W-140 | 890–912 kg/m³ @15 °C | VERIFIED | 85W-140 PDS set (vendor data sheets, held by thesis author; paywalled — see §6). Prior midpoint 901 kg/m³ in `sim/physics.py:RHO_REF` |
 | P6 | Viscosity 85W-140 | 350–420 cSt @40 °C; 26–28.6 cSt @100 °C; VI 95–103 | VERIFIED | Same PDS set as P5; J306 limits (85W ≤150 000 cP @−12 °C; 140 grade 24.0–41.0 cSt @100 °C) contain the PDS band |
 | P7 | Density thermal prior β = 7e-4 /°C | Linear `rho(T)` prior | ASSUMPTION | `sim/physics.py:oil_density_kg_m3` — typical mineral-gear-oil order of magnitude; bench fits true β from weighed runs |
 | P8 | Viscosity-vs-T curve form | Log-linear interpolation, 40 °C ↔ 100 °C midpoints | ASSUMPTION | `sim/physics.py:viscosity_mid_cst` — placeholder; bench fits Walther/Vogel from settling-tau vs temperature |
-| P9 | Pressure anchor `p = rho(T)·g·h(V)` from the gear-case geometry (P13) | 95 L → h ≈ 0.305 m → 2.65 / 2.61 / 2.57 kPa at 40 / 60 / 80 °C; replaces the former 28 kPa @ 95 L gain | **DERIVED** (P5 VERIFIED density, P7 ASSUMED β, P13 ASSUMED cavity); SYNTHETIC-PROXY until the bench measures h(L) | `sim/physics.py:pressure_kpa_from_volume`, `sim/generate.py`, `ai/level.py`; numbers in §2 |
+| P9 | Pressure anchor `p = rho(T)·g·h(V)` from the gear-case geometry (P13) | 95 L → h ≈ 0.305 m → 2.65 / 2.61 / 2.57 kPa at 40 / 60 / 80 °C; replaces the former 28 kPa @ 95 L gain | **DERIVED** (P5 VERIFIED density, P7 ASSUMED β, P13 ASSUMED cavity); SYNTHETIC-PROXY until the bench measures h(L) | `sim/physics.py:pressure_kpa_from_volume`, `sim/generate.py:iter_rows`, `ai/level.py:estimate`; numbers in §2 |
 | P10 | 20-min stabilization per level step | Bench procedure step | ASSUMPTION (placeholder) | `docs/calibration.md` §1 — timer logged; bench may shorten/lengthen with degassing evidence |
 | P11 | 980E-5 / GDY108-C 35.02:1 | Any 980E number | FUTURE WORK, no validation | User decision (binding); `sim/physics.py:FUTURE_RATIO_GDY108C` is an unvalidated constant, never consumed |
-| P12 | Warning < 50% (47.5 L), critical < 30% (28.5 L) | Alert thresholds | VERIFIED (project spec, auditable) | `ai/level.py:50-51`, `ai/rul.py:36-37` |
-| P13 | Gear-case oil cavity: horizontal annulus, R_OUT = 0.60 m, R_IN = 0.22 m, L = 0.42 m (411 L full) | Pool geometry h(V) | ASSUMPTION (GE does not publish the cavity; sized so 95 L gives a decimetre head) | `sim/geometry.py:GearCase`, mirrored in `frontend/src/twin/physics.ts`; one edit replaces it when the bench gives h(L) |
-| P14 | Hold-up while the wheel turns: `V_holdup = 6 L · wheel_rpm / 91.97`; drain-back `tau = 0.75 s · viscosity_proxy` | Settling transient (pre-proposal §3.1) | ASSUMPTION (shape + parameters); bench fits them from weighed runs | `sim/generate.py:V_HOLDUP_MAX_L`, `SETTLE_TAU0_S` |
+| P12 | Warning < 50% (47.5 L), critical < 30% (28.5 L) | Alert thresholds | VERIFIED (project spec, auditable) | `ai/level.py:WARN_PCT`, `ai/level.py:CRIT_PCT`, `ai/rul.py:WARN_L`, `ai/rul.py:CRIT_L` |
+| P13 | Gear-case oil cavity: horizontal annulus, R_OUT = 0.60 m, R_IN = 0.22 m, L = 0.42 m (411 L full) | Pool geometry h(V) | ASSUMPTION (GE does not publish the cavity; sized so 95 L gives a decimetre head) | `sim/geometry.py:GearCase`, `sim/geometry.py:DEFAULT_GEAR_CASE`, mirrored in `frontend/src/twin/physics.ts:DEFAULT_GEAR_CASE`; one edit replaces it when the bench gives h(L) |
+| P14 | Hold-up while the wheel turns: `V_holdup = 6 L · wheel_rpm / 91.97`; drain-back `tau = 0.75 s · viscosity_proxy` | Settling transient (pre-proposal §3.1) | ASSUMPTION (shape + parameters); bench fits them from weighed runs | `sim/generate.py:V_HOLDUP_MAX_L`, `sim/generate.py:SETTLE_TAU0_S` |
 | P15 | Planetary tooth counts (shared ring Zr = 92; HS 16/38/3 planets, LS 24/34/4 planets) | Two-stage train 32.625:1 | ASSUMPTION (illustrative; GE does not publish tooth counts). Stage ratio `1 + Zr/Zs` is DERIVED | `sim/geartrain.py:GDY106_TRAIN` |
-| P16 | T5 pit dimensions and scene tags | Each design value carries VERIFIED, DERIVED, or ASSUMPTION provenance; examples include assumed bench count/height and ramp grade, with derived catch width | DERIVED / ASSUMPTION / VERIFIED per field; scene geometry is not field survey data | `frontend/src/twin/pit/pitSpec.ts:1-68`; source notes in `docs/research/twin-reference.md` §3 |
-| P17 | T6 cutaway, exploded assembly, and oil pool | GDY106 internals are a simplified, non-CAD-exact cutaway with exploded-view control; pool height is computed from `headFromVolume`; displayed stage ratios are 6.750:1 × 4.833:1 ≈ 32.62:1 (manual-validated overall value; stages rounded to three decimals); exact illustrative tooth-count product remains 32.625:1 | Geometry is a visual reconstruction; pool calculation is DERIVED from P13; tooth counts remain ASSUMPTION | `frontend/src/sim/bench/BenchView.tsx:134-147`, `frontend/src/sim/bench/BenchScene.tsx:20-23`, `frontend/src/twin/physics.ts:61-92,160-185`, `sim/geartrain.py:GDY106_TRAIN` |
-| P18 | T7 fleet table and combined-risk demo rule | 12 fleet rows; alert requires any 2 of low oil ≤47.5 L, temperature ≥90 °C, vibration ≥7 mm/s; current is displayed, not a trigger | SYNTHETIC-PROXY rows; threshold values and 2-of-3 policy are ASSUMPTION, not calibrated field limits | `frontend/src/dash/Dashboard.tsx:41-43,232-282`, `frontend/src/dash/fleetRisk.ts:15-27,37-53`; `odd/tasks/oilguard-pro-twin.md` T7 evidence |
-| P19 | T8 signed-ingest scope | Per-row HMAC-SHA256 verification in the prototype checks signed-row integrity/shared-key origin before storage; it does not provide confidentiality or HTTP caller authentication | VERIFIED prototype behavior; GAP for firmware integration, secure key provisioning/storage/rotation, persistent replay history, caller authentication, CORS hardening, and role controls | `shared/signing.py`, `backend/main.py`, `tests/test_signed_ingest.py`; exact limitations remain in §3 and `odd/tasks/oilguard-pro-twin.md` T8 evidence |
-| P20 | T10 rotating-sensor regime thresholds | Froude transitions at 0.10 and 1.00 | ASSUMPTION; no bench validation | `sim/physics.py:66-70`; mirrored in `frontend/src/twin/physics.ts:26-31` |
-| P21 | T10 rotor ceiling | 3000 rpm | VERIFIED project rotor ceiling (not a wheel-speed limit) | `sim/physics.py:68-70` |
+| P16 | T5 pit dimensions and scene tags | Each design value carries VERIFIED, DERIVED, or ASSUMPTION provenance; examples include assumed bench count/height and ramp grade, with derived catch width | DERIVED / ASSUMPTION / VERIFIED per field; scene geometry is not field survey data | `frontend/src/twin/pit/pitSpec.ts:PIT`, `frontend/src/twin/pit/pitSpec.ts:pitSpecRows`; source notes in `docs/research/twin-reference.md` §3 |
+| P17 | T6 cutaway, exploded assembly, and oil pool | GDY106 internals are a simplified, non-CAD-exact cutaway with exploded-view control; pool height is computed from `frontend/src/twin/physics.ts:headFromVolume`; displayed stage ratios are 6.750:1 × 4.833:1 ≈ 32.62:1 (manual-validated overall value; stages rounded to three decimals); exact illustrative tooth-count product remains 32.625:1 | Geometry is a visual reconstruction; pool calculation is DERIVED from P13; tooth counts remain ASSUMPTION | `frontend/src/sim/bench/BenchView.tsx:BenchView`, `frontend/src/sim/bench/BenchScene.tsx:BenchScene`, `frontend/src/sim/bench/sensors.ts:BENCH_SENSORS`, `frontend/src/twin/physics.ts:headFromVolume`, `frontend/src/twin/physics.ts:GDY106_TRAIN`, `frontend/src/twin/physics.ts:stageRatio`, `sim/geartrain.py:GDY106_TRAIN` |
+| P18 | T7 fleet table and combined-risk demo rule | 12 fleet rows; alert requires any 2 of low oil ≤47.5 L, temperature ≥90 °C, vibration ≥7 mm/s; current is displayed, not a trigger | SYNTHETIC-PROXY rows; threshold values and 2-of-3 policy are ASSUMPTION, not calibrated field limits | `frontend/src/ops/fleet/logic.ts:mergeLiveDevices`, `frontend/src/ops/fleet/FleetPage.tsx:FleetWheelRow`, `frontend/src/dash/fleetRisk.ts:DEMO_RISK_THRESHOLDS`, `frontend/src/dash/fleetRisk.ts:evaluateCombinedRisk`, `frontend/src/dash/fleetRisk.ts:DEMO_FLEET_WHEELS`; `odd/tasks/oilguard-pro-twin.md` T7 evidence |
+| P19 | T8 signed-ingest scope | Per-row HMAC-SHA256 verification in the prototype checks signed-row integrity/shared-key origin before storage; it does not provide confidentiality or HTTP caller authentication | VERIFIED prototype behavior; GAP for firmware integration, secure key provisioning/storage/rotation, persistent replay history, caller authentication, CORS hardening, and role controls | `shared/signing.py:verify_row`, `shared/signing.py:canonical_bytes`, `backend/main.py:verify_rows`, `backend/main.py:verify_and_store`, `tests/test_signed_ingest.py:test_enforced_ingest_rejects_unsigned_rows_and_reports_counts`; exact limitations remain in §3 and `odd/tasks/oilguard-pro-twin.md` T8 evidence |
+| P20 | T10 rotating-sensor regime thresholds | Froude transitions at 0.10 and 1.00 | ASSUMPTION; no bench validation | `sim/physics.py:rotating_sensor_regime`, `sim/physics.py:ROTATING_STATIC_FROUDE_MAX`, `sim/physics.py:ROTATING_RIMMING_FROUDE_MIN`; mirrored in `frontend/src/twin/physics.ts:rotatingSensorRegime`, `frontend/src/twin/physics.ts:RESEARCH_ROTATING_CAVITY` |
+| P21 | T10 rotor ceiling | 3000 rpm | VERIFIED project rotor ceiling (not a wheel-speed limit) | `sim/physics.py:ROTATING_RPM_MAX` |
 
 The two oil-cavity geometries are intentionally distinct. P13 (0.60 / 0.22 /
 0.42 m) remains the static level-estimator's calibration placeholder, while
@@ -46,13 +46,13 @@ The two oil-cavity geometries are intentionally distinct. P13 (0.60 / 0.22 /
 assumption for rotating-sensor regime and submerged-fraction analysis. The
 latter models the rotating output around sensors; it must not silently replace
 the static estimator's established geometry. Neither cavity is a published GE
-dimension (`sim/physics.py:66-70`; `frontend/src/twin/physics.ts:26-31`).
+dimension (`sim/geometry.py:DEFAULT_GEAR_CASE`, `sim/physics.py:RESEARCH_ROTATING_CAVITY`; `frontend/src/twin/physics.ts:DEFAULT_GEAR_CASE`, `frontend/src/twin/physics.ts:RESEARCH_ROTATING_CAVITY`).
 
 T10 also corrects the pre-proposal phrase “fixed points, no moving parts” for
 sensor items 56/41/39: the drain plug, magnetic pipe plug, and sun cover are on
 the rotating output (LS carrier → torque tube → hub). They are service-point
 locations, not stationary references; see `docs/research/twin-reference.md`
-§2 and `frontend/src/sim/bench/BenchScene.tsx:20-23`.
+§2, `frontend/src/sim/bench/sensors.ts:BENCH_SENSORS`, and `frontend/src/sim/bench/BenchScene.tsx:BenchScene`.
 
 ## 2. Hydrostatic anchor (geometry-derived, replaces the 28 kPa gain)
 
@@ -88,7 +88,7 @@ Temperature: a fixed **mass** occupies `V(T) = m / rho(T)`. In a
 vertical-walled tank `p = m·g/A` would be temperature-invariant; in the
 annulus it is not (−1.3 % over 40 → 100 °C above), which is the physical
 reason the temperature compensation of the level channel exists
-(`ai/anomaly.py` fits the empirical coefficient; the true `rho(T)` slope is
+(`ai/anomaly.py:fit_baseline` fits the empirical coefficient; the true `rho(T)` slope is
 ≈ −0.002 kPa/°C at 95 L).
 
 Required transducer (DERIVED from `sim/physics.py:sensor_resolution_l`,
@@ -111,7 +111,7 @@ Settling model (P14, ASSUMPTION): while the wheel turns, gears and walls lift
 `V_holdup = 6 L · wheel_rpm / 91.97` out of the static pool (≈ 0.11 kPa less
 pressure at full speed, observable as the moving-vs-rest offset); at stop the
 oil drains back as `V_holdup · exp(−t/tau)` with `tau = 0.75 s · viscosity_proxy`
-(nominal proxy 1.0 matches the stub `tau = 0.3·v + 0.45`). `sim/settling.py`
+(nominal proxy 1.0 matches the stub `tau = 0.3·v + 0.45`). `sim/settling.py:settling_tau`
 still recovers a tau that increases monotonically with the proxy
 (`tests/test_generate.py::test_settling_tau_still_increases_with_viscosity_proxy`).
 The rest detector confirms rest 3 s after stopping, so for nominal oil the
@@ -156,22 +156,25 @@ print(h, dV_dh(h), physics.pressure_kpa_from_volume(95.0, 60.0))
 
 ## 4. Falsifier (kept from S7 — fusion refuted iff)
 
+Falsifier status: NOT EVALUATED on physical bench data; synthetic diagnostic reported separately. Of the three disputed statistical gates, only MIN_R2 is implemented; bias and RMSE gates are NOT IMPLEMENTED, not passed. Other real runtime gates elsewhere may still be cited.
+
 Fusion is REFUTED and the anomaly-only pivot stands iff, on weighed bench
 data (`docs/calibration.md` §2 template), any of:
 
-- bias ≥ 1 L at 95 L, or
-- RMSE ≥ 2 L across 95 → 28.5 L, or
-- leak-trend R² < 0.3 (same gate `ai/rul.py` enforces: `MIN_R2 = 0.30`).
+- bias ≥ 1 L at 95 L (bench criterion, NOT IMPLEMENTED as a runtime gate), or
+- RMSE ≥ 2 L across 95 → 28.5 L (bench criterion, NOT IMPLEMENTED as a runtime gate), or
+- leak-trend R² < 0.3 (the only criterion with an implemented runtime gate: `ai/rul.py:MIN_R2` enforces `MIN_R2 = 0.30`).
 
-These are the exact gates already implemented (`ai/rul.py:40-42`,
-`ai/level.py:53`); the bench does not renegotiate them, it measures them.
+Only the R² criterion is already implemented as a runtime gate; bias and
+RMSE are bench analysis criteria without runtime enforcement. The bench
+does not renegotiate the R² gate, it measures all three criteria.
 
 ## 5. Top-5 hardening list (thesis build order)
 
 1. Run the drain-and-weigh bench (`docs/calibration.md` §1) and fill the §2
    template — replaces P9 proxy with measured `h(L)` + RMSE.
 2. Fit β (P7) and the viscosity curve (P8) from weighed runs; re-anchor
-   `sim/physics.py` priors with fitted values + confidence.
+   `sim/physics.py:oil_density_kg_m3` and `sim/physics.py:viscosity_mid_cst` priors with fitted values + confidence.
 3. Spec the low-range pressure cell (§3) in the thesis annex; budget Type-K
    tolerance into `sigma_L`.
 4. Close the GAP rows that affect the pilot safety case first (TLS budget,
@@ -250,7 +253,8 @@ turn synthetic simulator output into field evidence.
 ## 7b. Historical S2 truck scene: HD465 visual-proxy mesh
 
 This subsection records the previous S2 scene, not the current `/mine` truck.
-That historical view used `frontend/public/models/komatsu_hd-465-7eo.glb`
+That historical view used `docs/reference-models/komatsu_hd-465-7eo.glb`
+(historical runtime path frontend/public/models/komatsu_hd-465-7eo.glb, moved per `docs/models.md`)
 (≈20 MB, glTF 2.0, Sketchfab export by `drcrazzie`, embedded CC-BY-4.0 license
 string with source URL; reuse outside this repo remains NOT-CLEARED pending
 independent verification; see `docs/models.md`). The mesh is a Komatsu
@@ -259,8 +263,8 @@ It carried no measurement claim. Any reproduction of that historical view
 must retain its proxy disclosure and must not present the HD465 as a 930E.
 
 The current mine scene uses the procedural 930E model assembled by
-`frontend/src/twin/truck930e/build930E.ts`, integrated in
-`frontend/src/sim/truck/TruckScene.tsx:8-13`. Its parametric geometry is still
+`frontend/src/twin/truck930e/build930E.ts:build930E`, integrated in
+`frontend/src/sim/truck/TruckScene.tsx:TruckScene`. Its parametric geometry is still
 a visual reconstruction, not CAD-exact; manual-derived specification values
 remain separate from model geometry and are not field measurements.
 
