@@ -1,4 +1,11 @@
 export const ops = {
+  "bench.referenceTruck.heading": "Camión de referencia",
+  "bench.referenceTruck.button": "Ver camión de referencia (HD465-7EO, no es 930E)",
+  "bench.referenceTruck.loading": "Cargando camión de referencia…",
+  "bench.referenceTruck.error": "No se pudo cargar el modelo de referencia. Inténtalo de nuevo.",
+  "bench.referenceTruck.viewer": "Modelo 3D del Komatsu HD465-7EO",
+  "bench.referenceTruck.attribution": "Modelo de referencia · {author} · Licencia {license}",
+  "bench.referenceTruck.source": "Fuente del modelo (Sketchfab)",
   "nav.group.operation": "Operación",
   "nav.group.twin": "Gemelo 3D",
   "nav.group.alerts": "Alertas",

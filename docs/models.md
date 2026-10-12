@@ -1,5 +1,21 @@
 # 3D model provenance — HD465 visual proxy (S2-GLB)
 
+## 2026-10-12 — on-demand reference model
+
+The Komatsu HD465-7EO GLB is available again at
+`frontend/public/models/komatsu_hd-465-7eo.glb`, but only as an explicitly
+requested visual reference on `/wheel`. It is not a 930E model and is not
+loaded until the user selects the reference-truck button. This keeps the
+wheel scene, sensor values, labels, and provenance attached to the GDY106
+930E subject rather than implying that the two truck models are equivalent.
+
+The embedded model metadata names **drcrazzie**, declares **CC-BY-4.0**, and
+provides this source URL:
+<https://sketchfab.com/3d-models/komatsu-hd-465-7eo-2bf4dcd62e484f01bcb446af263bd65c>.
+The existing license caveat below remains in force: the metadata declaration
+is attribution, not independent confirmation of rights for reuse outside this
+repository.
+
 > **2026-10-09 — withdrawn from runtime (EN).** The HD465-7EO mesh was moved
 > from `frontend/public/models/` to `docs/reference-models/` and is no longer
 > shipped in the app bundle. Reason: credibility. The HD465 is a ~55 t
