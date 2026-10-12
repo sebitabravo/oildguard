@@ -34,7 +34,14 @@ docker compose up -d --build -V
 - Backend health: http://localhost:8000/health
 - Backend API docs: http://localhost:8000/docs
 - InfluxDB: http://localhost:8086 (user and org `oilguard`)
-- MQTT mock: `localhost:1883` (anonymous, local demo only)
+- MQTT mock: `localhost:1883` (anonymous, development-only plaintext listener)
+
+TLS clients connect to `localhost:8883` and must present a client certificate
+issued by the local development CA. Generate certificates with
+`scripts/gen-dev-certs.sh --output-dir mosquitto/certs <device-id> [device-id ...]`;
+the script also creates the backend client certificate. The plaintext 1883
+listener remains enabled for local development only and must not be used for
+production traffic.
 
 The `-V` option renews the frontend's anonymous `node_modules` volume when
 rebuilding, so it does not mask dependencies in the image.

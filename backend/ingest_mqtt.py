@@ -64,7 +64,14 @@ def create_mqtt_tls_context() -> ssl.SSLContext | None:
     ca_file = os.getenv("OILGUARD_MQTT_CA")
     if not ca_file:
         return None
-    return ssl.create_default_context(cafile=ca_file)
+    context = ssl.create_default_context(cafile=ca_file)
+    cert_file = os.getenv("OILGUARD_MQTT_CLIENT_CERT")
+    key_file = os.getenv("OILGUARD_MQTT_CLIENT_KEY")
+    if cert_file or key_file:
+        if not cert_file or not key_file:
+            raise ValueError("OILGUARD_MQTT_CLIENT_CERT and OILGUARD_MQTT_CLIENT_KEY must be set together")
+        context.load_cert_chain(certfile=cert_file, keyfile=key_file)
+    return context
 
 
 def configure_mqtt_tls(client: Any) -> None:

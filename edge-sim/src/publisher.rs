@@ -27,7 +27,17 @@ pub fn connect(url: &str, client_id: &str, packet_size: usize) -> Result<(AsyncC
         let ca_path = std::env::var("OILGUARD_MQTT_CA")
             .context("mqtts:// requires OILGUARD_MQTT_CA to trust the broker")?;
         let ca = std::fs::read(ca_path).context("failed to read OILGUARD_MQTT_CA")?;
-        options.set_transport(Transport::tls(ca, None, None));
+        let cert_path = std::env::var("OILGUARD_MQTT_CLIENT_CERT").ok();
+        let key_path = std::env::var("OILGUARD_MQTT_CLIENT_KEY").ok();
+        let client_auth = match (cert_path, key_path) {
+            (Some(cert), Some(key)) => Some((
+                std::fs::read(cert).context("failed to read OILGUARD_MQTT_CLIENT_CERT")?,
+                std::fs::read(key).context("failed to read OILGUARD_MQTT_CLIENT_KEY")?,
+            )),
+            (None, None) => None,
+            _ => anyhow::bail!("OILGUARD_MQTT_CLIENT_CERT and OILGUARD_MQTT_CLIENT_KEY must be set together"),
+        };
+        options.set_transport(Transport::tls(ca, client_auth, None));
     }
     Ok(AsyncClient::new(options, 256))
 }
