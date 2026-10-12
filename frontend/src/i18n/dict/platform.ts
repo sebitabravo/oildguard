@@ -6,6 +6,7 @@ export const platform = {
   "shell.menu": "Abrir navegación",
   "shell.dashboard": "Panel",
   "shell.comingSoon": "No está en esta compilación",
+  "scene.webglUnavailable": "La vista 3D interactiva requiere WebGL.",
   "styleguide.title": "Fundación de interfaz",
   "styleguide.subtitle": "Nordic Telemetry Precision · catálogo compartido",
   "landing.brand": "OilGuard Mining",

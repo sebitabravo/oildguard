@@ -3,6 +3,7 @@
 // estático sin WebGL, con movimiento reducido o si el chunk falla.
 import { sceneForBeat } from "./storyProgress";
 import type { BeatId } from "./beats";
+export { detectWebGL } from "../../ui/webgl";
 export type LandingSceneId = "assembly" | "sensors" | "cycle" | "oil";
 
 export const LANDING_SCENES: readonly LandingSceneId[] = ["assembly", "sensors", "cycle", "oil"];
@@ -117,21 +118,6 @@ export function createSceneHost(scene: LandingSceneId, options: SceneHostOptions
       disposed = true;
     },
   };
-}
-
-export function detectWebGL(): boolean {
-  // Guardia SSR: sin DOM no hay WebGL y el póster queda como portada.
-  if (typeof document === "undefined") return false;
-  try {
-    const canvas = document.createElement("canvas");
-    return Boolean(
-      canvas.getContext("webgl2") ??
-        canvas.getContext("webgl") ??
-        canvas.getContext("experimental-webgl"),
-    );
-  } catch {
-    return false;
-  }
 }
 
 export function detectReducedMotion(): boolean {

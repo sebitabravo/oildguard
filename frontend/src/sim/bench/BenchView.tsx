@@ -22,6 +22,7 @@ import { t, type DictKey } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import Drawer from "../../ui/Drawer";
 import HonestyBadge from "../../ui/HonestyBadge";
+import { detectWebGL } from "../../ui/webgl";
 
 // Vista Rueda GDY106: corte 3D en el visor; el detalle (lectura de aceite,
 // sensores, cadena, inspección pasos 1-11) vive en el panel lateral.
@@ -39,6 +40,7 @@ export const INSPECTION_STEPS: InspStep[] = Array.from({ length: 11 }, (_, index
 const GDY106_CHAIN_PARTS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 export default function BenchView() {
+  const [webglAvailable, setWebglAvailable] = useState(detectWebGL);
   const [initial] = useState(() => parseWheelUrl(window.location.search));
   const [selectedId, setSelectedId] = useState<string | null>(initial.sensorId);
   const [oilPct, setOilPct] = useState(Math.round((initial.oilLitres / CAPACITY_L) * 100));
@@ -46,6 +48,7 @@ export default function BenchView() {
   const [mode, setMode] = useState<BenchMode>(initial.mode);
   const [cutaway, setCutaway] = useState(initial.cutaway);
   const [exploded, setExploded] = useState(initial.exploded);
+  const onWebGLUnavailable = () => setWebglAvailable(false);
   const gearRatioDisplay = buildGearRatioDisplay();
 
   useEffect(() => {
@@ -114,29 +117,31 @@ export default function BenchView() {
           onInput={(e) => setViscosity(Number(e.currentTarget.value))}
         />
       </label>
-      <button
-        type="button"
-        className={`og-btn ${resting ? "og-btn--ok" : "og-btn--primary"}`}
-        onClick={() => setMode(resting ? "move" : "rest")}
-      >
-        {t(resting ? "bench.action.startMove" : "bench.action.stopForRest")}
-      </button>
-      <label className="og-check">
-        <input
-          type="checkbox"
-          checked={cutaway}
-          onChange={(e) => setCutaway(e.currentTarget.checked)}
-        />
-        {t("bench.action.cutaway")}
-      </label>
-      <label className="og-check">
-        <input
-          type="checkbox"
-          checked={exploded}
-          onChange={(e) => setExploded(e.currentTarget.checked)}
-        />
-        {t("bench.action.exploded")}
-      </label>
+      {webglAvailable && <>
+        <button
+          type="button"
+          className={`og-btn ${resting ? "og-btn--ok" : "og-btn--primary"}`}
+          onClick={() => setMode(resting ? "move" : "rest")}
+        >
+          {t(resting ? "bench.action.startMove" : "bench.action.stopForRest")}
+        </button>
+        <label className="og-check">
+          <input
+            type="checkbox"
+            checked={cutaway}
+            onChange={(e) => setCutaway(e.currentTarget.checked)}
+          />
+          {t("bench.action.cutaway")}
+        </label>
+        <label className="og-check">
+          <input
+            type="checkbox"
+            checked={exploded}
+            onChange={(e) => setExploded(e.currentTarget.checked)}
+          />
+          {t("bench.action.exploded")}
+        </label>
+      </>}
     </div>
   );
 
@@ -245,6 +250,8 @@ export default function BenchView() {
       <div className="og-viewport og-viewport--wheel">
         <div className="og-viewport__scene">
           <BenchScene
+            webglAvailable={webglAvailable}
+            onWebGLUnavailable={onWebGLUnavailable}
             selectedId={selectedId}
             onSelect={setSelectedId}
             oilLevel={frac}

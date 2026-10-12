@@ -19,6 +19,8 @@ import { buildMineHudStatus, buildMineHudTitle, buildMineSceneLabelText, type Mi
 import { buildMineSceneAccessibilityCopy } from "../sceneAccessibility";
 import { useThrottledSceneAccessibility } from "../useThrottledSceneAccessibility";
 import { resolveMotionAlpha } from "../../twin/render/motionPreference";
+import cyclePoster from "../../platform/landing/posters/cycle.svg";
+import { createWebGLScene, detectWebGL, WebGLFallback } from "../../ui/webgl";
 
 interface TruckSceneProps {
   paused: boolean;
@@ -63,6 +65,8 @@ function selectedCam(raw: string | null): CamPreset {
 }
 
 export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: TruckSceneProps) {
+  const [webglAvailable] = useState(detectWebGL);
+  const [rendererUnavailable, setRendererUnavailable] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const debugRef = useRef<HTMLDivElement>(null);
@@ -85,6 +89,7 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
     { truckId: hud.selected, state: hud.state, cycle: hud.cycle },
   );
   const publishedAccessibilityCopy = useThrottledSceneAccessibility(accessibilityCopy);
+  const showFallback = !webglAvailable || rendererUnavailable;
 
   useEffect(() => {
     if (stepTick > 0) pendingStepRef.current += 1;
@@ -94,10 +99,7 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
     const host = hostRef.current;
     if (!host) return;
 
-    const fleet = getFleetStore();
-    fleet.setPaused(pausedRef.current);
-    const world = getPitWorld(url.seed);
-    const stage = createStage(host, {
+    const stage = createWebGLScene(webglAvailable, () => createStage(host, {
       preset: "outdoor",
       cameraPosition: [80, 305, 515],
       cameraTarget: [80, -35, 15],
@@ -108,7 +110,12 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
       minDistance: 12,
       maxDistance: 1600,
       maxPolarAngle: Math.PI * 0.49,
-    });
+    }), () => setRendererUnavailable(true));
+    if (!stage) return;
+
+    const fleet = getFleetStore();
+    fleet.setPaused(pausedRef.current);
+    const world = getPitWorld(url.seed);
     const { scene, camera, controls, sun, renderer } = stage;
     renderer.domElement.setAttribute("role", "img");
     renderer.domElement.setAttribute("aria-label", accessibilityCopy.label);
@@ -336,11 +343,13 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
 
   return (
     <div className="og-scene og-scene--mine">
-      <div ref={hostRef} className="og-scene__host" />
-      <p id="mine-scene-description" className="og-visually-hidden" aria-live="polite" aria-atomic="true">
+      {showFallback
+        ? <WebGLFallback poster={cyclePoster} caption={t("scene.webglUnavailable")} />
+        : <div ref={hostRef} className="og-scene__host" />}
+      {!showFallback && <p id="mine-scene-description" className="og-visually-hidden" aria-live="polite" aria-atomic="true">
         {publishedAccessibilityCopy.caption}
-      </p>
-      <div className="og-overlay">
+      </p>}
+      {!showFallback && <div className="og-overlay">
         <div className="og-hud og-hud--tl" style={{ width: 390, ["--tone" as string]: css }}>
           <div className="og-hud__title">
             <span className="og-dot" />
@@ -367,7 +376,7 @@ export default function TruckScene({ paused, stepTick, onPhase, dock, badge }: T
           {url.debug && <div ref={debugRef} className="og-hud og-hud--caption og-num" />}
         </div>
         {dock && <div className="og-dock og-dock--right">{dock}</div>}
-      </div>
+      </div>}
     </div>
   );
 }

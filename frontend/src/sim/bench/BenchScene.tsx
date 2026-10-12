@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import * as THREE from "three";
 import { BENCH_SENSORS } from "./sensors";
@@ -12,6 +12,8 @@ import { CAPACITY_L, headFromVolume, stageSpeeds } from "../../twin/physics";
 import { buildWheelSceneAccessibilityCopy } from "../sceneAccessibility";
 import { useThrottledSceneAccessibility } from "../useThrottledSceneAccessibility";
 import { resolveMotionAlpha } from "../../twin/render/motionPreference";
+import assemblyPoster from "../../platform/landing/posters/assembly.svg";
+import { createWebGLScene, WebGLFallback } from "../../ui/webgl";
 
 // Escena del banco GDY106 (Sim A): bastidor, carcasa con corte e internos.
 // El render (tone mapping, IBL, sombras) viene de twin/render/stage.ts.
@@ -28,6 +30,8 @@ import { resolveMotionAlpha } from "../../twin/render/motionPreference";
 export type BenchMode = "move" | "rest";
 
 interface BenchSceneProps {
+  webglAvailable?: boolean;
+  onWebGLUnavailable?: () => void;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   /** Driven oil fill, 0..1 (slider in BenchView; fused value in S6). */
@@ -83,6 +87,8 @@ function oilPoolGeometry(volumeL: number): THREE.BufferGeometry {
 const HOUSING_Y = 2.09; // motor axis height above ground
 
 export default function BenchScene({
+  webglAvailable = true,
+  onWebGLUnavailable = () => {},
   selectedId,
   onSelect,
   oilLevel,
@@ -92,6 +98,7 @@ export default function BenchScene({
   exploded,
   badge,
 }: BenchSceneProps) {
+  const [rendererUnavailable, setRendererUnavailable] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   // Refs mirror props for use inside the three.js effect (no re-subscribe).
   const selectedRef = useRef<string | null>(selectedId);
@@ -110,12 +117,13 @@ export default function BenchScene({
   explodedRef.current = exploded;
   const accessibilityCopy = buildWheelSceneAccessibilityCopy({ oilLevel, mode });
   const publishedAccessibilityCopy = useThrottledSceneAccessibility(accessibilityCopy);
+  const showFallback = !webglAvailable || rendererUnavailable;
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
 
-    const stage = createStage(host, {
+    const stage = createWebGLScene(webglAvailable, () => createStage(host, {
       preset: "studio",
       cameraPosition: [4.4, 3.4, 5.4],
       cameraTarget: [0, 1.6, 0],
@@ -123,7 +131,11 @@ export default function BenchScene({
       minDistance: 1.5,
       maxDistance: 16,
       maxPolarAngle: Math.PI * 0.495,
+    }), () => {
+      setRendererUnavailable(true);
+      onWebGLUnavailable();
     });
+    if (!stage) return;
     const { scene, camera, renderer, controls } = stage;
     renderer.domElement.setAttribute("role", "img");
     renderer.domElement.setAttribute("aria-label", accessibilityCopy.label);
@@ -648,11 +660,13 @@ export default function BenchScene({
 
   return (
     <div className="og-scene og-scene--wheel">
-      <div ref={hostRef} className="og-scene__host" />
-      <p id="wheel-scene-description" className="og-visually-hidden" aria-live="polite" aria-atomic="true">
+      {showFallback
+        ? <WebGLFallback poster={assemblyPoster} caption={t("scene.webglUnavailable")} />
+        : <div ref={hostRef} className="og-scene__host" />}
+      {!showFallback && <p id="wheel-scene-description" className="og-visually-hidden" aria-live="polite" aria-atomic="true">
         {publishedAccessibilityCopy.caption}
-      </p>
-      <div className="og-overlay">
+      </p>}
+      {!showFallback && <div className="og-overlay">
         <div
           className="og-hud og-hud--tl"
           style={{ ["--tone" as string]: oilCss }}
@@ -678,7 +692,7 @@ export default function BenchScene({
           </div>
           {badge}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
