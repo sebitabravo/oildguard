@@ -223,6 +223,7 @@ export default function FleetPage() {
           <Button type="button" variant="ghost" onClick={downloadCsv}>{t("fleet.export")}</Button>
         </FilterBar>
 
+        <p className="og-fleet-table-cue">{t("landing.tableScrollCue")}</p>
         <div className="og-fleet-table-wrap og-fleet-table-scroll">
           <table className="og-fleet-table">
             <caption className="og-visually-hidden">{t("fleet.tableCaption")}</caption>

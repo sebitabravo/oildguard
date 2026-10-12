@@ -172,6 +172,7 @@ export default function AlertsInboxPage() {
         )}
 
         <section className="og-alerts-main">
+            <p className="og-alerts-table-cue">{t("landing.tableScrollCue")}</p>
             <div className="og-alerts-table-wrap">
               <table className="og-alerts-table">
                 <caption className="og-visually-hidden">{t("alerts.table.caption")}</caption>

@@ -930,6 +930,7 @@ button.og-card { width: 100%; text-align: left; cursor: pointer; color: var(--og
   .og-fleet-live__metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 480px) {
+  .og-top__crumb { min-width: 0; max-width: 100%; overflow: visible; white-space: normal; flex-wrap: wrap; line-height: 1.15; }
   .og-fleet-live { padding: 12px; }
   .og-fleet-live__overview, .og-fleet-live__metrics { grid-template-columns: 1fr; }
   .og-fleet-live__metric > div { justify-content: flex-start; }

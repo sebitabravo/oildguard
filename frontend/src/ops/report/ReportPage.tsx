@@ -26,6 +26,7 @@ export default function ReportPage() {
 
   return (
     <main className="og-page og-report-page">
+      <style media="(max-width: 700px)">{`.og-report-page .og-sync { height: 140px !important; }`}</style>
       <div className="og-page__inner">
         <PageHeader
           eyebrow={t("report.eyebrow")}

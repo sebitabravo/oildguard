@@ -11,6 +11,13 @@ describe("fleet responsive layout", () => {
     expect(html.includes('class="og-fleet-table-wrap og-fleet-table-scroll"')).toBe(true);
   });
 
+  test("renders a scroll cue before the wide fleet table", () => {
+    const html = renderToString(h(FleetPage, {}));
+
+    expect(html.includes('class="og-fleet-table-cue"')).toBe(true);
+    expect(html.includes("Desliza para ver más")).toBe(true);
+  });
+
   test("keeps level value and state separate from trend sparkline containers", () => {
     const html = renderToString(h(FleetPage, {}));
     const levelCell = html.match(/<td class="og-fleet-level-cell">([\s\S]*?)<\/td>/)?.[1] ?? "";

@@ -20,6 +20,7 @@
 .og-alerts-wheel-filter button { min-height: 28px; padding: 0 10px; color: var(--og-text-secondary); background: transparent; border: 1px solid var(--og-border-strong); border-radius: var(--og-radius-sm); cursor: pointer; font: 11px var(--og-mono); }
 
 .og-alerts-main { min-width: 0; margin-top: 18px; }
+.og-alerts-table-cue { display: none; }
 .og-alerts-table-wrap { overflow-x: auto; background: var(--og-surface); border: 1px solid var(--og-border-subtle); }
 .og-alerts-table { width: 100%; min-width: 1120px; border-collapse: collapse; font-size: 12px; }
 .og-alerts-table th, .og-alerts-table td { padding: 12px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--og-border-subtle); }
@@ -110,9 +111,14 @@
   .og-alerts-page .og-filterbar { grid-template-columns: 1fr; }
   .og-alerts-filter-fields { grid-template-columns: 1fr; }
   .og-alerts-filter-fields .og-form-field:last-child { grid-column: auto; }
+  .og-alerts-table-cue { display: block; margin: 0 0 8px; color: var(--og-text-muted); font: 11px var(--og-mono); }
   .og-alerts-page .og-form-field input, .og-alerts-page .og-form-field select, .og-alerts-page .og-filterbar .og-button,
   .og-alerts-wheel-filter button, .og-alerts-ranking button { min-height: 44px; }
   .og-alerts-page .og-form-field input[type="search"] { min-width: 0; }
+}
+
+@media (max-width: 480px) {
+  .og-alerts-tiles { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* --- detalle --- */
