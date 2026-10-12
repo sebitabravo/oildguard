@@ -5,8 +5,13 @@ Fusion verdict on available evidence: **PARTIAL** — synthetic-proxy logic prov
 Anomaly-only + precise rest readings viable NOW. Do NOT read this doc as proven field accuracy.
 
 Physics anchors (non-negotiable, 930E/GDY106 32.62:1 scope ONLY — 980E-5
-GDY108-C 35.02:1 stays future work without validation): 95 L SAE 85W-140
-per GDY106 wheel motor; the pipeline pressure `rho(T)·g·h(V)` (≈ 2.6 kPa
+GDY108-C 35.02:1 stays future work without validation): the model uses 95 L
+per wheel motor as an ASSUMPTION pending owner decision. The 930E-3 Operation
+and Maintenance Manual lists 25 US gal (95 L) in its specification table
+(physical p. 115), but its service-capacity table gives 20 US gal (76 L) per
+side (p. 85). SAE 85W-140 is UNVERIFIED: the supplied Komatsu manuals do not
+specify this grade; GEK-91680A specifies GE D50E27E / ISO VG 680 for GDY-85/106
+(pp. 24–25). The pipeline pressure `rho(T)·g·h(V)` (≈ 2.6 kPa
 at 95 L, ASSUMED gear-case geometry in `sim/geometry.py`) is SYNTHETIC-PROXY
 until this bench measures the true h(L) (the former 28 kPa gain implied an
 absurd ~3.2 m head; see `docs/thesis-annex.md` §2); warning < 50% (47.5 L), critical < 30%
@@ -17,8 +22,10 @@ absurd ~3.2 m head; see `docs/thesis-annex.md` §2); warning < 50% (47.5 L), cri
 Bench: GDY106 wheel-motor housing (or equivalent volume rig) on level stand,
 no-drill mounts only — pressure at drain plug via T-adapter, temp
 thermocouple K at magnetic plug, triaxial MEMS on sun-pinion cover (epoxy),
-Hall current clamp. Environment note: 120 °C + EMI shielding required for
-field; bench at operating temp ≈ 75 °C (T6 reference).
+Hall current clamp. Gearcase temperature limit: 120 °C + EMI shielding is a
+design requirement, not a sourced gearcase limit. The 930E Operation and
+Maintenance Manual's hydraulic-reservoir warning (p. 76) does not establish a
+wheel-gearcase temperature limit. Bench at operating temp ≈ 75 °C (T6 reference).
 
 Steps:
 

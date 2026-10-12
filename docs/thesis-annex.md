@@ -18,7 +18,7 @@ value, an explicit assumption, or an empty bench slot.
 
 | # | Parameter | Value | Status | Source |
 |---|-----------|-------|--------|--------|
-| P1 | Oil capacity per wheel motor | 95 L SAE 85W-140 | VERIFIED | Komatsu 930E shop-manual set (vendor PDF, held by thesis author; paywalled — see §6). Code anchor: `sim/generate.py:CAPACITY_L`, `ai/level.py:CAPACITY_L`, `sim/physics.py:CAPACITY_L` |
+| P1 | Oil capacity per wheel motor; oil grade | 95 L model value; SAE 85W-140 | ASSUMPTION (capacity pending owner decision); UNVERIFIED (grade) | The 930E-3 Operation and Maintenance Manual lists 25 US gal (95 L) in its specification table (physical p. 115), but 20 US gal (76 L) per side in its service-capacity table (p. 85). Supplied Komatsu manuals do not specify SAE 85W-140; GEK-91680A specifies GE D50E27E / ISO VG 680 for GDY-85/106 (pp. 24–25). Model anchor: `sim/generate.py:CAPACITY_L`, `ai/level.py:CAPACITY_L`, `sim/physics.py:CAPACITY_L` |
 | P2 | Final drive | GDY106, 32.62:1 | VERIFIED | Komatsu 930E-5 spec sheet: "Motorized wheels: GDY106-B … Ratio: 32.62:1" — https://www.komatsu.com/en-us/products/equipment/trucks/electric-drive-mining-trucks/930e-5 and brochure PDF https://www.komatsu.com/content/dam/komatsu/sales-and-marketing-documents/brochures/trucks/930e/930e-5-aess921-01-ev1.pdf |
 | P3 | Rotor → wheel arithmetic | 3000 rpm / 32.62 ≈ 91.97 ≈ 92 rpm | VERIFIED (arithmetic) | `sim/physics.py:ROTOR_MAX_RPM`, `sim/physics.py:GEAR_RATIO`, `sim/physics.py:WHEEL_RPM_AT_MAX` |
 | P4 | 930E max travel speed | 64.5 km/h (40 mph) | VERIFIED | Same Komatsu 930E-5 spec sources as P2 |

@@ -45,7 +45,10 @@ on synthetic-proxy, field accuracy pending bench. Pivot path live, not silent.
 
 No-drill mounts: pressure T-adapter at drain plug; thermocouple K at magnetic
 plug; triaxial MEMS epoxied on sun-pinion cover; Hall current clamp.
-Environment: 120 °C rating + EMI shielding (documented, not built). Network:
+Gearcase temperature limit: 120 °C + EMI shielding is a design requirement,
+not a sourced gearcase limit. The 930E Operation and Maintenance Manual's
+hydraulic-reservoir warning (p. 76) does not establish a wheel-gearcase
+temperature limit. Network:
 MQTT/TLS prototype now, LoRaWAN future; store-and-forward edge (ESP32-S3) →
 gateway (Pi + InfluxDB) → FastAPI → dashboard already mocked
 (`sim/SCHEMA.md`, `backend/API.md`).
