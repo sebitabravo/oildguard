@@ -177,56 +177,83 @@ def score_rows(
         "z_threshold": z_threshold,
         "iforest_requested": use_iforest,
         "iforest_status": "not-requested",
+        "baselines": {},
         "flags": [],
     }
     if not rest_samples:
         summary["note"] = "no rest windows matched; zero flags"
         return summary
-    base = fit_baseline(rest_samples)
-    summary["baseline"] = base
-    mu, sigma, beta, t_ref = base["mu"], base["sigma"], base["beta"], base["t_ref"]
+    samples_by_key: dict[tuple[str, str], list[dict]] = {}
+    for sample in rest_samples:
+        row = sample["row"]
+        key = (str(row.get("device_id", "")), str(row.get("fsm_state", "")))
+        samples_by_key.setdefault(key, []).append(sample)
 
-    baseline_ids = {id(s) for s in rest_samples if False}  # placeholder, unused
-    # Baseline training membership: samples used in fit (first window or first 30).
-    # Recompute membership by object identity of the same selection rule.
-    _ = baseline_ids
+    train_idx: set[int] = set()
+    key_fits = {}
+    for key, key_samples in samples_by_key.items():
+        key_name = "|".join(key)
+        base = fit_baseline(key_samples)
+        if base["n"] < MIN_BASELINE_N:
+            summary["baselines"][key_name] = {
+                "status": "sin línea base suficiente",
+                "n": base["n"],
+                "minimum": MIN_BASELINE_N,
+            }
+            continue
 
-    clf, if_status = (None, "not-requested")
-    if use_iforest:
-        feats = []
-        for s in rest_samples:
-            r = s["row"]
-            p, t = _f(r.get("pressure_kpa")), _f(r.get("temperature_c"))
-            v = _f(r.get("vib_rms_g"))
-            if math.isnan(p) or math.isnan(t) or math.isnan(v):
-                continue
-            feats.append([residual(p, t, beta, t_ref), v, t])
-        # Fit on the same baseline prefix used by fit_baseline.
-        n_fit = base["n"]
-        clf, if_status = try_iforest(feats[:n_fit], contamination)
-    summary["iforest_status"] = if_status
-    if use_iforest and clf is None:
-        print(
-            f"WARN iforest fallback: {if_status}; scoring with z-score baseline only",
-            file=sys.stderr,
-        )
+        base["status"] = "ok"
+        summary["baselines"][key_name] = base
+        key_fits[key] = (key_samples, base)
+    if len(key_fits) == 1:
+        summary["baseline"] = next(iter(key_fits.values()))[1]
 
-    # Samples that trained the baseline are reference, not scored.
-    baseline_key = base["source"]
-    if baseline_key.startswith("first-rest-window"):
-        train_wid = str(base["window_id"])
-        train_idx = {
-            s["idx"] for s in rest_samples if str(s["window"].get("window_id")) == train_wid
-        }
-    else:
-        ordered = sorted(rest_samples, key=lambda s: _f(s["row"].get("t_s")))
-        train_idx = {s["idx"] for s in ordered[:BASELINE_FALLBACK_N]}
+    clf_by_key = {}
+    iforest_statuses = []
+    for key, (key_samples, base) in key_fits.items():
+        key_name = "|".join(key)
+        if base["source"].startswith("first-rest-window"):
+            train_wid = str(base["window_id"])
+            key_train_idx = {
+                s["idx"] for s in key_samples
+                if str(s["window"].get("window_id")) == train_wid
+            }
+        else:
+            ordered = sorted(key_samples, key=lambda s: _f(s["row"].get("t_s")))
+            key_train_idx = {s["idx"] for s in ordered[:BASELINE_FALLBACK_N]}
+        train_idx.update(key_train_idx)
+
+        clf, if_status = (None, "not-requested")
+        if use_iforest:
+            feats = []
+            for sample in key_samples:
+                row = sample["row"]
+                p, t = _f(row.get("pressure_kpa")), _f(row.get("temperature_c"))
+                v = _f(row.get("vib_rms_g"))
+                if math.isnan(p) or math.isnan(t) or math.isnan(v):
+                    continue
+                feats.append([residual(p, t, base["beta"], base["t_ref"]), v, t])
+            clf, if_status = try_iforest(feats[:base["n"]], contamination)
+            if clf is None:
+                print(
+                    f"WARN iforest fallback: {if_status} for {key_name}; scoring with z-score baseline only",
+                    file=sys.stderr,
+                )
+        clf_by_key[key] = (clf, if_status)
+        iforest_statuses.append(if_status)
+    if use_iforest and len(set(iforest_statuses)) > 1:
+        summary["iforest_status"] = "mixed"
+    elif iforest_statuses:
+        summary["iforest_status"] = iforest_statuses[0]
 
     flags = []
     for s in rest_samples:
-        if s["idx"] in train_idx:
-            continue
         r = s["row"]
+        key = (str(r.get("device_id", "")), str(r.get("fsm_state", "")))
+        if key not in key_fits or s["idx"] in train_idx:
+            continue
+        base = key_fits[key][1]
+        mu, sigma, beta, t_ref = base["mu"], base["sigma"], base["beta"], base["t_ref"]
         p, t = _f(r.get("pressure_kpa")), _f(r.get("temperature_c"))
         v, k = _f(r.get("vib_rms_g")), _f(r.get("vib_kurtosis"))
         if math.isnan(p) or math.isnan(t):
@@ -236,6 +263,7 @@ def score_rows(
         z_flag = abs(z) > z_threshold
         if_flag = False
         if_score = None
+        clf, if_status = clf_by_key[key]
         if clf is not None and not math.isnan(v):
             feat = [[res, v, t]]
             pred = clf.predict(feat)[0]
@@ -255,6 +283,7 @@ def score_rows(
             "t_s": _f(r.get("t_s")),
             "seq": int(float(r.get("seq", -1))),
             "device_id": r.get("device_id", ""),
+            "fsm_state": r.get("fsm_state", ""),
             "scenario": r.get("label", ""),
             "window_id": int(float(s["window"].get("window_id", -1))),
             "zone": s["window"].get("zone", ""),
@@ -262,7 +291,7 @@ def score_rows(
             "threshold": z_threshold,
             "method": method,
             "if_score": if_score,
-            "iforest_status": summary["iforest_status"],
+            "iforest_status": if_status,
             "inputs": {
                 "pressure_kpa": p,
                 "temperature_c": t,
@@ -281,7 +310,7 @@ def score_rows(
         })
     flags.sort(key=lambda f: f["seq"])
     summary["flags"] = flags
-    summary["n_scored"] = len(rest_samples) - len(train_idx)
+    summary["n_scored"] = sum(len(samples) for samples, _ in key_fits.values()) - len(train_idx)
     summary["n_flags"] = len(flags)
     summary["n_train"] = len(train_idx)
     return summary
