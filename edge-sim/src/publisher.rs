@@ -1,6 +1,6 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use bytes::Bytes;
-use rumqttc::{AsyncClient, EventLoop, MqttOptions, QoS};
+use rumqttc::{AsyncClient, EventLoop, MqttOptions, QoS, Transport};
 use serde::Serialize;
 use std::{sync::Arc, time::Duration};
 
@@ -12,11 +12,23 @@ struct Batch<'a, T> {
 }
 
 pub fn connect(url: &str, client_id: &str, packet_size: usize) -> Result<(AsyncClient, EventLoop)> {
-    let parsed = url.strip_prefix("mqtt://").unwrap_or(url);
-    let (host, port) = parsed.rsplit_once(':').unwrap_or((parsed, "1883"));
+    let (secure, parsed, default_port) = if let Some(parsed) = url.strip_prefix("mqtts://") {
+        (true, parsed, "8883")
+    } else if let Some(parsed) = url.strip_prefix("mqtt://") {
+        (false, parsed, "1883")
+    } else {
+        (false, url, "1883")
+    };
+    let (host, port) = parsed.rsplit_once(':').unwrap_or((parsed, default_port));
     let mut options = MqttOptions::new(client_id, host, port.parse()?);
     options.set_keep_alive(Duration::from_secs(30));
     options.set_max_packet_size(packet_size, packet_size);
+    if secure {
+        let ca_path = std::env::var("OILGUARD_MQTT_CA")
+            .context("mqtts:// requires OILGUARD_MQTT_CA to trust the broker")?;
+        let ca = std::fs::read(ca_path).context("failed to read OILGUARD_MQTT_CA")?;
+        options.set_transport(Transport::tls(ca, None, None));
+    }
     Ok(AsyncClient::new(options, 256))
 }
 
