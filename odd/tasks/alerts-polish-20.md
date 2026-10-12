@@ -23,4 +23,4 @@
 - Progress: implementation complete; source split stays grouped via a scoped nowrap modifier.
 - RDD: `1c769cd` assessment corrected after inventory resolution: medium, not due (`under_budget`), 11 paths/254 lines.
 - Evidence: `/tmp/og-goal/evidence/ALERTS-POLISH-20/{red.txt,test-src.txt,build.txt,honesty.txt,alerts-chromium-1024.png,alerts-chromium-390.png}`.
-- Next: assess the implementation commit against `0c88f2c`; Engram mirror remains pending (no session ID).
+- Next: none; implementation assessment was medium, not due (`under_budget`), 15 paths/291 lines from `0c88f2c`; Engram mirror remains pending (no session ID).
