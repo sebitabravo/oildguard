@@ -68,6 +68,7 @@ import {
   resolveWheel,
   settlingTauSeconds,
   wheelLinks,
+  type LevelValidity,
 } from "../ops/wheel/logic";
 
 type Source = "loading" | "live" | "demo";
@@ -75,6 +76,20 @@ type BackendNote =
   | { kind: "live"; rows: number; influx: string; influxMessage?: BackendMessage }
   | { kind: "error" }
   | null;
+
+export function DashboardLevelSourceBadge({ live, source, validity }: { live: boolean; source: Source; validity: LevelValidity }) {
+  if (live && (validity === "stale" || validity === "invalid")) {
+    return <span className={`og-chip og-chip--${validity}`}>{t(validity === "stale" ? "ui.stale" : "ui.invalid")}</span>;
+  }
+
+  return (
+    <span className={`og-badge og-badge--source og-badge--source-${source}`}>
+      {live
+        ? t(source === "loading" ? "dash.source.badge.loading" : source === "live" ? "dash.source.badge.live" : "dash.source.badge.demo")
+        : t("wheel.source.demoWheel")}
+    </span>
+  );
+}
 
 export function DashboardWindowsReadout({ windowCount, storeRows }: { windowCount: number; storeRows: number }) {
   const rowToken = "__session_rows__";
@@ -422,13 +437,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   const votes = (["pressure_drop", "level_trend", "vib_impact"] as const)
     .filter((name) => channelStates[name] === "fired").length;
 
-  const sourceBadge = (
-    <span className={`og-badge og-badge--source og-badge--source-${source}`}>
-      {live
-        ? t(source === "loading" ? "dash.source.badge.loading" : source === "live" ? "dash.source.badge.live" : "dash.source.badge.demo")
-        : t("wheel.source.demoWheel")}
-    </span>
-  );
+  const sourceBadge = <DashboardLevelSourceBadge live={live} source={source} validity={validity} />;
   const links = wheelLinks(wheel.id);
   const rawFromBackend = liveSeries && rawRows.length > 0;
   const rawText = rawTelemetryText(

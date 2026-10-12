@@ -3,7 +3,8 @@ import { h } from "preact";
 import renderToString from "preact-render-to-string";
 import { isBackendOutage } from "./analyzerAvailability";
 import { isReadingStale, resolveReadingStale } from "./readingFreshness";
-import Dashboard, { BackendOutageBanner, DashboardStatusNotices } from "./Dashboard";
+import Dashboard, { BackendOutageBanner, DashboardLevelSourceBadge, DashboardStatusNotices } from "./Dashboard";
+import { TelemetryRow } from "../ops/wheel/WheelPanels";
 import { t } from "../i18n";
 
 // Representa la caída total del backend en la rueda en vivo: ninguna
@@ -138,6 +139,42 @@ describe("dashboard stale production seam (timestamp in, notice out)", () => {
     expect(html.includes(t("dash.backend.outage.title"))).toBe(true);
     expect(html.includes(t("dash.reading.stale.title"))).toBe(false);
     expect(html.includes(t("wheel.banner.none"))).toBe(false);
+  });
+});
+
+describe("dashboard level source badge validity", () => {
+  const renderLevelCard = (validity: "stale" | "invalid") => renderToString(h("section", {},
+    h(DashboardLevelSourceBadge, { live: true, source: "live", validity }),
+    h(TelemetryRow, {
+      level: 91.2,
+      sigma: 0.46,
+      confidence: 0.908,
+      validity,
+      levelSource: "LIVE",
+      sigmaSource: "LIVE",
+      confidenceSource: "LIVE",
+      pressureKpa: 2.5,
+      temperatureC: 60,
+      vibrationG: 0.3,
+      tauS: 0.75,
+      pressureLive: true,
+      temperatureLive: true,
+      vibrationLive: true,
+    }),
+  ));
+
+  test("a stale live reading keeps the stale label without showing EN VIVO", () => {
+    const html = renderLevelCard("stale");
+
+    expect(/og-badge--source-live[^>]*>EN VIVO/.test(html)).toBe(false);
+    expect(html.includes(t("ui.stale"))).toBe(true);
+  });
+
+  test("an invalid live reading keeps the invalid label without showing EN VIVO", () => {
+    const html = renderLevelCard("invalid");
+
+    expect(/og-badge--source-live[^>]*>EN VIVO/.test(html)).toBe(false);
+    expect(html.includes(t("ui.invalid"))).toBe(true);
   });
 });
 
