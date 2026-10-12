@@ -27,11 +27,11 @@ The owner delegated all decisions for this batch. Each decision below has a reas
 
 ## Final status (checks on the integrated tree)
 
-- `bun test src`: 727 tests, 0 failing.
-- `pytest -q`: 365 passed.
+- `bun test src`: 732 tests, 0 failing.
+- `pytest -q`: 372 passed.
 - `astro check`: 0 errors, 0 warnings.
-- `astro build`: 46 pages built.
-- Batch commits, oldest first: `649abeb`, `bfba506`, `71eb6a1`, `cacdff0`, `09179a8`, `f93c244`, `8aef099`, `da856dd`, `76c4d06`, `d150cb2`, `edfef0c`, `a6ad249`, `9616792`, `91c3970`, `5e75c11`, `f40a937`, `2d85147`, `9e40b07`.
+- `astro build`: exit 0.
+- Batch commits, oldest first: `649abeb`, `bfba506`, `71eb6a1`, `cacdff0`, `09179a8`, `f93c244`, `8aef099`, `da856dd`, `76c4d06`, `d150cb2`, `edfef0c`, `a6ad249`, `9616792`, `91c3970`, `5e75c11`, `f40a937`, `2d85147`, `9e40b07`, `fda0c56`, `5957128`, `a426350`, `65ee139`, `bc4f01a`, `03003df`, `856fb46`.
 
 ## Known gaps left open
 
