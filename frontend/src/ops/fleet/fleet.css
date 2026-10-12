@@ -44,7 +44,7 @@
 .og-fleet-level__sparkline { width: 90px; }
 .og-fleet-col-trend { width: 148px; }.og-fleet-table td:nth-child(3) { width: 148px; }.og-fleet-level__sparkline { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; width: 128px; }.og-fleet-level__sparkline .og-sparkline { flex: 0 0 90px; }
 .og-fleet-table .og-sparkline { display: block; width: 90px; height: 34px; overflow: hidden; }
-.og-fleet-alert-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.og-fleet-table td:nth-child(7), .og-fleet-alert-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
 .og-fleet-last { display: grid; gap: 3px; white-space: nowrap; }
 .og-fleet-row--stale, .og-fleet-row--link-down, .og-fleet-row--out-of-service { color: var(--og-text-muted); }
 .og-fleet-row--N4 { background: rgba(255,77,66,.06); }
