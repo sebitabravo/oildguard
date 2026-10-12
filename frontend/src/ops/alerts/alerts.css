@@ -163,8 +163,8 @@
 .og-alerts-result--crossed { color: var(--og-orange); }
 .og-alerts-result--within { color: var(--og-green); }
 .og-alerts-result--missing { color: var(--og-text-muted); }
-.og-alerts-veto { margin: 14px 0 0; padding: 10px 12px; color: var(--og-text-secondary); font-size: 12px; line-height: 1.5; border-left: 3px solid var(--og-border-strong); background: var(--og-panel-inset); }
-.og-alerts-veto--fired { border-left-color: var(--og-red); }
+.og-alerts-veto { margin: 14px 0 0; padding: 10px 12px; color: var(--og-text-secondary); font-size: 12px; line-height: 1.5; border: 1px solid var(--og-border-strong); background: var(--og-panel-inset); }
+.og-alerts-veto--fired { border-color: var(--og-red); }
 .og-alerts-veto b { color: var(--og-text-primary); }
 .og-alerts-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .og-alerts-charts article { padding: 14px 16px 12px; background: var(--og-panel-inset); border: 1px solid var(--og-border-subtle); }
