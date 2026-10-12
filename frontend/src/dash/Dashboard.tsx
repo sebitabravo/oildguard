@@ -95,6 +95,22 @@ export function shouldShowLevelReading(levelSource: "LIVE" | "DEMO", storeRows: 
   return levelSource !== "LIVE" || (storeRows > 0 && sourceMessageCode !== "source_no_rows");
 }
 
+export function selectDashboardChartSeries({ demoActive, liveRows, livePoints, demoPoints }: {
+  demoActive: boolean;
+  liveRows: number;
+  livePoints: ChartPoint[];
+  demoPoints: ChartPoint[];
+}): { points: ChartPoint[]; signalSource: "LIVE" | "DEMO" } {
+  if (demoActive) return { points: demoPoints, signalSource: "DEMO" };
+  if (liveRows > 0 && livePoints.length >= 3) return { points: livePoints, signalSource: "LIVE" };
+  return { points: [], signalSource: "DEMO" };
+}
+
+export function dashboardLevelChartTitle(demoActive: boolean): string {
+  const title = t("dash.series.levelHistory");
+  return demoActive ? `${title} · ${t("dash.source.badge.demo")}` : title;
+}
+
 function dashboardReadingSourceBadge(validity: LevelValidity) {
   return validity === "stale" || validity === "invalid"
     ? <span className={`og-chip og-chip--${validity}`}>{t(validity === "stale" ? "ui.stale" : "ui.invalid")}</span>
@@ -364,19 +380,21 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   const recal = isRecalState(fsm.state);
   const trace = useMemo(() => demoWheelTrace(wheel), [wheel]);
 
-  // Serie mostrada: historia en vivo (/level sondeado), la caminata demo o la traza
-  // DEMO de 60 min cuando el backend no tiene muestras suficientes (siempre rotulada).
+  // DEMO solo alimenta el gráfico durante el modo explícito; sin filas en vivo no se dibuja una traza sustituta.
   const demoCutoff: Record<string, number> = {
     clean: 30,
     "slow-leak": 90,
     "abrupt-drop": 120,
     done: 120,
   };
-  const liveSeries = source === "live" && history.length >= 3;
-  const usingTrace = !demoActive && !liveSeries;
-  const shownPoints: ChartPoint[] = demoActive
-    ? DEMO_SERIES.filter((p) => p.t_s <= (demoCutoff[demoStage] ?? 30)).slice(-90)
-    : liveSeries ? history : trace.points;
+  const selectedChartSeries = selectDashboardChartSeries({
+    demoActive,
+    liveRows: source === "live" ? storeRows : 0,
+    livePoints: history,
+    demoPoints: DEMO_SERIES.filter((p) => p.t_s <= (demoCutoff[demoStage] ?? 30)).slice(-90),
+  });
+  const liveSeries = selectedChartSeries.signalSource === "LIVE";
+  const shownPoints = selectedChartSeries.points;
   const liveSignalRows = sensorRows.filter((row) =>
     typeof row.pressure_kpa === "number" && Number.isFinite(row.pressure_kpa) &&
     typeof row.temperature_c === "number" && Number.isFinite(row.temperature_c),
@@ -388,7 +406,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
     }
     return shownPoints.map((_, index) => base + Math.sin(index * 0.43) * amplitude);
   };
-  const signalSource = source === "live" && liveSignalRows.length >= 3 ? "LIVE" : "DEMO";
+  const signalSource = demoActive ? "DEMO" : source === "live" && liveSignalRows.length >= 3 ? "LIVE" : "DEMO";
   const chartPressure = sampleSignal("pressure_kpa", wheel.pressureKpa, 1.2);
   const chartTemperature = sampleSignal("temperature_c", wheel.temperatureC, 0.8);
   const shownAlerts = demoActive
@@ -396,7 +414,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
     : analyzerUnavailable ? [] : (alerts?.data.alerts ?? []);
   const shownWindows = demoActive
     ? DEMO_WINDOWS
-    : liveSeries ? (windows?.windows ?? []) : trace.windows;
+    : liveSeries ? (windows?.windows ?? []) : [];
   const backendSigma = source === "live" && !demoActive && alerts?.status === "ok"
     ? alerts.data.level?.sigma_liters : null;
   const sigmaSource = typeof backendSigma === "number" && Number.isFinite(backendSigma) ? "LIVE" : "DEMO";
@@ -557,11 +575,8 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
                 </NumericEvidence>
               </span>
             </h3>
-            {usingTrace && live && source === "live" && (
-              <p className="og-wheel-panel__warn">{t("wheel.chart.demoTrace")}</p>
-            )}
             <section aria-label={t("dash.series.levelHistory")} data-dashboard-series="level-history">
-              <h4 data-dashboard-series="level-history-label">{t("dash.series.levelHistory")}</h4>
+              <h4 data-dashboard-series="level-history-label">{dashboardLevelChartTitle(demoActive && shownPoints.length > 0)}</h4>
               <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} variant="inline" pressureValues={chartPressure} temperatureValues={chartTemperature} signalSource={signalSource} />
             </section>
             <section aria-label={t("dash.series.sensors")}>
