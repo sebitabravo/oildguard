@@ -39,6 +39,10 @@ docker compose up -d --build -V
 The `-V` option renews the frontend's anonymous `node_modules` volume when
 rebuilding, so it does not mask dependencies in the image.
 
+## One-command demo
+
+Start the local stack and simulator with `./scripts/demo.sh`, then open http://localhost:5173/monitoring. Demo and simulator data remain visibly synthetic.
+
 ## Route map
 
 “Live backend” means data returned by the local API; pages label deterministic demo fallback as `DEMO`. `SYNTHETIC-PROXY` means modeled values, not field measurements. The alert inbox and detail pages can merge live backend records with deterministic local demo alerts; the alert-rules page is read-only. Demo lifecycle changes stay in this browser, and no alert lifecycle API is available.

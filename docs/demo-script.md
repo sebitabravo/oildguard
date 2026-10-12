@@ -1,5 +1,7 @@
 # Demostración de cinco minutos para el jurado
 
+For a one-command local start, run [`scripts/demo.sh`](../scripts/demo.sh).
+
 El alcance se limita a Komatsu 930E-4SE / GDY106. La telemetría generada, las alternativas de flota, las curvas del modelo y los valores de los informes son sintéticos o datos de demostración deterministas; no hay un conjunto de datos de campo ni calibración en terreno. `EN VIVO` significa que un valor proviene del backend local; no implica validación en terreno. `DEMO` y `SUSTITUTO SINTÉTICO` deben seguir visibles al presentar. El prototipo es de solo lectura respecto del camión; los cambios del ciclo de vida de las alertas de demostración son locales al navegador, no acciones del backend.
 
 ## 0:00–0:45 — Iniciar los servicios locales
