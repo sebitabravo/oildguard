@@ -126,7 +126,7 @@ export interface AssemblyViewState {
 const INITIAL_VIEW: AssemblyViewState = {
   azimuth: 0.65,
   polar: 1.1,
-  distance: 4.7,
+  distance: 5,
   isolated: null,
 };
 
@@ -135,7 +135,7 @@ const clamp = (value: number, min: number, max: number): number => Math.min(max,
 export function assemblyDistanceForViewport(viewportWidth: number): number {
   const width = clamp(viewportWidth, 390, 1440);
   const progress = (width - 390) / (1440 - 390);
-  return 7.5 + (4.7 - 7.5) * progress;
+  return 7.5 + (5 - 7.5) * progress;
 }
 
 export interface AssemblyControls {

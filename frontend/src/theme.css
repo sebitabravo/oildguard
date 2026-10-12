@@ -151,6 +151,8 @@ button { font-family: inherit; }
   .og-mobile-nav::-webkit-scrollbar { display: none; }
   .og-mobile-nav a { display: flex; flex: 0 0 auto; min-height: 44px; align-items: center; color: var(--og-text-secondary); text-decoration: none; font: 11px var(--og-mono); white-space: nowrap; }
   .og-content { margin-left: 0; padding: calc(var(--og-header-h) + 68px) 14px 24px; }
+  .og-app--compact .og-top { left: 0; }
+  .og-app--compact .og-content { margin-left: 0; }
 }
 .og-foundation-card { padding: 16px; background: var(--og-surface); border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-md); }
 .og-foundation-badge, .og-chip { display: inline-flex; gap: 7px; align-items: center; padding: 4px 7px; color: var(--og-text-secondary); border: 1px solid var(--og-border-strong); border-radius: 999px; font: var(--og-label-md) var(--og-mono); letter-spacing: .04em; }

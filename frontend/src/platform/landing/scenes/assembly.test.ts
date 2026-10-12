@@ -94,13 +94,13 @@ describe("assembly cutaway parts", () => {
 
 describe("assembly controls", () => {
   test("frames the landing assembly responsively without clipping mobile width", () => {
-    expect(assemblyDistanceForViewport(1440)).toBeCloseTo(4.7, 10);
+    expect(assemblyDistanceForViewport(1440)).toBeCloseTo(5, 10);
     expect(assemblyDistanceForViewport(390)).toBeCloseTo(7.5, 10);
-    expect(assemblyDistanceForViewport(915)).toBeCloseTo(6.1, 1);
+    expect(assemblyDistanceForViewport(915)).toBeCloseTo(6.25, 10);
 
     const desktop = createAssemblyControls({}, 1440);
     const mobile = createAssemblyControls({}, 390);
-    expect(desktop.getState().distance).toBeCloseTo(4.7, 10);
+    expect(desktop.getState().distance).toBeCloseTo(5, 10);
     expect(mobile.getState().distance).toBeCloseTo(7.5, 10);
     mobile.zoom(0.5);
     mobile.reset();
@@ -112,7 +112,7 @@ describe("assembly controls", () => {
     const position = cameraPositionFor(state);
     const distance = Math.hypot(position.x, position.y - 1.6, position.z);
 
-    expect(state.distance).toBeCloseTo(4.7, 1);
+    expect(state.distance).toBeCloseTo(5, 1);
     expect(distance).toBeCloseTo(state.distance, 10);
   });
 
