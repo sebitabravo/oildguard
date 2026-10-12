@@ -57,7 +57,7 @@ from sim.physics import (  # noqa: E402
 )
 
 MODEL_LABEL = "synthetic-proxy"  # NOT proven until S7 bench proof
-CAPACITY_L = 95.0  # GDY106 nominal, SAE 85W-140 (physics anchor)
+CAPACITY_L = 95.0  # GDY106 nominal; grado no confirmado en los manuales (ver docs/reports/overnight-decisions.md, D3)
 WARN_PCT = 50.0  # warning < 50%
 CRIT_PCT = 30.0  # critical < 30%
 MIN_BASELINE_N = 10
