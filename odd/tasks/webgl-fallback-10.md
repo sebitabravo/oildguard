@@ -19,9 +19,9 @@ Move `detectWebGL` to `frontend/src/ui/webgl.ts` and re-export it from landing b
 - TDD: on; runner `cd frontend && bun test src`; RED output at `/tmp/og-goal/evidence/WEBGL-FALLBACK-10/red.txt`.
 - Results: 673 frontend tests pass; build exits 0 with 45 pages. At 1024×768, WebGL-disabled `/mine` and `/wheel` show `cycle.svg`/`assembly.svg` plus the Spanish caption; each has 0 console errors, 0 uncaught errors, and 0 canvases. Normal `/wheel` has 1 canvas and 0 console/uncaught errors.
 - Screenshots: `mine-webgl-disabled.png`, `wheel-webgl-disabled.png`, `wheel-webgl-enabled.png` under `/tmp/og-goal/evidence/WEBGL-FALLBACK-10/`.
-- Test commit: `f780a97`; implementation commit: pending.
+- Test commit: `f780a97`; implementation commit: `afc6d15`.
 - Verification evidence: `/tmp/og-goal/evidence/WEBGL-FALLBACK-10/` (including detector result `[]`).
 - Delivery: `ask-on-risk`; forecast under 200 authored lines. Engram mirror pending (memory tools/session identity unavailable).
 
 ## Next step
-Commit the implementation, then record its identity in this task document.
+Task complete; delivery and any further review remain parent-owned.
