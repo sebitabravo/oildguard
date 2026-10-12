@@ -48,12 +48,13 @@ The owner delegated all decisions for this batch. Each decision below has a reas
 - `pytest -q`: 385 passed.
 - `astro check`: 0 errors.
 - `astro build`: exit 0.
-- `edge-sim` Rust suite: all test binaries pass (13 tests in the last run).
+- `edge-sim` Rust suite: 17 passed, 0 failed (last run on `a06e07c`). The frontend and Python checks above are from `8a82913` and later, and no change touched them after that.
 - Batch commits, oldest first: `649abeb`, `bfba506`, `71eb6a1`, `cacdff0`, `09179a8`, `f93c244`, `8aef099`, `da856dd`, `76c4d06`, `d150cb2`, `edfef0c`, `a6ad249`, `9616792`, `91c3970`, `5e75c11`, `f40a937`, `2d85147`, `9e40b07`, `fda0c56`, `5957128`, `a426350`, `65ee139`, `bc4f01a`, `03003df`, `856fb46`, `e3a7b8d`, `466118d`, `fbda683`, `3a91fda`, `c6eb3f9`, `035821b`, `68211a7`, `2fc990c`, `01a6e2d`, `88a00e2`, `c2c89ca`, `8f8a0a6`, `be3b4d3`, `8821d76`, `8a82913`.
 
 ## Known gaps left open
 
-- Not implemented: in-motion level estimate (D22), human RBAC (D20), per-device identity for the edge publisher (D29), removal of the plain 1883 listener (D29), a real CAN/VHMS source (D22), a labelled simulated CAN/VHMS signal (D28), Grafana (D6).
+- Not implemented: in-motion level estimate (D22), human RBAC (D20), removal of the plain 1883 listener (D29), a real CAN/VHMS source (D22), a labelled simulated CAN/VHMS signal (D28), Grafana (D6).
+- Per-device edge identity is implemented (`a06e07c`, D29). Its live check against the broker is pending, because the agent cannot read key files; the owner runs it.
 - In permissive mode, unsigned duplicates still reach storage after a replay (D19).
 - The landing hero 3D is procedural (D27).
 - The reference truck is only on `/wheel`, on demand.
