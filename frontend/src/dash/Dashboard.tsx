@@ -91,11 +91,17 @@ export function DashboardLevelSourceBadge({ live, source, validity }: { live: bo
   );
 }
 
-export function DashboardWindowsReadout({ windowCount, storeRows }: { windowCount: number; storeRows: number }) {
+function dashboardReadingSourceBadge(validity: LevelValidity) {
+  return validity === "stale" || validity === "invalid"
+    ? <span className={`og-chip og-chip--${validity}`}>{t(validity === "stale" ? "ui.stale" : "ui.invalid")}</span>
+    : <ProvenanceTag value="EN VIVO" />;
+}
+
+export function DashboardWindowsReadout({ windowCount, storeRows, validity = "valid" }: { windowCount: number; storeRows: number; validity?: LevelValidity }) {
   const rowToken = "__session_rows__";
   const text = t("dash.backend.windows", { count: windowCount, rows: rowToken });
   const rowIndex = text.indexOf(rowToken);
-  return <>{text.slice(0, rowIndex)}{storeRows} <ProvenanceTag value="EN VIVO" />{text.slice(rowIndex + rowToken.length)}</>;
+  return <>{text.slice(0, rowIndex)}{storeRows} {dashboardReadingSourceBadge(validity)}{text.slice(rowIndex + rowToken.length)}</>;
 }
 
 const DEMO_STAGES: DemoStageId[] = ["clean", "slow-leak", "abrupt-drop", "done"];
@@ -583,7 +589,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
             <p className="og-wheel-panel__note">
               FSM <strong>{fsm.state}</strong> (t+{formatNumber(fsmTick, 0)} s {t("dash.fsm.sharedClock")}) ·{" "}
               {source === "live"
-                ? <DashboardWindowsReadout windowCount={windows?.count ?? 0} storeRows={storeRows} />
+                ? <DashboardWindowsReadout windowCount={windows?.count ?? 0} storeRows={storeRows} validity={validity} />
                 : t("dash.backend.localWindows")}
             </p>
             <p className="og-wheel-panel__note">
@@ -598,7 +604,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
                         influx: localizeBackendMessage(backendNote.influxMessage, backendNote.influx),
                         });
                         const rowIndex = text.indexOf(rowToken);
-                        return <>{text.slice(0, rowIndex)}{backendNote.rows} <ProvenanceTag value="EN VIVO" />{text.slice(rowIndex + rowToken.length)}</>;
+                        return <>{text.slice(0, rowIndex)}{backendNote.rows} {dashboardReadingSourceBadge(validity)}{text.slice(rowIndex + rowToken.length)}</>;
                       })()}</>
                     : live ? t("dash.backend.offline") : t("wheel.source.demoWheel")}
               </span>
