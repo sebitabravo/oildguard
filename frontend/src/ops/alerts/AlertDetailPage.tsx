@@ -223,6 +223,18 @@ export default function AlertDetailPage() {
           </div>
         </section>
 
+        <section className="og-alerts-section" aria-label={t("alerts.intent.section")}>
+          <header className="og-alerts-section__head">
+            <h3>{t("alerts.intent.title")}</h3>
+            <span>{t("alerts.intent.guidance")}</span>
+          </header>
+          <dl className="og-alerts-meta">
+            <div><dt>{t("alerts.intent.action")}</dt><dd>{record.intent.action}</dd></div>
+            <div><dt>{t("alerts.intent.recipient")}</dt><dd>{record.intent.recipient}</dd></div>
+          </dl>
+          <p className="og-alerts-note">{t("alerts.intent.nonExecutable")}</p>
+        </section>
+
         {record.level === "N4" && <div className="og-alerts-banner"><AlertBanner severity="N4">{t("alerts.banner.N4")}</AlertBanner></div>}
         {hasPartialData(record) && <Notice kind="partial">{t("alerts.partial")}</Notice>}
 

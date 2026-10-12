@@ -51,7 +51,8 @@ export function useAlertData(): AlertData {
           // Se conserva la primera observación para que la antigüedad crezca entre sondeos.
           const seen = firstSeen.current.get(alert.alert_id) ?? now;
           firstSeen.current.set(alert.alert_id, seen);
-          const record = liveToRecord(alert, seen);
+          const payload = alert as typeof alert & { action?: unknown; recipient?: unknown };
+          const record = liveToRecord(alert, seen, { action: payload.action, recipient: payload.recipient });
           return record ? [record] : [];
         });
         setLive(records);

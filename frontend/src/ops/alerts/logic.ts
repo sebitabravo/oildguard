@@ -25,6 +25,28 @@ export const ROUTING: Readonly<Record<Level, Role>> = {
   N4: "Operator",
 };
 
+export interface LevelIntent {
+  action: string;
+  recipient: string;
+}
+
+export type LevelIntentInput = { action?: unknown; recipient?: unknown };
+
+export const LEVEL_INTENT: Readonly<Record<Level, LevelIntent>> = {
+  N1: { action: "Seguimiento en el próximo servicio", recipient: "Confiabilidad" },
+  N2: { action: "Solicitud de trabajo en el CMMS", recipient: "Planificación de mantenimiento" },
+  N3: { action: "Recomendación de retiro al final del ciclo", recipient: "Despacho y supervisor" },
+  N4: { action: "Detención controlada", recipient: "Operador" },
+};
+
+function levelIntent(level: Level, supplied?: LevelIntentInput): LevelIntent {
+  const fallback = LEVEL_INTENT[level];
+  return {
+    action: typeof supplied?.action === "string" ? supplied.action : fallback.action,
+    recipient: typeof supplied?.recipient === "string" ? supplied.recipient : fallback.recipient,
+  };
+}
+
 // Cadena de escalamiento solo para la demo local; el supervisor es el tope.
 const ESCALATION_TARGET: Readonly<Record<Role, Role>> = {
   Reliability: "Planning",
@@ -76,6 +98,7 @@ export interface AlertRecord {
   reason: { code: ReasonCode | null; params: Record<string, number | string>; fallback: string };
   channels: Record<ChannelName, ChannelState>;
   votes: number;
+  intent: LevelIntent;
   recipient: Role;
   owner: Role;
   openedAt: number;
@@ -237,6 +260,7 @@ function recordFrom(
     reason: deriveReason(level, channels, levelL, seed),
     channels,
     votes: countVotes(channels),
+    intent: levelIntent(level),
     recipient,
     owner: lifecycle === "escalated" ? ESCALATION_TARGET[recipient] : recipient,
     openedAt,
@@ -291,7 +315,7 @@ const LIVE_INPUT_KEYS: ReadonlyArray<[keyof AlertInputs, string]> = [
   ["temp_drift_c", "temp_drift_c"], ["rul_hours_to_warning", "rul_hours_to_warning"],
 ];
 
-export function liveToRecord(alert: DashAlert, observedAtMs: number): AlertRecord | null {
+export function liveToRecord(alert: DashAlert, observedAtMs: number, suppliedIntent?: LevelIntentInput): AlertRecord | null {
   if (!isLevel(alert.level)) return null;
   const level = alert.level;
   const inputs = Object.fromEntries(LIVE_INPUT_KEYS.map(([key, source]) => {
@@ -316,6 +340,7 @@ export function liveToRecord(alert: DashAlert, observedAtMs: number): AlertRecor
     reason: { code, params, fallback: alert.reason },
     channels,
     votes: countVotes(channels),
+    intent: levelIntent(level, suppliedIntent),
     recipient: ROUTING[level],
     owner: ROUTING[level],
     openedAt: observedAtMs,

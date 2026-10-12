@@ -96,3 +96,23 @@ def test_demo_leak_cli_passes(capsys):
     out = capsys.readouterr().out
     assert "T10_DEMO_DONE PASS" in out
     assert "N1->N2->N3->N4" in out
+
+
+def test_ladder_alerts_include_intent_action_and_recipient():
+    rate = demo_leak.accel_rate_for(SECONDS, demo_leak.DEFAULT_TARGET_DROP_L)
+    _, slow_leak_samples = stage("slow-leak", leak_pct_per_h=rate)
+    _, abrupt_samples = stage("abrupt-drop", drop_liters=15.0)
+    alerts = ladder.evaluate(slow_leak_samples)["alerts"] + ladder.evaluate(abrupt_samples)["alerts"]
+    expected = {
+        "N1": ("Seguimiento en el próximo servicio", "Confiabilidad"),
+        "N2": ("Solicitud de trabajo en el CMMS", "Planificación de mantenimiento"),
+        "N3": ("Recomendación de retiro al final del ciclo", "Despacho y supervisor"),
+        "N4": ("Detención controlada", "Operador"),
+    }
+
+    for alert in alerts:
+        action, recipient = expected[alert["level"]]
+        assert alert["action"] == action
+        assert alert["recipient"] == recipient
+
+    assert set(expected) <= {alert["level"] for alert in alerts}

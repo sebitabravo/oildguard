@@ -60,6 +60,12 @@ TEMP_DRIFT_C = 1.5  # exclusion-channel veto band around T baseline
 SHIFT_H = 8.0
 LADDER = ["N1", "N2", "N3", "N4"]
 SEVERITY = {"N1": "watch", "N2": "warning", "N3": "warning", "N4": "critical"}
+LEVEL_INTENT = {
+    "N1": {"action": "Seguimiento en el próximo servicio", "recipient": "Confiabilidad"},
+    "N2": {"action": "Solicitud de trabajo en el CMMS", "recipient": "Planificación de mantenimiento"},
+    "N3": {"action": "Recomendación de retiro al final del ciclo", "recipient": "Despacho y supervisor"},
+    "N4": {"action": "Detención controlada", "recipient": "Operador"},
+}
 
 
 def _median(values: list[float]) -> float | None:
@@ -231,6 +237,7 @@ def evaluate(samples: list[dict]) -> dict:
         alerts.append({
             "alert_id": f"{lv}-w{win['window_id']:02d}",
             "level": lv,
+            **LEVEL_INTENT[lv],
             "severity": SEVERITY[lv],
             "t_s": win["end_t_s"],
             "window_id": win["window_id"],
