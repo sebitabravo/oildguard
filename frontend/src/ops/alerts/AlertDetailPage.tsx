@@ -4,7 +4,7 @@ import { formatNumber } from "../../i18n/numberFormat";
 import { getLevelSeries } from "../../sim/api";
 import { loadWithTimeout } from "../../ui/backendOrDemo";
 import {
-  AlertBanner, Button, ChannelFusion, DataTable, EmptyState, Notice, PageHeader, SyntheticBadge,
+  AlertBanner, Button, ChannelFusion, DataTable, EmptyState, Notice, PageHeader, ProvenanceTag, SyntheticBadge,
   TimeSeriesChart, Timeline,
 } from "../../ui/foundation";
 import { useAlertData } from "./data";
@@ -27,7 +27,7 @@ function FieldSourceLabel({ source }: { source: FieldSource }) {
 }
 
 export function SourcedValue({ value, source }: { value: string; source: FieldSource }) {
-  return <span className="og-mono">{value} <FieldSourceLabel source={source} /></span>;
+  return <span className="og-mono"><span>{value}</span> <FieldSourceLabel source={source} /></span>;
 }
 
 function valueText(metric: EvidenceMetric): string {
@@ -73,14 +73,14 @@ function SignalCharts({ record, window, live }: { record: AlertRecord; window: S
             cursorIndex={cursorIndex}
             onCursorChange={setCursorIndex}
             thresholds={[
-              { value: RULES.warnL, label: t("alerts.signal.warning", { value: formatNumber(RULES.warnL, 1) }) },
-              { value: RULES.critL, label: t("alerts.signal.critical", { value: formatNumber(RULES.critL, 1) }) },
+              { value: RULES.warnL, label: `${t("alerts.signal.warning", { value: formatNumber(RULES.warnL, 1) })} · CONFIGURACIÓN` },
+              { value: RULES.critL, label: `${t("alerts.signal.critical", { value: formatNumber(RULES.critL, 1) })} · CONFIGURACIÓN` },
             ]}
           />
           <dl className="og-alerts-stats">
-            <div><dt>{labels[0]}</dt><dd className="og-mono">{formatNumber(first, 1)} L</dd></div>
-            <div><dt>{t("alerts.signal.trigger")}</dt><dd className="og-mono">{formatNumber(atTrigger, 1)} L</dd></div>
-            <div><dt>Δ</dt><dd className="og-mono">{formatNumber(atTrigger - first, 1)} L</dd></div>
+            <div><dt>{labels[0]}</dt><dd className="og-mono"><span>{formatNumber(first, 1)} L</span> <FieldSourceLabel source={live ? "live" : "demo"} /></dd></div>
+            <div><dt>{t("alerts.signal.trigger")}</dt><dd className="og-mono"><span>{formatNumber(atTrigger, 1)} L</span> <FieldSourceLabel source={live ? "live" : "demo"} /></dd></div>
+            <div><dt>Δ</dt><dd className="og-mono"><span>{formatNumber(atTrigger - first, 1)} L</span> <ProvenanceTag value="DERIVED" /></dd></div>
           </dl>
         </article>
         {z.length > 0 && (
@@ -97,12 +97,12 @@ function SignalCharts({ record, window, live }: { record: AlertRecord; window: S
               color="var(--og-blue)"
               cursorIndex={cursorIndex}
               onCursorChange={setCursorIndex}
-              thresholds={[{ value: -RULES.zThr, label: t("alerts.signal.zLine", { value: formatNumber(-RULES.zThr, 1) }) }]}
+              thresholds={[{ value: -RULES.zThr, label: `${t("alerts.signal.zLine", { value: formatNumber(-RULES.zThr, 1) })} · CONFIGURACIÓN` }]}
             />
             <dl className="og-alerts-stats">
-              <div><dt>{labels[0]}</dt><dd className="og-mono">{formatNumber(z[0], 1)}</dd></div>
-              <div><dt>{t("alerts.signal.trigger")}</dt><dd className="og-mono">{formatNumber(z[window.triggerIndex], 1)}</dd></div>
-              <div><dt>{t("alerts.evidence.threshold")}</dt><dd className="og-mono">{formatNumber(-RULES.zThr, 1)}</dd></div>
+              <div><dt>{labels[0]}</dt><dd className="og-mono"><span>{formatNumber(z[0], 1)}</span> <FieldSourceLabel source={live ? "live" : "demo"} /></dd></div>
+              <div><dt>{t("alerts.signal.trigger")}</dt><dd className="og-mono"><span>{formatNumber(z[window.triggerIndex], 1)}</span> <FieldSourceLabel source={live ? "live" : "demo"} /></dd></div>
+              <div><dt>{t("alerts.evidence.threshold")}</dt><dd className="og-mono"><span>{formatNumber(-RULES.zThr, 1)}</span> <ProvenanceTag value="CONFIGURACIÓN" /></dd></div>
             </dl>
           </article>
         )}

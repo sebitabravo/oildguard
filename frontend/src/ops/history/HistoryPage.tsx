@@ -64,10 +64,10 @@ export default function HistoryPage() {
           <div>
             <span className="og-label">{t("history.window")}</span>
             <SegmentedControl
-              options={windows.map((item) => t(`history.window.${item}`))}
-              value={t(`history.window.${windowKey}`)}
+              options={windows.map((item) => `${t(`history.window.${item}`)} · CONFIGURACIÓN`)}
+              value={`${t(`history.window.${windowKey}`)} · CONFIGURACIÓN`}
               onChange={(value) => {
-                const next = windows.find((item) => t(`history.window.${item}`) === value);
+                const next = windows.find((item) => `${t(`history.window.${item}`)} · CONFIGURACIÓN` === value);
                 if (next) setWindowKey(next);
               }}
             />
@@ -81,7 +81,7 @@ export default function HistoryPage() {
           <HistoryKpi label={t("history.completeness")} value={`${formatNumber(kpis.completeness, 0)}%`} />
         </section>
         <section className="og-history-charts">
-          <article><h3>{t("history.level")}</h3><TimeSeriesChart values={levelValues} sigma={points.map((point) => point.sigma ?? 0)} thresholds={[{ value: 47.5, label: t("history.threshold.warning") }, { value: 28.5, label: t("history.threshold.critical") }]} domain={[0, 95]} yUnit="L" xLabels={xLabels} events={chartEvents} gaps={chartGaps} title={t("history.level")} cursorIndex={cursorIndex} onCursorChange={setCursorIndex} /></article>
+          <article><h3>{t("history.level")}</h3><TimeSeriesChart values={levelValues} sigma={points.map((point) => point.sigma ?? 0)} thresholds={[{ value: 47.5, label: `${t("history.threshold.warning")} · CONFIGURACIÓN` }, { value: 28.5, label: `${t("history.threshold.critical")} · CONFIGURACIÓN` }]} domain={[0, 95]} yUnit="L" xLabels={xLabels} events={chartEvents} gaps={chartGaps} title={t("history.level")} cursorIndex={cursorIndex} onCursorChange={setCursorIndex} /></article>
           <article><h3>{t("history.temperature")}</h3><TimeSeriesChart values={temperatureValues} domain={[55, 90]} yUnit="°C" xLabels={xLabels} events={chartEvents} gaps={chartGaps} title={t("history.temperature")} color="var(--og-temperature)" cursorIndex={cursorIndex} onCursorChange={setCursorIndex} /></article>
           <article><h3>{t("history.vibration")}</h3><TimeSeriesChart values={vibrationValues} yUnit="g" yDecimals={2} xLabels={xLabels} events={chartEvents} gaps={chartGaps} title={t("history.vibration")} color="var(--og-blue)" cursorIndex={cursorIndex} onCursorChange={setCursorIndex} /></article>
         </section>

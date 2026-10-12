@@ -101,12 +101,12 @@ export default function ValidationPage() {
         </span>
       ),
       span: <span className="lab-mono">{formatNumber(row.startS, 1)}–{formatNumber(row.endS, 1)}</span>,
-      n: <span className="lab-mono">{formatNumber(row.n, 0)}</span>,
-      truth: <span className="lab-mono">{formatNumber(row.truthMeanL, 1)}</span>,
-      estimate: <span className="lab-mono">{formatNumber(row.estimateMeanL, 1)}</span>,
-      bias: <span className="lab-mono">{formatNumber(row.bias, 2)}</span>,
-      mae: <span className="lab-mono">{formatNumber(row.mae, 2)}</span>,
-      max: <span className="lab-mono">{formatNumber(row.maxAbs, 2)}</span>,
+      n: <span className="lab-mono"><span>{formatNumber(row.n, 0)}</span> <ProvenanceTag value="DERIVED" /></span>,
+      truth: <span className="lab-mono"><span>{formatNumber(row.truthMeanL, 1)}</span> <ProvenanceTag value={useLive ? "EN VIVO" : "SUSTITUTO SINTÉTICO"} /></span>,
+      estimate: <span className="lab-mono"><span>{formatNumber(row.estimateMeanL, 1)}</span> <ProvenanceTag value={useLive ? "EN VIVO" : "SUSTITUTO SINTÉTICO"} /></span>,
+      bias: <span className="lab-mono"><span>{formatNumber(row.bias, 2)}</span> <ProvenanceTag value="DERIVED" /></span>,
+      mae: <span className="lab-mono"><span>{formatNumber(row.mae, 2)}</span> <ProvenanceTag value="DERIVED" /></span>,
+      max: <span className="lab-mono"><span>{formatNumber(row.maxAbs, 2)}</span> <ProvenanceTag value="DERIVED" /></span>,
     },
   }));
 
@@ -150,16 +150,16 @@ export default function ValidationPage() {
             unit={metrics.rmse === null ? undefined : "L"}
             meta={metrics.rmse === null
               ? emptyMeta
-              : t("lab.validation.metric.rmseMeta", { count: formatNumber(metrics.n, 0) })}
+              : <>{t("lab.validation.metric.rmseMeta", { count: formatNumber(metrics.n, 0) })} <ProvenanceTag value="DERIVED" /></>}
           />
-          <KpiTile label={t("lab.validation.metric.mae")} value={number(metrics.mae, 2)} unit={metrics.mae === null ? undefined : "L"} meta={emptyMeta} />
-          <KpiTile label={t("lab.validation.metric.bias")} value={number(metrics.bias, 2)} unit={metrics.bias === null ? undefined : "L"} meta={emptyMeta} />
-          <KpiTile label={t("lab.validation.metric.max")} value={number(metrics.maxAbs, 2)} unit={metrics.maxAbs === null ? undefined : "L"} meta={emptyMeta} />
+          <KpiTile label={t("lab.validation.metric.mae")} value={number(metrics.mae, 2)} unit={metrics.mae === null ? undefined : "L"} meta={metrics.mae === null ? emptyMeta : <ProvenanceTag value="DERIVED" />} />
+          <KpiTile label={t("lab.validation.metric.bias")} value={number(metrics.bias, 2)} unit={metrics.bias === null ? undefined : "L"} meta={metrics.bias === null ? emptyMeta : <ProvenanceTag value="DERIVED" />} />
+          <KpiTile label={t("lab.validation.metric.max")} value={number(metrics.maxAbs, 2)} unit={metrics.maxAbs === null ? undefined : "L"} meta={metrics.maxAbs === null ? emptyMeta : <ProvenanceTag value="DERIVED" />} />
           <KpiTile
 
             label={t("lab.validation.metric.n")}
             value={formatNumber(metrics.n, 0)}
-            meta={t("lab.validation.metric.nMeta", { count: formatNumber(baselineCount, 0) })}
+            meta={<>{t("lab.validation.metric.nMeta", { count: formatNumber(baselineCount, 0) })} <ProvenanceTag value="DERIVED" /></>}
           />
           <KpiTile
 

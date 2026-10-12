@@ -111,6 +111,7 @@ export default function BenchView() {
         <span className="og-field__label">
           <span>{t("bench.field.viscosity")}</span>
           <span className="og-num">{formatNumber(viscosity, 2)} ({viscosityLabel(viscosity)})</span>
+          <ProvenanceTag value="ASSUMPTION" />
         </span>
         <input
           type="range"
@@ -167,11 +168,11 @@ export default function BenchView() {
           {oilStateLabel(oilState)} · {t("wheel.reference")}
         </div>
         <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
-          {t("bench.readout.settling", {
+          <span>{t("bench.readout.settling", {
             milliseconds: formatNumber(settlingMs, 0),
             value: formatNumber(viscosity, 2),
             label: viscosityLabel(viscosity),
-          })}
+          })}</span> <ProvenanceTag value="ASSUMPTION" />
         </div>
         <div className="og-body og-num" style={{ margin: "4px 0 0" }}>
           {t("bench.readout.train", gearRatioDisplay)}
@@ -205,7 +206,8 @@ export default function BenchView() {
                 <strong>{t(`bench.sensor.${sensor.id}.label` as DictKey)}</strong>
                 <br />
                 <span className="og-muted" style={{ fontSize: 13 }}>
-                  {t(`bench.sensor.${sensor.id}.signal` as DictKey)}
+                  <span>{t(`bench.sensor.${sensor.id}.signal` as DictKey)}</span>
+                  {sensor.id === "vibration" && <> <ProvenanceTag value="CONFIGURACIÓN" /></>}
                 </span>
                 <br />
                 <span style={{ color: "var(--og-body)", fontSize: 13 }}>

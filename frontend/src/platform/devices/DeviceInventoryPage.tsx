@@ -47,6 +47,10 @@ export function DeviceInventoryBackendOutageNotice({ source }: { source: DataSou
   return source === "demo" ? <BackendOutageNotice /> : null;
 }
 
+export function DeviceFieldSource({ source }: { source: DataSource }) {
+  return <ProvenanceTag value={source === "live" ? "EN VIVO" : "DEMO"} />;
+}
+
 function mapBackendDevice(device: BackendDevice): InventoryDevice {
   return {
     id: device.device_id,
@@ -130,9 +134,9 @@ export default function DeviceInventoryPage() {
     const ratio = data.source === "demo" ? device.signedRatio ?? null : device.signedRatio ?? null;
     const ratioText = ratio === null ? t("devices.notReported") : `${formatNumber(ratio * 100, 1)}%`;
     const latest = device.latest
-      ? `${formatNumber(device.latest.temperatureC, 1)} °C · ${formatNumber(device.latest.vibrationRmsG, 2)} g · ${formatNumber(device.latest.pressureKpa, 2)} kPa`
+      ? <><span>{formatNumber(device.latest.temperatureC, 1)} °C</span> <DeviceFieldSource source={data.source} /> · <span>{formatNumber(device.latest.vibrationRmsG, 2)} g</span> <DeviceFieldSource source={data.source} /> · <span>{formatNumber(device.latest.pressureKpa, 2)} kPa</span> <DeviceFieldSource source={data.source} /></>
       : t("devices.notReported");
-    const reasons = Object.entries(device.rejectedReasons).map(([reason, count]) => <span className="device-inventory__reason">{reason} · {formatNumber(count, 0)}</span>);
+    const reasons = Object.entries(device.rejectedReasons).map(([reason, count]) => <span className="device-inventory__reason">{reason} · <span>{formatNumber(count, 0)}</span> <DeviceFieldSource source={data.source} /></span>);
     return {
       id: device.id,
       state: device.lastSeenMs === null || nowMs - device.lastSeenMs > 120_000 ? "stale" as const : "nominal" as const,
@@ -140,9 +144,9 @@ export default function DeviceInventoryPage() {
         device: <code>{device.id}</code>,
         mapping: mapping ? <span>{mapping.truckId} · {mapping.position}</span> : <span>{t("devices.noMapping")}</span>,
         lastSeen: relativeTime(device.lastSeenMs, nowMs),
-        rows: device.rowsRetained === null ? t("devices.notReported") : formatNumber(device.rowsRetained, 0),
-        signed: <div className="device-inventory__ratio"><span>{ratioText}</span>{ratio !== null && <span className="device-inventory__bar"><i style={{ width: `${Math.max(0, Math.min(100, ratio * 100))}%` }} /></span>}</div>,
-        rejected: reasons.length ? <div className="device-inventory__reasons">{reasons}</div> : <span>{device.rejectedRows > 0 ? formatNumber(device.rejectedRows, 0) : t("devices.notReported")}</span>,
+        rows: device.rowsRetained === null ? t("devices.notReported") : <><span>{formatNumber(device.rowsRetained, 0)}</span> <DeviceFieldSource source={data.source} /></>,
+        signed: <div className="device-inventory__ratio"><span><span>{ratioText}</span> {ratio !== null && <ProvenanceTag value="DERIVED" />}</span>{ratio !== null && <span className="device-inventory__bar"><i style={{ width: `${Math.max(0, Math.min(100, ratio * 100))}%` }} /></span>}</div>,
+        rejected: reasons.length ? <div className="device-inventory__reasons">{reasons}</div> : <span>{device.rejectedRows > 0 ? <><span>{formatNumber(device.rejectedRows, 0)}</span> <DeviceFieldSource source={data.source} /></> : t("devices.notReported")}</span>,
         signals: latest,
         alert: device.alertLevel ? <span className={`device-inventory__alert device-inventory__alert--${device.alertLevel.toLowerCase()}`}>{device.alertLevel}</span> : device.alertLevelReason === "no_alert" ? t("devices.noAlert") : t("devices.notReported"),
         signing: signingLabel,
@@ -156,10 +160,10 @@ export default function DeviceInventoryPage() {
     <PageHeader eyebrow={t("devices.eyebrow")} title={t("devices.title")} description={t("devices.description")} meta={data.source === "demo" ? <SyntheticBadge /> : <span className="device-inventory__source">{t(data.source === "live" ? "devices.liveSource" : "devices.loading")}</span>} />
     <DeviceInventoryBackendOutageNotice source={data.source} />
     <section className="device-inventory__kpis" aria-label={t("devices.title")}>
-      <KpiTile label={t("devices.reporting")} value={data.source === "loading" ? "—" : formatNumber(kpis.reporting, 0)} />
-      <KpiTile label={t("devices.signedRatio")} value={data.source === "loading" || displayedSignedRatio === null ? "—" : formatNumber(displayedSignedRatio * 100, 1)} unit={data.source === "loading" || displayedSignedRatio === null ? undefined : "%"} meta={displayedSignedRatio === null || data.source === "loading" ? undefined : t(data.source === "demo" ? "devices.demoSource" : "devices.liveSource")} />
-      <KpiTile label={t("devices.rejected")} value={data.source === "loading" ? "—" : formatNumber(kpis.rejected, 0)} />
-      <KpiTile label={<>{t("devices.stale")} <ProvenanceTag value="CONFIGURACIÓN" /></>} value={data.source === "loading" ? "—" : formatNumber(kpis.stale, 0)} />
+      <KpiTile label={t("devices.reporting")} value={data.source === "loading" ? "—" : formatNumber(kpis.reporting, 0)} meta={data.source === "loading" ? undefined : <ProvenanceTag value="DERIVED" />} />
+      <KpiTile label={t("devices.signedRatio")} value={data.source === "loading" || displayedSignedRatio === null ? "—" : formatNumber(displayedSignedRatio * 100, 1)} unit={data.source === "loading" || displayedSignedRatio === null ? undefined : "%"} meta={displayedSignedRatio === null || data.source === "loading" ? undefined : <ProvenanceTag value="DERIVED" />} />
+      <KpiTile label={t("devices.rejected")} value={data.source === "loading" ? "—" : formatNumber(kpis.rejected, 0)} meta={data.source === "loading" ? undefined : <ProvenanceTag value="DERIVED" />} />
+      <KpiTile label={<>{t("devices.stale")} <ProvenanceTag value="CONFIGURACIÓN" /></>} value={data.source === "loading" ? "—" : formatNumber(kpis.stale, 0)} meta={data.source === "loading" ? undefined : <ProvenanceTag value="DERIVED" />} />
     </section>
     <FilterBar><div className="device-inventory__filters" aria-label={t("devices.filterLabel")}>
       <label><span>{t("devices.filterLabel")}</span><select value={filter} onChange={(event) => { setFilter((event.currentTarget as HTMLSelectElement).value as DeviceFilter); setPageIndex(1); }}>{filterOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select></label>

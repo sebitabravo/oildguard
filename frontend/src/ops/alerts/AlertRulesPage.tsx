@@ -2,7 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 import { t } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import { loadWithTimeout } from "../../ui/backendOrDemo";
-import { Notice, PageHeader, SyntheticBadge } from "../../ui/foundation";
+import { Notice, PageHeader, ProvenanceTag, SyntheticBadge } from "../../ui/foundation";
 import { roleLabel } from "./localize";
 import { LEVELS, ROUTING } from "./logic";
 import { RULE_SOURCES } from "./rules";
@@ -69,7 +69,7 @@ export default function AlertRulesPage() {
                 {thresholdRows(v).map((row) => (
                   <tr>
                     <th scope="row">{t(row.labelKey)}</th>
-                    <td className="og-mono">{rowValue(row)}</td>
+                    <td className="og-mono"><span>{rowValue(row)}</span> <ProvenanceTag value="CONFIGURACIÓN" /></td>
                     <td>{t(row.usedKey)}</td>
                     <td className="og-mono og-alerts-muted">{RULE_SOURCES[row.source]}</td>
                   </tr>

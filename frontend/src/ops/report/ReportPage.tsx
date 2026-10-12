@@ -1,7 +1,7 @@
 import { useMemo, useState } from "preact/hooks";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t } from "../../i18n";
-import { Button, KpiTile, Notice, PageHeader, TimeSeriesChart } from "../../ui/foundation";
+import { Button, KpiTile, Notice, PageHeader, ProvenanceTag, TimeSeriesChart } from "../../ui/foundation";
 import { assembleSyntheticReport, localizeReport } from "./logic";
 import "./report.css";
 
@@ -44,8 +44,8 @@ export default function ReportPage() {
         <section className="og-report-kpis">
           <ReportKpi label={t("report.levelAtDetection")} value={`${formatNumber(report.levelAtDetection, 1)} L`} />
           <ReportKpi label={t("report.litresLost")} value={`${formatNumber(report.litresLost, 1)} L`} tone="warning" />
-          <KpiTile label={t("report.timeToN4")} value={`${formatNumber(report.timeToN4Minutes, 0)} min`} />
-          <KpiTile label={t("report.channels")} value={formatNumber(report.channels, 0)} />
+          <KpiTile label={t("report.timeToN4")} value={`${formatNumber(report.timeToN4Minutes, 0)} min`} meta={<DemoSourceLabel />} />
+          <KpiTile label={t("report.channels")} value={formatNumber(report.channels, 0)} meta={<ProvenanceTag value="DERIVED" />} />
         </section>
         <section className="og-report-section">
           <h3>{t("report.timeline")}</h3>
@@ -54,7 +54,7 @@ export default function ReportPage() {
           </ol>
         </section>
         <section className="og-report-charts">
-          <article><h3>{t("report.levelChart")}</h3><TimeSeriesChart values={report.levelSeries} thresholds={[{ value: 47.5, label: t("history.threshold.warning") }, { value: 28.5, label: t("history.threshold.critical") }]} domain={[0, 95]} yUnit="L" events={timeline} title={t("report.levelChart")} xLabels={text.minuteTicks} cursorIndex={cursorIndex} onCursorChange={setCursorIndex} /></article>
+          <article><h3>{t("report.levelChart")}</h3><TimeSeriesChart values={report.levelSeries} thresholds={[{ value: 47.5, label: `${t("history.threshold.warning")} · CONFIGURACIÓN` }, { value: 28.5, label: `${t("history.threshold.critical")} · CONFIGURACIÓN` }]} domain={[0, 95]} yUnit="L" events={timeline} title={t("report.levelChart")} xLabels={text.minuteTicks} cursorIndex={cursorIndex} onCursorChange={setCursorIndex} /></article>
           <article><h3>{t("report.pressureChart")}</h3><TimeSeriesChart values={report.pressureSeries} yUnit="kPa" yDecimals={1} events={timeline} title={t("report.pressureChart")} color="var(--og-blue)" xLabels={text.minuteTicks} cursorIndex={cursorIndex} onCursorChange={setCursorIndex} /></article>
         </section>
         <section className="og-report-section">

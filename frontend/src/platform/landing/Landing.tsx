@@ -189,7 +189,7 @@ export default function Landing() {
       </section>
       <section className="landing__section" id={signalPath.anchor} data-beat={signalPath.id} data-beat-active={beatActive(signalPath.id)}>
         <BeatHeading beat={signalPath} index={`04 / ${t("landing.pipelineHeading")}`} />
-        <div className="landing__pipeline"><h3>{t("landing.pipelineHeading")}</h3>{pipeline.map(([label, spec], index) => <div className="landing__pipe-row"><span className="landing__pipe-index">0{index + 1}</span><strong>{t(key(label))}</strong><span>{spec === "10 Hz" ? `${n(10)} Hz` : spec === "retention policy" ? t("landing.retentionSpec") : spec}</span></div>)}</div>
+        <div className="landing__pipeline"><h3>{t("landing.pipelineHeading")}</h3>{pipeline.map(([label, spec], index) => <div className="landing__pipe-row"><span className="landing__pipe-index">0{index + 1}</span><strong>{t(key(label))}</strong><span>{spec === "10 Hz" ? <><span>{n(10)} Hz</span> <ProvenanceTag value="CONFIGURACIÓN" /></> : spec === "retention policy" ? t("landing.retentionSpec") : spec}</span></div>)}</div>
       </section>
       <section className="landing__section" id={response.anchor} data-beat={response.id} data-beat-active={beatActive(response.id)}>
         <BeatHeading beat={response} index={`05 / ${t("landing.navAlerts")}`} />
