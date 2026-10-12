@@ -2,6 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 import { t } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import { ProvenanceTag, SyntheticBadge, SyncChart } from "../../ui/foundation";
+import { $$ } from "../../lib/dom-selector";
 import scenarios from "../../lab/fixtures/scenarios.json";
 import { makeTelemetrySeries, type TelemetryReading } from "./logic";
 import { beatById, BEATS, type Beat, type BeatId } from "./beats";
@@ -72,7 +73,7 @@ export default function Landing() {
     const readRanges = (): StoryBeatRange[] => {
       const groups = new Map<BeatId, { top: number; bottom: number }>();
       const base = window.scrollY;
-      for (const node of Array.from(document.querySelectorAll("[data-beat]"))) {
+      for (const node of $$("[data-beat]")) {
         const id = node.getAttribute("data-beat") as BeatId | null;
         if (id === null) continue;
         const rect = (node as HTMLElement).getBoundingClientRect();
