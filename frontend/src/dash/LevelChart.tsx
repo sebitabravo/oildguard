@@ -37,13 +37,24 @@ export default function LevelChart({
   if (points.length === 0) return <p style={{ color: "var(--og-muted)", fontSize: 13 }}>{t("dash.chart.empty")}</p>;
   const levels = points.map((point) => point.liters);
   const levelSigma = levels.map(() => sigmaL);
-  const rest = windows.filter((window) => window.state === "rest");
-  const regimes = rest.flatMap((window) => {
-    const startIndex = points.findIndex((point) => point.t_s >= window.start_t_s);
-    const endIndex = points.findIndex((point) => point.t_s >= window.end_t_s);
-    if (startIndex < 0 || endIndex < 0 || endIndex <= startIndex) return [];
-    return [{ startIndex, endIndex, label: t("ui.rest"), tone: "rest" as const }];
-  });
+  const regimes = [...windows]
+    .sort((left, right) => left.start_t_s - right.start_t_s)
+    .reduce<Array<{ start_t_s: number; end_t_s: number; state: RestWindow["state"] }>>((contiguous, window) => {
+      const previous = contiguous[contiguous.length - 1];
+      if (previous?.state === window.state && previous.end_t_s === window.start_t_s) {
+        previous.end_t_s = window.end_t_s;
+      } else {
+        contiguous.push({ start_t_s: window.start_t_s, end_t_s: window.end_t_s, state: window.state });
+      }
+      return contiguous;
+    }, [])
+    .flatMap((window) => {
+      const startIndex = points.findIndex((point) => point.t_s >= window.start_t_s);
+      const endIndex = points.findIndex((point) => point.t_s >= window.end_t_s);
+      if (startIndex < 0 || endIndex < 0 || endIndex <= startIndex) return [];
+      const rest = window.state === "rest";
+      return [{ startIndex, endIndex, label: t(rest ? "ui.rest" : "ui.movement"), tone: rest ? "rest" as const : "movement" as const }];
+    });
   const events = alerts.flatMap((alert) => {
     const index = points.findIndex((point) => point.t_s >= alert.t_s);
     return index < 0 ? [] : [{ index, label: alert.level, color: ALERT_SEVERITY_COLORS[alert.level] }];
