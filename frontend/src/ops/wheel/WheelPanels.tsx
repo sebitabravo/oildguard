@@ -67,12 +67,18 @@ export function NumericEvidence({ field, source, validity, children }: {
   children: ComponentChildren;
 }) {
   const liveSourceWithoutBadge = source === "LIVE" && validity !== "valid";
+  const originValidityCopy: Record<LevelValidity, DictKey> = {
+    valid: "wheel.numeric.liveOrigin",
+    estimate: "wheel.numeric.origin.estimate",
+    stale: "wheel.numeric.origin.stale",
+    invalid: "wheel.numeric.origin.invalid",
+  };
 
   return (
     <span className="og-wheel-card__note" data-field={field}>
       {children}{" · "}
       {liveSourceWithoutBadge
-        ? <span>{t("wheel.numeric.liveOrigin")}</span>
+        ? <span>{t("wheel.numeric.liveOrigin")} ({t(originValidityCopy[validity])})</span>
         : <span className={`og-badge og-badge--source og-badge--source-${source.toLowerCase()}`}>
             {t(source === "LIVE" ? "fleet.source.live" : "fleet.source.demo")}
           </span>}{" "}
