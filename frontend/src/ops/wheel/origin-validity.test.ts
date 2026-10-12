@@ -29,24 +29,24 @@ describe("wheel live origin validity wording", () => {
   test("invalid readings state invalidity without claiming a live origin", () => {
     const level = levelField("invalid");
     expect(level).toContain("Origen del dato: telemetría (lectura inválida)");
-    expect(level).not.toContain("telemetría en vivo");
+    expect(level.includes("telemetría en vivo")).toBe(false);
   });
 
   test("stale readings state staleness without claiming a live origin", () => {
     const level = levelField("stale");
     expect(level).toContain("Origen del dato: telemetría (lectura obsoleta)");
-    expect(level).not.toContain("telemetría en vivo");
+    expect(level.includes("telemetría en vivo")).toBe(false);
   });
 
   test("estimates do not retain live wording", () => {
     const level = levelField("estimate");
     expect(level).toContain("Origen del dato: telemetría (estimación)");
-    expect(level).not.toContain("telemetría en vivo");
+    expect(level.includes("telemetría en vivo")).toBe(false);
   });
 
   test("valid readings keep the live source wording", () => {
     const level = levelField("valid");
     expect(level).toContain("EN VIVO");
-    expect(level).not.toContain("Origen del dato:");
+    expect(level.includes("Origen del dato:")).toBe(false);
   });
 });
