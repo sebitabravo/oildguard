@@ -7,6 +7,7 @@ import {
   ASSEMBLY_TOLERANCE_PCT,
   ASSEMBLY_VIEW_LIMITS,
   assemblyReduction,
+  assemblyDistanceForViewport,
   assertAssemblyComplete,
   buildAssemblyScene,
   cameraPositionFor,
@@ -76,9 +77,45 @@ describe("assembly cutaway parts", () => {
     expect(parts.planets.children.every((part) => part instanceof THREE.Mesh)).toBe(true);
     expect(parts.planets.children.every((part) => (part as THREE.Mesh).geometry.index !== null)).toBe(true);
   });
+
+  test("uses the landing hairline family for housing edges", () => {
+    const { group } = buildAssemblyScene();
+    let edgeMaterial: THREE.LineBasicMaterial | undefined;
+    group.traverse((object) => {
+      if (object instanceof THREE.LineSegments) {
+        edgeMaterial = object.material as THREE.LineBasicMaterial;
+      }
+    });
+
+    expect(edgeMaterial?.color.getHex()).toBe(0x475569);
+    expect(edgeMaterial?.opacity).toBeLessThanOrEqual(0.18);
+  });
 });
 
 describe("assembly controls", () => {
+  test("frames the landing assembly responsively without clipping mobile width", () => {
+    expect(assemblyDistanceForViewport(1440)).toBeCloseTo(4.7, 10);
+    expect(assemblyDistanceForViewport(390)).toBeCloseTo(7.5, 10);
+    expect(assemblyDistanceForViewport(915)).toBeCloseTo(6.1, 1);
+
+    const desktop = createAssemblyControls({}, 1440);
+    const mobile = createAssemblyControls({}, 390);
+    expect(desktop.getState().distance).toBeCloseTo(4.7, 10);
+    expect(mobile.getState().distance).toBeCloseTo(7.5, 10);
+    mobile.zoom(0.5);
+    mobile.reset();
+    expect(mobile.getState().distance).toBeCloseTo(7.5, 10);
+  });
+
+  test("starts framed for the landing viewport", () => {
+    const state = createAssemblyControls().getState();
+    const position = cameraPositionFor(state);
+    const distance = Math.hypot(position.x, position.y - 1.6, position.z);
+
+    expect(state.distance).toBeCloseTo(4.7, 1);
+    expect(distance).toBeCloseTo(state.distance, 10);
+  });
+
   test("orbit moves the camera and clamps the polar angle", () => {
     const controls = createAssemblyControls();
     const before = controls.getState();

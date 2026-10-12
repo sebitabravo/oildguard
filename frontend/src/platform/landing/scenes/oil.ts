@@ -209,27 +209,27 @@ export function buildOilScene(volumeL: number = OIL_REFERENCE_L): BuiltOilScene 
   const shellMat = new THREE.MeshPhysicalMaterial({
     color: 0x56616c,
     metalness: 0.68,
-    roughness: 0.36,
+    roughness: 0.38,
     transparent: true,
     opacity: OIL_SHELL_OPACITY,
-    clearcoat: 0.2,
-    clearcoatRoughness: 0.36,
+    clearcoat: 0.16,
+    clearcoatRoughness: 0.4,
   });
   const shell = new THREE.Mesh(new THREE.CylinderGeometry(gc.rOut, gc.rOut, gc.length, 48, 1, true), shellMat);
   shell.rotation.z = Math.PI / 2;
   shell.name = "oil-shell";
   group.add(shell);
 
-  const hubMat = new THREE.MeshStandardMaterial({ color: 0x89929e, metalness: 0.92, roughness: 0.28 });
+  const hubMat = new THREE.MeshPhysicalMaterial({ color: 0x89929e, metalness: 0.88, roughness: 0.34 });
   const hub = new THREE.Mesh(new THREE.CylinderGeometry(gc.rIn, gc.rIn, gc.length, 32), hubMat);
   hub.rotation.z = Math.PI / 2;
   hub.name = "oil-hub";
   group.add(hub);
 
   const edgeMaterial = new THREE.LineBasicMaterial({
-    color: 0xc5ced8,
+    color: 0x475569,
     transparent: true,
-    opacity: 0.14,
+    opacity: 0.16,
     depthWrite: false,
   });
   for (const mesh of [shell, hub]) {

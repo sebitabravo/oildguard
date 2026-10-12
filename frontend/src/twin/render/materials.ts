@@ -21,19 +21,19 @@ const builders = {
       clearcoatRoughness: 0.25,
     }),
   paintedSteelDark: () =>
-    new THREE.MeshStandardMaterial({
+    new THREE.MeshPhysicalMaterial({
       color: PALETTE.paintedSteelDark,
       metalness: 0.4,
       roughness: 0.55,
     }),
   machinedSteel: () =>
-    new THREE.MeshStandardMaterial({
+    new THREE.MeshPhysicalMaterial({
       color: PALETTE.machinedSteel,
       metalness: 1,
       roughness: 0.3,
     }),
   castIron: () =>
-    new THREE.MeshStandardMaterial({
+    new THREE.MeshPhysicalMaterial({
       color: PALETTE.castIron,
       metalness: 0.85,
       roughness: 0.55,
@@ -76,7 +76,7 @@ export type GroundKind = "dirt" | "rock";
 export interface MaterialLibrary {
   get<N extends MaterialName>(name: N): ReturnType<(typeof builders)[N]>;
   /** Neumático con relieve de banda de rodadura (bump procedural). */
-  rubberTire(): THREE.MeshStandardMaterial;
+  rubberTire(): THREE.MeshPhysicalMaterial;
   /** Suelo con albedo + rugosidad procedurales; `repeat` controla el tileado. */
   ground(kind: GroundKind, repeat?: [number, number]): THREE.MeshStandardMaterial;
   dispose(): void;
@@ -102,7 +102,7 @@ export function createMaterials(): MaterialLibrary {
       return memo("rubberTire", () => {
         const bump = treadBumpTexture();
         textures.push(bump);
-        return new THREE.MeshStandardMaterial({
+        return new THREE.MeshPhysicalMaterial({
           color: PALETTE.rubberTire,
           metalness: 0,
           roughness: 0.9,

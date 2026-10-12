@@ -154,29 +154,34 @@ export default function BenchScene({
     scene.add(grid);
 
     // Shared PBR materials (IBL lights them now, so real metalness is fine).
-    const steel = new THREE.MeshStandardMaterial({
+    const steel = new THREE.MeshPhysicalMaterial({
       color: 0x89929e,
-      metalness: 0.92,
-      roughness: 0.28,
+      metalness: 0.88,
+      roughness: 0.34,
     });
-    const darkSteel = mats.get("paintedSteelDark");
+    const benchMat = new THREE.MeshPhysicalMaterial({
+      color: 0x18202c,
+      metalness: 0.25,
+      roughness: 0.72,
+    });
+    const darkSteel = mats.get("castIron");
     const housingMat = new THREE.MeshPhysicalMaterial({
       color: 0x56616c,
       metalness: 0.72,
-      roughness: 0.34,
+      roughness: 0.38,
       transparent: true,
-      clearcoat: 0.25,
-      clearcoatRoughness: 0.32,
+      clearcoat: 0.16,
+      clearcoatRoughness: 0.4,
     });
     const gearboxMat = new THREE.MeshPhysicalMaterial({
       color: 0x3b424a,
       metalness: 0.78,
-      roughness: 0.36,
+      roughness: 0.44,
       transparent: true,
-      clearcoat: 0.2,
-      clearcoatRoughness: 0.36,
+      clearcoat: 0.12,
+      clearcoatRoughness: 0.44,
     });
-    const brass = new THREE.MeshStandardMaterial({
+    const brass = new THREE.MeshPhysicalMaterial({
       color: 0xb28a37,
       metalness: 0.92,
       roughness: 0.28,
@@ -222,17 +227,17 @@ export default function BenchScene({
     };
 
     // ---- Steel rig frame: table + legs + cross beams + saddle stands ----
-    box(4.6, 0.12, 2.4, steel, 0, 0.9, 0); // table top
+    box(4.6, 0.12, 2.4, benchMat, 0, 0.9, 0); // table top
     for (const sx of [-2.1, 2.1]) {
       for (const sz of [-1.0, 1.0]) {
-        box(0.12, 0.9, 0.12, steel, sx, 0.45, sz); // legs
+        box(0.12, 0.9, 0.12, benchMat, sx, 0.45, sz); // legs
       }
     }
-    box(4.4, 0.1, 0.1, steel, 0, 0.25, -1.0); // cross beams
-    box(4.4, 0.1, 0.1, steel, 0, 0.25, 1.0);
+    box(4.4, 0.1, 0.1, benchMat, 0, 0.25, -1.0); // cross beams
+    box(4.4, 0.1, 0.1, benchMat, 0, 0.25, 1.0);
     for (const sx of [-0.55, 0.55]) {
       box(0.34, 0.5, 0.95, darkSteel, sx, 1.21, 0); // saddle stands
-      box(0.5, 0.08, 1.05, steel, sx, 1.5, 0); // stand caps
+      box(0.5, 0.08, 1.05, benchMat, sx, 1.5, 0); // stand caps
     }
 
     // ---- Simplified GDY106 wheel/motor housing (NOT CAD-exact) ----
@@ -292,12 +297,12 @@ export default function BenchScene({
     // Sun gear on the motor axis inside the gearbox, three planetary
     // pinions around it, ring-gear hint, and the rotor barrel volume in the
     // motor housing. Low-poly cylinders + box teeth.
-    const gearMat = new THREE.MeshStandardMaterial({
+    const gearMat = new THREE.MeshPhysicalMaterial({
       color: 0x9aa7bd,
       metalness: 0.9,
-      roughness: 0.35,
+      roughness: 0.4,
     });
-    const rotorMat = new THREE.MeshStandardMaterial({
+    const rotorMat = new THREE.MeshPhysicalMaterial({
       color: 0xa0622d,
       metalness: 0.8,
       roughness: 0.4,
@@ -448,7 +453,7 @@ export default function BenchScene({
     // Tire torus outboard + wet brake discs + spring parking-brake can.
     const tire = new THREE.Mesh(
       new THREE.TorusGeometry(0.62, 0.2, 12, 28),
-      cableMat
+      mats.rubberTire()
     );
     tire.rotation.y = Math.PI / 2;
     tire.position.set(1.35, HOUSING_Y, 0);
@@ -558,12 +563,12 @@ export default function BenchScene({
     });
 
     const edgeMaterial = new THREE.LineBasicMaterial({
-      color: 0xc5ced8,
+      color: 0x475569,
       transparent: true,
       opacity: 0.16,
       depthWrite: false,
     });
-    for (const mesh of [barrelShell, gearboxShell, outputFlange, hub, tire]) {
+    for (const mesh of [barrelShell, gearboxShell, outputFlange]) {
       mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, 24), edgeMaterial));
     }
 

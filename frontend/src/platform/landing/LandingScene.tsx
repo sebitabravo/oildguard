@@ -67,7 +67,8 @@ export async function mountAssemblyWithFallback(
   try {
     const mod = await loadAssembly();
     if (!isAlive()) return null;
-    const controls = mod.createAssemblyControls();
+    const viewportWidth = typeof window === "undefined" ? 1440 : window.innerWidth;
+    const controls = mod.createAssemblyControls({}, viewportWidth);
     const mounted = mod.mountAssemblyScene(mountEl, controls);
     return { mod, controls, mounted };
   } catch (error) {

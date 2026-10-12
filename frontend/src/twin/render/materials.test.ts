@@ -51,8 +51,24 @@ describe("material library", () => {
 
   test("machined steel is fully metallic", () => {
     const lib = createMaterials();
-    expect(lib.get("machinedSteel").metalness).toBe(1);
-    expect(lib.get("machinedSteel").roughness).toBeCloseTo(0.3, 2);
+    const steel = lib.get("machinedSteel");
+    expect(steel.isMeshPhysicalMaterial).toBe(true);
+    expect(steel.metalness).toBe(1);
+    expect(steel.roughness).toBeCloseTo(0.3, 2);
+    expect(steel.clearcoat).toBe(0);
+    lib.dispose();
+  });
+
+  test("steel and cast iron material classes stay physical without a clearcoat", () => {
+    const lib = createMaterials();
+    const paintedSteel = lib.get("paintedSteelDark");
+    const castIron = lib.get("castIron");
+    expect(paintedSteel.isMeshPhysicalMaterial).toBe(true);
+    expect(castIron.isMeshPhysicalMaterial).toBe(true);
+    expect(castIron.clearcoat).toBe(0);
+    expect(castIron.color.getHex()).toBe(PALETTE.castIron);
+    expect(castIron.metalness).toBeCloseTo(0.85, 2);
+    expect(castIron.roughness).toBeCloseTo(0.55, 2);
     lib.dispose();
   });
 
@@ -70,7 +86,9 @@ describe("material library", () => {
   test("rubber tire is very dark and rough", () => {
     const lib = createMaterials();
     const tire = lib.rubberTire();
+    expect(tire.isMeshPhysicalMaterial).toBe(true);
     expect(tire.roughness).toBeCloseTo(0.9, 2);
+    expect(tire.clearcoat).toBe(0);
     expect(tire.color.getHSL({ h: 0, s: 0, l: 0 }).l).toBeLessThan(0.05);
     expect(tire.bumpMap).toBeTruthy();
     lib.dispose();

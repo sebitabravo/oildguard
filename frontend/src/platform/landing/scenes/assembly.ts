@@ -126,11 +126,17 @@ export interface AssemblyViewState {
 const INITIAL_VIEW: AssemblyViewState = {
   azimuth: 0.65,
   polar: 1.1,
-  distance: 6.5,
+  distance: 4.7,
   isolated: null,
 };
 
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+
+export function assemblyDistanceForViewport(viewportWidth: number): number {
+  const width = clamp(viewportWidth, 390, 1440);
+  const progress = (width - 390) / (1440 - 390);
+  return 7.5 + (4.7 - 7.5) * progress;
+}
 
 export interface AssemblyControls {
   getState(): AssemblyViewState;
@@ -140,8 +146,16 @@ export interface AssemblyControls {
   reset(): void;
 }
 
-export function createAssemblyControls(initial: Partial<AssemblyViewState> = {}): AssemblyControls {
-  let state: AssemblyViewState = { ...INITIAL_VIEW, ...initial };
+export function createAssemblyControls(
+  initial: Partial<AssemblyViewState> = {},
+  viewportWidth = 1440,
+): AssemblyControls {
+  const initialState: AssemblyViewState = {
+    ...INITIAL_VIEW,
+    distance: assemblyDistanceForViewport(viewportWidth),
+    ...initial,
+  };
+  let state: AssemblyViewState = { ...initialState };
   return {
     getState: () => ({ ...state }),
     orbit(deltaAzimuth, deltaPolar) {
@@ -167,7 +181,7 @@ export function createAssemblyControls(initial: Partial<AssemblyViewState> = {})
       state = { ...state, isolated: part };
     },
     reset() {
-      state = { ...INITIAL_VIEW };
+      state = { ...initialState };
     },
   };
 }
@@ -227,18 +241,18 @@ export function buildAssemblyScene(): BuiltAssembly {
   const group = new THREE.Group();
   group.name = "gdy106-assembly-cutaway";
 
-  const gear = new THREE.MeshStandardMaterial({ color: 0xaeb7c3, metalness: 0.96, roughness: 0.27 });
-  const rotorMat = new THREE.MeshStandardMaterial({ color: 0x895c37, metalness: 0.84, roughness: 0.34 });
-  const brass = new THREE.MeshStandardMaterial({ color: 0xb28a37, metalness: 0.92, roughness: 0.28 });
-  const darkSteel = new THREE.MeshStandardMaterial({ color: 0x333a43, metalness: 0.78, roughness: 0.4 });
+  const gear = new THREE.MeshPhysicalMaterial({ color: 0xaeb7c3, metalness: 0.92, roughness: 0.38 });
+  const rotorMat = new THREE.MeshPhysicalMaterial({ color: 0x895c37, metalness: 0.8, roughness: 0.42 });
+  const brass = new THREE.MeshPhysicalMaterial({ color: 0xb28a37, metalness: 0.9, roughness: 0.32 });
+  const darkSteel = new THREE.MeshPhysicalMaterial({ color: 0x2b3037, metalness: 0.72, roughness: 0.56 });
   const shellMat = new THREE.MeshPhysicalMaterial({
     color: 0x56616c,
     metalness: 0.68,
-    roughness: 0.36,
+    roughness: 0.38,
     transparent: true,
     opacity: CUTAWAY_SHELL_OPACITY,
-    clearcoat: 0.2,
-    clearcoatRoughness: 0.36,
+    clearcoat: 0.16,
+    clearcoatRoughness: 0.4,
   });
 
   // Carcasa abierta en corte: el hueco deja legible el tren sin crear una pieza aislable.
@@ -334,16 +348,14 @@ export function buildAssemblyScene(): BuiltAssembly {
 
   const parts: Record<AssemblyPartId, THREE.Group> = { motor, sun, planets, carrier, hub, brakes };
   const edgeMaterial = new THREE.LineBasicMaterial({
-    color: 0xc5ced8,
+    color: 0x475569,
     transparent: true,
-    opacity: 0.14,
+    opacity: 0.16,
     depthWrite: false,
   });
-  group.traverse((object) => {
-    const mesh = object as THREE.Mesh;
-    if (!mesh.isMesh || mesh.material === shellMat) return;
+  for (const mesh of [caseSection, motorShell]) {
     mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, 24), edgeMaterial));
-  });
+  }
   return { group, parts, shellOpacity: CUTAWAY_SHELL_OPACITY };
 }
 
@@ -375,7 +387,10 @@ export function mountAssemblyScene(host: HTMLElement, controls: AssemblyControls
   host.style.aspectRatio = "16 / 9";
   const stage = createStage(host, {
     preset: "studio",
-    cameraPosition: [4.4, 3.4, 5.4],
+    cameraPosition: (() => {
+      const position = cameraPositionFor(controls.getState());
+      return [position.x, position.y, position.z] as [number, number, number];
+    })(),
     cameraTarget: [0, 1.6, 0],
     sun: { shadowBox: 5, target: [0, 1, 0] },
     minDistance: ASSEMBLY_VIEW_LIMITS.minDistance,
