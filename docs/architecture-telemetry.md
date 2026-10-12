@@ -6,6 +6,17 @@ backend exposes stored and aggregated data to the dashboard. Every boundary
 keeps the device identity visible so queueing, drops, signatures, and latency
 can be measured rather than inferred.
 
+## MQTT transport security
+
+The local broker keeps a development-only plaintext listener on port 1883 and
+adds TLS on port 8883. Generate a local CA and broker certificate with
+`scripts/gen-dev-certs.sh`; generated files under `mosquitto/certs/` are ignored
+by Git. Set `OILGUARD_MQTT_CA=/mosquitto/certs/ca.crt` for the Python bridge and
+use `EDGE_SIM_MQTT_URL=mqtts://mqtt:8883` for the Rust edge simulator. TLS
+authenticates the broker with the development CA; per-device client
+certificates, production CA management, and removal of the plaintext demo
+listener are not implemented.
+
 ## Data flow
 
 ```mermaid

@@ -25,9 +25,11 @@ services:
     container_name: oilguard-mqtt
     ports:
       - "1883:1883"
+      - "8883:8883"
       - "9001:9001"
     volumes:
       - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/certs:/mosquitto/certs:ro
       - ./mosquitto/data:/mosquitto/data
       - ./mosquitto/log:/mosquitto/log
     healthcheck:
@@ -56,7 +58,7 @@ services:
       INFLUXDB_BUCKET: oilguard
       INFLUXDB_TOKEN: ${INFLUXDB_TOKEN:-oilguard-local-admin-token}
       MQTT_HOST: mqtt
-      MQTT_PORT: "1883"
+      OILGUARD_MQTT_CA: ${OILGUARD_MQTT_CA:-}
       MQTT_TOPIC: oilguard/signals
       BACKEND_URL: http://backend:8000
       OILGUARD_DEVICE_KEYS: ${OILGUARD_DEVICE_KEYS:-}
@@ -95,11 +97,14 @@ services:
     profiles: ["sim"]
     build: ./edge-sim
     container_name: oilguard-edge-sim
+    volumes:
+      - ./mosquitto/certs:/mosquitto/certs:ro
     depends_on:
       mqtt:
         condition: service_healthy
     environment:
       OILGUARD_DEVICE_MASTER_KEY: ${OILGUARD_DEVICE_MASTER_KEY:-}
+      OILGUARD_MQTT_CA: ${OILGUARD_MQTT_CA:-}
     command:
       - --devices
       - ${EDGE_SIM_DEVICES:-100}
@@ -108,7 +113,7 @@ services:
       - --mode
       - realtime
       - --mqtt-url
-      - mqtt://mqtt:1883
+      - ${EDGE_SIM_MQTT_URL:-mqtt://mqtt:1883}
       - --stats-interval
       - "10"
 

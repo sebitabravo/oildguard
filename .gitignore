@@ -26,6 +26,7 @@ venv/
 influxdb-data/
 mosquitto/data/
 mosquitto/log/
+mosquitto/certs/
 
 # OS / editor
 .DS_Store

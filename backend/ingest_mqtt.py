@@ -25,6 +25,7 @@ import csv
 import json
 import logging
 import os
+import ssl
 import threading
 import time
 import urllib.request
@@ -34,7 +35,8 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(messag
 log = logging.getLogger("oilguard-mqtt-bridge")
 
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
-MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
+MQTT_DEFAULT_PORT = "8883" if os.getenv("OILGUARD_MQTT_CA") else "1883"
+MQTT_PORT = int(os.getenv("MQTT_PORT", MQTT_DEFAULT_PORT))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "oilguard/signals")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
@@ -56,6 +58,19 @@ except ImportError:  # el backend sigue funcionando sin la dependencia
 def accelerated_json_available() -> bool:
     """True si el decoder acelerado esta instalado (solo diagnostico)."""
     return orjson is not None
+
+
+def create_mqtt_tls_context() -> ssl.SSLContext | None:
+    ca_file = os.getenv("OILGUARD_MQTT_CA")
+    if not ca_file:
+        return None
+    return ssl.create_default_context(cafile=ca_file)
+
+
+def configure_mqtt_tls(client: Any) -> None:
+    context = create_mqtt_tls_context()
+    if context is not None:
+        client.tls_set_context(context)
 
 
 def bridge_timing_enabled() -> bool:
@@ -201,6 +216,7 @@ def run_forever(
         return post_to_backend(rows)
 
     client = mqtt.Client()
+    configure_mqtt_tls(client)
 
     def on_connect(_c: Any, _u: Any, _f: Any, rc: int) -> None:
         topics = subscription_topics(topic)
@@ -268,6 +284,7 @@ def publish_csv(path: str, host: str, port: int, topic: str, limit: int = 0) -> 
             if limit and len(rows) >= limit:
                 break
     client = mqtt.Client()
+    configure_mqtt_tls(client)
     client.connect(host, port, keepalive=30)
     payload = json.dumps({"rows": rows})
     info = client.publish(topic, payload)
