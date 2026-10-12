@@ -4,6 +4,7 @@ const EVALUATION_REASON_KEYS: Record<string, DictKey> = {
   no_rows: "dash.evaluation.reason.noRows",
   insufficient_rest_samples: "dash.evaluation.reason.insufficientRest",
   analysis_unavailable: "dash.evaluation.reason.unavailable",
+  pendiente_no_significativa: "pendiente_no_significativa",
 };
 
 export function localizeUnevaluatedReason(

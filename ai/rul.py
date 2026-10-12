@@ -21,6 +21,7 @@ condition, else anomaly-only fallback): RUL is SUPPRESSED — hours null,
 - fewer than 10 scored rest samples (no trend basis);
 - baseline ``sigma_L > 2.0 L`` (rest precision insufficient);
 - slope not negative (no leak trend: flat or refilling);
+- 95% slope confidence interval contains zero (trend is not significant);
 - R² < 0.30 (trend too weak to extrapolate honestly).
 
 Suppression is surfaced, never silent: the payload carries the reason
@@ -42,6 +43,22 @@ SHIFT_H = 8.0  # maintenance shift
 MIN_SCORED_N = 10
 MIN_R2 = 0.30
 MAX_SIGMA_L = 2.0
+
+# Tabla t bilateral 95 % de NIST/SEMATECH E-Handbook, sección 1.3.6.7.2:
+# https://www.itl.nist.gov/div898/handbook/eda/section3/eda3672.htm
+_T_CRITICAL_95 = (
+    12.706, 4.303, 3.182, 2.776, 2.571, 2.447, 2.365, 2.306, 2.262, 2.228,
+    2.201, 2.179, 2.160, 2.145, 2.131, 2.120, 2.110, 2.101, 2.093, 2.086,
+    2.080, 2.074, 2.069, 2.064, 2.060, 2.056, 2.052, 2.048, 2.045, 2.042,
+)
+
+
+def t_critical_95(degrees_of_freedom: int) -> float:
+    if degrees_of_freedom < 1:
+        raise ValueError("degrees_of_freedom must be positive")
+    if degrees_of_freedom > len(_T_CRITICAL_95):
+        return 1.96
+    return _T_CRITICAL_95[degrees_of_freedom - 1]
 
 
 def fit_trend(points: list[tuple[float, float]]) -> dict:
@@ -95,6 +112,17 @@ def _suppressed(reason: str, reason_message: dict, trend: dict, sigma_l) -> dict
         ),
         "note_message": message("rul_suppressed_note"),
     }
+
+
+def _hours_to_critical(
+    intercept_l: float,
+    slope_l_per_h: float,
+    latest_t_s: float,
+) -> tuple[float | None, str | None]:
+    fitted_level = intercept_l + slope_l_per_h * latest_t_s / 3600.0
+    if slope_l_per_h >= 0 or fitted_level <= CRIT_L:
+        return None, "The fitted trend has no future crossing of the critical level."
+    return (fitted_level - CRIT_L) / -slope_l_per_h, None
 
 
 def extrapolate(level_out: dict) -> dict:
@@ -151,13 +179,31 @@ def extrapolate(level_out: dict) -> dict:
             trend,
             sigma_l,
         )
+    degrees_of_freedom = trend["n"] - 2
+    margin = t_critical_95(degrees_of_freedom) * trend["se_slope_per_h"]
+    slope_low = trend["slope_per_h"] - margin
+    slope_high = trend["slope_per_h"] + margin
+    if slope_low <= 0.0 <= slope_high:
+        return _suppressed(
+            "slope confidence interval includes zero; anomaly-only",
+            message("pendiente_no_significativa"),
+            trend,
+            sigma_l,
+        )
+
+    current_t_s = estimates[-1]["t_s"]
+    intercept_l = trend["intercept_l"]
+    fitted_current = intercept_l + trend["slope_per_h"] * current_t_s / 3600.0
     rate = -trend["slope_per_h"]
     current = estimates[-1]["level_liters"]
-    h_warn = (current - WARN_L) / rate
-    h_crit = (current - CRIT_L) / rate
-    # Already below a threshold -> 0 (not negative): the condition is now.
-    h_warn = max(0.0, h_warn)
-    h_crit = max(0.0, h_crit)
+    h_warn = max(0.0, (fitted_current - WARN_L) / rate)
+    h_crit = max(0.0, (fitted_current - CRIT_L) / rate)
+    h_crit_low, h_crit_low_reason = _hours_to_critical(
+        intercept_l, slope_low, current_t_s
+    )
+    h_crit_high, h_crit_high_reason = _hours_to_critical(
+        intercept_l, slope_high, current_t_s
+    )
     confidence = trend["r2"] * min(1.0, trend["n"] / 30.0)
     return {
         "model": MODEL_LABEL,
@@ -168,6 +214,17 @@ def extrapolate(level_out: dict) -> dict:
         "hours": round(h_crit, 2),
         "hours_to_warning": round(h_warn, 2),
         "hours_to_critical": round(h_crit, 2),
+        "confidence_band": {
+            "level": 0.95,
+            "slope_low_L_per_h": round(slope_low, 4),
+            "slope_high_L_per_h": round(slope_high, 4),
+            "hours_to_critical_low": round(h_crit_low, 2)
+            if h_crit_low is not None else None,
+            "hours_to_critical_low_reason": h_crit_low_reason,
+            "hours_to_critical_high": round(h_crit_high, 2)
+            if h_crit_high is not None else None,
+            "hours_to_critical_high_reason": h_crit_high_reason,
+        },
         "haul_cycles": round(h_crit * 3600.0 / CYCLE_S, 1),
         "shifts": round(h_crit / SHIFT_H, 2),
         "confidence": round(max(0.0, min(1.0, confidence)), 3),

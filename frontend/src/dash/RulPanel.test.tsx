@@ -3,6 +3,7 @@ import { h } from "preact";
 import renderToString from "preact-render-to-string";
 import type { RulDataOk, RulDataSuppressed, RulDataUnavailable } from "../sim/api";
 import { t } from "../i18n";
+import { localizeUnevaluatedReason } from "./evaluationReason";
 import RulPanel from "./RulPanel";
 
 // Solo español (S05): el panel siempre sale en español, sin idioma por localStorage.
@@ -33,6 +34,15 @@ function renderOkRul(
     confidence: 0.822,
     status: "ok",
     anomaly_only: false,
+    confidence_band: {
+      level: 0.95,
+      slope_low_L_per_h: -1.4,
+      slope_high_L_per_h: -1.1,
+      hours_to_critical_low: 0.45,
+      hours_to_critical_low_reason: null,
+      hours_to_critical_high: 0.58,
+      hours_to_critical_high_reason: null,
+    },
     slope_L_per_h: -1.23456,
     r2: 0.369,
     current_level_L: 92.102,
@@ -162,5 +172,65 @@ describe("RUL suppression explanation", () => {
     expect(html).toContain("El RUL está suprimido");
     expect(html).toContain("Muestras de reposo insuficientes: 6");
     expect(html.includes("Raw legacy note")).toBe(false);
+  });
+});
+
+describe("RUL confidence band", () => {
+  test("renders the 95 percent critical-horizon range", () => {
+    const rul = {
+      hours: 50.5,
+      hours_to_warning: 31.5,
+      hours_to_critical: 50.5,
+      haul_cycles: 6275.2,
+      shifts: 6.31,
+      confidence: 0.82,
+      status: "ok",
+      anomaly_only: false,
+      slope_L_per_h: -1,
+      r2: 0.9,
+      current_level_L: 79,
+      model: "synthetic-proxy",
+      note: "",
+      fallback: "",
+      confidence_band: {
+        level: 0.95,
+        slope_low_L_per_h: -1.23,
+        slope_high_L_per_h: -0.77,
+        hours_to_critical_low: 41.06,
+        hours_to_critical_low_reason: null,
+        hours_to_critical_high: 65.58,
+        hours_to_critical_high_reason: null,
+      },
+    } as unknown as RulDataOk;
+
+    const html = renderToString(h(RulPanel, { rul }));
+
+    expect(html).toContain("confianza 95 %");
+    expect(html).toContain("41,06–65,58 h hasta crítico");
+  });
+
+  test("localizes the non-significant slope reason", () => {
+    expect(localizeUnevaluatedReason("pendiente_no_significativa")).toBe(
+      "RUL suprimido: la pendiente no es estadísticamente significativa; se muestran solo alertas de anomalía.",
+    );
+
+    const rul: RulDataSuppressed = {
+      hours: null,
+      haul_cycles: null,
+      shifts: null,
+      confidence: 0,
+      status: "suppressed",
+      anomaly_only: true,
+      model: "synthetic-proxy",
+      reason: "slope confidence interval includes zero; anomaly-only",
+      reason_message: { code: "pendiente_no_significativa", params: {} },
+      note: "Raw backend diagnostic.",
+      note_message: { code: "rul_suppressed_summary", params: {} },
+      fallback: "",
+    };
+
+    expect(renderToString(h(RulPanel, { rul }))).toContain(
+      "RUL suprimido: la pendiente no es estadísticamente significativa; se muestran solo alertas de anomalía.",
+    );
   });
 });

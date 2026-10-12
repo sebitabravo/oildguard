@@ -1517,6 +1517,7 @@ def rul(device_id: str | None = Query(default=None)) -> dict:
             "hours": r["hours"],
             "hours_to_warning": r["hours_to_warning"],
             "hours_to_critical": r["hours_to_critical"],
+            "confidence_band": r["confidence_band"],
             "haul_cycles": r["haul_cycles"],
             "shifts": r["shifts"],
             "confidence": r["confidence"],

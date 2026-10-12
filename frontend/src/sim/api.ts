@@ -151,6 +151,15 @@ export interface RulDataOk {
   hours: number;
   hours_to_warning: number;
   hours_to_critical: number;
+  confidence_band: {
+    level: number;
+    slope_low_L_per_h: number;
+    slope_high_L_per_h: number;
+    hours_to_critical_low: number | null;
+    hours_to_critical_low_reason: string | null;
+    hours_to_critical_high: number | null;
+    hours_to_critical_high_reason: string | null;
+  };
   haul_cycles: number;
   shifts: number;
   confidence: number;

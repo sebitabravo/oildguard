@@ -441,6 +441,7 @@ export const dict = {
   "rul.panel.horizon.beyond": "Fuera del horizonte del turno",
   "rul.panel.suppressedDetail": "Modelo={model} ({qualifier}) · mostrar alertas de anomalía N1/N2/N4 en lugar de una cuenta regresiva.",
   "rul.panel.summary": "pendiente {slope} L/h · R² {r2} · nivel {level} L · modelo={model} ({qualifier})",
+  "pendiente_no_significativa": "RUL suprimido: la pendiente no es estadísticamente significativa; se muestran solo alertas de anomalía.",
 } as const;
 
 export type DictKey = keyof typeof dict;

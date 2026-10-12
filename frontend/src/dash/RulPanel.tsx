@@ -123,6 +123,21 @@ export default function RulPanel({
         <span>
           {t("rul.panel.confidenceValue", { confidence: formatNumber(rul.confidence, 3) })}
         </span>
+        {rul.confidence_band.hours_to_critical_low !== null
+          && rul.confidence_band.hours_to_critical_high !== null && (
+            <>
+              <span>
+                {t("rul.panel.confidenceValue", {
+                  confidence: `${formatNumber(rul.confidence_band.level * 100, 0)} %`,
+                })}
+              </span>
+              <span>
+                {t("rul.panel.hoursToCritical", {
+                  hours: `${formatNumber(rul.confidence_band.hours_to_critical_low, 2)}–${formatNumber(rul.confidence_band.hours_to_critical_high, 2)}`,
+                })}
+              </span>
+            </>
+          )}
       </div>
       <p style={{ margin: "8px 0 0", color: "var(--og-muted)", fontSize: 12 }}>
         {t("rul.panel.summary", {

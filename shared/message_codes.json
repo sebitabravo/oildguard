@@ -23,6 +23,7 @@
   "rul_baseline_precision_insufficient": ["sigma_l", "max_sigma_l"],
   "rul_model_note": [],
   "rul_no_leak_trend": ["slope_l_per_h"],
+  "pendiente_no_significativa": [],
   "rul_no_rows_note": [],
   "rul_no_rows_reason": [],
   "rul_significant_leak_trend": [],
