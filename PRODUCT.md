@@ -138,8 +138,7 @@ Edge node is an ESP32-S3 acquiring vibration at 1 kHz and pressure and temperatu
 
 **Stated in the pre-proposal, not independently substantiated**
 
-- Module economics: approximately USD 150 per wheel, USD 300 per truck (two motorized wheels), USD 15,000 for a 50-truck fleet. Explicitly module-only — excluding installation, network infrastructure, calibration, maintenance, software, and integration engineering.
-- A documented case of approximately USD 150,000 saved and five days of unplanned downtime avoided on a Komatsu 930E, attributed to a Razor Labs DataMind AI final-drive-bearing case study (2026). **This citation could not be verified.** No Razor Labs case study matching that title was found, and the published Komatsu 930E case studies report different figures on different subsystems — aftercooler and turbocharger USD 120,000 / 4 days; radiator core USD 85,000 / 3 days; combustion imbalance USD 190,000 with 20 hours saved; air intake USD 65,000 / 2 days; thermostat USD 12,000 / 8 hours. None concerns a wheel motor or final-drive bearing. The figure is used twice in the pre-proposal, in §06 and §07.3, and must not be carried into interface copy or a submission until the source is traced or the claim is restated.
+- Economics: not established. No cost, saving or downtime figure is claimed in this prototype; a cost model requires sourced inputs (see docs/feasibility.md).
 
 **Future work must not fabricate**
 
