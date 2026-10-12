@@ -115,14 +115,14 @@ def _suppressed(reason: str, reason_message: dict, trend: dict, sigma_l) -> dict
 
 
 def _hours_to_critical(
-    intercept_l: float,
+    current_level_l: float,
     slope_l_per_h: float,
-    latest_t_s: float,
 ) -> tuple[float | None, str | None]:
-    fitted_level = intercept_l + slope_l_per_h * latest_t_s / 3600.0
-    if slope_l_per_h >= 0 or fitted_level <= CRIT_L:
+    if slope_l_per_h >= 0:
         return None, "The fitted trend has no future crossing of the critical level."
-    return (fitted_level - CRIT_L) / -slope_l_per_h, None
+    if current_level_l <= CRIT_L:
+        return 0.0, None
+    return (current_level_l - CRIT_L) / -slope_l_per_h, None
 
 
 def extrapolate(level_out: dict) -> dict:
@@ -191,18 +191,15 @@ def extrapolate(level_out: dict) -> dict:
             sigma_l,
         )
 
-    current_t_s = estimates[-1]["t_s"]
-    intercept_l = trend["intercept_l"]
-    fitted_current = intercept_l + trend["slope_per_h"] * current_t_s / 3600.0
     rate = -trend["slope_per_h"]
     current = estimates[-1]["level_liters"]
-    h_warn = max(0.0, (fitted_current - WARN_L) / rate)
-    h_crit = max(0.0, (fitted_current - CRIT_L) / rate)
+    h_warn = max(0.0, (current - WARN_L) / rate)
+    h_crit = max(0.0, (current - CRIT_L) / rate)
     h_crit_low, h_crit_low_reason = _hours_to_critical(
-        intercept_l, slope_low, current_t_s
+        current, slope_low
     )
     h_crit_high, h_crit_high_reason = _hours_to_critical(
-        intercept_l, slope_high, current_t_s
+        current, slope_high
     )
     confidence = trend["r2"] * min(1.0, trend["n"] / 30.0)
     return {

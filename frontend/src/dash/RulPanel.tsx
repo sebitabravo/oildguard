@@ -123,7 +123,8 @@ export default function RulPanel({
         <span>
           {t("rul.panel.confidenceValue", { confidence: formatNumber(rul.confidence, 3) })}
         </span>
-        {rul.confidence_band.hours_to_critical_low !== null
+        {rul.confidence_band
+          && rul.confidence_band.hours_to_critical_low !== null
           && rul.confidence_band.hours_to_critical_high !== null && (
             <>
               <span>

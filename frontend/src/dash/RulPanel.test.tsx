@@ -176,6 +176,30 @@ describe("RUL suppression explanation", () => {
 });
 
 describe("RUL confidence band", () => {
+  test("renders the headline when the optional band is absent", () => {
+    const rul = {
+      hours: 0.51,
+      hours_to_warning: 0.36,
+      hours_to_critical: 0.51,
+      haul_cycles: 62.2,
+      shifts: 0.06,
+      confidence: 0.822,
+      status: "ok",
+      anomaly_only: false,
+      slope_L_per_h: -1.23456,
+      r2: 0.369,
+      current_level_L: 92.102,
+      model: "synthetic-proxy",
+      note: "",
+      fallback: "",
+    } as unknown as RulDataOk;
+
+    const html = renderToString(h(RulPanel, { rul }));
+
+    expect(html).toContain("0,51 h hasta crítico");
+    expect(html.includes("confianza 95 %")).toBe(false);
+  });
+
   test("renders the 95 percent critical-horizon range", () => {
     const rul = {
       hours: 50.5,
