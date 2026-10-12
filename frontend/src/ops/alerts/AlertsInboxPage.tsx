@@ -18,7 +18,7 @@ const NO_FILTERS: AlertFilters = { level: "all", lifecycle: "all", truck: "all",
 export function ActiveCountSource({ demo, live, backendLive }: { demo: number; live: number; backendLive: boolean }) {
   if (live > 0 && demo === 0) return <SourceTag source="live" />;
   if (live > 0 || backendLive) {
-    return <><SourceTag source="mixed" /><span className="og-alerts-source-split"><SourceTag source="live" /> {formatNumber(live, 0)} · <SourceTag source="demo" /> {formatNumber(demo, 0)}</span></>;
+    return <><SourceTag source="mixed" /><span className="og-alerts-source-split og-alerts-source-split--single-line"><SourceTag source="live" /> {formatNumber(live, 0)} · <SourceTag source="demo" /> {formatNumber(demo, 0)}</span></>;
   }
   return <SourceTag source="demo" />;
 }
@@ -105,8 +105,8 @@ export default function AlertsInboxPage() {
           </details>
         </section>
         <section className="og-alerts-card">
-          <details className="og-alerts-secondary">
-            <summary>{t("alerts.dist.title")}</summary>
+          <details className="og-alerts-secondary og-alerts-distribution">
+            <summary>{t("alerts.dist.disclosureSummary", { count: formatNumber(distribution.total, 0) })}</summary>
             {distribution.total ? (
               <>
                 <div className="og-alerts-bar" role="img" aria-label={LEVELS.map((level) => `${level} ${t(`alerts.level.word.${level}`)} ${formatNumber(distribution.byLevel[level].count, 0)}`).join(", ")}>

@@ -65,6 +65,7 @@ export const opsAlerts = {
   "alerts.showing": "Mostrando {count} de {value} alertas",
   "alerts.dist.title": "Distribución de siete días",
   "alerts.dist.disclosure": "Distribución de siete días",
+  "alerts.dist.disclosureSummary": "Ver distribución de siete días ({count} alertas)",
   "alerts.dist.total": "{count} alertas",
   "alerts.dist.note": "Proporción de alertas abiertas en los últimos 7 días · historial DEMO.",
   "alerts.dist.empty": "Sin alertas en los últimos 7 días.",

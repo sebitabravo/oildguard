@@ -39,6 +39,7 @@
 .og-alerts-source--demo { color: var(--og-accent); }
 .og-alerts-source--mixed { color: var(--og-orange); }
 .og-alerts-source-split { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.og-alerts-source-split--single-line { flex-wrap: nowrap; white-space: nowrap; }
 .og-alerts-wheelcell { min-width: 120px; }
 .og-alerts-wheelcell strong, .og-alerts-wheelcell span { display: block; }
 .og-alerts-wheelcell span { margin-top: 3px; color: var(--og-text-muted); font-size: 10px; }
@@ -69,6 +70,9 @@
 .og-alerts-secondary > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--og-text-primary); font-size: 13px; font-weight: 600; }
 .og-alerts-secondary > summary:focus-visible { outline: 2px solid var(--og-accent); outline-offset: 3px; }
 .og-alerts-secondary[open] > summary { margin-bottom: 12px; }
+.og-alerts-distribution > summary { justify-content: space-between; gap: 12px; }
+.og-alerts-distribution > summary::after { width: 7px; height: 7px; flex: 0 0 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; content: ""; transform: rotate(45deg); }
+.og-alerts-distribution[open] > summary::after { transform: rotate(225deg); }
 .og-alerts-secondary .og-alerts-bar { margin-top: 4px; }
 .og-alerts-recurrence > summary { color: var(--og-text-primary); font-size: 13px; font-weight: 600; cursor: pointer; }
 .og-alerts-recurrence > summary:focus-visible { outline: 2px solid var(--og-accent); outline-offset: 3px; }
