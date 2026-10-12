@@ -155,27 +155,31 @@ export default function BenchScene({
 
     // Shared PBR materials (IBL lights them now, so real metalness is fine).
     const steel = new THREE.MeshStandardMaterial({
-      color: 0x6f7886,
-      metalness: 0.85,
-      roughness: 0.4,
+      color: 0x89929e,
+      metalness: 0.92,
+      roughness: 0.28,
     });
     const darkSteel = mats.get("paintedSteelDark");
-    const housingMat = new THREE.MeshStandardMaterial({
-      color: 0x5b7ba6,
-      metalness: 0.55,
-      roughness: 0.42,
+    const housingMat = new THREE.MeshPhysicalMaterial({
+      color: 0x56616c,
+      metalness: 0.72,
+      roughness: 0.34,
       transparent: true,
+      clearcoat: 0.25,
+      clearcoatRoughness: 0.32,
     });
-    const gearboxMat = new THREE.MeshStandardMaterial({
-      color: 0x6b80a0,
-      metalness: 0.55,
-      roughness: 0.42,
+    const gearboxMat = new THREE.MeshPhysicalMaterial({
+      color: 0x3b424a,
+      metalness: 0.78,
+      roughness: 0.36,
       transparent: true,
+      clearcoat: 0.2,
+      clearcoatRoughness: 0.36,
     });
     const brass = new THREE.MeshStandardMaterial({
-      color: 0xd9b13b,
-      metalness: 0.9,
-      roughness: 0.3,
+      color: 0xb28a37,
+      metalness: 0.92,
+      roughness: 0.28,
     });
     const cableMat = new THREE.MeshStandardMaterial({
       color: 0x1c2433,
@@ -235,7 +239,7 @@ export default function BenchScene({
     // Motor barrel along X with cooling ribs, gearbox + cover plate on the
     // left (-X), output flange + shaft stub on the right (+X).
     // barrelMesh/gearboxMesh opacity is driven per-frame by `cutaway`.
-    cylX(0.55, 1.7, housingMat, 0, HOUSING_Y, 0); // barrel
+    const barrelShell = cylX(0.55, 1.7, housingMat, 0, HOUSING_Y, 0); // barrel
     for (const rx of [-0.5, 0, 0.5]) {
       const rib = new THREE.Mesh(
         new THREE.TorusGeometry(0.57, 0.03, 12, 40),
@@ -247,7 +251,7 @@ export default function BenchScene({
     }
     const gearboxShell = box(1.1, 1.15, 1.15, gearboxMat, -1.4, HOUSING_Y, 0); // gearbox
     box(0.08, 0.95, 0.95, darkSteel, -1.99, HOUSING_Y, 0); // sun-pinion cover
-    cylX(0.8, 0.26, housingMat, 1.0, HOUSING_Y, 0); // output flange
+    const outputFlange = cylX(0.8, 0.26, housingMat, 1.0, HOUSING_Y, 0); // output flange
     cylX(0.22, 0.5, steel, 1.35, HOUSING_Y, 0); // shaft stub
 
     // ---- No-drill mount hardware (visual anchors for the markers) ----
@@ -552,6 +556,16 @@ export default function BenchScene({
       scene.add(label);
       return label;
     });
+
+    const edgeMaterial = new THREE.LineBasicMaterial({
+      color: 0xc5ced8,
+      transparent: true,
+      opacity: 0.16,
+      depthWrite: false,
+    });
+    for (const mesh of [barrelShell, gearboxShell, outputFlange, hub, tire]) {
+      mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, 24), edgeMaterial));
+    }
 
     // Sombras: todo proyecta y recibe salvo las carcasas translúcidas (si
     // proyectaran, oscurecerían los engranajes de adentro) y el aceite.

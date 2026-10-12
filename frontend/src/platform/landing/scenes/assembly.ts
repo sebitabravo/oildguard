@@ -227,16 +227,18 @@ export function buildAssemblyScene(): BuiltAssembly {
   const group = new THREE.Group();
   group.name = "gdy106-assembly-cutaway";
 
-  const gear = new THREE.MeshStandardMaterial({ color: 0x9aa7bd, metalness: 0.9, roughness: 0.35 });
-  const rotorMat = new THREE.MeshStandardMaterial({ color: 0xa0622d, metalness: 0.8, roughness: 0.4 });
-  const brass = new THREE.MeshStandardMaterial({ color: 0xd9b13b, metalness: 0.9, roughness: 0.3 });
-  const darkSteel = new THREE.MeshStandardMaterial({ color: 0x2b3547, metalness: 0.6, roughness: 0.5 });
-  const shellMat = new THREE.MeshStandardMaterial({
-    color: 0x5b7ba6,
-    metalness: 0.55,
-    roughness: 0.42,
+  const gear = new THREE.MeshStandardMaterial({ color: 0xaeb7c3, metalness: 0.96, roughness: 0.27 });
+  const rotorMat = new THREE.MeshStandardMaterial({ color: 0x895c37, metalness: 0.84, roughness: 0.34 });
+  const brass = new THREE.MeshStandardMaterial({ color: 0xb28a37, metalness: 0.92, roughness: 0.28 });
+  const darkSteel = new THREE.MeshStandardMaterial({ color: 0x333a43, metalness: 0.78, roughness: 0.4 });
+  const shellMat = new THREE.MeshPhysicalMaterial({
+    color: 0x56616c,
+    metalness: 0.68,
+    roughness: 0.36,
     transparent: true,
     opacity: CUTAWAY_SHELL_OPACITY,
+    clearcoat: 0.2,
+    clearcoatRoughness: 0.36,
   });
 
   // Carcasa abierta en corte: el hueco deja legible el tren sin crear una pieza aislable.
@@ -331,6 +333,17 @@ export function buildAssemblyScene(): BuiltAssembly {
   group.add(brakes);
 
   const parts: Record<AssemblyPartId, THREE.Group> = { motor, sun, planets, carrier, hub, brakes };
+  const edgeMaterial = new THREE.LineBasicMaterial({
+    color: 0xc5ced8,
+    transparent: true,
+    opacity: 0.14,
+    depthWrite: false,
+  });
+  group.traverse((object) => {
+    const mesh = object as THREE.Mesh;
+    if (!mesh.isMesh || mesh.material === shellMat) return;
+    mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, 24), edgeMaterial));
+  });
   return { group, parts, shellOpacity: CUTAWAY_SHELL_OPACITY };
 }
 

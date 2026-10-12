@@ -250,7 +250,7 @@ export function createStage(host: HTMLElement, opts: StageOptions): Stage {
   );
 
   if (opts.preset === "studio") {
-    scene.background = new THREE.Color(opts.background ?? 0x0b111c);
+    scene.background = new THREE.Color(opts.background ?? 0x0b0f14);
     const room = new RoomEnvironment();
     const target = pmrem.fromScene(room, 0.04);
     envTargets.push(target);
