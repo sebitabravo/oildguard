@@ -9,7 +9,7 @@ import Dashboard from "./Dashboard";
 
 describe("dashboard series and navigation contract", () => {
   test("level_history_precedes_sensor_series_and_unsourced_current_is_gap", () => {
-    const dashboard = renderToString(h(Dashboard, {}));
+    const dashboard = renderToString(h(Dashboard, { wheelId: undefined }));
     const levelHistory = dashboard.indexOf('data-dashboard-series="level-history-label"');
     const temperature = dashboard.indexOf('data-dashboard-series="temperature"');
     const vibration = dashboard.indexOf('data-dashboard-series="vibration"');
@@ -20,10 +20,10 @@ describe("dashboard series and navigation contract", () => {
     expect(vibration).toBeGreaterThan(temperature);
     expect(current).toBeGreaterThan(vibration);
     expect(dashboard.slice(current, current + 160)).toContain(`>${t("dash.series.gap")}</p>`);
-    expect(dashboard.slice(current, current + 160)).not.toMatch(/>[^<]*\d[^<]*</);
+    expect(/>[^<]*\d[^<]*</.test(dashboard.slice(current, current + 160))).toBe(false);
 
     const row = mergeLiveDevices(demoDataset.trucks, []).find((item) => item.id === demoDataset.wheels[0].id);
-    expect(row).toBeDefined();
+    expect(row !== undefined).toBe(true);
     const fleetRow = renderToString(h(FleetWheelRow, { row: row!, now: demoDataset.referenceMs }));
     expect(fleetRow).toContain(`href="${buildWheelDetailHref(row!.id)}"`);
   });

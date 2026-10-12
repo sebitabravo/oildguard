@@ -7,7 +7,7 @@ import AlertDetailPage from "./AlertDetailPage";
 
 test("alert detail presents level intent as guidance without dispatch controls", () => {
   const record = buildDemoAlerts(demoDataset).find((alert) => alert.level === "N2");
-  expect(record).toBeDefined();
+  expect(record !== undefined).toBe(true);
   if (!record) return;
 
   const previousWindow = globalThis.window;
@@ -22,13 +22,13 @@ test("alert detail presents level intent as guidance without dispatch controls",
     const guidance = t(guidanceKey);
     const intentSection = html.match(/<section[^>]*aria-label="[^"]+"[^>]*>[\s\S]*?<\/section>/)?.[0] ?? "";
 
-    expect(Object.hasOwn(dict, guidanceKey)).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(dict, guidanceKey)).toBe(true);
     expect(html).toContain(guidance);
     expect(intentSection).toContain(record.intent.action);
     expect(intentSection).toContain(record.intent.recipient);
-    expect(intentSection).not.toContain("<button");
-    expect(intentSection).not.toContain("<a ");
-    expect(intentSection).not.toContain("<form");
+    expect(intentSection.includes("<button")).toBe(false);
+    expect(intentSection.includes("<a ")).toBe(false);
+    expect(intentSection.includes("<form")).toBe(false);
   } finally {
     if (previousWindow === undefined) {
       Reflect.deleteProperty(globalThis, "window");
