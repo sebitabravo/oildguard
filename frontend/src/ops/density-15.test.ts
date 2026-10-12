@@ -4,6 +4,7 @@ import renderToString from "preact-render-to-string";
 import AlertsInboxPage from "./alerts/AlertsInboxPage";
 import FleetPage from "./fleet/FleetPage";
 import RulPage from "./rul/RulPage";
+import { t } from "../i18n";
 
 const closedDisclosureBodies = (html: string) =>
   [...html.matchAll(/<details\b([^>]*)>([\s\S]*?)<\/details>/g)]
@@ -22,30 +23,40 @@ describe("DENSITY-15 secondary disclosures", () => {
     expect(disclosures.some((body) => body.includes('class="og-fleet-live'))).toBe(true);
     expect(primary).toContain('class="og-fleet-kpi-strip"');
     expect(primary).toContain('class="og-fleet-table"');
-    expect(primary).toContain('class="og-fleet-backend');
+    expect(primary).toContain('class="og-fleet-header-meta"');
   });
 
   test("keeps Alerts distribution and safety note in closed disclosures, outside summary and table", () => {
     const html = renderToString(h(AlertsInboxPage, {}));
     const disclosures = closedDisclosureBodies(html);
     const primary = withoutDisclosures(html);
+    const firstDisclosure = html.match(/<details\b[^>]*>/)?.[0] ?? "";
 
+    expect(firstDisclosure).toContain('class="og-alerts-recurrence"');
     expect(disclosures.some((body) => body.includes('class="og-alerts-bar"'))).toBe(true);
-    expect(disclosures.some((body) => body.includes('class="og-alerts-card--rule"'))).toBe(true);
+    expect(disclosures.some((body) => body.includes(t("alerts.callout.text")))).toBe(true);
     expect(primary).toContain('class="og-alerts-tiles"');
     expect(primary).toContain('class="og-alerts-table"');
     expect(primary).toContain('class="og-alerts-pill');
   });
 
-  test("keeps the RUL wheel cards and projections together in one closed disclosure", () => {
+  test("keeps RUL cards in one closed disclosure and each projection chart in its own closed disclosure", () => {
     const html = renderToString(h(RulPage, {}));
-    const disclosures = closedDisclosureBodies(html);
-    const primary = withoutDisclosures(html);
+    const outerStart = html.indexOf('<details class="og-rul-disclosure"');
+    const gridStart = html.indexOf('<section class="og-rul-grid"');
+    const lastDisclosureEnd = html.lastIndexOf("</details>");
+    const projectionDisclosures = [...html.matchAll(/<details class="og-rul-projection">([\s\S]*?)<\/details>/g)];
+    const primary = html.slice(0, outerStart) + html.slice(lastDisclosureEnd + "</details>".length);
 
-    expect(disclosures.length).toBe(1);
-    expect(disclosures[0]).toContain('class="og-rul-grid"');
-    expect(disclosures[0]).toContain('class="og-rul-card');
-    expect(disclosures[0]).toContain("<svg");
+    expect(outerStart).toBeGreaterThanOrEqual(0);
+    expect(gridStart).toBeGreaterThan(outerStart);
+    expect(lastDisclosureEnd).toBeGreaterThan(gridStart);
+    expect(html.slice(outerStart, gridStart)).toContain(`<summary>${t("rul.secondaryDisclosure")}</summary>`);
+    expect(projectionDisclosures.length).toBeGreaterThan(0);
+    for (const disclosure of projectionDisclosures) {
+      expect(disclosure[1]).toContain(`<summary>${t("rul.projection")} · 30% <span class="og-chip">CONFIGURACIÓN</span></summary>`);
+      expect(disclosure[1]).toContain("<svg");
+    }
     expect(primary).toContain('class="og-rul-header-meta"');
     expect(primary).toContain('class="og-rul-scope"');
     expect(primary).toContain('class="og-rul-assumptions"');

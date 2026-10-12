@@ -87,27 +87,6 @@ export default function AlertsInboxPage() {
 
       <aside className="og-alerts-aside">
         <section className="og-alerts-card">
-          <h3>{t("alerts.dist.title")}</h3>
-          {distribution.total ? (
-            <>
-              <div className="og-alerts-bar" role="img" aria-label={LEVELS.map((level) => `${level} ${t(`alerts.level.word.${level}`)} ${formatNumber(distribution.byLevel[level].count, 0)}`).join(", ")}>
-                {LEVELS.map((level) => distribution.byLevel[level].count > 0 && <span className={`og-alerts-bar__seg og-alerts-bar__seg--${level}`} style={{ flexGrow: distribution.byLevel[level].count }} />)}
-              </div>
-              <ul className="og-alerts-legend">
-                {LEVELS.map((level) => (
-                  <li>
-                    <i className={`og-alerts-swatch og-alerts-bar__seg--${level}`} aria-hidden="true" />
-                    <span>{level} · {t(`alerts.level.word.${level}`)}</span>
-                    <b className="og-mono">{formatNumber(distribution.byLevel[level].count, 0)} <small>({formatNumber(distribution.byLevel[level].share * 100, 0)}%)</small> <SourceTag source="demo" /></b>
-                  </li>
-                ))}
-              </ul>
-              <p className="og-alerts-note">{t("alerts.dist.total", { count: formatNumber(distribution.total, 0) })} <SourceTag source="demo" /> · {t("alerts.dist.note")}</p>
-            </>
-          ) : <p className="og-alerts-note">{t("alerts.dist.empty")}</p>}
-        </section>
-
-        <section className="og-alerts-card">
           <details className="og-alerts-recurrence">
             <summary>{t("alerts.recur.title")}</summary>
             {ranking.length ? (
@@ -125,11 +104,35 @@ export default function AlertsInboxPage() {
             <p className="og-alerts-note">{t("alerts.recur.note")}</p>
           </details>
         </section>
+        <section className="og-alerts-card">
+          <details className="og-alerts-secondary">
+            <summary>{t("alerts.dist.title")}</summary>
+            {distribution.total ? (
+              <>
+                <div className="og-alerts-bar" role="img" aria-label={LEVELS.map((level) => `${level} ${t(`alerts.level.word.${level}`)} ${formatNumber(distribution.byLevel[level].count, 0)}`).join(", ")}>
+                  {LEVELS.map((level) => distribution.byLevel[level].count > 0 && <span className={`og-alerts-bar__seg og-alerts-bar__seg--${level}`} style={{ flexGrow: distribution.byLevel[level].count }} />)}
+                </div>
+                <ul className="og-alerts-legend">
+                  {LEVELS.map((level) => (
+                    <li>
+                      <i className={`og-alerts-swatch og-alerts-bar__seg--${level}`} aria-hidden="true" />
+                      <span>{level} · {t(`alerts.level.word.${level}`)}</span>
+                      <b className="og-mono">{formatNumber(distribution.byLevel[level].count, 0)} <small>({formatNumber(distribution.byLevel[level].share * 100, 0)}%)</small> <SourceTag source="demo" /></b>
+                    </li>
+                  ))}
+                </ul>
+                <p className="og-alerts-note">{t("alerts.dist.total", { count: formatNumber(distribution.total, 0) })} <SourceTag source="demo" /> · {t("alerts.dist.note")}</p>
+              </>
+            ) : <p className="og-alerts-note">{t("alerts.dist.empty")}</p>}
+          </details>
+        </section>
 
         <section className="og-alerts-card og-alerts-card--rule">
-          <h3>{t("alerts.callout.title")}</h3>
-          <p>{t("alerts.callout.text")}</p>
-          <a className="og-alerts-hit-area" href="/alerts/rules">{t("alerts.callout.link")}</a>
+          <details className="og-alerts-secondary">
+            <summary>{t("alerts.callout.title")}</summary>
+            <p>{t("alerts.callout.text")}</p>
+            <a className="og-alerts-hit-area" href="/alerts/rules">{t("alerts.callout.link")}</a>
+          </details>
         </section>
       </aside>
         <FilterBar>

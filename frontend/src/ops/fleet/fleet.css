@@ -50,6 +50,11 @@
 .og-fleet-row--N4 { background: rgba(255,77,66,.06); }
 .og-fleet-row--N2, .og-fleet-row--N1 { background: rgba(245,166,35,.05); }
 .og-fleet-helper { margin: 12px 0 22px; color: var(--og-text-muted); font-size: 12px; }
+.og-fleet-secondary { margin: 14px 0 22px; color: var(--og-text-secondary); }
+.og-fleet-secondary > summary { width: fit-content; min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--og-accent); font-size: 12px; }
+.og-fleet-secondary > summary:focus-visible { outline: 2px solid var(--og-accent); outline-offset: 3px; }
+.og-fleet-secondary[open] > summary { margin-bottom: 10px; }
+.og-fleet-secondary .og-fleet-helper { margin: 0 0 12px; }
 .og-fleet-empty { padding: 24px; color: var(--og-text-muted); text-align: center; }
 @media (max-width: 700px) {
   .og-fleet-kpi-strip { grid-template-columns: 1fr; }

@@ -257,8 +257,11 @@ export default function FleetPage() {
             </tbody>
           </table>
         </div>
-        <p className="og-fleet-helper">{t("fleet.helper")}</p>
-        <FleetLivePanelBoundary><FleetLivePanel connectionAvailable={liveLoaded} onConnectionChange={setSocketConnected} /></FleetLivePanelBoundary>
+        <details className="og-fleet-secondary">
+          <summary>{t("fleet.secondaryDisclosure")}</summary>
+          <p className="og-fleet-helper">{t("fleet.helper")}</p>
+          <FleetLivePanelBoundary><FleetLivePanel connectionAvailable={liveLoaded} onConnectionChange={setSocketConnected} /></FleetLivePanelBoundary>
+        </details>
         {!visibleRows.length && <p className="og-fleet-empty">{t("fleet.empty")}</p>}
       </div>
     </main>

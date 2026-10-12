@@ -159,50 +159,52 @@ export default function RulPage() {
             {onlyProjected ? t("rul.filter.projected") : t("rul.filter.all")}
           </button>
         </FilterBar>
-        <section className="og-rul-grid" aria-label={t("rul.title")}>
-          {cards.map((card) => (
-            <article className={`og-rul-card og-rul-card--${card.horizonClass ?? "suppressed"}`}>
-              <header className="og-rul-card__header">
-                <div><strong>{card.wheel.truckId} · {card.wheel.position}</strong><small className="og-mono">{card.wheelId}</small></div>
-                <span className={`og-rul-source og-rul-source--${card.source.toLowerCase()}`}>
-                  {sourceLabel(card.source)}
-                </span>
-              </header>
-              <div className="og-rul-card__horizon">
-                <span className="og-label">{t("rul.horizon")}</span>
-                <strong>{horizonLabel(card, unit)} <ProvenanceTag value={card.source === "LIVE" ? "EN VIVO" : "DEMO"} /></strong>
-                {card.projected && card.horizonHours !== null && <small>±{formatNumber(convertRulHours(card.horizonHours * 0.1, unit), unit === "hours" ? 1 : 0)} {t(`rul.unit.${unit}`)} <ProvenanceTag value={card.source === "LIVE" ? "EN VIVO" : "DEMO"} /></small>}
-                {card.horizonClass && <b>{t(`rul.${card.horizonClass}`)}</b>}
-              </div>
-              <div className="og-rul-card__metrics">
-                <span>{t("rul.lossRate")} <b>{formatNumber(card.lossRate, 2)} L/100 h <ProvenanceTag value={card.source === "LIVE" ? "EN VIVO" : "DEMO"} /></b></span>
-                <span>{t("rul.referenceLevel")} <b>{formatNumber(card.referenceLevel, 1)} ± {formatNumber(card.sigma, 1)} L <ProvenanceTag value={card.source === "LIVE" ? "EN VIVO" : "DEMO"} /></b></span>
-                {card.confidence !== null && <span>R² <b>{formatNumber(card.confidence, 3)} <ProvenanceTag value="EN VIVO" /></b></span>}
-              </div>
-              {card.projected ? (
-                <details className="og-rul-projection">
-                  <summary>{t("rul.projection")} · 30% <ProvenanceTag value="CONFIGURACIÓN" /></summary>
-                  <TimeSeriesChart
-
-                    values={card.projection}
-                    sigma={card.source === "DEMO" ? card.projection.map(() => card.sigma) : []}
-                    title={`${t("rul.projection")} ${card.wheelId}`}
-                    domain={[0, 95]}
-                    yUnit="L"
-                    thresholds={[
-                      { value: WARNING_L, label: <>{t("history.threshold.warning")} <ProvenanceTag value="CONFIGURACIÓN" /></> },
-                      { value: CRITICAL_L, label: <>{t("history.threshold.critical")} <ProvenanceTag value="CONFIGURACIÓN" /></> },
-                    ]}
-                    height={112}
-                  />
-                </details>
-              ) : (
-                <p className="og-rul-suppressed">{t("rul.suppressed")}</p>
-              )}
-              <footer><span className="og-chip">{sourceLabel(card.source)}</span><small>{card.wheel.model}</small></footer>
-            </article>
-          ))}
-        </section>
+        <details className="og-rul-disclosure">
+          <summary>{t("rul.secondaryDisclosure")}</summary>
+          <section className="og-rul-grid" aria-label={t("rul.title")}>
+            {cards.map((card) => (
+              <article className={`og-rul-card og-rul-card--${card.horizonClass ?? "suppressed"}`}>
+                <header className="og-rul-card__header">
+                  <div><strong>{card.wheel.truckId} · {card.wheel.position}</strong><small className="og-mono">{card.wheelId}</small></div>
+                  <span className={`og-rul-source og-rul-source--${card.source.toLowerCase()}`}>
+                    {sourceLabel(card.source)}
+                  </span>
+                </header>
+                <div className="og-rul-card__horizon">
+                  <span className="og-label">{t("rul.horizon")}</span>
+                  <strong>{horizonLabel(card, unit)} <ProvenanceTag value={card.source === "LIVE" ? "EN VIVO" : "DEMO"} /></strong>
+                  {card.projected && card.horizonHours !== null && <small>±{formatNumber(convertRulHours(card.horizonHours * 0.1, unit), unit === "hours" ? 1 : 0)} {t(`rul.unit.${unit}`)} <ProvenanceTag value={card.source === "LIVE" ? "EN VIVO" : "DEMO"} /></small>}
+                  {card.horizonClass && <b>{t(`rul.${card.horizonClass}`)}</b>}
+                </div>
+                <div className="og-rul-card__metrics">
+                  <span>{t("rul.lossRate")} <b>{formatNumber(card.lossRate, 2)} L/100 h <ProvenanceTag value={card.source === "LIVE" ? "EN VIVO" : "DEMO"} /></b></span>
+                  <span>{t("rul.referenceLevel")} <b>{formatNumber(card.referenceLevel, 1)} ± {formatNumber(card.sigma, 1)} L <ProvenanceTag value={card.source === "LIVE" ? "EN VIVO" : "DEMO"} /></b></span>
+                  {card.confidence !== null && <span>R² <b>{formatNumber(card.confidence, 3)} <ProvenanceTag value="EN VIVO" /></b></span>}
+                </div>
+                {card.projected ? (
+                  <details className="og-rul-projection">
+                    <summary>{t("rul.projection")} · 30% <ProvenanceTag value="CONFIGURACIÓN" /></summary>
+                    <TimeSeriesChart
+                      values={card.projection}
+                      sigma={card.source === "DEMO" ? card.projection.map(() => card.sigma) : []}
+                      title={`${t("rul.projection")} ${card.wheelId}`}
+                      domain={[0, 95]}
+                      yUnit="L"
+                      thresholds={[
+                        { value: WARNING_L, label: <>{t("history.threshold.warning")} <ProvenanceTag value="CONFIGURACIÓN" /></> },
+                        { value: CRITICAL_L, label: <>{t("history.threshold.critical")} <ProvenanceTag value="CONFIGURACIÓN" /></> },
+                      ]}
+                      height={112}
+                    />
+                  </details>
+                ) : (
+                  <p className="og-rul-suppressed">{t("rul.suppressed")}</p>
+                )}
+                <footer><span className="og-chip">{sourceLabel(card.source)}</span><small>{card.wheel.model}</small></footer>
+              </article>
+            ))}
+          </section>
+        </details>
         <section className="og-rul-assumptions">
           <h3>{t("rul.assumptions")}</h3>
           <p>{t("rul.assumptionsText")}</p>

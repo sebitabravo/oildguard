@@ -64,6 +64,7 @@ export const opsAlerts = {
   "alerts.empty": "Ninguna alerta coincide con estos filtros.",
   "alerts.showing": "Mostrando {count} de {value} alertas",
   "alerts.dist.title": "Distribución de siete días",
+  "alerts.dist.disclosure": "Distribución de siete días",
   "alerts.dist.total": "{count} alertas",
   "alerts.dist.note": "Proporción de alertas abiertas en los últimos 7 días · historial DEMO.",
   "alerts.dist.empty": "Sin alertas en los últimos 7 días.",
