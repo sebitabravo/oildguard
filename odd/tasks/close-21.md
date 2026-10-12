@@ -7,14 +7,15 @@
 - Acceptance: seven conditions each have status, evidence, and remaining gap; stated deviations and human-only items are included.
 - Verification: `cd frontend && bun test src/honesty.test.ts`; `git status --short`; structural readback of the appended section.
 - TDD: documentation-only; no RED step. Runner/checks are the exact commands above.
-- RDD: on by default; assess committed work from the current reviewed boundary, without starting review if assessment says not due.
+- RDD: on; report commit `d958210` assessed medium/not due (`under_budget`), 17 paths/337 lines from `0c88f2c`.
 - Route: delegated direct; reading the two goal files and evidence before writing the report exceeds the mapping/context threshold.
 - Delivery: local only; forecast below 400 authored lines; default `ask-on-risk` strategy.
 - Mirror: Engram pending because no registered runtime session identity is available.
 
 ## Checklist
-- [ ] C21-1 Read the two goal files, verify every claim, append and check the report, then commit locally.
+- [x] C21-1 Read both goal files; append the seven-condition table, deviations, and human-only list; run the required honesty check and commit the report as `d958210`.
 
 ## Progress
-- Status: pending.
-- Next: read goal section 9 and current report, record evidence, run checks, update this tracker with observed results and commit identity.
+- Status: complete; tracker commit `94995b0`, report commit `d958210`.
+- Evidence: `/tmp/og-goal/evidence/CLOSE-21/honesty-final.txt`, `status-pre-report-commit-final.txt`, `report-final-readback.txt`, and `report-diff-check-final.txt`.
+- Next: none. Engram mirror remains pending because no registered runtime session identity is available.
