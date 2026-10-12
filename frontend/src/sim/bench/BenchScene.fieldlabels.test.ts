@@ -2,6 +2,16 @@ import { describe, expect, test } from "bun:test";
 import { h } from "preact";
 import renderToString from "preact-render-to-string";
 import BenchScene from "./BenchScene";
+import { BenchOilSourceBadge } from "./BenchView";
+
+describe("wheel dock oil source", () => {
+  test("renders the existing synthetic source label for the dock value", () => {
+    const markup = renderToString(h(BenchOilSourceBadge, {}));
+
+    expect(markup).toContain('class="og-chip"');
+    expect(markup).toContain(">DEMO</span>");
+  });
+});
 
 describe("wheel HUD per-field provenance", () => {
   test("labels the simulated oil level beside its value", () => {

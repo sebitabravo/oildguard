@@ -22,6 +22,7 @@ import { t, type DictKey } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import Drawer from "../../ui/Drawer";
 import HonestyBadge from "../../ui/HonestyBadge";
+import { ProvenanceTag } from "../../ui/foundation";
 import { detectWebGL } from "../../ui/webgl";
 
 // Vista Rueda GDY106: corte 3D en el visor; el detalle (lectura de aceite,
@@ -36,6 +37,10 @@ interface InspStep {
 }
 
 export const INSPECTION_STEPS: InspStep[] = Array.from({ length: 11 }, (_, index) => ({ n: index + 1 }));
+
+export function BenchOilSourceBadge() {
+  return <ProvenanceTag value="DEMO" />;
+}
 
 const GDY106_CHAIN_PARTS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
@@ -89,6 +94,7 @@ export default function BenchView() {
         <span className="og-field__label">
           <span>{t("bench.field.oil")}</span>
           <span className="og-num" style={{ color: oilCss }}>{formatOilText(frac)}</span>
+          <BenchOilSourceBadge />
         </span>
         <input
           type="range"
