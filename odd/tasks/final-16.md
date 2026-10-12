@@ -25,8 +25,11 @@ Keep monitoring source wording consistent with reading validity and give the und
 - Commit identity: `2fca2577ccb3dc53b45322fb8effe6e9138fc785` (`fix(ops): state origin neutrally when reading is invalid or stale`).
 - F16-2 RDD: medium, `under_budget`, 120 changed lines (assessment over `6186f5a`..`fa88655`; no review due).
 - Commit identity: `fa88655a298d58bff76933f6cbaa44f234fa0201` (`fix(platform): give login control a 44 px hit area`).
+- Above-fold/accessibility counts at 1024×900: invalid cards pairing invalidity with live-origin text 1 → 0; login controls under 44 px 1 → 0, with checkbox box 15×15 px → 44×44 px.
 - F16-2 evidence: `bun test src/platform/login/login.hitarea.test.ts` failed before CSS edits because the checkbox measured 15 px; it passed after implementation (1 test). Outputs: `/tmp/og-goal/evidence/FINAL-16/red-login.txt` and `green-login.txt`.
 - Browser after at 1024×900: invalid monitoring cards with live-origin wording = 0; `/login` controls under 44 px = 0, with disabled checkbox measured at 44×44 px. Screenshots and measurements: `/tmp/og-goal/evidence/FINAL-16/after-monitoring.png`, `after-login.png`, and `after.txt`.
 - Build correction: four negative `.not.toContain` test assertions were replaced with boolean `.includes(...).toBe(false)` assertions because the repository's assertion type does not support that matcher form. The initial failed build is preserved as `build-initial-fail.txt`; final build output is `build.txt`.
 - Combined checks after the correction: `bun test src` passed (696 tests, 0 failures); `bun run build` exited 0 (45 pages); `bun test src/honesty.test.ts` passed (3 tests); `git diff --check` passed. Outputs: `bun-test.txt`, `build.txt`, `honesty.txt`, and `diff-check.txt` under `/tmp/og-goal/evidence/FINAL-16/`.
-- Status: both implementation items and required checks pass; the test-only build-compatibility correction is ready for its explicit-path commit and parent spot check. Engram mirror is pending because memory tools/session identity are unavailable.
+- Parent spot check: `cd frontend && bun test src` passed (696 tests, 0 failures), output `parent-spot-test.txt`.
+- Test compatibility commit: `03e6ad5eec16911c8843d64ce7a06db1b565e6bf` (`test(ops): fix origin assertion types`); RDD medium, `under_budget`, 123 changed lines over `6186f5a`..`03e6ad5`.
+- Status: complete. All three code/test commits and required checks are recorded; no source changes remain. Engram mirror is pending because memory tools/session identity are unavailable.
