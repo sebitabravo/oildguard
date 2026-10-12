@@ -1,6 +1,6 @@
 # WEBGL-FALLBACK-10 — Static poster when WebGL is unavailable
 
-**Status: IMPLEMENTED — runtime checks passed; implementation commit pending.**
+**Status: IMPLEMENTED — runtime checks passed; all task commits recorded.**
 
 ## Objective
 Show an honest static fallback for `/mine` and `/wheel` when WebGL is unavailable, preserve non-WebGL controls, and prevent uncaught renderer errors.
