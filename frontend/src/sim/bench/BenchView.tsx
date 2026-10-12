@@ -312,7 +312,7 @@ export default function BenchView() {
             style={{ width: "100%", height: "clamp(240px, 42vw, 420px)", maxWidth: 960, overflow: "hidden", background: "var(--og-panel, #111923)", borderRadius: 8 }}
           />
           <p className="og-body" style={{ marginBottom: 4 }}>
-            {t("bench.referenceTruck.attribution", REFERENCE_TRUCK_ATTRIBUTION)}
+            {t("bench.referenceTruck.attribution").replace(" · ", ` · ${REFERENCE_TRUCK_ATTRIBUTION.author} · `)} {REFERENCE_TRUCK_ATTRIBUTION.license}
           </p>
           <a className="og-body" href={REFERENCE_TRUCK_ATTRIBUTION.source} target="_blank" rel="noreferrer">
             {t("bench.referenceTruck.source")}
