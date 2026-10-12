@@ -39,3 +39,15 @@ No weighed-oil calibration run is recorded. The pressure-to-volume relation uses
 ## Next evidence needed
 
 Run the documented drain-and-weigh procedure and compare fused level with weighed volume before making a physical accuracy claim (`docs/calibration.md`). Keep the simulator, browser measurements, and any future bench results separated by provenance. Human review is required for product comprehension; this document is not that test.
+
+## Numeric claim trace (CLOSE-17)
+
+The existing numeric claims were checked against their repository sources; no unsupported value or provenance label was found, so none was changed.
+
+| Existing claim | Source and boundary |
+|---|---|
+| 20-minute stabilization and 250 h inspection interval | `PRODUCT.md`; stated manual-inspection context, not a measurement from an OilGuard installation. |
+| 262/620 accelerated-leak and 135/228 abrupt-drop flags; 0.5%/h spec input | `docs/t9-anomaly.md`; generated simulator scenarios and documented rate input, not observed field performance. |
+| 95 L capacity anchor and approximately 2.6 kPa pressure anchor | `docs/calibration.md`, `sim/geometry.py`; assumed geometry and synthetic-proxy mapping pending weighed-oil calibration. |
+| At least 30 fps performance target | `PRODUCT.md`; target only, with no benchmark recorded. |
+| Numeric TRL | `docs/research/landing-claims.md`; author decision remains unresolved, so no numeric value is assigned. |

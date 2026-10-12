@@ -95,3 +95,23 @@ For this document task, checks are recorded in `/tmp/og-goal/evidence/B12/`. The
 2. **GLB `docs/reference-models/komatsu_hd-465-7eo.glb`.** NOT used in the landing. Reason: third-party HD-465-7EO exterior, no internal drivetrain or motor geometry, license CC-BY-4.0 with source not independently re-verified (`docs/models.md`). The landing keeps the parametric study cutaway (`scenes/assembly.ts`, `scenes/gears.ts`). Reopen only if the license and labelling are confirmed.
 
 Still requires a human: three-minute comprehension test (B12) and visual approval of B11.
+
+## Final state (CLOSE-17)
+
+**Pre-doc-closeout HEAD:** `92c5615a84a18b24bd6e28ad4758d404e3fb5dcf` (`fix(ops): gate chart card live badge on reading validity`). This is the code-change HEAD before this documentation closeout, not the closeout commit.
+
+| Target | Status and measured result | Evidence |
+|---|---|---|
+| V3-027 — `/monitoring`, 1024 px | **FIXED by the pre-doc-closeout HEAD.** With the invalid reading present, `EN VIVO` leaves whose third ancestor contained `Lectura inválida` or `Lectura obsoleta`: 1 before, 0 after. The browser capture showed the invalid reading after the change. | `/tmp/og-goal/evidence/CLOSE-17/baseline-1024.json`, `after-1024.json`, `after-1024-chart.png`; `frontend/src/dash/Dashboard.chart-validity.test.tsx` |
+| V3-007 / V3-008 — `/fleet`, 1024 px | **FIXED.** Clipped DEMO table cells: 30 before, 0 after. DEMO/severity badge overlaps: 3 before, 0 after; the six checked badge pairs had a 6 px gap. | `/tmp/og-goal/evidence/FINAL-14/before-fleet-audit.txt`, `dom-after.txt`, `after-fleet-1024-chromium-1024.png` |
+| V3-012 — `/fleet` and `/alerts`, 390 px | **FIXED.** The visible `Desliza para ver más` cue appears beside both scrollable tables. Fleet table/wrapper widths: 1217/332 px; Alerts: 1227/332 px. | `/tmp/og-goal/evidence/LAYOUT-12/after-measurements.json`, `v3-012a-after.png`, `v3-012b-after.png` |
+| V3-025 — favicon | **FIXED.** `/favicon.ico` returned HTTP 200. | `/tmp/og-goal/evidence/FINAL-14/favicon-curl.txt` |
+| V3-031 — `/wheel`, 1024 px | **FIXED for the named ACEITE tile.** Its `66,5 L · 70%` value has same-tile `DEMO` and `SUSTITUTO` labels. The separate drawer `.og-value` showing the same value has no adjacent label; this remains a distinct observed gap and is not described as labeled. | `/tmp/og-goal/evidence/VISUAL-OPENCODE-05/targets.json` (`t5`), `/tmp/og-goal/evidence/PROV-REST-08/live/v3-031.json` |
+| V3-013..V3-015 — secondary density | **Collapsed by owner decision; counts are observations, not a pass threshold.** At 1440×900, number/badge/button/card counts before → after: Fleet 45/95/8/3 → 45/95/8/3; Alerts 28/27/0/8 → 20/31/0/8; RUL 42/41/4/6 → 7/8/4/0. A separate leaf-text/provenance probe recorded Fleet 158/50, Alerts 110/14, RUL 49/4; its closed-detail exclusions were 84, 89, and 381 respectively. The two probes use different count definitions. | `odd/tasks/density-15.md`; `/tmp/og-goal/evidence/DENSITY-15/density-before.txt`, `measurement-after.json`; `/tmp/og-goal/evidence/VISUAL-OPENCODE-05/targets.json` (`t6`) |
+| V3-041..V3-043 — outage states | **FIXED by FIX-DOWN-04c and OUTAGE-SHARED-05.** Fleet's blocked-state telemetry heading/live-badge counts changed 1/21 → 0/0 (offline messages 2 → 3 at 2 s; the same result held at 6 s and 15 s). Across Fleet, RUL, Link, Devices, and Monitoring, blocked notices appeared on 5/5 routes and open-state notices on 0/5. | `/tmp/og-goal/evidence/FIX-DOWN-04c/fleet-timing-before.txt`, `fleet-timing-after.txt`; `/tmp/og-goal/evidence/OUTAGE-SHARED-05/browser.txt` |
+
+The three-minute comprehension test and owner visual approval were **NOT run by the system** and remain human-only items. The broad range before `2ed430f`, including `8dc5f4f` (122 files), remains **unreviewed**: native review stopped with `lens_context_budget_exceeded`; historical functional results are not a review receipt. `AGENTS.md` remains the owner's uncommitted change. Its clean-tree rule was declined for this candidate; the file was not edited or staged here.
+
+The CLOSE-17 Part A candidate review was approved and acknowledged. Its non-blocking R3-001 advisory noted that the regression test does not exercise Dashboard prop wiring/backend-note rendering; no correction transition was offered. The human-only items above remain open.
+
+**All automated checks pass** for this closeout: `cd frontend && bun test src` — 699 pass, 0 fail; `cd frontend && bun run build` — exit 0, 45 pages; `cd frontend && bun test src/honesty.test.ts` — 3 pass, 0 fail; `grep -rn "/Users/" frontend/src` — zero matches. Full outputs are in `/tmp/og-goal/evidence/CLOSE-17/`.
