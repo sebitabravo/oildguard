@@ -65,6 +65,7 @@ export const dict = {
   "ui.fired": "Activado",
   "ui.quiet": "En calma",
   "ui.noData": "Sin datos",
+  "wheel.numeric.noReading": "sin lectura",
   "ui.backendLive": "Backend en vivo",
   "ui.localDemo": "Datos demo locales",
   "ui.checking": "Comprobando backend",

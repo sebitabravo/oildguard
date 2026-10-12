@@ -91,6 +91,10 @@ export function DashboardLevelSourceBadge({ live, source, validity }: { live: bo
   );
 }
 
+export function shouldShowLevelReading(levelSource: "LIVE" | "DEMO", storeRows: number, sourceMessageCode?: string): boolean {
+  return levelSource !== "LIVE" || (storeRows > 0 && sourceMessageCode !== "source_no_rows");
+}
+
 function dashboardReadingSourceBadge(validity: LevelValidity) {
   return validity === "stale" || validity === "invalid"
     ? <span className={`og-chip og-chip--${validity}`}>{t(validity === "stale" ? "ui.stale" : "ui.invalid")}</span>
@@ -491,6 +495,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
         confidence={confidence}
         validity={validity}
         levelSource={levelSource}
+        hasLevelReading={shouldShowLevelReading(levelSource, storeRows, level?.data.source_message?.code)}
         sigmaSource={sigmaSource}
         confidenceSource={confidenceSource}
         pressureKpa={pressureKpa}
@@ -575,7 +580,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
               <span style={{ color: demoOilCss, fontWeight: 700 }}>
                 {demoActive
                   ? t("dash.demo.fill", { value: formatOilText(demoFrac) })
-                  : level && live && source === "live"
+                  : level && live && source === "live" && shouldShowLevelReading(levelSource, storeRows, level.data.source_message?.code)
                     ? `${formatNumber(Number(level.data.level_liters), 1)} L · ${formatNumber(Number(level.data.level_pct), 1)}%`
                     : "—"}
               </span>

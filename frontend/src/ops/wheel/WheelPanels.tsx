@@ -49,6 +49,7 @@ export interface TelemetryRowProps {
   confidence: number;
   validity: LevelValidity;
   levelSource: "LIVE" | "DEMO";
+  hasLevelReading?: boolean;
   sigmaSource: "LIVE" | "DEMO";
   confidenceSource: "LIVE" | "DEMO";
   pressureKpa: number;
@@ -93,14 +94,21 @@ function levelTone(percent: number): "nominal" | "warning" | "critical" {
   return percent < 30 ? "critical" : percent < 50 ? "warning" : "nominal";
 }
 
-export function TelemetryRow({ level, sigma, confidence, validity, levelSource, sigmaSource, confidenceSource, pressureKpa, temperatureC, vibrationG, tauS, pressureLive, temperatureLive, vibrationLive }: TelemetryRowProps) {
+export function TelemetryRow({ level, sigma, confidence, validity, levelSource, hasLevelReading, sigmaSource, confidenceSource, pressureKpa, temperatureC, vibrationG, tauS, pressureLive, temperatureLive, vibrationLive }: TelemetryRowProps) {
+  const showLevelReading = hasLevelReading ?? validity !== "invalid";
   const percent = (level / 95) * 100;
   return (
     <section className="og-wheel-telemetry" aria-label={t("wheel.telemetry")}>
-      <TelemetryCard label={t("wheel.card.level")} value={level} unit="L" status={levelTone(percent)}>
+      <TelemetryCard
+        label={t("wheel.card.level")}
+        value={showLevelReading ? level : "—"}
+        unit={showLevelReading ? "L" : undefined}
+        status={showLevelReading ? levelTone(percent) : "warning"}
+      >
         <NumericEvidence field="level" source={levelSource} validity={validity}>
-          {t("wheel.card.levelNominal", { value: formatNumber(percent, 1) })}{" · "}
-          {t("wheel.numeric.band", { value: formatNumber(sigma, 1) })}
+          {showLevelReading
+            ? <>{t("wheel.card.levelNominal", { value: formatNumber(percent, 1) })}{" · "}{t("wheel.numeric.band", { value: formatNumber(sigma, 1) })}</>
+            : t("wheel.numeric.noReading")}
         </NumericEvidence>
         <NumericEvidence field="sigma" source={sigmaSource} validity={validity}>
           {t("wheel.numeric.sigma")} {formatNumber(sigma, 1)} L
