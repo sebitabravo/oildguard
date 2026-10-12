@@ -20,6 +20,40 @@ export const REFERENCE_TRUCK_ATTRIBUTION = {
   source: "https://sketchfab.com/3d-models/komatsu-hd-465-7eo-2bf4dcd62e484f01bcb446af263bd65c",
 } as const;
 
+export function fitReferenceTruckCamera(
+  camera: PerspectiveCamera,
+  bounds: Box3,
+  screenMargin = 0.05,
+): void {
+  const target = bounds.getCenter(new Vector3());
+  const direction = new Vector3(1, 0.42, 1).normalize();
+  const forward = direction.clone().negate();
+  const right = forward.clone().cross(camera.up).normalize();
+  const cameraUp = right.clone().cross(forward).normalize();
+  const ndcLimit = 1 - screenMargin * 2;
+  const verticalTangent = Math.tan((camera.fov * Math.PI) / 360);
+  const horizontalTangent = verticalTangent * camera.aspect;
+  let distance = 0;
+
+  for (const x of [bounds.min.x, bounds.max.x]) {
+    for (const y of [bounds.min.y, bounds.max.y]) {
+      for (const z of [bounds.min.z, bounds.max.z]) {
+        const relative = new Vector3(x, y, z).sub(target);
+        const depthOffset = relative.dot(forward);
+        distance = Math.max(
+          distance,
+          Math.abs(relative.dot(right)) / (ndcLimit * horizontalTangent) - depthOffset,
+          Math.abs(relative.dot(cameraUp)) / (ndcLimit * verticalTangent) - depthOffset,
+        );
+      }
+    }
+  }
+
+  camera.position.copy(target).addScaledVector(direction, Math.max(distance * (1 + 1e-10), 0.01));
+  camera.lookAt(target);
+  camera.updateProjectionMatrix();
+}
+
 function disposeObject(root: Object3D) {
   root.traverse((object) => {
     const mesh = object as Mesh;
@@ -60,6 +94,7 @@ export function mountReferenceTruck(
 
   let disposed = false;
   let model: Object3D | undefined;
+  let modelBounds: Box3 | undefined;
   const render = () => renderer.render(scene, camera);
   const resize = () => {
     const width = container.clientWidth;
@@ -68,6 +103,7 @@ export function mountReferenceTruck(
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     renderer.setSize(width, height);
+    if (modelBounds) fitReferenceTruckCamera(camera, modelBounds);
     render();
   };
   const observer = new ResizeObserver(resize);
@@ -86,10 +122,9 @@ export function mountReferenceTruck(
     model.scale.setScalar(scale);
     model.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
     scene.add(model);
-
-    const scaledHeight = size.y * scale;
-    camera.position.set(7, Math.max(3, scaledHeight * 0.85), 7);
-    camera.lookAt(0, scaledHeight * 0.38, 0);
+    model.updateMatrixWorld(true);
+    modelBounds = new Box3().setFromObject(model);
+    fitReferenceTruckCamera(camera, modelBounds);
     resize();
     onLoad();
   }).catch((error: unknown) => {
