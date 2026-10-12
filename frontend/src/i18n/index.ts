@@ -198,6 +198,7 @@ export const dict = {
   "dash.fleet.highTemperature": "Temperatura alta",
   "dash.fleet.highVibration": "Vibración alta",
   "dash.series.levelHistory": "Historial del nivel de aceite",
+  "dash.chart.emptyHistory": "Sin filas ingeridas: no hay historial que dibujar.",
   "dash.series.sensors": "Series de sensores",
   "dash.series.temperature": "Temperatura",
   "dash.series.vibration": "Vibración",

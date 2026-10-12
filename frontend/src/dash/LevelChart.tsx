@@ -34,7 +34,9 @@ export default function LevelChart({
   temperatureValues = [],
   signalSource = "DEMO",
 }: LevelChartProps) {
-  if (points.length === 0) return <p style={{ color: "var(--og-muted)", fontSize: 13 }}>{t("dash.chart.empty")}</p>;
+  if (points.length === 0 || !points.some((point) => point.liters !== null && point.liters !== undefined)) {
+    return <p style={{ color: "var(--og-muted)", fontSize: 13 }}>{t("dash.chart.emptyHistory")}</p>;
+  }
   const levels = points.map((point) => point.liters);
   const levelSigma = levels.map(() => sigmaL);
   const regimes = [...windows]
