@@ -129,7 +129,7 @@ export default function AlertsInboxPage() {
         <section className="og-alerts-card og-alerts-card--rule">
           <h3>{t("alerts.callout.title")}</h3>
           <p>{t("alerts.callout.text")}</p>
-          <a href="/alerts/rules">{t("alerts.callout.link")}</a>
+          <a className="og-alerts-hit-area" href="/alerts/rules">{t("alerts.callout.link")}</a>
         </section>
       </aside>
         <FilterBar>
@@ -159,7 +159,7 @@ export default function AlertsInboxPage() {
               </select>
             </FormField>
             <FormField label={t("alerts.filter.search")}>
-              <input type="search" value={filters.query} placeholder={t("alerts.filter.searchPlaceholder")} onInput={(event) => patch({ query: event.currentTarget.value })} />
+              <input type="search" id="alerts-search" value={filters.query} placeholder={t("alerts.filter.searchPlaceholder")} onInput={(event) => patch({ query: event.currentTarget.value })} />
             </FormField>
           </div>
           {hasFilters && <Button type="button" variant="ghost" onClick={() => setFilters(NO_FILTERS)}>{t("alerts.filter.reset")}</Button>}
@@ -195,7 +195,7 @@ export default function AlertsInboxPage() {
                         onKeyDown={(event) => { if (event.key === "Enter") open(); }}
                       >
                         <td className="og-alerts-idcell">
-                          <a className="og-mono" href={detailHref(record.id)}>{record.id}</a>
+                          <a className="og-mono og-alerts-hit-area" href={detailHref(record.id)}>{record.id}</a>
                           <SourceTag source={record.source} />
                         </td>
                         <td className="og-alerts-wheelcell">

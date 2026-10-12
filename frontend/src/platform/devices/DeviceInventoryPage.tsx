@@ -163,7 +163,7 @@ export default function DeviceInventoryPage() {
     </section>
     <FilterBar><div className="device-inventory__filters" aria-label={t("devices.filterLabel")}>
       <label><span>{t("devices.filterLabel")}</span><select value={filter} onChange={(event) => { setFilter((event.currentTarget as HTMLSelectElement).value as DeviceFilter); setPageIndex(1); }}>{filterOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select></label>
-      <label><span>{t("devices.search")}</span><input type="search" value={query} onInput={(event) => { setQuery((event.currentTarget as HTMLInputElement).value); setPageIndex(1); }} placeholder={t("devices.search")} /></label>
+      <label htmlFor="devices-search"><span>{t("devices.search")}</span><input id="devices-search" type="search" value={query} onInput={(event) => { setQuery((event.currentTarget as HTMLInputElement).value); setPageIndex(1); }} placeholder={t("devices.search")} /></label>
     </div></FilterBar>
     {data.source === "demo" && <div className="device-inventory__demo-note"><SyntheticBadge /><span>{t("devices.demoSigning")}</span></div>}
     <DataTable caption={t("devices.title")} columns={columns} rows={rows} />

@@ -17,8 +17,8 @@ export default function Login() {
           <p className="login__system">{t("login.system")}</p>
           <h2 id="login-title">{t("login.title")}</h2>
           <p className="login__intro">{t("login.intro")}</p>
-          <label className="login__field"><span>{t("login.emailLabel")}</span><input type="email" placeholder={t("login.emailPlaceholder")} autoComplete="email" /></label>
-          <label className="login__field"><span>{t("login.passwordLabel")}</span><input type="password" placeholder={t("login.passwordPlaceholder")} autoComplete="current-password" /></label>
+          <label className="login__field" htmlFor="login-email"><span>{t("login.emailLabel")}</span><input id="login-email" type="email" placeholder={t("login.emailPlaceholder")} autoComplete="email" /></label>
+          <label className="login__field" htmlFor="login-password"><span>{t("login.passwordLabel")}</span><input id="login-password" type="password" placeholder={t("login.passwordPlaceholder")} autoComplete="current-password" /></label>
           <label className="login__remember"><input type="checkbox" disabled /><span>{t("login.keepSignedIn")}</span><small>{t("login.unavailable")}</small></label>
           <Notice kind="simulation">
             <span>{t("login.prototypeNotice")}</span>
