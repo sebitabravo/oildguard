@@ -15,7 +15,7 @@
 - [x] PV19-1 Add per-value/card assertions in `frontend/src/ops/prov-last.fieldlabels.test.ts`; captured RED (699 pass, 6 expected failures) at `/tmp/og-goal/evidence/PROV-LAST-19/red.txt`; test-only commit `a2d174a439c6d1d5a5315f83be0eef144e64d159` (`test(ops): specify per-field provenance on remaining business values`).
 - [x] PV19-1 Add only source-supported provenance labels in allowed route owners; leave unresolved fields for owner decision.
 - [x] PV19-1 Run acceptance script after, `bun test src/honesty.test.ts`, full `bun test src`, build, and detector; save outputs.
-- [ ] PV19-1 Commit implementation with the brief's fix subject and record commit identity.
+- [x] PV19-1 Commit implementation with the brief's fix subject: `00d8ffa00e001139577d111578c34af45249a2fa` (`fix(ops): label each remaining business value with its source`).
 
 ## Acceptance and progress
 - Acceptance: all measured routes reach zero unexplained business values; only brief-listed non-business categories are excluded; unresolved-source values are named, not guessed; tests/build pass.
@@ -24,4 +24,4 @@
 - Source mapping resolved `/` `10 Hz` and `/wheel` `1 kHz` as CONFIGURACIÓN; no owner decision remains. Report and devices values use DEMO/EN VIVO/DERIVED per field; validation fixture truth/estimate and errors are SUSTITUTO SINTÉTICO/DERIVED.
 - Verification: `bun test src/honesty.test.ts` 3/3; `bun test src` 705/705; `bun run build` exit 0; acceptance 0 unlabelled; detector output `[]`. Outputs are in `/tmp/og-goal/evidence/PROV-LAST-19/`.
 - Rollback boundary: revert only this task's route-owner labels and `frontend/src/ops/prov-last.fieldlabels.test.ts`; the earlier test-only commit remains independently revertible.
-- Next: record the implementation commit identity and close the task.
+- Next: hand off for parent review; the post-commit task-file hash note is retained locally to avoid a third commit beyond the two prescribed work units.
