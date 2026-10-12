@@ -115,3 +115,29 @@ The three-minute comprehension test and owner visual approval were **NOT run by 
 The CLOSE-17 Part A candidate review was approved and acknowledged. Its non-blocking R3-001 advisory noted that the regression test does not exercise Dashboard prop wiring/backend-note rendering; no correction transition was offered. The human-only items above remain open.
 
 **All automated checks pass** for this closeout: `cd frontend && bun test src` — 699 pass, 0 fail; `cd frontend && bun run build` — exit 0, 45 pages; `cd frontend && bun test src/honesty.test.ts` — 3 pass, 0 fail; `grep -rn "/Users/" frontend/src` — zero matches. Full outputs are in `/tmp/og-goal/evidence/CLOSE-17/`.
+
+## Final state (CLOSE-21)
+
+| CONDITION | STATUS | EVIDENCE | Remaining gap |
+|---|---|---|---|
+| 1. Four integrity findings are closed and the document/code agree on the gates. | MET | A01–A13 records and commit identities in `odd/tasks/integrity-narrative.md` §3.1; `docs/integrity-inventory.md`; `frontend/src/honesty.test.ts`. | No remaining condition-specific gap is recorded; A12's raw-scan policy question is tracked separately under condition 6. |
+| 2. RMSE is reported with its value and context. | MET | Commit `71e0719`; `frontend/src/lab/validation/ValidationPage.rmse.test.ts` asserts pooled RMSE 2.5153 L (displayed as 2.52 L), n=350, with bias/MAE, fixture path, and a non-bench note; `/tmp/og-goal/evidence/OUTAGE-SHARED-05/bun-test.txt`. | This is a pooled fixture result, not a physical bench or field result. |
+| 3. The interface reports backend outages. | MET | Commits `84b8ee2` and `adcf757`; `/tmp/og-goal/evidence/OUTAGE-SHARED-05/browser.txt` (blocked notices 5/5 routes; open notices 0/5). | The measurement covers the five named routes and these tested states. |
+| 4. No demo value appears without a field-level label. | PARTIAL | Commit `00d8ffa`; `/tmp/og-goal/evidence/PROV-LAST-19/unlabeled-after.txt` (heuristic reports 0 unlabeled among its sampled values). | This is a heuristic sample, not a complete audit across every route and backend state; human confirmation remains open. |
+| 5. The landing explains the project end to end and the 3D viewer works. | PARTIAL | The B09 browser record in the preceding “Scope deviation” section reports one canvas and 31 in-view frames on `/mine` and `/wheel`; screenshots: `/tmp/og-goal/evidence/B09/twin-mine.png`, `twin-wheel.png`. Sensor selection and cycle-pause tests: `/tmp/og-goal/evidence/B09/landing-tests.txt`. No-WebGL posters and an enabled-WebGL canvas on `/wheel`: `/tmp/og-goal/evidence/WEBGL-FALLBACK-10/browser-check.txt`. | The assembly is a parametric study, not CAD. Human visual sign-off and the three-minute comprehension test remain open. |
+| 6. A repository-wide search for prohibited terms returns zero matches, including documentation. | NOT MET | `/tmp/og-goal/evidence/banned-hits.txt` records 90 raw hits before commit `2b0f37e`; `/tmp/og-goal/evidence/PRODUCT-CLAIMS-18/product-grep-final.txt` records zero matches in `PRODUCT.md` afterward. | Remaining matches include the guard's required term list, inventory/history records, and third-party skill files. The owner must decide whether history records should also be scrubbed; no repo-wide zero-match result is claimed. |
+| 7. The repository is functional, the suite passes, the tree is clean, and a written record exists. | PARTIAL | `/tmp/og-goal/evidence/ALERTS-POLISH-20/test-src.txt` (707 pass, 0 fail); `/tmp/og-goal/evidence/CLOSE-21/honesty-test-rerun.txt` (3 pass, 0 fail); this report. | The owner has an uncommitted `AGENTS.md` change, so the clean-tree condition is not met. The full suite result is the last recorded run, not a new CLOSE-21 full-suite run. |
+
+### Stated scope deviations and decisions
+
+- The bilingual landing requirement in goal section 6 was superseded by the owner's Spanish-only decision in `odd/tasks/spanish-only.md`.
+- The GLB model remains unused; the landing uses a parametric study instead.
+- The `/dev/ui` route was removed from the build.
+- B09 included a shared stage refactor beyond the original additive landing scope; see `/tmp/og-goal/evidence/B09/scope-check.txt`.
+- Three review ranges were approved and acknowledged: `2ed430f..f5a8942`, `f5a8942..d548d6a`, and `d548d6a..b339eb9`; see `/tmp/og-goal/evidence/B12/review-range-map.txt` and the capture/acknowledgement records in `/tmp/og-goal/evidence/`.
+
+### Human-only items (not run by the system)
+
+- Run the three-minute comprehension test with a participant unfamiliar with mining and record their answers.
+- Provide owner visual approval of the landing and `/fleet` at 768 px.
+- Decide any density changes beyond the already-collapsed secondary content.
