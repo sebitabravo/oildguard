@@ -29,6 +29,7 @@ export const platform = {
   "landing.factsTitle": "Datos del proyecto",
   "landing.factRate": "Frecuencia de muestreo del simulador",
   "landing.factReservoir": "Depósito nominal",
+  "landing.reservoirNote": "L · grado no confirmado en manuales",
   "landing.factLevels": "Escalera de respuesta",
   "landing.levelCodes": "N1—N4",
   "landing.factScope": "Límite del sistema",

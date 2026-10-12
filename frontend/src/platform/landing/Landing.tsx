@@ -168,7 +168,7 @@ export default function Landing() {
       <section className="landing__facts" aria-label={t("landing.factsTitle")}>
         <article><span>{t("landing.factPm")}</span><strong>{n(250)} <small>h</small></strong><ProvenanceTag value="ASSUMPTION" /></article>
         <article><span>{t("landing.factRate")}</span><strong>{n(10)} <small>Hz</small></strong><ProvenanceTag value="VERIFIED" /></article>
-        <article><span>{t("landing.factReservoir")}</span><strong>{n(95)} <small>L · SAE 85W-140</small></strong><ProvenanceTag value="VERIFIED" /></article>
+        <article><span>{t("landing.factReservoir")}</span><strong>{n(95)} <small>{t("landing.reservoirNote")}</small></strong><ProvenanceTag value="ASSUMPTION" /></article>
         <article><span>{t("landing.factLevels")}</span><strong>N1–N4 <small>{t("landing.readOnly")}</small></strong><ProvenanceTag value="VERIFIED" /></article>
       </section>
       <section className="landing__section" id={problem.anchor} data-beat={problem.id} data-beat-active={beatActive(problem.id)}>
