@@ -7,6 +7,7 @@ use ::time::OffsetDateTime;
 use anyhow::Result;
 use serde::Serialize;
 use std::{
+    collections::HashMap,
     future::Future,
     pin::Pin,
     sync::{
@@ -45,23 +46,49 @@ impl Sink for MqttSink {
 }
 
 pub struct MqttPoolSink {
-    clients: Vec<publisher::SharedClient>,
+    clients: ClientRouting,
+}
+
+enum ClientRouting {
+    Pool(Vec<publisher::SharedClient>),
+    PerDevice(HashMap<String, publisher::SharedClient>),
 }
 
 impl MqttPoolSink {
     pub fn new(clients: Vec<publisher::SharedClient>) -> Self {
-        Self { clients }
+        Self {
+            clients: ClientRouting::Pool(clients),
+        }
+    }
+
+    pub fn new_per_device(clients: HashMap<String, publisher::SharedClient>) -> Self {
+        Self {
+            clients: ClientRouting::PerDevice(clients),
+        }
+    }
+
+    pub fn legacy_client_index(device_id: &str, client_count: usize) -> usize {
+        device_id
+            .bytes()
+            .fold(0usize, |sum, byte| sum.wrapping_add(byte as usize))
+            % client_count.max(1)
     }
 }
 
 impl Sink for MqttPoolSink {
     fn send<'a>(&'a self, device_id: &'a str, payload: Vec<u8>, qos: u8) -> SinkFuture<'a> {
-        let index = device_id
-            .bytes()
-            .fold(0usize, |sum, byte| sum.wrapping_add(byte as usize))
-            % self.clients.len().max(1);
-        let client = self.clients[index].clone();
-        Box::pin(async move { publisher::publish_payload(&client, device_id, payload, qos).await })
+        let client = match &self.clients {
+            ClientRouting::Pool(clients) => {
+                Some(clients[Self::legacy_client_index(device_id, clients.len())].clone())
+            }
+            ClientRouting::PerDevice(clients) => clients.get(device_id).cloned(),
+        };
+        Box::pin(async move {
+            let client = client.ok_or_else(|| {
+                anyhow::anyhow!("no MQTT client configured for device {device_id}")
+            })?;
+            publisher::publish_payload(&client, device_id, payload, qos).await
+        })
     }
 }
 

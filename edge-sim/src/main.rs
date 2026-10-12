@@ -80,24 +80,55 @@ async fn main() -> Result<()> {
 
     if realtime {
         let packet_size = args.batch_rows.saturating_mul(4096).max(64 * 1024);
-        let mut clients = Vec::new();
-        for index in 0..args.connections {
-            let (client, mut event_loop) = oilguard_edge::publisher::connect(
-                &args.mqtt_url,
-                &format!("oilguard-edge-{index}"),
-                packet_size,
-            )?;
-            let shared = Arc::new(client);
-            tokio::spawn(async move {
-                loop {
-                    if event_loop.poll().await.is_err() {
-                        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        let cert_dir = std::env::var_os("OILGUARD_MQTT_CERT_DIR").map(std::path::PathBuf::from);
+        let sink = if oilguard_edge::publisher::per_device_identity_enabled(
+            &args.mqtt_url,
+            cert_dir.as_deref(),
+        ) {
+            let cert_dir = cert_dir
+                .as_deref()
+                .expect("enabled only when cert directory exists");
+            let mut clients = std::collections::HashMap::new();
+            for index in 0..args.devices {
+                let device_id = format!("{}-{:02}", args.device_prefix, index + 1);
+                let (client, mut event_loop) = oilguard_edge::publisher::connect_for_device(
+                    &args.mqtt_url,
+                    &format!("oilguard-edge-{device_id}"),
+                    packet_size,
+                    cert_dir,
+                    &device_id,
+                )?;
+                let shared = Arc::new(client);
+                tokio::spawn(async move {
+                    loop {
+                        if event_loop.poll().await.is_err() {
+                            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                        }
                     }
-                }
-            });
-            clients.push(shared);
-        }
-        let sink = Arc::new(engine::MqttPoolSink::new(clients));
+                });
+                clients.insert(device_id, shared);
+            }
+            Arc::new(engine::MqttPoolSink::new_per_device(clients))
+        } else {
+            let mut clients = Vec::new();
+            for index in 0..args.connections {
+                let (client, mut event_loop) = oilguard_edge::publisher::connect(
+                    &args.mqtt_url,
+                    &format!("oilguard-edge-{index}"),
+                    packet_size,
+                )?;
+                let shared = Arc::new(client);
+                tokio::spawn(async move {
+                    loop {
+                        if event_loop.poll().await.is_err() {
+                            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                        }
+                    }
+                });
+                clients.push(shared);
+            }
+            Arc::new(engine::MqttPoolSink::new(clients))
+        };
         let config = engine::EngineConfig {
             devices: args.devices,
             rate_hz: args.rate_hz,
