@@ -33,9 +33,10 @@ The 1440×900 first view is saturated. Owner decision is binding: COLLAPSE (`ple
 - Route: delegated direct (3 route components/styles, dictionaries, and regression test require multi-file mapping/writing).
 - Status: complete. No primary Fleet or Alerts rows were collapsed. Owner rejected the 40% threshold. Corrective RED/GREEN for existing alerts-order and RUL-chart contracts is recorded in `red-existing-contracts.txt` and `green-focused.txt`.
 - RDD after test commit: medium, `under_budget` (assessment over `fcbe2f6`..`2dc604d`; no review due).
+- RDD after implementation commit: medium, `under_budget`, 273 changed lines (assessment over `fcbe2f6`..`d97eb76`; no review due).
 - After evidence: `/tmp/og-goal/evidence/DENSITY-15/measurement-after.json`; all rendered Fleet and RUL primary totals match baseline. Alerts has 25 rows/53 source tags versus 24/52 at baseline because live backend data changed; 5 summary tiles remain.
 - Above-fold items (numbers/badges/buttons/cards): Fleet 45/95/8/3 → 45/95/8/3; Alerts 28/27/0/8 → 20/31/0/8; RUL 42/41/4/6 → 7/8/4/0. No minimum reduction is required.
 - Full rendered values: Fleet 112 rows/1008 provenance cells/3 KPIs/1162 provenance tags; Alerts 25 rows/5 tiles/25 inbox tags/53 source tags; RUL 12 cards/12 horizons/25 metric groups/86 provenance tags. Baseline screenshots/counts: `/tmp/og-goal/evidence/DENSITY-15/before-{fleet,alerts,rul}-chromium-1440.png`; after screenshots use matching `after-` names. All after captures reported no page errors.
-- Checks: focused density 3/0; `bun test src` 691/0; build exit 0 (0 errors, 8 existing hints); honesty 3/0; final `git diff --check` output is in `diff-check.txt`. Dev server stopped.
-- Next: commit the secondary-only implementation locally; no remote actions.
-- Commit identities: `2dc604d42b8fcc880e722225bd760407b17de32f` (`test(ops): specify secondary disclosures`); implementation pending.
+- Checks: focused density 3/0; `bun test src` 691/0 (writer run and parent spot check in `bun-test.txt` and `parent-spot-test.txt`); build exit 0 (0 errors, 8 hints); honesty 3/0; final `git diff --check` output is in `diff-check.txt`. Dev server stopped.
+- Next: none; task complete. No remote actions.
+- Commit identities: `2dc604d42b8fcc880e722225bd760407b17de32f` (`test(ops): specify secondary disclosures`); `d97eb762d5d8613e469e9de4c04913a32fe27f17` (`refactor(ops): fold secondary dashboard content`).
