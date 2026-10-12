@@ -41,6 +41,8 @@ struct Args {
     #[arg(long, default_value_t = 10_000)]
     buffer_capacity: usize,
     #[arg(long)]
+    buffer_dir: Option<std::path::PathBuf>,
+    #[arg(long)]
     sign: bool,
     #[arg(long)]
     master_key_hex: Option<String>,
@@ -107,6 +109,7 @@ async fn main() -> Result<()> {
             shards: args.shards,
             batch_rows: args.batch_rows,
             buffer_capacity: args.buffer_capacity,
+            buffer_dir: args.buffer_dir.clone(),
             jitter_ms: args.jitter_ms,
             qos: args.qos,
             mode_realtime: true,

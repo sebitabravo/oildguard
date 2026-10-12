@@ -77,6 +77,7 @@ pub struct EngineConfig {
     pub shards: usize,
     pub batch_rows: usize,
     pub buffer_capacity: usize,
+    pub buffer_dir: Option<std::path::PathBuf>,
     pub jitter_ms: u64,
     pub qos: u8,
     pub mode_realtime: bool,
@@ -97,6 +98,7 @@ impl Default for EngineConfig {
             shards: 0,
             batch_rows: 10,
             buffer_capacity: 10_000,
+            buffer_dir: None,
             jitter_ms: 0,
             qos: 0,
             mode_realtime: true,
@@ -303,6 +305,9 @@ async fn send_batch(
                 .store(device.buffer.dropped_total, Ordering::Relaxed);
         }
     }
+    if let Err(error) = device.buffer.persist_queue() {
+        eprintln!("edge buffer persistence rewrite failed: {error}");
+    }
 }
 
 async fn run_shard(
@@ -402,10 +407,18 @@ pub async fn run_with_stats(
                 config.start.unwrap_or(start),
             )
         };
+        let buffer = if let Some(directory) = &config.buffer_dir {
+            let filename = format!("{}.jsonl", hex::encode(id.as_bytes()));
+            let path = directory.join(filename);
+            EdgeBuffer::with_path(config.buffer_capacity, path)
+                .expect("failed to open persistent edge buffer")
+        } else {
+            EdgeBuffer::new(config.buffer_capacity)
+        };
         shards[index % shard_count].push(Device {
             id,
             generator,
-            buffer: EdgeBuffer::new(config.buffer_capacity),
+            buffer,
             batch: Vec::with_capacity(config.batch_rows),
         });
     }
