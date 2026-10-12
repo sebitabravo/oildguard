@@ -670,6 +670,15 @@ session store only; it does not read from InfluxDB.
 Body: `{ "rows": [SignalRow, ...] }` (1–5000 rows per batch, 10 Hz rows
 from `sim/generate.py`).
 
+Rows require `(device_id, seq)` as their record identity; rows missing either
+value are rejected, counted as `missing_identity`, and logged. In permissive
+signature mode, repeated unsigned identities are accepted as separate rows.
+Signed rows retain their existing `(device_id, seq, t_iso)` deduplication rule.
+
+`speed_kmh` and `load_pct` are optional CAN/VHMS inputs. They default to
+`null` (sin fuente CAN/VHMS: null) and are retained when supplied; the backend
+does not synthesize either value.
+
 ```json
 {
   "rows": [

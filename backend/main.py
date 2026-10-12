@@ -174,8 +174,8 @@ app.add_middleware(
 class SignalRow(BaseModel):
     t_iso: str
     t_s: float
-    seq: int = Field(ge=0)
-    device_id: str
+    seq: int | None = Field(default=None, ge=0)
+    device_id: str | None = None
     fsm_state: Literal["LOAD", "HAUL", "DUMP", "WAIT"]
     moving: Literal[0, 1]
     recal_window: Literal[0, 1]
@@ -195,6 +195,8 @@ class SignalRow(BaseModel):
     label: Literal[
         "normal", "slow-leak", "abrupt-drop", "sensor-drift", "link-outage-buffered"
     ]
+    speed_kmh: float | None = None
+    load_pct: float | None = None
     sig_v: str | None = None
     sig: str | None = None
 
@@ -386,7 +388,14 @@ def verify_rows(
         has_signature = row.get("sig") is not None or row.get("sig_v") is not None
         reason: str | None = None
         identity: tuple | None = None
-        if has_signature:
+        if not has_signature and (not device_id or row.get("seq") is None):
+            reason = "missing_identity"
+            log.warning(
+                "Rejecting ingest row without device_id or seq: missing_identity"
+            )
+        elif has_signature:
+            if not device_id or row.get("seq") is None:
+                log.warning("Rejecting signed ingest row without device_id or seq")
             key = lookup_key(device_id)
             if key is None:
                 reason = "unknown_device"
