@@ -555,7 +555,18 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
             {usingTrace && live && source === "live" && (
               <p className="og-wheel-panel__warn">{t("wheel.chart.demoTrace")}</p>
             )}
-            <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} variant="inline" pressureValues={chartPressure} temperatureValues={chartTemperature} signalSource={signalSource} />
+            <section aria-label={t("dash.series.levelHistory")} data-dashboard-series="level-history">
+              <h4 data-dashboard-series="level-history-label">{t("dash.series.levelHistory")}</h4>
+              <LevelChart points={shownPoints} sigmaL={sigmaL} windows={shownWindows} alerts={shownAlerts} variant="inline" pressureValues={chartPressure} temperatureValues={chartTemperature} signalSource={signalSource} />
+            </section>
+            <section aria-label={t("dash.series.sensors")}>
+              <h4 data-dashboard-series="temperature">{t("dash.series.temperature")}</h4>
+              <p>{formatNumber(temperatureC, 1)} °C</p>
+              <h4 data-dashboard-series="vibration">{t("dash.series.vibration")}</h4>
+              <p>{formatNumber(vibrationG, 2)} g</p>
+              <h4 data-dashboard-series="current">{t("dash.series.current")}</h4>
+              <p role="status">{t("dash.series.gap")}</p>
+            </section>
             <ChartLegend />
             <p className="og-wheel-panel__note">
               {t("wheel.chart.note")} {t("dash.footnote", { pressure: formatNumber(wheel.pressureKpa, 1) })}
