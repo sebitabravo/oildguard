@@ -68,7 +68,7 @@ export function FleetKpiStrip({ counts, rows, liveConnected = true }: { counts: 
     <section className="og-fleet-kpi-strip" data-kpi-layout="tablet" aria-label={t("fleet.kpis")}>
       <div className="og-fleet-kpi">
         <div className="og-label">{t("fleet.kpiMonitored")}</div>
-        <div className="og-kpi-tile__value">{formatNumber(counts.trucks, 0)}<small>{t("fleet.trucks")}</small> <FleetSourceSummary {...truckSources} liveConnected={liveConnected} /></div>
+        <div className="og-kpi-tile__value">{formatNumber(counts.trucks, 0)} <small>{t("fleet.trucks")}</small> <FleetSourceSummary {...truckSources} liveConnected={liveConnected} /></div>
         <div className="og-kpi-tile__meta">{formatNumber(counts.wheels, 0)} {t("fleet.gdy106Wheels")} <FleetSourceSummary {...rowSources} liveConnected={liveConnected} /> · {t("fleet.activeCycle")}: {formatNumber(counts.activeTrucks, 0)} <FleetFieldSource source="DEMO" /></div>
       </div>
       <div className={`og-fleet-kpi${counts.alerts ? " og-fleet-kpi--warning" : ""}`}>

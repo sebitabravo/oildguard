@@ -1,7 +1,9 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import DeviceInventoryPage from "../platform/devices/DeviceInventoryPage";
+import { t } from "../i18n";
 ---
-<BaseLayout breadcrumb={["nav.group.platform", "nav.devices"]}>
+<BaseLayout title={t("devices.title")} breadcrumb={["nav.group.platform", "nav.devices"]}>
+  <h1 class="og-visually-hidden">{t("devices.title")}</h1>
   <DeviceInventoryPage client:only="preact" />
 </BaseLayout>

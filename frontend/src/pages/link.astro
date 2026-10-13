@@ -1,7 +1,9 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import LinkHealthPage from "../platform/link/LinkHealthPage";
+import { t } from "../i18n";
 ---
-<BaseLayout breadcrumb={["nav.group.platform", "nav.link"]}>
+<BaseLayout title={t("link.title")} breadcrumb={["nav.group.platform", "nav.link"]}>
+  <h1 class="og-visually-hidden">{t("link.title")}</h1>
   <LinkHealthPage client:only="preact" />
 </BaseLayout>

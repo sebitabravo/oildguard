@@ -5,6 +5,7 @@ export const ops = {
   "bench.referenceTruck.error": "No se pudo cargar el modelo de referencia. Inténtalo de nuevo.",
   "bench.referenceTruck.viewer": "Modelo 3D del Komatsu HD465-7EO",
   "bench.referenceTruck.attribution": "Modelo de referencia · Licencia",
+  "bench.referenceTruck.caveat": "El uso fuera de este repositorio NO ESTÁ VERIFICADO. Este modelo no se utiliza en la página de inicio.",
   "bench.referenceTruck.source": "Fuente del modelo (Sketchfab)",
   "nav.group.operation": "Operación",
   "nav.group.twin": "Gemelo 3D",

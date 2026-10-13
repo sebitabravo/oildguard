@@ -293,6 +293,7 @@ export default function BenchView() {
       </div>
       <section className="og-reference-truck" aria-labelledby="reference-truck-heading" style={{ margin: "16px 0", padding: "0 16px" }}>
         <h2 id="reference-truck-heading" className="og-h2">{t("bench.referenceTruck.heading")}</h2>
+        <p className="og-body">{t("bench.referenceTruck.caveat")}</p>
         <button
           type="button"
           className="og-btn og-btn--primary"
