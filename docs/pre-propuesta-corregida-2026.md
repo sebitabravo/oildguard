@@ -1,3 +1,6 @@
+Este Markdown es la versión vigente; el PDF enviado es un registro histórico congelado y no se modifica.
+SHA-256 del PDF: 253ad84f38a2677403ba5ebccf7c9d4ac5da16d66c803b61ae8919267680a7bc
+
 Copia de trabajo corregida. El PDF enviado no se modifica. Cada corrección cita su fuente o su estado.
 
 ## 01 Nombre breve de la solución
