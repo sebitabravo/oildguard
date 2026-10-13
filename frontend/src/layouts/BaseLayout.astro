@@ -14,6 +14,8 @@ const { section, title = "OilGuard Mining", compact = section === "mine" || sect
 const current = activeRoute(Astro.url.pathname) ?? section ?? null;
 const defaultBreadcrumb = navGroups.flatMap((group) => group.items).find((item) => item.id === current)?.label ?? "shell.dashboard";
 const breadcrumbKeys = breadcrumb ?? [defaultBreadcrumb];
+const publicMenuOrder = ["monitoring", "wheel", "rul"];
+const publicNavItems = publicNavGroups.flatMap((group) => group.items).sort((left, right) => publicMenuOrder.indexOf(left.id) - publicMenuOrder.indexOf(right.id));
 ---
 <!doctype html>
 <html lang="es">
@@ -33,16 +35,11 @@ const breadcrumbKeys = breadcrumb ?? [defaultBreadcrumb];
           <span><strong>OILGUARD</strong><small>TELEMETRY CORE</small></span>
         </a>
         <div class="og-sidebar__scroll">
-          {publicNavGroups.map((group) => (
-            <section class="og-nav-group">
-              <div class="og-label og-nav-group__label">{t(group.label)}</div>
-              {group.items.map((item) => (
-                <a class:list={["og-sidebar__item", { "is-active": current === item.id }]} href={item.href} aria-current={current === item.id ? "page" : undefined}>
-                  <span class="og-sidebar__dot" aria-hidden="true"></span>
-                  <span>{t(item.label)}</span>
-                </a>
-              ))}
-            </section>
+          {publicNavItems.map((item) => (
+            <a class:list={["og-sidebar__item", { "is-active": current === item.id }]} href={item.href} aria-current={current === item.id ? "page" : undefined}>
+              <span class="og-sidebar__dot" aria-hidden="true"></span>
+              <span>{t(item.label)}</span>
+            </a>
           ))}
         </div>
         <footer class="og-sidebar__footer">
@@ -56,8 +53,9 @@ const breadcrumbKeys = breadcrumb ?? [defaultBreadcrumb];
         <div class="og-top__spacer"></div>
         <BackendStatePill client:load />
       </header>
+      <p class="og-synthetic-band" role="note">{t("shell.syntheticBand")}</p>
       <nav class="og-mobile-nav" aria-label={t("nav.label")}>
-        {publicNavGroups[0].items.slice(0, 4).map((item) => <a href={item.href}>{t(item.label)}</a>)}
+        {publicNavItems.map((item) => <a href={item.href}>{t(item.label)}</a>)}
       </nav>
       <main class="og-content"><slot /></main>
     </div>

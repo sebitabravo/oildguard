@@ -9,7 +9,7 @@ describe("public navigation menu", () => {
     const registeredItems = navGroups.flatMap((group) => group.items);
     const paths = routeRegistry.map((route) => route.path);
 
-    expect(items).toHaveLength(12);
+    expect(items).toHaveLength(3);
     expect(labels).not.toContain("nav.calibration");
     expect(labels).not.toContain("nav.simulation");
     expect(registeredItems.map((item) => item.id)).toContain("calibration");

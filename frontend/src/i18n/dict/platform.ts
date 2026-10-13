@@ -1,6 +1,7 @@
 export const platform = {
   "shell.backend": "Estado del backend",
   "shell.synthetic": "SUSTITUTO SINTÉTICO",
+  "shell.syntheticBand": "SINTÉTICO · datos del simulador, no de terreno",
   "shell.demo": "DEMO LOCAL",
   "shell.link": "Enlace",
   "shell.menu": "Abrir navegación",

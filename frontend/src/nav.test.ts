@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { activeRoute, navGroups } from "./nav";
+import { activeRoute, navGroups, publicNavGroups } from "./nav";
 import { routeRegistry } from "./routes";
 
 describe("navigation registry", () => {
@@ -28,6 +28,7 @@ describe("navigation registry", () => {
     const items = navGroups.flatMap((group) => group.items);
     expect(new Set(items.map((item) => item.href)).size).toBe(items.length);
     expect(navGroups.map((group) => group.items.length)).toEqual([5, 2, 2, 2, 3]);
+    expect(publicNavGroups.map((group) => group.items.length)).toEqual([2, 1]);
   });
 
   test("matches nested alert detail to the alerts item", () => {

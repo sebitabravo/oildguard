@@ -55,12 +55,12 @@ export const navGroups: NavGroup[] = [
   },
 ];
 
-const PUBLIC_MENU_EXCLUDED_IDS = new Set<RouteId>(["calibration", "lab-sim"]);
+const PUBLIC_MENU_IDS = new Set<RouteId>(["monitoring", "wheel", "rul"]);
 
 export const publicNavGroups: NavGroup[] = navGroups
   .map((group) => ({
     ...group,
-    items: group.items.filter((item) => !PUBLIC_MENU_EXCLUDED_IDS.has(item.id)),
+    items: group.items.filter((item) => PUBLIC_MENU_IDS.has(item.id)),
   }))
   .filter((group) => group.items.length > 0);
 
