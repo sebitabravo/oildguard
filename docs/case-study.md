@@ -18,4 +18,4 @@ No physical bench correlation or field calibration has been completed. The proto
 
 ## Demo
 
-Run `./scripts/demo.sh` from the repository root and open `http://localhost:5173/monitoring`. Follow the [demo guide](demo-script.md) to distinguish local backend values from synthetic demo evidence.
+Run `./scripts/demo.sh` from the repository root and open the URL it prints (`http://127.0.0.1:4321/monitoring` by default). Follow the [demo guide](demo-script.md) to distinguish local backend values from synthetic demo evidence.

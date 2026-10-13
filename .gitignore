@@ -66,3 +66,6 @@ coverage/
 !/odd/tasks/
 /odd/tasks/*
 !/odd/tasks/spanish-only.md
+
+# AI tooling config (impeccable): local only.
+.impeccable/

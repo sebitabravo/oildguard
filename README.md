@@ -18,7 +18,9 @@ From the repository root, run the one-command local demo:
 
 The script needs no Docker. It starts the local backend, a deterministic synthetic feeder, and a preview of the UI. Open the URL the script prints (`/monitoring`, `/wheel`, `/rul`). The dashboard labels all data as synthetic and the RUL estimate as synthetic.
 
-The plain MQTT listener on `localhost:1883` is development-only and has no password; mTLS on `8883` is the secure path.
+The plain MQTT listener on `localhost:1883` is development-only and has no password; mTLS on `8883` is the secure path. On `8883` the broker sets `require_certificate true`, so a client without a valid certificate is refused during the TLS handshake.
+
+The Compose file uses local demo values for the InfluxDB and broker credentials. Replace them before exposing any service outside your machine.
 
 ## Screenshots
 
