@@ -57,7 +57,7 @@ Bilingual record: EN below, ES después. Neutral/professional Spanish.
 
 ### Source chain (observed 2026-10-09)
 
-- Received as `/Users/sebitabravo/Downloads/komatsu_hd-465-7eo.glb`
+- Received as a local file named komatsu_hd-465-7eo.glb (path omitted)
   (verified locally: magic `glTF`, version 2, length = file size; valid
   glTF 2.0 binary), copied to `frontend/public/models/komatsu_hd-465-7eo.glb`
   and served at `<base>/models/komatsu_hd-465-7eo.glb`.
@@ -140,7 +140,7 @@ Bilingual record: EN below, ES después. Neutral/professional Spanish.
 
 ### Cadena de origen (observado el 2026-10-09)
 
-- Recibido como `/Users/sebitabravo/Downloads/komatsu_hd-465-7eo.glb`
+- Recibido como archivo local llamado komatsu_hd-465-7eo.glb (ruta omitida)
   (verificado localmente: firma `glTF`, versión 2, longitud = tamaño del
   archivo; binario glTF 2.0 válido), copiado a
   `frontend/public/models/komatsu_hd-465-7eo.glb` y servido en
