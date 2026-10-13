@@ -63,10 +63,11 @@ export interface TelemetryRowProps {
   vibrationLive: boolean;
 }
 
-export function NumericEvidence({ field, source, validity, children }: {
+export function NumericEvidence({ field, source, validity, showDemoSource = true, children }: {
   field: "level" | "sigma" | "confidence";
   source: "LIVE" | "DEMO";
   validity: LevelValidity;
+  showDemoSource?: boolean;
   children: ComponentChildren;
 }) {
   const liveSourceWithoutBadge = source === "LIVE" && validity !== "valid";
@@ -82,7 +83,7 @@ export function NumericEvidence({ field, source, validity, children }: {
       {children}{" · "}
       {liveSourceWithoutBadge
         ? <span>{t("wheel.numeric.liveOrigin")} ({t(originValidityCopy[validity])})</span>
-        : <span className={`og-badge og-badge--source og-badge--source-${source.toLowerCase()}`}>
+        : source === "DEMO" && !showDemoSource ? null : <span className={`og-badge og-badge--source og-badge--source-${source.toLowerCase()}`}>
             {t(source === "LIVE" ? "fleet.source.live" : "fleet.source.demo")}
           </span>}{" "}
       {source === "DEMO"
@@ -99,6 +100,12 @@ function levelTone(percent: number): "nominal" | "warning" | "critical" {
 export function TelemetryRow({ level, sigma, confidence, validity, levelSource, hasLevelReading, hasConfidenceReading = true, noTelemetry = false, sigmaSource, confidenceSource, pressureKpa, temperatureC, vibrationG, tauS, pressureLive, temperatureLive, vibrationLive }: TelemetryRowProps) {
   const showLevelReading = hasLevelReading ?? validity !== "invalid";
   const percent = (level / 95) * 100;
+  const sourceOrder = [
+    { field: "level", source: noTelemetry ? null : levelSource },
+    { field: "sigma", source: sigmaSource },
+    { field: "confidence", source: hasConfidenceReading ? confidenceSource : null },
+  ];
+  const firstDemoSourceField = sourceOrder.find((item) => item.source === "DEMO")?.field;
   return (
     <section className="og-wheel-telemetry" aria-label={t("wheel.telemetry")}>
       <TelemetryCard
@@ -108,17 +115,17 @@ export function TelemetryRow({ level, sigma, confidence, validity, levelSource, 
         status={showLevelReading ? levelTone(percent) : "warning"}
       >
         {!noTelemetry && (
-          <NumericEvidence field="level" source={levelSource} validity={validity}>
+          <NumericEvidence field="level" source={levelSource} validity={validity} showDemoSource={firstDemoSourceField === "level"}>
             {showLevelReading
               ? <>{t("wheel.card.levelNominal", { value: formatNumber(percent, 1) })}{" · "}{t("wheel.numeric.band", { value: formatNumber(sigma, 1) })}</>
               : t("wheel.numeric.noReading")}
           </NumericEvidence>
         )}
-        <NumericEvidence field="sigma" source={sigmaSource} validity={validity}>
+        <NumericEvidence field="sigma" source={sigmaSource} validity={validity} showDemoSource={firstDemoSourceField === "sigma"}>
           {t("wheel.numeric.sigma")} {formatNumber(sigma, 1)} L
         </NumericEvidence>
         {hasConfidenceReading && (
-          <NumericEvidence field="confidence" source={confidenceSource} validity={validity}>
+          <NumericEvidence field="confidence" source={confidenceSource} validity={validity} showDemoSource={firstDemoSourceField === "confidence"}>
             {t("ui.confidence")} {formatNumber(confidence, 2)} {t("wheel.numeric.unitless")}
           </NumericEvidence>
         )}
