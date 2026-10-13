@@ -16,9 +16,15 @@ From the repository root, run the one-command local demo:
 ./scripts/demo.sh
 ```
 
-Open `http://localhost:5173/monitoring`. The demo starts the local services and simulator; the dashboard labels demo data as synthetic.
+The script needs no Docker. It starts the local backend, a deterministic synthetic feeder, and a preview of the UI. Open the URL the script prints (`/monitoring`, `/wheel`, `/rul`). The dashboard labels all data as synthetic and the RUL estimate as synthetic.
 
 The plain MQTT listener on `localhost:1883` is development-only and has no password; mTLS on `8883` is the secure path.
+
+## Screenshots
+
+- [Wheel monitoring with the N2 alert area](docs/screenshots/monitoring-1440.png)
+- [RUL estimate as backend confidence intervals](docs/screenshots/rul-1440.png)
+- [GDY106 assembly view](docs/screenshots/wheel-1440.png)
 
 ## What is validated—and what is not
 
@@ -26,6 +32,7 @@ Repository evidence covers simulator parity fixtures and local demonstration flo
 
 ## Documentation
 
+- [Case study](docs/case-study.md)
 - [Five-minute demo guide](docs/demo-script.md)
 - [Feasibility assessment](docs/feasibility.md)
 - [Calibration procedure and status](docs/calibration.md)
