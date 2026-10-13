@@ -139,8 +139,8 @@ export function AlertBanner({
       <SeverityBadge severity={severity} />
       <span>{children}</span>
       <span className="og-alert-actions">
-        <button type="button" disabled title={reason}>{t("ui.acknowledge")}</button>
-        <button type="button" disabled title={reason}>{t("ui.escalate")}</button>
+        <button type="button" className="og-button og-button--ghost" disabled title={reason}>{t("ui.acknowledge")}</button>
+        <button type="button" className="og-button og-button--ghost" disabled title={reason}>{t("ui.escalate")}</button>
         <small>{reason} <a href="/alerts">{t("ui.openAlerts")}</a></small>
       </span>
     </div>

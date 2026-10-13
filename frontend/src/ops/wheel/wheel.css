@@ -1,5 +1,6 @@
 .og-wheel-detail .og-page__inner { display: grid; gap: 16px; }
 .og-wheel-detail .og-page-header { margin-bottom: 0; }
+.og-wheel-detail .og-alert-actions .og-button { min-height: 36px; }
 
 /* Contexto de rueda */
 .og-wheel-context { display: grid; grid-template-columns: minmax(220px, 280px) 1fr; gap: 20px; align-items: center; padding: 14px 16px; background: var(--og-surface); border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-md); }
@@ -92,6 +93,11 @@
   .og-wheel-raw summary { min-height: 44px; }
 }
 @media (max-width: 560px) {
+  .og-wheel-detail .og-alert-banner { flex-wrap: wrap; }
+  .og-wheel-detail .og-alert-banner > span:not(.og-alert-actions):not(.og-foundation-badge) { flex: 1 1 calc(100% - 56px); min-width: 0; }
+  .og-wheel-detail .og-alert-actions { flex: 1 1 100%; min-width: 0; flex-wrap: wrap; margin-left: 0; }
+  .og-wheel-detail .og-alert-actions .og-button { flex: 0 0 auto; white-space: nowrap; }
+  .og-wheel-detail .og-alert-actions small { flex: 1 1 100%; min-width: 0; }
   .og-wheel-telemetry, .og-wheel-context__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .og-wheel-telemetry .og-foundation-card { padding: 12px; }
   .og-wheel-telemetry .og-foundation-card:last-child { grid-column: 1 / -1; }
