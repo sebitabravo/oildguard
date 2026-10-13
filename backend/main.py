@@ -120,18 +120,12 @@ FLEET_DEFAULT_WINDOW = 10
 _DEVICE_KEYS = parse_device_keys(os.getenv("OILGUARD_DEVICE_KEYS", ""))
 
 
-def parse_master_key(spec: str) -> bytes | None:
-    """Llave maestra en hex; None si no se configuro. Nunca incluye el valor en el error."""
-    spec = spec.strip()
-    if not spec:
-        return None
-    try:
-        key = bytes.fromhex(spec)
-    except ValueError:
-        raise ValueError("OILGUARD_DEVICE_MASTER_KEY must be a hex string") from None
-    if not key:
-        raise ValueError("OILGUARD_DEVICE_MASTER_KEY must not be empty")
-    return key
+try:
+    from . import device_access as _device_access
+except ImportError:
+    import device_access as _device_access
+
+parse_master_key = _device_access.parse_master_key
 
 
 _DEVICE_MASTER_KEY = parse_master_key(os.getenv("OILGUARD_DEVICE_MASTER_KEY", ""))
@@ -181,38 +175,15 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 
 
-class SignalRow(BaseModel):
-    t_iso: str
-    t_s: float
-    seq: int | None = Field(default=None, ge=0)
-    device_id: str | None = None
-    fsm_state: Literal["LOAD", "HAUL", "DUMP", "WAIT"]
-    moving: Literal[0, 1]
-    recal_window: Literal[0, 1]
-    engine_on: Literal[0, 1]
-    slope_deg: float
-    rotor_rpm: float
-    wheel_rpm: float
-    rotating_sensor_regime: Literal["static_pool", "slosh", "centrifugal_rimming"]
-    submerged_fraction_per_revolution: float = Field(ge=0, le=1)
-    pressure_kpa: float
-    temperature_c: float
-    vib_rms_g: float
-    vib_kurtosis: float
-    level_liters: float
-    level_pct: float
-    link_down: Literal[0, 1]
-    label: Literal[
-        "normal", "slow-leak", "abrupt-drop", "sensor-drift", "link-outage-buffered"
-    ]
-    speed_kmh: float | None = None
-    load_pct: float | None = None
-    sig_v: str | None = None
-    sig: str | None = None
+try:
+    from . import ingest_models as _ingest_models
+except ImportError:
+    import ingest_models as _ingest_models
+
+SignalRow = _ingest_models.SignalRow
 
 
-class IngestBatch(BaseModel):
-    rows: list[SignalRow] = Field(min_length=1, max_length=5000)
+IngestBatch = _ingest_models.IngestBatch
 
 
 # ---------------------------------------------------------------------------
@@ -221,19 +192,12 @@ class IngestBatch(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class _SeenView:
-    """``.clear()`` sobre los sets antireplay de todos los dispositivos."""
+try:
+    from . import seen_view as _seen_view
+except ImportError:
+    import seen_view as _seen_view
 
-    __slots__ = ("_store",)
-
-    def __init__(self, store: TelemetryStore) -> None:
-        self._store = store
-
-    def clear(self) -> None:
-        self._store.clear_seen()
-
-    def __len__(self) -> int:
-        return self._store.tracked_identities()
+_SeenView = _seen_view._SeenView
 
 
 _STORE = TelemetryStore(retention_rows=RETENTION_ROWS, default_device=DEFAULT_DEVICE)
@@ -247,39 +211,15 @@ _influx_status = "unknown (no ingest yet)"
 _influx_message = message("influx_unknown_no_ingest")
 
 
-def device_key(device_id: str) -> bytes | None:
-    """Llave de un dispositivo: la explicita si existe, si no la derivada de la maestra.
-
-    Listar una llave por equipo no escala a miles de dispositivos, asi que
-    ``OILGUARD_DEVICE_MASTER_KEY`` permite derivarlas. La entrada explicita
-    siempre gana: sirve para puentear un equipo durante una rotacion.
-
-    La derivacion se cachea por maestra: el perfil la mostraba como 1.2 s de
-    13 s en el camino firmado, porque se rederivaba la misma llave en cada una
-    de las diez filas de un lote.
-    """
-    explicit = _DEVICE_KEYS.get(device_id)
-    if explicit is not None:
-        return explicit
-    master = _DEVICE_MASTER_KEY
-    if not master or not device_id:
-        return None
-    cache = _DEVICE_KEY_CACHE.get(master)
-    if cache is None:
-        cache = {}
-        _DEVICE_KEY_CACHE[master] = cache
-    key = cache.get(device_id)
-    if key is None:
-        key = derive_device_key(master, device_id)
-        # Un device_id sin firmar podria inflar el cache sin limite.
-        if len(cache) >= DEVICE_KEY_CACHE_LIMIT:
-            cache.clear()
-        cache[device_id] = key
-    return key
+device_key = _device_access.device_key
 
 
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+try:
+    from . import store_access as _store_access
+except ImportError:
+    import store_access as _store_access
+
+_now_iso = _store_access._now_iso
 
 
 def _write_to_influx(rows: list[dict[str, Any]]) -> tuple[str, dict[str, Any]]:
@@ -334,98 +274,20 @@ def _write_to_influx(rows: list[dict[str, Any]]) -> tuple[str, dict[str, Any]]:
         return msg, message("influx_unreachable")
 
 
-def _count_influx_points() -> int | None:
-    if not INFLUXDB_URL or not INFLUXDB_ORG or not INFLUXDB_BUCKET or not INFLUXDB_TOKEN:
-        return None
+try:
+    from . import influx_probe as _influx_probe
+except ImportError:
+    import influx_probe as _influx_probe
 
-    client = None
-    try:
-        from influxdb_client import InfluxDBClient  # type: ignore
-
-        client = InfluxDBClient(
-            url=INFLUXDB_URL,
-            token=INFLUXDB_TOKEN,
-            org=INFLUXDB_ORG,
-            timeout=1200,
-        )
-        query = (
-            f'from(bucket: "{INFLUXDB_BUCKET}") '
-            '|> range(start: 0) '
-            '|> filter(fn: (r) => r._measurement == "oilguard_signals" '
-            'and r._field == "seq") '
-            "|> count()"
-        )
-        tables = client.query_api().query(query, org=INFLUXDB_ORG)
-        return sum(
-            int(record.get_value())
-            for table in tables
-            for record in table.records
-        )
-    except Exception as exc:  # noqa: BLE001 - la salud debe seguir disponible si Influx no responde
-        log.debug("InfluxDB persisted point count unavailable: %s", exc)
-        return None
-    finally:
-        if client is not None:
-            try:
-                client.close()
-            except Exception as exc:  # noqa: BLE001 - el cierre es complementario a la consulta
-                log.debug("InfluxDB count client close failed: %s", exc)
+_count_influx_points = _influx_probe._count_influx_points
 
 
-def verify_rows(
-    rows: list[dict[str, Any]],
-) -> tuple[list[tuple[dict[str, Any], tuple | None]], list[tuple[str, str]]]:
-    """Verifica firmas FUERA del lock y devuelve filas preparadas + rechazos.
+try:
+    from . import verify_rows as _verify_rows
+except ImportError:
+    import verify_rows as _verify_rows
 
-    El HMAC es la parte cara del ingest y no toca estado compartido, así que
-    hacerlo fuera del lock reduce la sección crítica a la inserción en el
-    deque: sin eso, miles de dispositivos serializan el HMAC de todos en un
-    solo mutex y la latencia crece con el tamaño del lote, no con el del store.
-    """
-    prepared: list[tuple[dict[str, Any], tuple | None]] = []
-    rejections: list[tuple[str, str]] = []
-    # Locales del bucle: buscar un global por fila son millones de accesos al
-    # diccionario de modulos en el camino mas caliente.
-    require_signature = _REQUIRE_SIGNATURE
-    add_prepared = prepared.append
-    add_rejection = rejections.append
-    lookup_key = device_key
-    for original in rows:
-        row = dict(original)
-        device_id = row.get("device_id")
-        if type(device_id) is not str:  # noqa: E721 - atajo deliberado
-            device_id = str(device_id or "")
-        has_signature = row.get("sig") is not None or row.get("sig_v") is not None
-        reason: str | None = None
-        identity: tuple | None = None
-        if not has_signature and (not device_id or row.get("seq") is None):
-            reason = "missing_identity"
-            log.warning(
-                "Rejecting ingest row without device_id or seq: missing_identity"
-            )
-        elif has_signature:
-            if not device_id or row.get("seq") is None:
-                log.warning("Rejecting signed ingest row without device_id or seq")
-            key = lookup_key(device_id)
-            if key is None:
-                reason = "unknown_device"
-            else:
-                try:
-                    valid = verify_row(row, key)
-                except (KeyError, TypeError, ValueError, OverflowError):
-                    valid = False
-                if not valid:
-                    reason = "bad_signature"
-                else:
-                    identity = (device_id, int(row["seq"]), str(row["t_iso"]))
-        elif require_signature:
-            reason = "unsigned"
-        if reason is not None:
-            add_rejection((device_id, reason))
-            continue
-        row["sig_verified"] = has_signature
-        add_prepared((row, identity))
-    return prepared, rejections
+verify_rows = _verify_rows.verify_rows
 
 
 # Agregados incrementales de flota (R2d). Se alimentan en verify_and_store, de
@@ -563,22 +425,15 @@ def _write_line_protocol_raw(protocol: str) -> tuple[str, dict[str, Any]]:
                 log.debug("influx write client close failed")
 
 
-def flush_influx(rows: list[dict[str, Any]]) -> None:
-    """Vuelca puntos a Influx y publica el estado para /health.
+try:
+    from . import ingest_persistence as _ingest_persistence
+except ImportError:
+    import ingest_persistence as _ingest_persistence
 
-    Esta es la via SINCRONA que conserva el contrato de POST /ingest: la
-    respuesta sigue diciendo si el lote se escribio. El camino MQTT no la usa;
-    ese va al escritor asincrono.
-    """
-    global _influx_status, _influx_message
-    _influx_status, _influx_message = _write_to_influx(rows)
+flush_influx = _ingest_persistence.flush_influx
 
 
-def _write_line_protocol(protocol: str) -> None:
-    """Escritura real desde el hilo dedicado (una llamada por lote armado)."""
-    global _influx_status, _influx_message
-    status, message = _write_line_protocol_raw(protocol)
-    _influx_status, _influx_message = status, message
+_write_line_protocol = _ingest_persistence._write_line_protocol
 
 
 # El ingest solo encola; este hilo es el unico que habla con Influx desde la
@@ -592,22 +447,7 @@ _INFLUX_WRITER = InfluxWriter(
 )
 
 
-def ingest_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Contrato síncrono de POST /ingest: verifica, almacena y reporta Influx."""
-    result = verify_and_store(rows)
-    accepted = result.pop("accepted")
-    if accepted:
-        flush_influx(accepted)
-        log.info("ingest influx=%s", _influx_status)
-    return {
-        "ingested": result["ingested"],
-        "latest_seq": result["latest_seq"],
-        "store_rows": result["store_rows"],
-        "influx": _influx_status,
-        "influx_message": _influx_message,
-        "rejected": result["rejected"],
-        "rejected_reasons": result["rejected_reasons"],
-    }
+ingest_rows = _ingest_persistence.ingest_rows
 
 
 # La cola y el worker viven a nivel de modulo para que POST /ingest, el puente
@@ -626,25 +466,10 @@ _INGEST_METRICS = IngestMetrics(window_s=10.0)
 _TISO = TisoClock()
 
 
-def _DEVICE_KEY_CACHE_SIZE() -> int:
-    return sum(len(cache) for cache in _DEVICE_KEY_CACHE.values())
+_DEVICE_KEY_CACHE_SIZE = _device_access._DEVICE_KEY_CACHE_SIZE
 
 
-def _influx_probe_key() -> tuple:
-    """Identidad de la instalacion que produce el conteo cacheado.
-
-    Si cambian las credenciales, el cliente instalado o la propia funcion que
-    cuenta, el numero cacheado pertenece a otra instalacion: servirlo seria
-    mentir sobre la persistencia.
-    """
-    return (
-        INFLUXDB_URL,
-        INFLUXDB_ORG,
-        INFLUXDB_BUCKET,
-        INFLUXDB_TOKEN,
-        sys.modules.get("influxdb_client"),
-        _count_influx_points,
-    )
+_influx_probe_key = _influx_probe._influx_probe_key
 
 
 # Contar millones de puntos persistidos tarda segundos y /health debe
@@ -658,87 +483,41 @@ _INFLUX_POINTS = CachedProbe(
 )
 
 
-def queue_state() -> dict[str, Any]:
-    """Estado de la cola que consumen /metrics/ingest y /health."""
-    return {
-        "depth": _PIPELINE.depth(),
-        "capacity": _PIPELINE.capacity(),
-        "dropped_batches": _PIPELINE.dropped_batches(),
-        "accepted_batches": _PIPELINE.accepted_batches(),
-        "failed_batches": _PIPELINE.failed_batches(),
-        "pending_influx_points": _PIPELINE.pending_points(),
-    }
+try:
+    from . import health_routes as _health_routes
+except ImportError:
+    import health_routes as _health_routes
+
+queue_state = _health_routes.queue_state
 
 
-def influx_state() -> dict[str, Any]:
-    """Estado de la persistencia: la del escritor dedicado mas la via sincrona."""
-    return {
-        "enabled": _INFLUX_WRITE,
-        "async": True,
-        "flush_rows": INGEST_FLUSH_ROWS,
-        "flush_seconds": INGEST_FLUSH_SECONDS,
-        "status": _influx_status,
-        **_INFLUX_WRITER.state(),
-    }
+influx_state = _health_routes.influx_state
 
 
-def select_device(device_id: str | None) -> str | None:
-    """Device explícito; si no, ``OILGUARD_DEFAULT_DEVICE`` si existe, si no el más reciente.
-
-    Un ``device_id`` explícito siempre gana aunque no tenga filas: así una
-    consulta sobre un equipo callado devuelve su vacío honesto en vez del
-    dato de otro equipo.
-    """
-    if device_id:
-        return device_id
-    return _STORE.default_device_id()
+select_device = _store_access.select_device
 
 
-def _sorted_device_rows(device_id: str | None) -> list[dict[str, Any]]:
-    if not device_id:
-        return []
-    with _store_lock:
-        return sorted(_STORE.rows(device_id), key=lambda r: int(r.get("seq", 0)))
+_sorted_device_rows = _store_access._sorted_device_rows
 
 
-def _latest_row(device_id: str | None = None) -> dict[str, Any] | None:
-    with _store_lock:
-        return _STORE.latest(select_device(device_id))
+_latest_row = _store_access._latest_row
 
 
-def _load_t10_evaluator() -> tuple[Any | None, str | None]:
-    try:
-        from ai.ladder import evaluate as evaluate_ladder  # type: ignore
-    except Exception as exc:  # noqa: BLE001 - health informa si falta el analizador
-        return None, str(exc)
-    return evaluate_ladder, None
+try:
+    from . import query_helpers as _query_helpers
+except ImportError:
+    import query_helpers as _query_helpers
+
+_load_t10_evaluator = _query_helpers._load_t10_evaluator
 
 
-def _analysis_status() -> dict[str, Any]:
-    evaluator, reason = _load_t10_evaluator()
-    return {"available": evaluator is not None, "reason": reason}
+_analysis_status = _query_helpers._analysis_status
 
 
-def _samples_from_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Prepara muestras con la misma marca de reposo usada por el análisis T10."""
-    samples = []
-    for row in rows:
-        sample = dict(row)
-        try:
-            sample["rest"] = int(float(row.get("recal_window", 0))) == 1
-        except (ValueError, TypeError):
-            sample["rest"] = False
-        samples.append(sample)
-    return samples
+_samples_from_rows = _query_helpers._samples_from_rows
 
 
-def _downsample_evenly(points: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
-    if len(points) <= limit:
-        return points
-    if limit == 1:
-        return [points[-1]]
-    last_index = len(points) - 1
-    return [points[(index * last_index) // (limit - 1)] for index in range(limit)]
+_downsample_evenly = _query_helpers._downsample_evenly
 
 
 def _t10_bundle(
@@ -785,32 +564,10 @@ def _t10_bundle(
     return bundle, fallback, message("alerts_memory_fallback"), True, True
 
 
-def _unevaluated_reason(
-    bundle: dict[str, Any] | None,
-    analysis_available: bool,
-    evaluated: bool,
-) -> str | None:
-    if evaluated:
-        return None
-    if not analysis_available:
-        return "analysis_unavailable"
-    if bundle is None:
-        return "no_rows"
-    if str(bundle.get("rul", {}).get("reason", "")).startswith(
-        "insufficient rest samples"
-    ):
-        return "insufficient_rest_samples"
-    return "analysis_unavailable"
+_unevaluated_reason = _query_helpers._unevaluated_reason
 
 
-def _compose_rul_suppression_note(reason: str) -> str:
-    detail = reason.strip()
-    marker = "anomaly-only"
-    if detail.lower().endswith(marker):
-        detail = detail[: -len(marker)].rstrip(" ;,")
-    if detail:
-        return f"RUL unavailable: {detail}; anomaly-only alerts remain available."
-    return "RUL unavailable; anomaly-only alerts remain available."
+_compose_rul_suppression_note = _query_helpers._compose_rul_suppression_note
 
 
 # ---------------------------------------------------------------------------
@@ -818,240 +575,49 @@ def _compose_rul_suppression_note(reason: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-@app.get("/health")
-def health() -> dict:
-    analysis = _analysis_status()
-    with _store_lock:
-        n = _STORE.total_rows()
-        device_count = len(_STORE.devices())
-        signing = {
-            "enforced": _REQUIRE_SIGNATURE,
-            "devices": len(_DEVICE_KEYS),
-            "verified_total": _verified_total,
-            "rejected_total": _rejected_total,
-            "rejected_reasons": dict(_rejected_reasons),
-        }
-    _INFLUX_POINTS.refresh()
-    influx_points, influx_points_reason, influx_points_at = _INFLUX_POINTS.peek()
-    return {
-        "status": "ok" if analysis["available"] else "degraded",
-        "service": "oilguard-backend",
-        "stage": "S4-t8",
-        "analysis": analysis,
-        "store_rows": n,
-        "devices": device_count,
-        "retention_rows": RETENTION_ROWS,
-        "influx_points": influx_points,
-        "influx_points_as_of": (
-            datetime.fromtimestamp(influx_points_at, timezone.utc).isoformat()
-            if influx_points_at is not None
-            else None
-        ),
-        "influx_points_reason": influx_points_reason,
-        "influx_points_ttl_s": INFLUX_COUNT_TTL_S,
-        "influx": _influx_status,
-        "influx_message": _influx_message,
-        "mqtt": {"host": MQTT_HOST, "port": MQTT_PORT, "topic": MQTT_TOPIC},
-        "signing": signing,
-        "device_keys": {
-            "explicit": len(_DEVICE_KEYS),
-            "master_key_configured": bool(_DEVICE_MASTER_KEY),
-        },
-        "ingest": _INGEST_METRICS.compact(queue=queue_state()),
-    }
+health = _health_routes.health
+app.add_api_route("/health", health, methods=["GET"])
 
 
-@app.post("/ingest")
-def ingest(batch: IngestBatch) -> dict:
-    """Accept one SignalRow batch (10 Hz rows from sim/generate.py).
+try:
+    from . import ingest_route as _ingest_route
+except ImportError:
+    import ingest_route as _ingest_route
 
-    Breaking change vs the S0 stub (single ``IngestPayload`` object):
-    old 4-field payloads now return 422 — see backend/API.md migration note.
-    """
-    rows = [r.model_dump() for r in batch.rows]
-    result = ingest_rows(rows)
-    if result["ingested"] == 0 and result["rejected"] and _REQUIRE_SIGNATURE:
-        return JSONResponse(
-            status_code=401,
-            content={"status": "error", "kind": "ingest-ack", **result},
-        )
-    return {
-        "status": "ok",
-        "kind": "ingest-ack",
-        "as_of": _now_iso(),
-        **result,
-    }
+ingest = _ingest_route.ingest
+app.add_api_route("/ingest", ingest, methods=["POST"])
 
 
-def fleet_tick(window_s: int) -> dict[str, Any]:
-    """Un tick del stream: agregados de flota en grupo fleet + estado de ingesta."""
-    if _FLEET_ROLLING.covers(window_s):
-        blocks, rows, devices = _FLEET_ROLLING.snapshot(window_s)
-    else:
-        # Fuera del horizonte lo incremental no puede responder sin inventarse
-        # un cero, asi que se cae a la ruta exacta.
-        frame = build_frame(_STORE.snapshot_window(window_s))
-        blocks, rows, devices = aggregate_fleet(frame, list(DEFAULT_METRICS))
-    return {
-        "type": "fleet_tick",
-        "as_of": _now_iso(),
-        "window_s": window_s,
-        "rows": rows,
-        "devices": devices,
-        "quantile_interpolation": QUANTILE_INTERPOLATION,
-        "aggregates": blocks,
-        "ingest": _INGEST_METRICS.compact(queue=queue_state()),
-    }
+try:
+    from . import fleet_stream as _fleet_stream
+except ImportError:
+    import fleet_stream as _fleet_stream
 
+fleet_tick = _fleet_stream.fleet_tick
 
-class TickCache:
-    """Un solo tick por intervalo para todos los clientes del WebSocket.
-
-    ``fleet_tick`` es O(filas retenidas): leer la ventana completa de la flota
-    para cada conexion convertia una推送 por segundo por cliente en N
-    recomputos completos por segundo. Medido con py-spy en la matriz de estres:
-    el tick era el 49 % del CPU del contenedor.
-    """
-
-    def __init__(self, interval_s: float, now_fn: Any = time.monotonic) -> None:
-        self.interval_s = float(interval_s)
-        self._now_fn = now_fn
-        self._lock = threading.Lock()
-        self._payload: dict[str, Any] | None = None
-        self._window: int | None = None
-        self._at = 0.0
-
-    def get(self, window_s: int) -> dict[str, Any] | None:
-        now = self._now_fn()
-        with self._lock:
-            fresh = self._payload is not None and (now - self._at) < self.interval_s
-            if fresh and self._window == window_s:
-                return self._payload
-        payload = fleet_tick(window_s)
-        with self._lock:
-            self._payload, self._window, self._at = payload, window_s, self._now_fn()
-        return payload
-
-    def advance(self, seconds: float) -> None:
-        with self._lock:
-            self._at -= seconds
-
-    def reset(self) -> None:
-        with self._lock:
-            self._payload, self._window, self._at = None, None, 0.0
+TickCache = _fleet_stream.TickCache
 
 
 _FLEET_TICK_CACHE = TickCache(FLEET_TICK_SECONDS)
 
 
-def cached_fleet_tick(window_s: int) -> dict[str, Any]:
-    return _FLEET_TICK_CACHE.get(window_s)
+cached_fleet_tick = _fleet_stream.cached_fleet_tick
 
 
-def _parse_tick_window(raw: str, current: int) -> int:
-    """Ventana pedida por el cliente, o la actual si el mensaje no es valido."""
-    try:
-        message_in = json.loads(raw)
-    except (TypeError, json.JSONDecodeError):
-        return current
-    if not isinstance(message_in, dict):
-        return current
-    value = message_in.get("window_s")
-    if isinstance(value, bool) or not isinstance(value, int):
-        return current
-    return value if FLEET_WINDOW_MIN <= value <= FLEET_WINDOW_MAX else current
+_parse_tick_window = _fleet_stream._parse_tick_window
 
 
-@app.websocket("/ws/fleet")
-async def fleet_stream(websocket: WebSocket) -> None:
-    """Emite un tick por segundo; el cliente puede pedir otra ventana.
-
-    Nunca se acumulan ticks: hay uno en vuelo como maximo, asi que un cliente
-    lento pierde muestras en vez de acumular memoria en el servidor. La lectura
-    corre en una tarea aparte para no perder un ``window_s`` que llega justo en
-    el limite del timeout, que es lo que pasaria al cancelar un ``receive``.
-    """
-    await websocket.accept()
-    window_s = FLEET_DEFAULT_WINDOW
-    commands: asyncio.Queue[str] = asyncio.Queue(maxsize=8)
-    closed = asyncio.Event()
-
-    async def _reader() -> None:
-        try:
-            while True:
-                raw = await websocket.receive_text()
-                if commands.full():
-                    commands.get_nowait()  # el comando mas viejo cede el paso
-                commands.put_nowait(raw)
-        except WebSocketDisconnect:
-            pass
-        except Exception as exc:  # noqa: BLE001 - el cierre del socket es normal
-            log.debug("fleet ws reader stopped: %s", exc)
-        finally:
-            closed.set()
-
-    reader = asyncio.create_task(_reader())
-    try:
-        while not closed.is_set():
-            # El calculo de percentiles es CPU-bound; en el hilo de eventos
-            # congelaria cada ruta HTTP durante cada tick.
-            payload = await run_in_threadpool(cached_fleet_tick, window_s)
-            await websocket.send_json(payload)
-            try:
-                raw = await asyncio.wait_for(commands.get(), timeout=FLEET_TICK_SECONDS)
-            except asyncio.TimeoutError:
-                continue
-            window_s = _parse_tick_window(raw, window_s)
-    except WebSocketDisconnect:
-        pass
-    except Exception as exc:  # noqa: BLE001 - una conexion rota no es un 500
-        log.info("fleet ws closed (%s)", exc)
-    finally:
-        reader.cancel()
-        log.info("fleet ws disconnected (window_s=%d)", window_s)
+fleet_stream = _fleet_stream.fleet_stream
+app.add_api_websocket_route("/ws/fleet", fleet_stream)
 
 
-@app.get("/fleet/aggregates")
-def fleet_aggregates(
-    window_s: int = Query(default=10, ge=1, le=300),
-    metrics: str | None = Query(default=None),
-    group: Literal["fleet", "device"] = Query(default="fleet"),
-    limit: int = Query(default=200, ge=1, le=2000),
-) -> dict:
-    """Percentiles por metrica sobre los ultimos ``window_s`` segundos.
+try:
+    from . import fleet_routes as _fleet_routes
+except ImportError:
+    import fleet_routes as _fleet_routes
 
-    ``group=fleet`` aplana toda la flota en un bloque por metrica; ``group=device``
-    devuelve un bloque por equipo. Las respuestas vacias llevan ``reason`` y
-    ``code`` ``no_rows`` en vez de ceros, que serian indistinguibles de una flota
-    en reposo real.
-    """
-    try:
-        requested = parse_metrics(metrics)
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-    frame = build_frame(_STORE.snapshot_window(window_s))
-    if group == "fleet":
-        blocks, rows, devices = aggregate_fleet(frame, requested)
-    else:
-        blocks, rows, devices = aggregate_by_device(frame, requested, limit)
-
-    empty = rows == 0
-    return {
-        "status": "ok",
-        "kind": "fleet-aggregates",
-        "as_of": _now_iso(),
-        "window_s": window_s,
-        "metrics": requested,
-        "group": group,
-        "limit": limit,
-        "rows": rows,
-        "devices": devices,
-        "quantile_interpolation": QUANTILE_INTERPOLATION,
-        "aggregates": [] if empty and group == "device" else blocks,
-        "reason": "no_rows" if empty else None,
-        "code": "no_rows" if empty else None,
-    }
+fleet_aggregates = _fleet_routes.fleet_aggregates
+app.add_api_route("/fleet/aggregates", fleet_aggregates, methods=["GET"])
 
 
 # El coste de la escalera es lineal en filas: ~18 ms cada 3600 filas por
@@ -1063,192 +629,26 @@ def fleet_aggregates(
 ALERT_LEVEL_ROW_BUDGET = int(os.getenv("OILGUARD_ALERT_LEVEL_ROW_BUDGET", "8000"))
 
 
-def alert_level_for(device_id: str) -> tuple[str | None, str | None]:
-    """Nivel de alerta de un equipo segun la escalera T10, o por que falta.
-
-    Devuelve ``(nivel, razon)``; la razon es un token estable
-    (``analyzer_unavailable``, ``no_rows``, ``evaluation_failed``, ``no_alert``)
-    para que la UI lo localice sin analizar prosa.
-
-    Evaluar la escalera cuesta una pasada sobre las filas del equipo, asi que
-    se hace aqui y no por ruta: /fleet/devices ya es la ruta cara de la flota y
-    el cache de la UI la refresca cada pocos segundos.
-    """
-    evaluator, import_reason = _load_t10_evaluator()
-    if evaluator is None:
-        return None, "analyzer_unavailable"
-    rows = _sorted_device_rows(device_id)
-    if not rows:
-        return None, "no_rows"
-    try:
-        bundle = evaluator(_samples_from_rows(rows))
-    except Exception:  # noqa: BLE001 - puntuar nunca debe tumbar la ruta
-        return None, "evaluation_failed"
-    alerts = bundle.get("alerts") or []
-    highest: str | None = None
-    for alert in alerts:
-        level = str(alert.get("level", ""))
-        if level in _LADDER_ORDER and (
-            highest is None or _LADDER_ORDER.index(level) > _LADDER_ORDER.index(highest)
-        ):
-            highest = level
-    if highest is None:
-        return None, "no_alert"
-    return highest, None
+alert_level_for = _fleet_routes.alert_level_for
 
 
 _LADDER_ORDER = ("N1", "N2", "N3", "N4")
 
 
-@app.get("/fleet/devices")
-def fleet_devices(
-    alert_level: Literal["auto", "on", "off"] = Query(default="auto"),
-) -> dict:
-    """Retención, estado de firmas, última lectura y alerta por dispositivo.
-
-    ``alert_level`` controla la escalera T10: ``auto`` (por defecto) solo la
-    evalua si el almacen cabe en ``OILGUARD_ALERT_LEVEL_ROW_BUDGET`` filas,
-    ``on`` la fuerza y ``off`` la omite. Ver ``alert_level`` en la respuesta
-    para saber que paso y por que.
-    """
-    with _store_lock:
-        stats = _STORE.device_stats()
-    devices = [stats[device] for device in sorted(stats)]
-    total_rows = sum(device["rows_retained"] for device in devices)
-    within_budget = total_rows <= ALERT_LEVEL_ROW_BUDGET
-    evaluate = alert_level == "on" or (alert_level == "auto" and within_budget)
-
-    budget_reason = None
-    if evaluate:
-        for device in devices:
-            level, reason = alert_level_for(device["device_id"])
-            device["alert_level"] = level
-            device["alert_level_reason"] = reason
-    else:
-        budget_reason = (
-            "ladder_budget_exceeded" if alert_level == "auto" else "disabled_by_query"
-        )
-        for device in devices:
-            device["alert_level"] = None
-            device["alert_level_reason"] = budget_reason
-
-    reasons = sorted({device["alert_level_reason"] for device in devices if device["alert_level_reason"]})
-    return {
-        "status": "ok",
-        "kind": "fleet-devices",
-        "as_of": _now_iso(),
-        "count": len(devices),
-        "retention_rows": RETENTION_ROWS,
-        "devices": devices,
-        "alert_level": {
-            "evaluated": bool(evaluate and devices),
-            "mode": alert_level,
-            "rows_scanned": total_rows if evaluate else 0,
-            "row_budget": ALERT_LEVEL_ROW_BUDGET,
-            "reason": reasons[0] if reasons else None,
-        },
-        "reason": None if devices else "no_rows",
-        "code": None if devices else "no_rows",
-    }
+fleet_devices = _fleet_routes.fleet_devices
+app.add_api_route("/fleet/devices", fleet_devices, methods=["GET"])
 
 
-@app.get("/fleet/outages")
-def fleet_outages(
-    device_id: str | None = Query(default=None),
-    limit: int = Query(default=50, ge=1, le=2000),
-) -> dict:
-    """Rachas de filas con ``link_down`` por dispositivo (historial de cortes)."""
-    with _store_lock:
-        devices = [device_id] if device_id else _STORE.devices()
-        runs: list[dict[str, Any]] = []
-        for device in devices:
-            if _OUTAGES.is_dirty(device):
-                # Llegada fuera de orden: el incremental no puede garantizar la
-                # agrupacion por seq, asi que se reconstruye desde el almacen.
-                _OUTAGES.rebuild(device, _STORE.rows(device))
-            runs.extend(_OUTAGES.runs(device))
-    runs.sort(key=lambda run: (str(run.get("start_t_iso") or ""), run["device_id"]), reverse=True)
-    total = len(runs)
-    return {
-        "status": "ok",
-        "kind": "fleet-outages",
-        "as_of": _now_iso(),
-        "device_id": device_id,
-        "count": min(total, limit),
-        "outages_total": total,
-        "outages": runs[:limit],
-        "reason": "no_outages" if total == 0 else None,
-        "code": "no_outages" if total == 0 else None,
-    }
+fleet_outages = _fleet_routes.fleet_outages
+app.add_api_route("/fleet/outages", fleet_outages, methods=["GET"])
 
 
-@app.get("/config/thresholds")
-def config_thresholds() -> dict:
-    """Espejo de solo lectura de las constantes que el analisis usa de verdad.
-
-    Los numeros se IMPORTAN de ai/ladder.py, ai/level.py y ai/rul.py, nunca se
-    copian: una copia envejece en silencio y la UI acabaria enseñando
-    umbrales que el backend ya no aplica. El canal N2 es 2-of-3 sobre las tres
-    senales, y la temperatura actsua como veto, asi que ambos van aqui con el
-    codigo del canal.
-    """
-    from ai import ladder, level, rul
-
-    return {
-        "status": "ok",
-        "kind": "config-thresholds",
-        "as_of": _now_iso(),
-        "model": ladder.MODEL_LABEL,
-        "capacity_l": level.CAPACITY_L,
-        "warn_pct": ladder.WARN_PCT,
-        "crit_pct": ladder.CRIT_PCT,
-        "warn_l": rul.WARN_L,
-        "crit_l": rul.CRIT_L,
-        "min_scored_n": rul.MIN_SCORED_N,
-        "min_baseline_n": level.MIN_BASELINE_N,
-        "min_r2": rul.MIN_R2,
-        "max_sigma_l": rul.MAX_SIGMA_L,
-        "z_thr": ladder.Z_THR,
-        "z_extreme": ladder.Z_EXTREME,
-        "kurt_spike": ladder.KURT_SPIKE,
-        "rms_high_g": ladder.RMS_HIGH_G,
-        "temp_drift_c": ladder.TEMP_DRIFT_C,
-        "abrupt_step_l": ladder.ABRUPT_STEP_L,
-        "shift_h": ladder.SHIFT_H,
-        "cycle_s": rul.CYCLE_S,
-        "min_channels": 2,
-        "n2_votes_of": 3,
-        "channels": ["pressure_drop", "level_trend", "vib_impact"],
-        "temp_veto": True,
-        "ladder": list(ladder.LADDER),
-        "severity": dict(ladder.SEVERITY),
-        "sources": {
-            "ladder": "ai/ladder.py",
-            "level": "ai/level.py",
-            "rul": "ai/rul.py",
-        },
-    }
+config_thresholds = _fleet_routes.config_thresholds
+app.add_api_route("/config/thresholds", config_thresholds, methods=["GET"])
 
 
-@app.get("/metrics/ingest")
-def metrics_ingest() -> dict:
-    """Contadores de ingesta, contrapresion de la cola y latencia p50/p95/p99."""
-    return {
-        "status": "ok",
-        "kind": "ingest-metrics",
-        "as_of": _now_iso(),
-        "ingest": {
-            **_INGEST_METRICS.snapshot(queue=queue_state()),
-            "influx": influx_state(),
-            **(
-                {"mqtt_bridge": bridge_state()}
-                if bridge_timing_enabled()
-                else {}
-            ),
-            "retention_rows": RETENTION_ROWS,
-            "devices": len(_STORE.devices()),
-        },
-    }
+metrics_ingest = _health_routes.metrics_ingest
+app.add_api_route("/metrics/ingest", metrics_ingest, methods=["GET"])
 
 
 @app.get("/level")
@@ -1300,133 +700,15 @@ def level(device_id: str | None = Query(default=None)) -> dict:
 SERIES_SIGNALS = ("pressure_kpa", "temperature_c", "vib_rms_g")
 
 
-def _parse_series_signals(raw: str | None) -> list[str]:
-    """Señales extra de la serie; vacío o desconocido -> las tres por defecto."""
-    if not raw:
-        return []
-    requested = [item.strip() for item in raw.split(",") if item.strip()]
-    unknown = [name for name in requested if name not in SERIES_SIGNALS]
-    if unknown:
-        raise ValueError(
-            f"unknown signals: {', '.join(sorted(unknown))}; "
-            f"available: {', '.join(SERIES_SIGNALS)}"
-        )
-    seen: set[str] = set()
-    ordered: list[str] = []
-    for name in requested:
-        if name not in seen:
-            seen.add(name)
-            ordered.append(name)
-    return ordered
+_parse_series_signals = _query_helpers._parse_series_signals
 
 
-@app.get("/level/series")
-def level_series(
-    limit: int = Query(default=300, ge=1, le=2000),
-    device_id: str | None = Query(default=None),
-    signals: str | None = Query(default=None),
-) -> dict:
-    """Sirve la serie fusionada y limitada de nivel del almacenamiento de sesión.
-
-    ``signals`` añade columnas por punto (aditivo, no cambia el contrato) y
-    ``truth_liters`` aparece solo si las filas traen la verdad del generador:
-    inventar una verdad que no se midió sería exactamente el tipo de dato que
-    este producto no debe mostrar.
-    """
-    rows = _sorted_device_rows(select_device(device_id))
-    try:
-        requested = _parse_series_signals(signals)
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    if not rows:
-        return {
-            "status": "ok",
-            "kind": "oil-level-series",
-            "as_of": _now_iso(),
-            "count": 0,
-            "reason": "no_rows",
-            "series": [],
-        }
-
-    from ai import level as level_estimator
-
-    try:
-        estimate = level_estimator.estimate(_samples_from_rows(rows))
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    sigma_l = estimate.get("sigma_liters")
-    has_truth = any(as_float(row.get("level_liters")) is not None for row in rows)
-    series = []
-    for row, point in zip(rows, estimate["estimates"]):
-        item: dict[str, Any] = {
-            "t_s": point["t_s"],
-            "level_l": point["level_liters"],
-            "sigma_l": sigma_l,
-            "moving": int(float(row.get("moving", 0))),
-            "recal_window": int(float(row.get("recal_window", 0))),
-        }
-        for name in requested:
-            item[name] = as_float(row.get(name))
-        if has_truth:
-            item["truth_liters"] = as_float(row.get("level_liters"))
-        series.append(item)
-    series = _downsample_evenly(series, limit)
-    return {
-        "status": "ok",
-        "kind": "oil-level-series",
-        "as_of": _now_iso(),
-        "count": len(series),
-        "reason": None if estimate["estimates"] else "insufficient_rest_samples",
-        "series": series,
-    }
+level_series = _query_helpers.level_series
+app.add_api_route("/level/series", level_series, methods=["GET"])
 
 
-@app.get("/windows")
-def windows(limit: int = 50, device_id: str | None = Query(default=None)) -> dict:
-    """Rest windows grouped from in-memory ``recal_window`` flags.
-
-    Consecutive rows with recal_window == 1 form one window (zone by
-    majority vote, audit only). The full stillness-rules detector is
-    ``sim/detect.py`` — see docs/t7-windows.md.
-    """
-    rows = _sorted_device_rows(select_device(device_id))
-    out: list[dict[str, Any]] = []
-    cur: list[dict[str, Any]] = []
-
-    def flush(group: list[dict[str, Any]]) -> None:
-        zone = Counter(g.get("fsm_state", "?") for g in group).most_common(1)[0][0]
-        out.append(
-            {
-                "window_id": len(out),
-                "state": "rest",
-                "start_t_s": group[0].get("t_s"),
-                "end_t_s": group[-1].get("t_s"),
-                "start_iso": group[0].get("t_iso"),
-                "end_iso": group[-1].get("t_iso"),
-                "duration_s": round(
-                    float(group[-1].get("t_s", 0.0)) - float(group[0].get("t_s", 0.0)), 1
-                ),
-                "zone": zone,
-                "reason": "recal_window==1 grouping (in-memory; full T7 detector: sim/detect.py)",
-            }
-        )
-
-    for r in rows:
-        if int(r.get("recal_window", 0)) == 1:
-            cur.append(r)
-        elif cur:
-            flush(cur)
-            cur = []
-    if cur:
-        flush(cur)
-    return {
-        "status": "ok",
-        "kind": "rest-windows",
-        "as_of": _now_iso(),
-        "count": len(out),
-        "windows": out[: max(0, limit)],
-        "note": "Grouped from ingested recal_window flags. No rows yet? Run sim/run_t7.py for the full detector.",
-    }
+windows = _query_helpers.windows
+app.add_api_route("/windows", windows, methods=["GET"])
 
 
 @app.get("/alerts")
@@ -1564,90 +846,23 @@ def rul(device_id: str | None = Query(default=None)) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _probe_influx() -> None:
-    try:
-        import urllib.request
+try:
+    from . import lifecycle as _lifecycle
+except ImportError:
+    import lifecycle as _lifecycle
 
-        req = urllib.request.Request(f"{INFLUXDB_URL}/health", method="GET")
-        with urllib.request.urlopen(req, timeout=2) as resp:  # noqa: S310 - local health probe
-            log.info("InfluxDB probe %s -> %s", INFLUXDB_URL, resp.status)
-    except Exception as exc:  # noqa: BLE001 - probe must never block startup
-        log.warning(
-            "InfluxDB probe failed (%s=%s); ingest falls back to memory store",
-            INFLUXDB_URL,
-            exc,
-        )
+_probe_influx = _lifecycle._probe_influx
 
 
-def enqueue_batch(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Punto de entrada del puente MQTT: encola y reporta el resultado del turno.
-
-    Un lote que no entra se descarta y se cuenta; devolver el drop en el ack
-    hace visible la contrapresion en el log del broker en vez de perderla.
-    """
-    if _PIPELINE.submit(rows):
-        return {"status": "queued", "kind": "ingest-queued", "rows": len(rows)}
-    return {
-        "status": "dropped",
-        "kind": "ingest-dropped",
-        "rows": len(rows),
-        "reason": "queue_full",
-        "queue_capacity": _PIPELINE.capacity(),
-    }
+enqueue_batch = _lifecycle.enqueue_batch
 
 
-def _start_mqtt_bridge() -> None:
-    """Launch the MQTT -> ingest bridge in a daemon thread (best-effort).
-
-    If the broker or paho-mqtt is unavailable the thread logs and exits;
-    the HTTP POST /ingest path always works regardless.
-    """
-    try:
-        from .ingest_mqtt import run_forever  # type: ignore
-    except ImportError:
-        try:
-            from ingest_mqtt import run_forever  # type: ignore
-        except ImportError as exc:
-            log.warning("MQTT bridge disabled (no ingest_mqtt module: %s)", exc)
-            return
-
-    def _loop() -> None:
-        try:
-            run_forever(forward_fn=enqueue_batch)
-        except Exception as exc:  # noqa: BLE001 - background thread boundary
-            log.warning(
-                "MQTT bridge stopped (broker %s:%s topic %s: %s); "
-                "POST /ingest remains available",
-                MQTT_HOST,
-                MQTT_PORT,
-                MQTT_TOPIC,
-                exc,
-            )
-
-    t = threading.Thread(target=_loop, name="mqtt-bridge", daemon=True)
-    t.start()
-    log.info("MQTT bridge thread started (broker %s:%s topic %s)", MQTT_HOST, MQTT_PORT, MQTT_TOPIC)
+_start_mqtt_bridge = _lifecycle._start_mqtt_bridge
 
 
-@app.on_event("startup")
-def on_startup() -> None:
-    if _INFLUX_WRITE and not INFLUXDB_TOKEN.strip():
-        raise RuntimeError("INFLUXDB_TOKEN is required when OILGUARD_INFLUX_WRITE=1")
-    _probe_influx()
-    _INFLUX_WRITER.start()
-    _PIPELINE.start()
-    _start_mqtt_bridge()
+on_startup = _lifecycle.on_startup
+app.on_event("startup")(on_startup)
 
 
-@app.on_event("shutdown")
-def on_shutdown() -> None:
-    # Vaciar el pipeline y despues el escritor: lo que este en la cola del
-    # pipeline todavia puede encolar en la del escritor.
-    _PIPELINE.stop(timeout=5.0)
-    drained = _INFLUX_WRITER.stop(timeout=5.0)
-    log.info(
-        "shutdown complete: influx drained=%d batches, written=%d, dropped=%d",
-        drained,
-        _INFLUX_WRITER.written_batches(),
-        _INFLUX_WRITER.dropped_batches(),
-    )
+on_shutdown = _lifecycle.on_shutdown
+app.on_event("shutdown")(on_shutdown)
