@@ -2,7 +2,7 @@ import type { DemoTruck, DemoWheel } from "../../demo/demoData";
 import { formatNumber } from "../../i18n/numberFormat";
 
 export type FleetFilterState = "all" | "alert" | "no-link" | "out-of-service";
-export type FleetRowState = "nominal" | "N1" | "N2" | "N4" | "stale" | "link-down" | "out-of-service";
+export type FleetRowState = "nominal" | "N1" | "N2" | "N4" | "stale" | "link-down" | "rejected-only" | "out-of-service";
 export type FleetSource = "LIVE" | "DEMO";
 
 export interface LiveFleetDevice {
@@ -13,6 +13,8 @@ export interface LiveFleetDevice {
   latest_level_pct?: number | null;
   verified_ratio?: number | null;
   status?: string | null;
+  rows_verified?: number;
+  rows_rejected?: number;
 }
 
 export interface FleetRow {
@@ -46,7 +48,8 @@ export interface FleetGroup {
   wheels: FleetRow[];
 }
 
-export function classifyRowState(wheel: DemoWheel, lastComm = wheel.lastComm): FleetRowState {
+export function classifyRowState(wheel: DemoWheel, lastComm = wheel.lastComm, liveDevice?: LiveFleetDevice): FleetRowState {
+  if (liveDevice?.rows_verified === 0 && (liveDevice.rows_rejected ?? 0) > 0) return "rejected-only";
   if (wheel.state === "out-of-service") return "out-of-service";
   if (wheel.state === "link-down" || lastComm === null) return "link-down";
   if (wheel.state === "stale") return "stale";
@@ -130,7 +133,7 @@ export function mergeLiveDevices(trucks: DemoTruck[], devices: LiveFleetDevice[]
   }
   return [...byId.values()].map((row) => ({
     ...row,
-    wheel: { ...row.wheel, state: classifyRowState(row.wheel, row.lastComm) === "stale" ? "stale" : row.wheel.state },
+    wheel: { ...row.wheel, state: classifyRowState(row.wheel, row.lastComm, row.liveDevice) === "stale" ? "stale" : row.wheel.state },
   })).sort((a, b) => a.truckId.localeCompare(b.truckId) || a.wheel.position.localeCompare(b.wheel.position));
 }
 
@@ -147,7 +150,7 @@ export function groupFleetRows(rows: FleetRow[]): FleetGroup[] {
 export function filterFleetRows(rows: FleetRow[], model: string, state: FleetFilterState, query: string): FleetRow[] {
   const normalized = query.trim().toLowerCase();
   return rows.filter((row) => {
-    const rowState = classifyRowState(row.wheel, row.lastComm);
+    const rowState = classifyRowState(row.wheel, row.lastComm, row.liveDevice);
     const modelMatch = model === "all" || (model === "930E" ? row.truckModel.startsWith("930E") : row.truckModel.startsWith("980E"));
     const stateMatch = state === "all"
       || (state === "alert" && ["N1", "N2", "N4"].includes(rowState))
@@ -159,10 +162,10 @@ export function filterFleetRows(rows: FleetRow[], model: string, state: FleetFil
 }
 
 export function fleetCounters(rows: FleetRow[]) {
-  const states = rows.map((row) => classifyRowState(row.wheel, row.lastComm));
+  const states = rows.map((row) => classifyRowState(row.wheel, row.lastComm, row.liveDevice));
   return {
     trucks: new Set(rows.map((row) => row.truckId)).size,
-    activeTrucks: new Set(rows.filter((row) => classifyRowState(row.wheel, row.lastComm) !== "out-of-service").map((row) => row.truckId)).size,
+    activeTrucks: new Set(rows.filter((row) => classifyRowState(row.wheel, row.lastComm, row.liveDevice) !== "out-of-service").map((row) => row.truckId)).size,
     wheels: rows.length,
     alerts: states.filter((state) => ["N1", "N2", "N4"].includes(state)).length,
     n4: states.filter((state) => state === "N4").length,
@@ -194,7 +197,7 @@ export function toCsv(rows: FleetRow[]): string {
       row.id,
       row.wheel.position,
       row.levelL,
-      classifyRowState(row.wheel, row.lastComm),
+      classifyRowState(row.wheel, row.lastComm, row.liveDevice),
       row.source,
       row.lastComm === null ? "" : new Date(row.lastComm).toISOString(),
     ]),

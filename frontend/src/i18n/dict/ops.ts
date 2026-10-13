@@ -86,6 +86,7 @@ export const ops = {
   "fleet.state.nominal": "NOMINAL",
   "fleet.state.stale": "OBSOLETO",
   "fleet.state.link-down": "ENLACE CAÍDO",
+  "fleet.state.rejected-only": "FILAS RECHAZADAS POR FIRMA · SIN DATOS VERIFICADOS",
   "fleet.state.out-of-service": "FUERA DE SERVICIO",
   "fleet.sparkline": "Tendencia de nivel de 24 horas",
   "fleet.staleDetail": "datos obsoletos — sin telemetría reciente",

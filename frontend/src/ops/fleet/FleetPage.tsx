@@ -27,7 +27,7 @@ function modelLabel(model: string): string {
 }
 
 function rowClass(row: FleetRow): string {
-  return `og-fleet-row og-fleet-row--${classifyRowState(row.wheel, row.lastComm)}`;
+  return `og-fleet-row og-fleet-row--${classifyRowState(row.wheel, row.lastComm, row.liveDevice)}`;
 }
 
 function FleetSourceSummary({ demo, live, liveConnected = true }: { demo: number; live: number; liveConnected?: boolean }) {
@@ -43,7 +43,7 @@ export function FleetKpiStrip({ counts, rows, liveConnected = true }: { counts: 
     live: items.filter((row) => source === "source" ? row.source === "LIVE" : row.fieldSources[source] === "LIVE").length,
   });
   const countForState = (predicate: (state: ReturnType<typeof classifyRowState>, row: FleetRow) => boolean) =>
-    rows.filter((row) => predicate(classifyRowState(row.wheel, row.lastComm), row));
+    rows.filter((row) => predicate(classifyRowState(row.wheel, row.lastComm, row.liveDevice), row));
   const alertRows = countForState((state) => ["N1", "N2", "N4"].includes(state));
   const noLinkRows = countForState((state) => state === "stale" || state === "link-down");
   const liveLinkDown = noLinkRows.filter((row) => row.wheel.state !== "link-down" && row.fieldSources.lastComm === "LIVE");
@@ -116,7 +116,7 @@ export function FleetHeaderMeta({ liveLoaded, deviceCount, liveConnected = true 
 }
 
 export function FleetWheelRow({ row, now, liveConnected = true }: { row: FleetRow; now: number; liveConnected?: boolean }) {
-  const rowState = classifyRowState(row.wheel, row.lastComm);
+  const rowState = classifyRowState(row.wheel, row.lastComm, row.liveDevice);
   const values = row.wheel.history["250h"].flatMap((point) => point.liters === null ? [] : [point.liters]);
   return (
     <tr className={rowClass(row)} tabIndex={0} onClick={() => { window.location.href = buildWheelDetailHref(row.id); }} onKeyDown={(event) => { if (event.key === "Enter") window.location.href = buildWheelDetailHref(row.id); }}>
@@ -128,7 +128,7 @@ export function FleetWheelRow({ row, now, liveConnected = true }: { row: FleetRo
       <td className="og-mono">{formatNumber(row.wheel.vibRms, 2)} g <FleetFieldSource source={row.fieldSources.vibration} liveConnected={liveConnected} visuallyHidden /></td>
       <td><RegimeChip regime={row.wheel.regime} /> <FleetFieldSource source={row.fieldSources.regime} liveConnected={liveConnected} visuallyHidden /></td>
       <td><span className="og-fleet-alert-cell">{row.wheel.alertLevel ? <SeverityBadge severity={row.wheel.alertLevel} /> : "—"} <FleetFieldSource source={row.fieldSources.alert} liveConnected={liveConnected} visuallyHidden /></span></td>
-      <td className="og-fleet-last"><span>{rowState === "stale" ? t("fleet.state.stale") : rowState === "link-down" ? t("fleet.state.link-down") : relativeLastComm(row.lastComm, row.source === "DEMO" ? demoDataset.referenceMs : now)}</span>{(rowState === "stale" || rowState === "link-down") && <small>{rowState === "stale" ? t("fleet.staleDetail") : t("fleet.linkDownDetail")}</small>}{row.lastComm !== null && <FleetFieldSource source={row.fieldSources.lastComm} liveConnected={liveConnected} visuallyHidden={row.fieldSources.lastComm !== "LIVE"} />}</td>
+      <td className="og-fleet-last"><span>{rowState === "stale" ? t("fleet.state.stale") : rowState === "link-down" || rowState === "rejected-only" ? stateLabel(rowState) : relativeLastComm(row.lastComm, row.source === "DEMO" ? demoDataset.referenceMs : now)}</span>{(rowState === "stale" || rowState === "link-down") && <small>{rowState === "stale" ? t("fleet.staleDetail") : t("fleet.linkDownDetail")}</small>}{row.lastComm !== null && <FleetFieldSource source={row.fieldSources.lastComm} liveConnected={liveConnected} visuallyHidden={row.fieldSources.lastComm !== "LIVE"} />}</td>
     </tr>
   );
 }
@@ -177,12 +177,12 @@ export default function FleetPage() {
     demo: allRows.filter((row) => row.source === "DEMO").length,
     live: allRows.filter((row) => row.source === "LIVE").length,
   };
-  const filterAlertRows = allRows.filter((row) => ["N1", "N2", "N4"].includes(classifyRowState(row.wheel, row.lastComm)));
+  const filterAlertRows = allRows.filter((row) => ["N1", "N2", "N4"].includes(classifyRowState(row.wheel, row.lastComm, row.liveDevice)));
   const filterAlertSources = {
     demo: filterAlertRows.filter((row) => row.fieldSources.alert === "DEMO").length,
     live: filterAlertRows.filter((row) => row.fieldSources.alert === "LIVE").length,
   };
-  const filterNoLinkRows = allRows.filter((row) => ["stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm)));
+  const filterNoLinkRows = allRows.filter((row) => ["stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm, row.liveDevice)));
   const filterLiveNoLinkRows = filterNoLinkRows.filter((row) => row.wheel.state !== "link-down" && row.fieldSources.lastComm === "LIVE");
   const filterNoLinkSources = { demo: filterNoLinkRows.length - filterLiveNoLinkRows.length, live: filterLiveNoLinkRows.length };
   const liveGroups = groupFleetRows(visibleRows.filter((row) => row.source === "LIVE"));
@@ -199,7 +199,7 @@ export default function FleetPage() {
   const renderGroups = (groups: FleetGroup[]) => groups.map((group) => (
     <>
       <tr className="og-fleet-group">
-        <th colSpan={9}><span className="og-fleet-truck">{group.truckId}</span><span className="og-chip">{modelLabel(group.model)}</span><span className="og-fleet-group-regime">{t("fleet.regimeSummary")}</span><span className={`og-fleet-group-alert${group.wheels.some((row) => ["N1", "N2", "N4", "stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm))) ? " is-attention" : " is-nominal"}`}>{group.wheels.some((row) => ["N1", "N2", "N4", "stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm))) ? t("fleet.groupAlert") : t("fleet.groupNominal")}</span></th>
+        <th colSpan={9}><span className="og-fleet-truck">{group.truckId}</span><span className="og-chip">{modelLabel(group.model)}</span><span className="og-fleet-group-regime">{t("fleet.regimeSummary")}</span><span className={`og-fleet-group-alert${group.wheels.some((row) => ["N1", "N2", "N4", "stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm, row.liveDevice))) ? " is-attention" : " is-nominal"}`}>{group.wheels.some((row) => ["N1", "N2", "N4", "stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm, row.liveDevice))) ? t("fleet.groupAlert") : t("fleet.groupNominal")}</span></th>
       </tr>
       {group.wheels.map((row) => <FleetWheelRow key={row.id} row={row} now={now} liveConnected={liveConnected} />)}
     </>
