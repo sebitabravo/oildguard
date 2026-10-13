@@ -9,7 +9,7 @@ import { levelValidity } from "../ops/wheel/logic";
 // Marca temporal fija: la frescura siempre recibe el "ahora" inyectado,
 // nunca el reloj mural dentro del assert (sin pruebas frágiles).
 const NOW = Date.parse("2026-10-10T12:00:00.000Z");
-// Edades espejo de los fixtures DEMO (demo/dataset.ts): rueda fresca a -8 s,
+// Edades espejo de los fixtures DEMO (demo/demoData.ts, desde demo/demo-data.json): rueda fresca a -8 s,
 // rueda "stale" a -180 s, separadas por el corte de 120 s.
 const FRESH_AGE_MS = 8_000;
 const STALE_AGE_MS = 180_000;
