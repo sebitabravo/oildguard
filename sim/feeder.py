@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import json
 import os
 import signal
@@ -22,6 +23,8 @@ DEVICE_ID = "wheel-RH-01"
 BATCH_SECONDS = 1.0
 DEMO_START = datetime(2026, 1, 1, tzinfo=timezone.utc)
 DEFAULT_BACKEND_PORT = 8001
+DEMO_HORIZON_SECONDS = 24 * 60 * 60
+DEMO_ACCELERATION_SECONDS = 120
 
 
 def configured_ingest_url() -> str:
@@ -69,6 +72,31 @@ def first_batch(
     return [sign_row(row, device_key) for row in rows]
 
 
+def iter_batches(
+    seed: int = 7,
+    start: datetime = DEMO_START,
+    seconds: float = 120.0,
+    target_drop_l: float = 4.0,
+    calibration_seconds: float | None = None,
+):
+    """Yield signed batches from one continuous, lab/demo-accelerated stream."""
+    master_key = _master_key()
+    device_key = derive_device_key(master_key, DEVICE_ID)
+    rate_horizon = calibration_seconds if calibration_seconds is not None else seconds
+    leak_pct_per_h = target_drop_l / 95.0 * 100.0 * 3600.0 / max(1.0, rate_horizon - 2.0)
+    rows = iter_rows(
+        "slow-leak",
+        seconds,
+        DEVICE_ID,
+        seed,
+        leak_pct_per_h=leak_pct_per_h,
+        start=start,
+    )
+    rows_per_batch = int(BATCH_SECONDS * SAMPLE_RATE_HZ)
+    while batch := list(itertools.islice(rows, rows_per_batch)):
+        yield [sign_row(row, device_key) for row in batch]
+
+
 def post_batch(rows: list[dict[str, object]], timeout: float = 5.0) -> int:
     request = urllib.request.Request(
         configured_ingest_url(),
@@ -85,13 +113,17 @@ def post_batch(rows: list[dict[str, object]], timeout: float = 5.0) -> int:
 
 
 def run(stop: threading.Event) -> tuple[int, int, int]:
-    batches = sent_rows = failed_batches = batch_index = 0
-    while not stop.is_set():
-        ingested = post_batch(first_batch(batch_index=batch_index))
+    batches = sent_rows = failed_batches = 0
+    for batch in iter_batches(
+        seconds=DEMO_HORIZON_SECONDS,
+        calibration_seconds=DEMO_ACCELERATION_SECONDS,
+    ):
+        if stop.is_set():
+            break
+        ingested = post_batch(batch)
         batches += 1
         sent_rows += ingested
         failed_batches += ingested == 0
-        batch_index += 1
         stop.wait(1.0)
     return batches, sent_rows, failed_batches
 
