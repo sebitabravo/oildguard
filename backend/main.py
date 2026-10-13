@@ -21,7 +21,6 @@ OpenAPI docs are served at /docs and /openapi.json.
 from __future__ import annotations
 
 import asyncio
-import csv
 import json
 import logging
 import os
@@ -681,15 +680,6 @@ def influx_state() -> dict[str, Any]:
         "status": _influx_status,
         **_INFLUX_WRITER.state(),
     }
-
-
-def _parse_t_iso(value: Any) -> float | None:
-    """Epoch de ``t_iso``; None si no es ISO-8601 parseable.
-
-    Delega en ``_TISO`` para no repetir el parseo cuando el lote entero
-    comparte marca de tiempo, que es lo que hace el simulador en tiempo real.
-    """
-    return _TISO.epoch(value)
 
 
 def select_device(device_id: str | None) -> str | None:
@@ -1661,32 +1651,3 @@ def on_shutdown() -> None:
         _INFLUX_WRITER.written_batches(),
         _INFLUX_WRITER.dropped_batches(),
     )
-
-
-def load_rows_from_csv(path: str, limit: int = 0) -> list[dict[str, Any]]:
-    """Helper for local demos: read T6 CSV rows (used by docs/smoke only)."""
-    out: list[dict[str, Any]] = []
-    int_fields = {"seq", "moving", "recal_window", "engine_on", "link_down"}
-    float_fields = {
-        "t_s",
-        "slope_deg",
-        "rotor_rpm",
-        "wheel_rpm",
-        "pressure_kpa",
-        "temperature_c",
-        "vib_rms_g",
-        "vib_kurtosis",
-        "level_liters",
-        "level_pct",
-    }
-    with open(path, newline="") as f:
-        for row in csv.DictReader(f):
-            parsed: dict[str, Any] = dict(row)
-            for k in int_fields:
-                parsed[k] = int(float(parsed[k]))
-            for k in float_fields:
-                parsed[k] = float(parsed[k])
-            out.append(parsed)
-            if limit and len(out) >= limit:
-                break
-    return out

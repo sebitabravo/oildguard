@@ -78,6 +78,7 @@ async fn main() -> Result<()> {
         None
     };
 
+    let shared_stats = Arc::new(engine::Stats::default());
     if realtime {
         let packet_size = args.batch_rows.saturating_mul(4096).max(64 * 1024);
         let cert_dir = std::env::var_os("OILGUARD_MQTT_CERT_DIR").map(std::path::PathBuf::from);
@@ -99,10 +100,17 @@ async fn main() -> Result<()> {
                     &device_id,
                 )?;
                 let shared = Arc::new(client);
+                let event_stats = shared_stats.clone();
                 tokio::spawn(async move {
+                    let mut connected = false;
                     loop {
-                        if event_loop.poll().await.is_err() {
-                            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                        match event_loop.poll().await {
+                            Ok(event) => {
+                                engine::record_mqtt_event(&event_stats, &mut connected, &event);
+                            }
+                            Err(_) => {
+                                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                            }
                         }
                     }
                 });
@@ -118,10 +126,17 @@ async fn main() -> Result<()> {
                     packet_size,
                 )?;
                 let shared = Arc::new(client);
+                let event_stats = shared_stats.clone();
                 tokio::spawn(async move {
+                    let mut connected = false;
                     loop {
-                        if event_loop.poll().await.is_err() {
-                            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                        match event_loop.poll().await {
+                            Ok(event) => {
+                                engine::record_mqtt_event(&event_stats, &mut connected, &event);
+                            }
+                            Err(_) => {
+                                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                            }
                         }
                     }
                 });
@@ -147,7 +162,6 @@ async fn main() -> Result<()> {
             sign_key: sign_key.clone(),
             start: Some(start),
         };
-        let shared_stats = Arc::new(engine::Stats::default());
         let reporter_stats = shared_stats.clone();
         let reporter = if args.stats_interval > 0 {
             let interval = args.stats_interval;

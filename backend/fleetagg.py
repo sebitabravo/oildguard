@@ -40,30 +40,17 @@ inventar un cero.
 
 from __future__ import annotations
 
+import threading
 from collections import deque
 from typing import Any, Iterable, Sequence
 
+try:
+    from .metrics import QUANTILES, _percentile as _quantile_linear
+except ImportError:
+    from metrics import QUANTILES, _percentile as _quantile_linear
+
 DEFAULT_HORIZON_S = 300.0
 DEFAULT_SAMPLES = 32
-QUANTILES = (("p50", 0.50), ("p95", 0.95), ("p99", 0.99))
-
-
-def _quantile_linear(sorted_values: list[float], q: float) -> float | None:
-    """Cuantil con interpolacion lineal, igual que Polars ``quantile(q, "linear")``.
-
-    Reproduce el criterio de numpy/pandas: indice ``q * (n - 1)`` sobre la
-    muestra ordenada e interpolacion entre los dos vecinos.
-    """
-    n = len(sorted_values)
-    if n == 0:
-        return None
-    if n == 1:
-        return sorted_values[0]
-    pos = q * (n - 1)
-    low = int(pos)
-    high = min(low + 1, n - 1)
-    frac = pos - low
-    return sorted_values[low] * (1.0 - frac) + sorted_values[high] * frac
 
 
 class _DeviceWindow:
@@ -106,10 +93,15 @@ class RollingFleet:
         # efectiva vive entre ``samples`` y ``2 * samples``.
         self._decimate_at = max(4, samples_per_metric * 2)
         self._devices: dict[str, _DeviceWindow] = {}
+        self._lock = threading.RLock()
 
     # ---------------------------------------------------------------- ingesta
 
     def observe(self, device_id: str, t_s: float, values: Sequence[float | None]) -> None:
+        with self._lock:
+            self._observe_locked(device_id, t_s, values)
+
+    def _observe_locked(self, device_id: str, t_s: float, values: Sequence[float | None]) -> None:
         """Registra una fila aceptada. ``values`` sigue el orden de ``self.metrics``."""
         window = self._devices.get(device_id)
         if window is None:
@@ -156,6 +148,10 @@ class RollingFleet:
         self._evict_below(window, cutoff)
 
     def _evict_below(self, window: _DeviceWindow, cutoff: float) -> None:
+        with self._lock:
+            self._evict_below_locked(window, cutoff)
+
+    def _evict_below_locked(self, window: _DeviceWindow, cutoff: float) -> None:
         rows = window.rows
         while rows and rows[0][0] < cutoff:
             t_s, values = rows.popleft()
@@ -178,6 +174,10 @@ class RollingFleet:
         return float(window_s) <= self.horizon_s
 
     def snapshot(self, window_s: float) -> tuple[dict[str, Any], int, int]:
+        with self._lock:
+            return self._snapshot_locked(window_s)
+
+    def _snapshot_locked(self, window_s: float) -> tuple[dict[str, Any], int, int]:
         """(bloques, filas, dispositivos) para la ventana pedida."""
         window = float(window_s)
         rows_total = 0
@@ -255,10 +255,13 @@ class RollingFleet:
     # ------------------------------------------------------------- utilidades
 
     def device_count(self) -> int:
-        return len(self._devices)
+        with self._lock:
+            return len(self._devices)
 
     def forget(self, device_id: str) -> None:
-        self._devices.pop(device_id, None)
+        with self._lock:
+            self._devices.pop(device_id, None)
 
     def reset(self) -> None:
-        self._devices.clear()
+        with self._lock:
+            self._devices.clear()

@@ -146,6 +146,18 @@ pub struct Stats {
     pub latency_samples: Mutex<Vec<f64>>,
 }
 
+pub fn record_mqtt_event(stats: &Stats, connected: &mut bool, event: &rumqttc::Event) {
+    if let rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(ack)) = event {
+        if ack.code == rumqttc::ConnectReturnCode::Success {
+            if *connected {
+                stats.reconnects.fetch_add(1, Ordering::Relaxed);
+            } else {
+                *connected = true;
+            }
+        }
+    }
+}
+
 impl Stats {
     fn elapsed_seconds(&self) -> f64 {
         self.started

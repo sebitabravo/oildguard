@@ -28,6 +28,18 @@ FILES = [
 ]
 
 
+def check_clean_worktree(cwd: str = ".") -> None:
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        capture_output=True,
+        text=True,
+        cwd=cwd,
+        check=True,
+    )
+    if status.stdout.strip():
+        raise RuntimeError("A/B ingest requires a clean worktree")
+
+
 def checkout(rev: str) -> None:
     subprocess.run(["git", "checkout", "-q", rev, "--", *FILES], check=True)
 
@@ -39,6 +51,7 @@ def measure(args: list[str], repeat: int = 5) -> float:
 
 
 def main(rounds: int = 3) -> int:
+    check_clean_worktree()
     results: dict[str, dict[str, list[float]]] = {}
     try:
         for _ in range(rounds):

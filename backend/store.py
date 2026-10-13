@@ -327,7 +327,7 @@ class TelemetryStore:
             for device in set(self._rows) | set(self._rejected):
                 bucket = self._rows.get(device, ())
                 rejected = self._rejected.get(device, Counter())
-                latest_row = bucket[-1] if bucket else None
+                latest_row = self.latest(device) if bucket else None
                 accepted = self._accepted.get(device, 0)
                 rejected_total = sum(rejected.values())
                 verified = self._verified.get(device, 0)
@@ -455,13 +455,3 @@ class StoreView:
 
     def reverse(self) -> None:
         self._store.reverse_all()
-
-
-def iter_prepared(rows: Iterable[dict[str, Any]]) -> Iterable[tuple[dict[str, Any], tuple | None]]:
-    """Atajo para preparar filas cuya identidad ya es derivable de la fila."""
-    for row in rows:
-        seq = as_float(row.get("seq"))
-        if seq is None:
-            yield row, None
-        else:
-            yield row, (device_of(row), int(seq), str(row.get("t_iso", "")))
