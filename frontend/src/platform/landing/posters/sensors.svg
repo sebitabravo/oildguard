@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" role="img" aria-labelledby="title desc">
-<title id="title">Designed signal inputs on the wheel</title>
-<desc id="desc">Static poster: wheel outline with four sensor callouts for pressure, temperature, vibration and speed context.</desc>
+<title id="title">Entradas de señal diseñadas en la rueda</title>
+<desc id="desc">Póster estático: esquema de rueda con cuatro referencias de sensores para presión, temperatura, vibración y contexto de velocidad.</desc>
 <rect width="800" height="450" fill="#0B0F14"/>
 <rect x="16" y="16" width="768" height="418" fill="none" stroke="#334155" stroke-width="1"/>
-<text x="40" y="52" font-family="JetBrains Mono, monospace" font-size="15" letter-spacing="2" fill="#E2E8F0">SIGNAL INPUTS · DESIGN STUDY</text>
-<text x="40" y="74" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2" fill="#8A94A6">STATIC POSTER · 3D LOADS IN VIEW</text>
+<text x="40" y="52" font-family="JetBrains Mono, monospace" font-size="15" letter-spacing="2" fill="#E2E8F0">ENTRADAS DE SEÑAL · ESTUDIO DE DISEÑO</text>
+<text x="40" y="74" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2" fill="#8A94A6">PÓSTER ESTÁTICO · 3D SE ACTIVA EN VISTA</text>
 <g transform="translate(270,250)">
 <circle r="130" fill="none" stroke="#334155" stroke-width="18"/>
 <circle r="96" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="2 6"/>
@@ -19,16 +19,16 @@
 </g>
 </g>
 <g font-family="JetBrains Mono, monospace" font-size="13" fill="#E2E8F0">
-<text x="470" y="140">01 PRESSURE · DRAIN PORT</text>
-<text x="470" y="200">02 TEMPERATURE · MAGNETIC PLUG</text>
-<text x="470" y="260">03 VIBRATION · COVER</text>
-<text x="470" y="320">04 SPEED · EXISTING SIGNAL</text>
+<text x="470" y="140">01 PRESIÓN · PUERTO DE DRENAJE</text>
+<text x="470" y="200">02 TEMPERATURA · TAPÓN MAGNÉTICO</text>
+<text x="470" y="260">03 VIBRACIÓN · CUBIERTA</text>
+<text x="470" y="320">04 VELOCIDAD · SEÑAL EXISTENTE</text>
 </g>
 <g font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2" fill="#8A94A6">
-<text x="470" y="162" >THREADED PORT</text>
-<text x="470" y="222">SURFACE CONTACT</text>
-<text x="470" y="282">SURFACE CONTACT</text>
-<text x="470" y="342">REFERENCE · NO NEW MOUNT</text>
+<text x="470" y="162" >PUERTO ROSCADO</text>
+<text x="470" y="222">CONTACTO SUPERFICIAL</text>
+<text x="470" y="282">CONTACTO SUPERFICIAL</text>
+<text x="470" y="342">REFERENCIA · SIN MONTAJE NUEVO</text>
 </g>
-<text x="40" y="410" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2" fill="#F59E0B">DESIGN INPUT · PENDING BENCH ACCESS</text>
+<text x="40" y="410" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2" fill="#F59E0B">ENTRADA DE DISEÑO · PENDIENTE DE ACCESO AL BANCO</text>
 </svg>

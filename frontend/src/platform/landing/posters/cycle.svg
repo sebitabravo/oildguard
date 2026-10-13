@@ -1,25 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" role="img" aria-labelledby="title desc">
-<title id="title">Haul cycle phases with motion and rest regimes</title>
-<desc id="desc">Static poster: LOAD 6 s, HAUL 12 s, DUMP 6 s and WAIT 5 s phases on a 29 second loop with stopped and moving regimes.</desc>
+<title id="title">Fases del ciclo de acarreo con movimiento y reposo</title>
+<desc id="desc">Póster estático: fases de CARGA 6 s, ACARREO 12 s, DESCARGA 6 s y ESPERA 5 s en un ciclo de 29 segundos, con periodos detenidos y en movimiento.</desc>
 <rect width="800" height="450" fill="#0B0F14"/>
 <rect x="16" y="16" width="768" height="418" fill="none" stroke="#334155" stroke-width="1"/>
-<text x="40" y="52" font-family="JetBrains Mono, monospace" font-size="15" letter-spacing="2" fill="#E2E8F0">HAUL CYCLE · FOUR PHASES</text>
-<text x="40" y="74" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2" fill="#8A94A6">STATIC POSTER · 3D LOADS IN VIEW</text>
+<text x="40" y="52" font-family="JetBrains Mono, monospace" font-size="15" letter-spacing="2" fill="#E2E8F0">CICLO DE ACARREO · CUATRO FASES</text>
+<text x="40" y="74" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2" fill="#8A94A6">PÓSTER ESTÁTICO · 3D SE ACTIVA EN VISTA</text>
 <g font-family="JetBrains Mono, monospace" font-size="13" fill="#E2E8F0">
 <rect x="60" y="140" width="140" height="120" fill="#18202C" stroke="#334155"/>
 <rect x="208" y="140" width="280" height="120" fill="#111720" stroke="#F59E0B"/>
 <rect x="496" y="140" width="140" height="120" fill="#18202C" stroke="#334155"/>
 <rect x="644" y="140" width="96" height="120" fill="#111720" stroke="#334155"/>
-<text x="76" y="176">LOAD</text><text x="76" y="198" font-size="20" fill="#F59E0B">6 s</text>
-<text x="224" y="176">HAUL</text><text x="224" y="198" font-size="20" fill="#F59E0B">12 s</text>
-<text x="512" y="176">DUMP</text><text x="512" y="198" font-size="20" fill="#F59E0B">6 s</text>
-<text x="656" y="176">WAIT</text><text x="656" y="198" font-size="20" fill="#F59E0B">5 s</text>
+<text x="76" y="176">CARGA</text><text x="76" y="198" font-size="20" fill="#F59E0B">6 s</text>
+<text x="224" y="176">ACARREO</text><text x="224" y="198" font-size="20" fill="#F59E0B">12 s</text>
+<text x="512" y="176">DESCARGA</text><text x="512" y="198" font-size="20" fill="#F59E0B">6 s</text>
+<text x="656" y="176">ESPERA</text><text x="656" y="198" font-size="20" fill="#F59E0B">5 s</text>
 </g>
 <g font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1" fill="#8A94A6">
-<text x="76" y="232">STOPPED · RECAL</text>
-<text x="224" y="232">MOVING · ESTIMATE</text>
-<text x="512" y="232">STOPPED · RECAL</text>
-<text x="656" y="232">RETURN</text>
+<text x="76" y="232">DETENIDO · RECAL.</text>
+<text x="224" y="232">MÓVIL · ESTIMACIÓN</text>
+<text x="512" y="232">DETENIDO · RECAL.</text>
+<text x="656" y="232">RETORNO</text>
 </g>
 <line x1="60" y1="300" x2="740" y2="300" stroke="#475569" stroke-width="1"/>
 <g fill="#F59E0B">
@@ -28,6 +28,6 @@
 <g font-family="JetBrains Mono, monospace" font-size="11" fill="#8A94A6">
 <text x="60" y="326">0 s</text><text x="468" y="326">24 s</text><text x="706" y="326">29 s</text>
 </g>
-<text x="60" y="372" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2" fill="#8A94A6">LOOP 29 s · MOVING ADDS VIBRATION · REST NARROWS THE BAND</text>
-<text x="60" y="410" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2" fill="#F59E0B">SYNTHETIC-PROXY · NO FIELD DATA</text>
+<text x="60" y="372" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2" fill="#8A94A6">CICLO 29 s · EL MOVIMIENTO AÑADE VIBRACIÓN · EL REPOSO REDUCE LA BANDA</text>
+<text x="60" y="410" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2" fill="#F59E0B">SUSTITUTO SINTÉTICO · SIN DATOS DE TERRENO</text>
 </svg>

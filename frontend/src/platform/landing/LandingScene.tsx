@@ -134,13 +134,19 @@ const SCENE_COPY: Record<LandingSceneId, SceneCopy> = {
   },
 };
 
-export function sceneCopyForState(scene: LandingSceneId, state: SceneLoadState) {
-  const mounted = state === "ready-3d";
+export function sceneCopyForState(
+  scene: LandingSceneId,
+  state: SceneLoadState,
+  hasMounted3d = state === "ready-3d",
+) {
+  const mounted = state === "ready-3d" && hasMounted3d;
   const sceneCopy = SCENE_COPY[scene];
   return {
     ...sceneCopy,
     caption: `${t(sceneCopy.captionKey)} · ${t(mounted ? "landing.scene.caption.active" : "landing.scene.caption.poster")}`,
-    note: t(mounted ? "landing.scene.note.active" : "landing.scene.note.poster"),
+    note: mounted
+      ? t("landing.scene.note.active")
+      : "Vista 3D no cargada; se muestra el póster estático.",
   };
 }
 
@@ -156,7 +162,6 @@ export default function LandingScene({
   storyActive?: boolean;
 }) {
   const [state, setState] = useState<SceneLoadState>("poster");
-  const copy = sceneCopyForState(scene, state);
   const [reduction, setReduction] = useState<AssemblyReduction | null>(null);
   const [partLabels, setPartLabels] = useState<ReadonlyArray<{ id: AssemblyPartId; label: string }> | null>(null);
   const [isolated, setIsolated] = useState<AssemblyPartId | null>(null);
@@ -175,6 +180,11 @@ export default function LandingScene({
   // junto al póster sin exigir WebGL.
   const [oilReady, setOilReady] = useState(false);
   const oilMountedRef = useRef<{ pause(): void; resume(): void; dispose(): void } | null>(null);
+  const copy = sceneCopyForState(
+    scene,
+    state,
+    scene === "assembly" ? mountedRef.current !== null : scene === "oil" && oilMountedRef.current !== null,
+  );
 
   // Números trazados al manual (B01): el total manda, las etapas van
   // redondeadas a tres decimales como en la pantalla del banco.
@@ -342,70 +352,71 @@ export default function LandingScene({
   // conserva para que el gesto rápido no produzca saltos.
   // Sin progreso finito se informa cero en es-CL, no "0.000".
   const storyProgressText = Number.isFinite(storyProgress) ? formatNumber(storyProgress, 3) : formatNumber(0, 3);
-  return <figure className="landing__scene" data-scene={scene} data-scene-state={state} data-story-beat={storyBeat ?? scene} data-story-progress={storyProgressText} data-story-active={storyActive ? "true" : "false"} ref={figureRef}>
+  return <figure className={`landing__scene mx-0 mb-0 [&>img]:block [&>img]:h-auto [&>img]:aspect-video [&>img]:w-full [&>img]:object-contain [&>img]:bg-[#0B0F14] ${scene === "assembly" ? "mt-0 border-0 bg-transparent data-[story-active=true]:border-[color-mix(in_srgb,var(--og-accent)_55%,var(--landing-line))] motion-reduce:data-[story-active=true]:border-[var(--landing-line)] [&>img]:aspect-auto [&>img]:min-h-[240px] [&>img]:rounded-[max(var(--landing-radius-sm),calc(var(--landing-radius-float)-var(--landing-space-75)))]" : "mt-og-300 border border-[var(--landing-line)] bg-og-panel data-[story-active=true]:border-[color-mix(in_srgb,var(--og-accent)_55%,var(--landing-line))] motion-reduce:data-[story-active=true]:border-[var(--landing-line)]"}`} data-scene={scene} data-scene-state={state} data-story-beat={storyBeat ?? scene} data-story-progress={storyProgressText} data-story-active={storyActive ? "true" : "false"} ref={figureRef}>
     {shouldShowScenePoster(scene, state, oilReady, reduction) && (
-      <img className="landing__scene-poster" src={SCENE_POSTER_URLS[scene]} alt={copy.alt} loading="lazy" />
+      <img className="landing__scene-poster" src={SCENE_POSTER_URLS[scene]} alt={copy.alt} loading={scene === "assembly" ? undefined : "lazy"} fetchpriority={scene === "assembly" ? "high" : undefined} />
     )}
-    <div className="landing__scene-host" data-deferred="true" aria-hidden="true" ref={mountRef} />
+    <div className="landing__scene-host contents" data-deferred="true" aria-hidden="true" ref={mountRef} />
     {mountError !== null && (
       <p role={mountError.role} data-scene-error="true">{mountError.message}</p>
     )}
     {showAssemblyControls && reduction && (
-      <div className="landing__assembly-controls">
-        <p className="landing__assembly-ratios">
-          <strong data-reduction="overall">
+      <div className="landing__assembly-controls grid gap-og-75 p-og-100 bg-og-panel-2">
+        <p className="landing__assembly-ratios grid min-w-0 gap-og-50 m-0">
+          <strong className="font-og-mono text-og-sm leading-og-sm font-semibold" data-reduction="overall">
             {decimal(reduction.overall, 2)}:1 · total publicado, fuente citada en anexo P2; sin revisión nueva aquí
           </strong>
-          <span className="landing__assembly-ratios-detail">
+          <span className="landing__assembly-ratios-detail font-og-mono text-og-xs leading-[1.5] text-og-text-muted [overflow-wrap:anywhere]">
             {decimal(reduction.highSpeed, 3)}:1 × {decimal(reduction.lowSpeed, 3)}:1 ·{" "}
             supuesto de diseño
           </span>
         </p>
-        <div className="landing__assembly-controls-actions">
+        <div className="landing__assembly-controls-actions"><div className="flex min-w-0 flex-wrap items-center gap-og-50">
           <button
             type="button"
-            className="landing__button landing__button--secondary"
+            className="landing__button landing__button--secondary flex-none w-11 p-0 text-og-text-primary bg-og-panel cursor-pointer"
             onClick={() => drive((controls) => controls.orbit(-0.4, 0))}
             aria-label="Girar a la izquierda"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <svg className="static inset-auto block h-5 w-5 fill-none stroke-current [stroke-width:2.2] [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M4 12 10 6v4h10v4H10v4z" fill="currentColor" stroke="none" />
             </svg>
           </button>
           <button
             type="button"
-            className="landing__button landing__button--secondary"
+            className="landing__button landing__button--secondary flex-none w-11 p-0 text-og-text-primary bg-og-panel cursor-pointer"
             onClick={() => drive((controls) => controls.orbit(0.4, 0))}
             aria-label="Girar a la derecha"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <svg className="static inset-auto block h-5 w-5 fill-none stroke-current [stroke-width:2.2] [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M20 12 14 6v4H4v4h10v4z" fill="currentColor" stroke="none" />
             </svg>
           </button>
           <button
             type="button"
-            className="landing__button landing__button--secondary"
+            className="landing__button landing__button--secondary flex-none text-og-text-primary bg-og-panel cursor-pointer"
             onClick={() => drive((controls) => controls.zoom(0.8))}
           >
             Acercar
           </button>
           <button
             type="button"
-            className="landing__button landing__button--secondary"
+            className="landing__button landing__button--secondary flex-none text-og-text-primary bg-og-panel cursor-pointer"
             onClick={() => drive((controls) => controls.zoom(1.25))}
           >
             Alejar
           </button>
           <button
             type="button"
-            className="landing__button landing__button--secondary"
+            className="landing__button landing__button--secondary flex-none text-og-text-primary bg-og-panel cursor-pointer"
             onClick={() => drive((controls) => controls.reset())}
           >
             Restablecer
           </button>
-          <label>
+          <label><span className="inline-flex min-h-11 items-center gap-og-50 border border-og-border-strong px-og-75 font-og-mono text-og-xs leading-og-xs text-og-text-muted">
             Pieza{" "}
             <select
+              className="w-[158px] min-w-0 max-w-full min-h-11 border-0 bg-og-panel-2 font-[inherit] text-og-text-primary"
               value={isolated ?? ""}
               onKeyDown={(event) => {
                 if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
@@ -434,11 +445,11 @@ export default function LandingScene({
                 </option>
               ))}
             </select>
-          </label>
-        </div>
+          </span></label>
+        </div></div>
       </div>
     )}
-    <figcaption><strong>{copy.caption}</strong><span>{copy.note}</span></figcaption>
+    <figcaption className={`flex flex-wrap items-baseline justify-between gap-x-og-100 gap-y-og-50 p-og-100 ${scene === "assembly" ? "px-0" : ""}`}><strong className="font-og-mono text-og-xs leading-og-xs font-normal tracking-[.08em]">{copy.caption}</strong><span className="font-og-mono text-og-xs leading-og-xs text-og-text-muted">{copy.note}</span></figcaption>
     {showSensorDetails && <SensorDetails />}
     {showCycleDetails && cyclePhase && cycleVisual && (
       <div

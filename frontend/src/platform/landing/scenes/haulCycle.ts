@@ -24,7 +24,7 @@ export const HAUL_CYCLE_SOURCE =
   "Four phases LOAD 6 s / HAUL 12 s / DUMP 6 s / WAIT 5 s (29 s loop) from " +
   "frontend/src/sim/truck/cycle.ts:1-31; only LOAD/DUMP stationary " +
   "(isRecalState, cycle.ts:63-65), WAIT moving (isMovingState, cycle.ts:54-56); " +
-  "traced in docs/research/landing-claims.md §2 and docs/t4-truck-cycle.md:5-8.";
+  "rest/moving distinction confirmed in docs/feasibility.md; phase durations in docs/t4-truck-cycle.md:5-8 (replaces the deleted landing-claims citation).";
 
 export type HaulOilState = "agitated" | "settled";
 

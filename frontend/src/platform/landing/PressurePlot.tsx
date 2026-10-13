@@ -61,18 +61,18 @@ export default function PressurePlot() {
           <span className="landing__micro">{t("landing.oil.title")}</span>
           <strong>{t("landing.oil.plotTitle")}</strong>
         </div>
-        <span className="landing__assumption-chip">{t("landing.oil.synth")}</span>
+        <span className="landing__assumption-chip inline-block px-og-50 py-og-50 border border-[color-mix(in_srgb,var(--og-warning)_45%,transparent)] text-og-warning text-og-xs leading-og-xs max-w-full whitespace-normal [overflow-wrap:anywhere]">{t("landing.oil.synth")}</span>
       </header>
-      <div className="landing__chart-legend" data-oil-legend="true">
+      <div className="landing__chart-legend flex flex-wrap justify-end gap-og-100 mt-og-100 mb-0 max-[600px]:justify-start max-[600px]:gap-og-75" data-oil-legend="true">
         {curves.map((curve) => (
-          <span key={curve.tempC}>
-            <i style={{ background: strokeFor(curve.tempC) }} />
+          <span className="flex items-center gap-og-50 font-og-mono text-og-xs leading-og-xs text-og-text-muted" key={curve.tempC}>
+            <i className="h-[2px] w-[10px]" style={{ background: strokeFor(curve.tempC) }} />
             {`${formatNumber(curve.tempC, 0)} °C`}
           </span>
         ))}
       </div>
       <svg
-        className="landing__plot"
+        className="landing__plot block h-[192px] w-full overflow-visible max-[600px]:h-[160px]"
         data-oil-plot="true"
         viewBox={`0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`}
         role="img"
@@ -122,8 +122,9 @@ export default function PressurePlot() {
       <p className="landing__micro" data-oil-table-title="true">
         {t("landing.oil.tableTitle")} · {`${formatNumber(OIL_TABLE_TEMP_C, 0)} °C`}
       </p>
-      <div className="landing__mount-table-wrap">
-        <table className="landing__mount-table" data-oil-table="true">
+      <div className="landing__mount-table-wrap min-w-0 max-w-full">
+        <div className="landing__mount-table-scroll w-full max-w-full min-w-0 overflow-x-auto">
+          <table className="landing__mount-table" data-oil-table="true">
           <thead>
             <tr>
               <th>{t("landing.oil.level")}</th>
@@ -156,9 +157,10 @@ export default function PressurePlot() {
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
-      <p className="landing__chart-note" data-oil-temps="true">
+      <p className="landing__chart-note flex min-w-0 flex-wrap items-center gap-og-75 mt-og-75 mb-0 [overflow-wrap:anywhere] font-og-mono text-og-xs leading-og-xs text-og-text-muted" data-oil-temps="true">
         {t("landing.oil.tempTitle")} · {`${formatNumber(OIL_REFERENCE_L, 0)} L`} ·{" "}
         {atReference.map((row, index) => (
           <span key={row.tempC} data-temp={String(row.tempC)} data-pressure={String(row.pressureKpa)}>
@@ -168,7 +170,7 @@ export default function PressurePlot() {
         ))}
       </p>
       <p
-        className="landing__chart-note"
+        className="landing__chart-note flex min-w-0 flex-wrap items-center gap-og-75 mt-og-75 mb-0 [overflow-wrap:anywhere] font-og-mono text-og-xs leading-og-xs text-og-text-muted"
         data-oil-mass="true"
         data-mass={String(OIL_FIXED_MASS_KG)}
         data-p-from={String(massFrom)}
@@ -179,10 +181,10 @@ export default function PressurePlot() {
         {`${formatNumber(massFrom, 3)} kPa`} → {`${formatNumber(massTo, 3)} kPa`}{" "}
         ({`${formatNumber(massDeltaPct, 1)} %`}) — {t("landing.oil.massSuffix")}
       </p>
-      <p className="landing__chart-note" data-oil-source="pressure">
+      <p className="landing__chart-note flex min-w-0 flex-wrap items-center gap-og-75 mt-og-75 mb-0 [overflow-wrap:anywhere] font-og-mono text-og-xs leading-og-xs text-og-text-muted" data-oil-source="pressure">
         {t("landing.oil.source")} · {OIL_PRESSURE_SOURCE}
       </p>
-      <p className="landing__chart-note" data-oil-source="sensitivity">
+      <p className="landing__chart-note flex min-w-0 flex-wrap items-center gap-og-75 mt-og-75 mb-0 [overflow-wrap:anywhere] font-og-mono text-og-xs leading-og-xs text-og-text-muted" data-oil-source="sensitivity">
         {OIL_SENSITIVITY_SOURCE}
       </p>
     </article>

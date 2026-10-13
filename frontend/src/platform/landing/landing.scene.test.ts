@@ -10,6 +10,7 @@ import {
   posterFor,
   resolveSceneState,
   shouldDeferScene,
+  detectReducedMotion,
   type LandingSceneId,
 } from "./sceneHost";
 import LandingScene from "./LandingScene";
@@ -115,6 +116,88 @@ describe("landing scene host", () => {
     host.onViewportChange(true);
     await Promise.resolve();
     expect(calls).toBe(0);
+  });
+
+  test("does not import a scene in view when reduced motion is preferred", async () => {
+    let calls = 0;
+    const host = createSceneHost("cycle", {
+      webglAvailable: true,
+      prefersReducedMotion: true,
+      importScene: () => {
+        calls += 1;
+        return Promise.resolve({ default: {} });
+      },
+    });
+
+    host.onViewportChange(true);
+    await Promise.resolve();
+
+    expect(calls).toBe(0);
+    expect(host.getState()).toBe("poster");
+    host.dispose();
+  });
+
+  test("detects reduced motion from matchMedia and safely defaults when unavailable", () => {
+    const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+
+    try {
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: { matchMedia: () => ({ matches: true }) },
+      });
+      expect(detectReducedMotion()).toBe(true);
+
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: { matchMedia: () => ({ matches: false }) },
+      });
+      expect(detectReducedMotion()).toBe(false);
+
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: { matchMedia: () => { throw new Error("unsupported"); } },
+      });
+      expect(detectReducedMotion()).toBe(false);
+    } finally {
+      if (originalWindow) Object.defineProperty(globalThis, "window", originalWindow);
+      else Reflect.deleteProperty(globalThis, "window");
+    }
+  });
+
+  test("keeps the rendered poster and sensor selectors when WebGL is unavailable", () => {
+    let imports = 0;
+    const host = createSceneHost("sensors", {
+      webglAvailable: false,
+      importScene: () => {
+        imports += 1;
+        return Promise.resolve({ default: {} });
+      },
+    });
+    host.onViewportChange(true);
+    const html = renderToString(h(LandingScene, { scene: "sensors" }));
+
+    expect(host.getState()).toBe("poster");
+    expect(imports).toBe(0);
+    expect(html).toContain("landing__scene-poster");
+    expect(html).toContain('data-sensors="true"');
+    expect(html).not.toContain("<canvas");
+    host.dispose();
+  });
+
+  test("does not publish a late ready state when disposed during import", async () => {
+    let resolveImport!: (module: unknown) => void;
+    const host = createSceneHost("assembly", {
+      webglAvailable: true,
+      importScene: () => new Promise((resolve) => { resolveImport = resolve; }),
+    });
+
+    host.onViewportChange(true);
+    expect(host.getState()).toBe("loading-3d");
+    host.dispose();
+    resolveImport({ default: {} });
+    await Promise.resolve();
+
+    expect(host.getState()).toBe("loading-3d");
   });
 
   test("stays on the poster when the 3D chunk fails", async () => {

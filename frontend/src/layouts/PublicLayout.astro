@@ -2,6 +2,6 @@
 import "../theme.css";
 // Solo español (S03): la raíz sirve español; el valor por defecto es español
 // porque S01 retiró el idioma por consulta y la ruta /es/ se descartó.
-const { title = "OilGuard Mining", lang = "es" } = Astro.props;
+const { title = "OilGuard Mining", description = "Propuesta de monitoreo de solo lectura para ruedas motrices Komatsu 930E.", lang = "es" } = Astro.props;
 ---
-<!doctype html><html lang={lang}><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>{title}</title></head><body><main class="og-content" style="margin-left:0"><slot /></main></body></html>
+<!doctype html><html lang={lang}><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>{title}</title><meta name="description" content={description} /><meta property="og:title" content={title} /><meta property="og:description" content={description} /><meta property="og:type" content="website" /><meta name="twitter:card" content="summary" /></head><body><a class="og-skip-link" href="#main-content">Saltar al contenido</a><main id="main-content" class="og-content" style="margin-left:0"><slot /></main></body></html>

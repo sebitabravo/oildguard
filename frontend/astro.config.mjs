@@ -1,8 +1,10 @@
 import { defineConfig } from "astro/config";
 import preact from "@astrojs/preact";
+import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   integrations: [preact()],
+  vite: { plugins: [tailwindcss()] },
   devToolbar: { enabled: false },
   server: {
     host: "0.0.0.0",

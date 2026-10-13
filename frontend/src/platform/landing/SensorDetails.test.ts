@@ -35,6 +35,18 @@ describe("sensor details cards", () => {
     }
   });
 
+  test("exposes keyboard-operable native buttons with named group and pressed state", () => {
+    const html = renderToString(h(SensorDetails, { initial: "temperature" }));
+
+    expect(html).toContain('role="group" aria-label="Selectores de sensores"');
+    for (const id of LANDING_SENSOR_IDS) {
+      const selector = html.match(new RegExp(`<button[^>]*data-sensor="${id}"[^>]*>`))?.[0];
+      expect(selector).toBeDefined();
+      expect(selector).toContain('type="button"');
+      expect(selector).toContain(id === "temperature" ? 'aria-pressed="true"' : 'aria-pressed="false"');
+    }
+  });
+
   test("each card matches its B01 service point, not a neighbour", () => {
     const pressure = renderToString(h(SensorDetails, { initial: "pressure" }));
     expect(pressure.includes(t(sensorById("pressure").serviceKey))).toBe(true);
