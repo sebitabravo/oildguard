@@ -97,6 +97,8 @@ export const ops = {
   "fleet.source.demo": "DEMO",
   "fleet.source.mixed": "MIXTO",
   "fleet.source.configuration": "CONFIGURACIÓN",
+  "fleet.demoLegend": "Otros campos y filas de demostración",
+  "fleet.demoOnlyRows": "Filas sin dispositivo coincidente; datos locales de demostración.",
   "fleet.telemetry.offlineTitle": "Telemetría de flota",
   "fleet.telemetry.offlineCaption": "Sin conexión al canal de telemetría.",
   "fleet.telemetry.offlineStatus": "Sin conexión",

@@ -89,18 +89,19 @@ export function mergeLiveDevices(trucks: DemoTruck[], devices: LiveFleetDevice[]
   for (const device of devices) {
     const existing = byId.get(device.device_id);
     const parsedLastComm = device.last_t_iso ? Date.parse(device.last_t_iso) : null;
+    const hasLiveLastComm = parsedLastComm !== null && Number.isFinite(parsedLastComm);
     const liveLevel = typeof device.latest_level_liters === "number";
     if (existing) {
       byId.set(device.device_id, {
         ...existing,
         source: "LIVE",
         levelL: liveLevel ? (device.latest_level_liters as number) : existing.levelL,
-        lastComm: parsedLastComm,
+        lastComm: hasLiveLastComm ? parsedLastComm : null,
         liveDevice: device,
         fieldSources: {
           ...demoFieldSources(),
           level: liveLevel ? "LIVE" : "DEMO",
-          lastComm: "LIVE",
+          lastComm: hasLiveLastComm ? "LIVE" : "DEMO",
         },
       });
       continue;
@@ -118,12 +119,12 @@ export function mergeLiveDevices(trucks: DemoTruck[], devices: LiveFleetDevice[]
       wheel,
       source: "LIVE",
       levelL: typeof device.latest_level_liters === "number" ? device.latest_level_liters : wheel.levelL,
-      lastComm: parsedLastComm,
+      lastComm: hasLiveLastComm ? parsedLastComm : null,
       liveDevice: device,
       fieldSources: {
         ...demoFieldSources(),
         level: liveLevel ? "LIVE" : "DEMO",
-        lastComm: "LIVE",
+        lastComm: hasLiveLastComm ? "LIVE" : "DEMO",
       },
     });
   }

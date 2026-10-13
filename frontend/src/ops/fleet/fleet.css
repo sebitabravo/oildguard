@@ -15,6 +15,7 @@
 .og-fleet-filter-chip b { color: var(--og-text-muted); font: 11px var(--og-mono); }
 .og-fleet-search { min-height: 36px; min-width: 220px; flex: 1; padding: 0 10px; color: var(--og-text-primary); background: var(--og-surface); border: 1px solid var(--og-border-strong); }
 .og-fleet-table-cue { display: none; }
+.og-fleet-legend { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--og-text-muted); font-size: 11px; }
 .og-fleet-table-wrap { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; margin-top: 18px; overflow-x: auto; border: 1px solid var(--og-border-subtle); background: var(--og-surface); }
 .og-fleet-table-scroll { width: 100%; }
 .og-fleet-table { width: 100%; min-width: 1120px; table-layout: fixed; border-collapse: collapse; font-size: 12px; }
@@ -28,13 +29,17 @@
 .og-fleet-truck { margin-right: 10px; font: 600 13px var(--og-mono); }
 .og-fleet-group-regime, .og-fleet-group-alert { margin-left: 14px; color: var(--og-text-muted); font: 11px var(--og-mono); }
 .og-fleet-group-alert.is-attention { color: var(--og-amber); }.og-fleet-group-alert.is-nominal { color: var(--og-green); }
+.og-fleet-demo-only-label { margin-right: 8px; color: var(--og-accent); font: 600 10px var(--og-mono); }
+.og-fleet-demo-only-group th { border-top: 1px solid var(--og-border-strong); }
 .og-fleet-wheel-cell { display: grid; gap: 3px; min-width: 155px; }
 .og-fleet-wheel-cell strong { color: var(--og-text-primary); }
+.og-fleet-wheel-cell a { color: var(--og-accent); }
 .og-fleet-wheel-cell small, .og-fleet-last small { color: var(--og-text-muted); font-size: 10px; }
 .og-fleet-source { width: max-content; min-width: max-content; flex-shrink: 0; padding: 2px 4px; border: 1px solid var(--og-border-strong); font: 9px var(--og-mono); white-space: nowrap; }
 .og-fleet-source--live { color: var(--og-green); }
 .og-fleet-source--demo { color: var(--og-accent); }
 .og-fleet-source--mixed, .og-fleet-source--configuration { color: var(--og-orange); }
+.og-fleet-source--sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
 .og-fleet-source-split { display: inline-flex; gap: 4px; align-items: center; }
 .og-fleet-level { display: grid; gap: 4px; min-width: 0; }
 .og-fleet-level .og-levelbar { width: 120px; height: 7px; margin-top: 0; }

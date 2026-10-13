@@ -13,7 +13,7 @@ import FleetLivePanelBoundary from "../../dash/fleetLive/FleetLivePanelBoundary"
 import {
   buildWheelDetailHref, classifyRowState, filterFleetRows, fleetCounters,
   groupFleetRows, mergeLiveDevices, relativeLastComm, toCsv, type FleetFilterState,
-  type FleetRow, type FleetSource,
+  type FleetGroup, type FleetRow, type FleetSource,
 } from "./logic";
 import "./fleet.css";
 
@@ -93,13 +93,17 @@ export function FleetBackendOutageNotice({ backendState }: { backendState: Fleet
 
 // Cada campo muestra su procedencia junto al valor para que ningún dato DEMO
 // se lea como vivo en una fila LIVE; el sigma sintético lleva su propio rótulo.
-export function FleetFieldSource({ source, liveConnected = true }: { source: FleetSource | "MIXED" | "CONFIGURATION"; liveConnected?: boolean }) {
+export function FleetFieldSource({ source, liveConnected = true, visuallyHidden = false }: { source: FleetSource | "MIXED" | "CONFIGURATION"; liveConnected?: boolean; visuallyHidden?: boolean }) {
   if (source === "LIVE" && !liveConnected) return null;
   return (
-    <small className={`og-fleet-source og-fleet-source--${source.toLowerCase()}`}>
+    <small className={`og-fleet-source og-fleet-source--${source.toLowerCase()}${visuallyHidden ? " og-fleet-source--sr-only" : ""}`}>
       {t(source === "LIVE" ? "fleet.source.live" : source === "DEMO" ? "fleet.source.demo" : source === "MIXED" ? "fleet.source.mixed" : "fleet.source.configuration")}
     </small>
   );
+}
+
+export function FleetTableLegend() {
+  return <div className="og-fleet-legend"><FleetFieldSource source="DEMO" /><span>{t("fleet.demoLegend")}</span></div>;
 }
 
 export function FleetHeaderMeta({ liveLoaded, deviceCount, liveConnected = true }: { liveLoaded: boolean; deviceCount: number; liveConnected?: boolean }) {
@@ -116,15 +120,15 @@ export function FleetWheelRow({ row, now, liveConnected = true }: { row: FleetRo
   const values = row.wheel.history["250h"].flatMap((point) => point.liters === null ? [] : [point.liters]);
   return (
     <tr className={rowClass(row)} tabIndex={0} onClick={() => { window.location.href = buildWheelDetailHref(row.id); }} onKeyDown={(event) => { if (event.key === "Enter") window.location.href = buildWheelDetailHref(row.id); }}>
-      <td className="og-fleet-wheel-cell"><strong>{row.truckId} · {row.wheel.position}</strong><a href={buildWheelDetailHref(row.id)} className="og-mono">{row.id}</a><FleetFieldSource source={row.source} liveConnected={liveConnected} /></td>
-      <td className="og-fleet-level-cell"><div className="og-fleet-level"><LevelBar value={row.levelL} sigma={row.wheel.sigmaL} /><div className="og-fleet-level__value og-mono"><span>{formatNumber(row.levelL / 95 * 100, 1)}%</span><span>(~{formatNumber(row.levelL, 1)} <FleetFieldSource source={row.fieldSources.level} liveConnected={liveConnected} />)</span><span>± {formatNumber(row.wheel.sigmaL, 1)} L <FleetFieldSource source={row.fieldSources.sigma} liveConnected={liveConnected} /></span></div><b className="og-fleet-level__state">{stateLabel(rowState)}</b></div></td>
-      <td><div className="og-fleet-level__sparkline"><Sparkline values={values} label={t("fleet.sparkline")} /> <FleetFieldSource source={row.fieldSources.trend} liveConnected={liveConnected} /></div></td>
-      <td className="og-mono">{formatNumber(row.wheel.lossRateLPer100h, 2)} L/100 h <FleetFieldSource source={row.fieldSources.lossRate} liveConnected={liveConnected} /></td>
-      <td className="og-mono">{formatNumber(row.wheel.temperatureC, 1)} °C <FleetFieldSource source={row.fieldSources.temperature} liveConnected={liveConnected} /></td>
-      <td className="og-mono">{formatNumber(row.wheel.vibRms, 2)} g <FleetFieldSource source={row.fieldSources.vibration} liveConnected={liveConnected} /></td>
-      <td><RegimeChip regime={row.wheel.regime} /> <FleetFieldSource source={row.fieldSources.regime} liveConnected={liveConnected} /></td>
-      <td><span className="og-fleet-alert-cell">{row.wheel.alertLevel ? <SeverityBadge severity={row.wheel.alertLevel} /> : "—"} <FleetFieldSource source={row.fieldSources.alert} liveConnected={liveConnected} /></span></td>
-      <td className="og-fleet-last"><span>{rowState === "stale" ? t("fleet.state.stale") : rowState === "link-down" ? t("fleet.state.link-down") : relativeLastComm(row.lastComm, row.source === "DEMO" ? demoDataset.referenceMs : now)}</span>{(rowState === "stale" || rowState === "link-down") && <small>{rowState === "stale" ? t("fleet.staleDetail") : t("fleet.linkDownDetail")}</small>}<FleetFieldSource source={row.fieldSources.lastComm} liveConnected={liveConnected} /></td>
+      <td className="og-fleet-wheel-cell"><strong>{row.truckId} · {row.wheel.position}</strong><a href={buildWheelDetailHref(row.id)} className="og-mono">{row.id}</a><FleetFieldSource source="DEMO" liveConnected={liveConnected} visuallyHidden /></td>
+      <td className="og-fleet-level-cell"><div className="og-fleet-level"><LevelBar value={row.levelL} sigma={row.wheel.sigmaL} /><div className="og-fleet-level__value og-mono"><span>{formatNumber(row.levelL / 95 * 100, 1)}%</span><span>(~{formatNumber(row.levelL, 1)} <FleetFieldSource source={row.fieldSources.level} liveConnected={liveConnected} visuallyHidden={row.fieldSources.level !== "LIVE"} />)</span><span>± {formatNumber(row.wheel.sigmaL, 1)} L <FleetFieldSource source={row.fieldSources.sigma} liveConnected={liveConnected} visuallyHidden /></span></div><b className="og-fleet-level__state">{stateLabel(rowState)}</b></div></td>
+      <td><div className="og-fleet-level__sparkline"><Sparkline values={values} label={t("fleet.sparkline")} /> <FleetFieldSource source={row.fieldSources.trend} liveConnected={liveConnected} visuallyHidden /></div></td>
+      <td className="og-mono">{formatNumber(row.wheel.lossRateLPer100h, 2)} L/100 h <FleetFieldSource source={row.fieldSources.lossRate} liveConnected={liveConnected} visuallyHidden /></td>
+      <td className="og-mono">{formatNumber(row.wheel.temperatureC, 1)} °C <FleetFieldSource source={row.fieldSources.temperature} liveConnected={liveConnected} visuallyHidden /></td>
+      <td className="og-mono">{formatNumber(row.wheel.vibRms, 2)} g <FleetFieldSource source={row.fieldSources.vibration} liveConnected={liveConnected} visuallyHidden /></td>
+      <td><RegimeChip regime={row.wheel.regime} /> <FleetFieldSource source={row.fieldSources.regime} liveConnected={liveConnected} visuallyHidden /></td>
+      <td><span className="og-fleet-alert-cell">{row.wheel.alertLevel ? <SeverityBadge severity={row.wheel.alertLevel} /> : "—"} <FleetFieldSource source={row.fieldSources.alert} liveConnected={liveConnected} visuallyHidden /></span></td>
+      <td className="og-fleet-last"><span>{rowState === "stale" ? t("fleet.state.stale") : rowState === "link-down" ? t("fleet.state.link-down") : relativeLastComm(row.lastComm, row.source === "DEMO" ? demoDataset.referenceMs : now)}</span>{(rowState === "stale" || rowState === "link-down") && <small>{rowState === "stale" ? t("fleet.staleDetail") : t("fleet.linkDownDetail")}</small>}{row.lastComm !== null && <FleetFieldSource source={row.fieldSources.lastComm} liveConnected={liveConnected} visuallyHidden={row.fieldSources.lastComm !== "LIVE"} />}</td>
     </tr>
   );
 }
@@ -181,7 +185,8 @@ export default function FleetPage() {
   const filterNoLinkRows = allRows.filter((row) => ["stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm)));
   const filterLiveNoLinkRows = filterNoLinkRows.filter((row) => row.wheel.state !== "link-down" && row.fieldSources.lastComm === "LIVE");
   const filterNoLinkSources = { demo: filterNoLinkRows.length - filterLiveNoLinkRows.length, live: filterLiveNoLinkRows.length };
-  const visibleGroups = groupFleetRows(visibleRows);
+  const liveGroups = groupFleetRows(visibleRows.filter((row) => row.source === "LIVE"));
+  const demoOnlyGroups = groupFleetRows(visibleRows.filter((row) => row.source === "DEMO"));
   const downloadCsv = () => {
     const blob = new Blob([toCsv(visibleRows)], { type: "text/csv;charset=utf-8" });
     const href = URL.createObjectURL(blob);
@@ -191,6 +196,14 @@ export default function FleetPage() {
     link.click();
     URL.revokeObjectURL(href);
   };
+  const renderGroups = (groups: FleetGroup[]) => groups.map((group) => (
+    <>
+      <tr className="og-fleet-group">
+        <th colSpan={9}><span className="og-fleet-truck">{group.truckId}</span><span className="og-chip">{modelLabel(group.model)}</span><span className="og-fleet-group-regime">{t("fleet.regimeSummary")}</span><span className={`og-fleet-group-alert${group.wheels.some((row) => ["N1", "N2", "N4", "stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm))) ? " is-attention" : " is-nominal"}`}>{group.wheels.some((row) => ["N1", "N2", "N4", "stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm))) ? t("fleet.groupAlert") : t("fleet.groupNominal")}</span></th>
+      </tr>
+      {group.wheels.map((row) => <FleetWheelRow key={row.id} row={row} now={now} liveConnected={liveConnected} />)}
+    </>
+  ));
 
   return (
     <main className="og-page og-fleet-page">
@@ -224,6 +237,7 @@ export default function FleetPage() {
         </FilterBar>
 
         <p className="og-fleet-table-cue">{t("landing.tableScrollCue")}</p>
+        <FleetTableLegend />
         <div className="og-fleet-table-wrap og-fleet-table-scroll">
           <table className="og-fleet-table">
             <caption className="og-visually-hidden">{t("fleet.tableCaption")}</caption>
@@ -244,16 +258,9 @@ export default function FleetPage() {
               <th>{t("fleet.columnLast")}</th>
             </tr></thead>
             <tbody>
-              {visibleGroups.map((group) => (
-                <>
-                  <tr className="og-fleet-group">
-                    <th colSpan={9}><span className="og-fleet-truck">{group.truckId}</span><span className="og-chip">{modelLabel(group.model)}</span><span className="og-fleet-group-regime">{t("fleet.regimeSummary")}</span><span className={`og-fleet-group-alert ${group.wheels.some((row) => ["N1", "N2", "N4", "stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm))) ? "is-attention" : "is-nominal"}`}>{group.wheels.some((row) => ["N1", "N2", "N4", "stale", "link-down"].includes(classifyRowState(row.wheel, row.lastComm))) ? t("fleet.groupAlert") : t("fleet.groupNominal")}</span></th>
-                  </tr>
-                  {group.wheels.map((row) => (
-                    <FleetWheelRow key={row.id} row={row} now={now} liveConnected={liveConnected} />
-                  ))}
-                </>
-              ))}
+              {renderGroups(liveGroups)}
+              {demoOnlyGroups.length > 0 && <tr className="og-fleet-group og-fleet-demo-only-group"><th colSpan={9}><span className="og-fleet-demo-only-label">{t("fleet.source.demo")}</span><span>{t("fleet.demoOnlyRows")}</span></th></tr>}
+              {renderGroups(demoOnlyGroups)}
             </tbody>
           </table>
         </div>
