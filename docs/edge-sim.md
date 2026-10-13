@@ -125,4 +125,12 @@ stats latency sample is capped at 100,000 observations to avoid per-row
 allocation. `--seconds 0` runs indefinitely in realtime mode; offline mode
 uses a one-second smoke horizon when no finite horizon is supplied.
 
+### MQTT security limits
+
+Port 1883 permits anonymous connections and is bound to localhost for development
+only. Port 8883 requires a client certificate (`require_certificate true`), but
+has no per-topic ACL: any holder of a valid client certificate can publish or
+subscribe on any topic. This is a documented prototype limit; per-topic ACLs
+are planned.
+
 Start the realtime simulator with `docker compose --profile sim up -d --build edge-sim`.

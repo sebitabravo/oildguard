@@ -86,3 +86,7 @@ device scale factor 3): cold first paint and first contentful paint were both
 viewport while both canvases remained mounted, pending RAFs fell to zero.
 This is a post-correction observation, not a historical before-code baseline;
 details are in `/tmp/og-goal/evidence/B09/default-order-browser-integration.txt`.
+
+## Build warnings (documented, not fixed)
+
+Measurement date: 2026-10-13, based on the latest local `frontend/dist/_astro` artifact timestamp. The production build command is `cd frontend && bun run build`; its output reports six `INEFFECTIVE_DYNAMIC_IMPORT` warnings and a chunk above 500 kB, caused by 3D scene code. These warnings are documented, not fixed. Planned fix: lazy-load the 3D scene and configure manual chunks.
