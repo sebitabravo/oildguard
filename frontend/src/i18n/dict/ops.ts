@@ -2,7 +2,7 @@ export const ops = {
   "bench.referenceTruck.heading": "Camión de referencia",
   "bench.referenceTruck.button": "Ver camión de referencia (HD465-7EO, no es 930E)",
   "bench.referenceTruck.loading": "Cargando camión de referencia…",
-  "bench.referenceTruck.error": "No se pudo cargar el modelo de referencia. Inténtalo de nuevo.",
+  "bench.referenceTruck.error": "Modelo no incluido en el repositorio; la vista usa el montaje procedural.",
   "bench.referenceTruck.viewer": "Modelo 3D del Komatsu HD465-7EO",
   "bench.referenceTruck.attribution": "Modelo de referencia · Licencia",
   "bench.referenceTruck.caveat": "El uso fuera de este repositorio NO ESTÁ VERIFICADO. Este modelo no se utiliza en la página de inicio.",

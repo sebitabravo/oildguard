@@ -69,3 +69,4 @@ coverage/
 
 # AI tooling config (impeccable): local only.
 .impeccable/
+frontend/public/models/*.glb

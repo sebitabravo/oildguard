@@ -24,7 +24,7 @@ import Drawer from "../../ui/Drawer";
 import HonestyBadge from "../../ui/HonestyBadge";
 import { ProvenanceTag } from "../../ui/foundation";
 import { detectWebGL } from "../../ui/webgl";
-import { mountReferenceTruck, REFERENCE_TRUCK_ATTRIBUTION } from "../../twin/render/reference-truck";
+import { mountReferenceTruck, REFERENCE_TRUCK_ATTRIBUTION, REFERENCE_TRUCK_URL } from "../../twin/render/reference-truck";
 
 // Vista Rueda GDY106: corte 3D en el visor; el detalle (lectura de aceite,
 // sensores, cadena, inspección pasos 1-11) vive en el panel lateral.
@@ -41,6 +41,24 @@ export const INSPECTION_STEPS: InspStep[] = Array.from({ length: 11 }, (_, index
 
 export function BenchOilSourceBadge() {
   return <ProvenanceTag value="DEMO" />;
+}
+
+export async function preflightReferenceTruckAsset(
+  fetchAsset: typeof fetch,
+  mount: () => void,
+): Promise<boolean> {
+  try {
+    const response = await fetchAsset(REFERENCE_TRUCK_URL, { method: "HEAD" });
+    if (!response.ok) return false;
+    mount();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function ReferenceTruckError() {
+  return <p className="og-body" role="alert">{t("bench.referenceTruck.error")}</p>;
 }
 
 const GDY106_CHAIN_PARTS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
@@ -64,15 +82,23 @@ export default function BenchView() {
     if (!referenceTruckRequested) return;
     const container = referenceTruckContainer.current;
     if (!container) return;
-    try {
-      return mountReferenceTruck(
+    let disposed = false;
+    let cleanup: (() => void) | undefined;
+    const mount = () => {
+      if (disposed) return;
+      cleanup = mountReferenceTruck(
         container,
-        () => setReferenceTruckState("loaded"),
-        () => setReferenceTruckState("error"),
+        () => { if (!disposed) setReferenceTruckState("loaded"); },
+        () => { if (!disposed) setReferenceTruckState("error"); },
       );
-    } catch {
-      setReferenceTruckState("error");
-    }
+    };
+    void preflightReferenceTruckAsset(fetch, mount).then((available) => {
+      if (!available && !disposed) setReferenceTruckState("error");
+    });
+    return () => {
+      disposed = true;
+      cleanup?.();
+    };
   }, [referenceTruckRequested]);
 
   useEffect(() => {
@@ -303,7 +329,7 @@ export default function BenchView() {
         >
           {t("bench.referenceTruck.button")}
         </button>
-        {referenceTruckState === "error" && <p className="og-body" role="alert">{t("bench.referenceTruck.error")}</p>}
+        {referenceTruckState === "error" && <ReferenceTruckError />}
         {(referenceTruckState === "loading" || referenceTruckState === "loaded") && <>
           {referenceTruckState === "loading" && <p className="og-body" role="status">{t("bench.referenceTruck.loading")}</p>}
           <div
