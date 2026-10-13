@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "preact/hooks";
 import { t } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
-import { demoDataset } from "../../demo/dataset";
+import { demoDataset } from "../../demo/demoData";
 import { DataTable, FilterBar, KpiTile, PageHeader, ProvenanceTag, SyntheticBadge } from "../../ui/foundation";
 import { useBackendOrDemo, type DataSource } from "../../ui/backendOrDemo";
 import BackendOutageNotice from "../../ui/BackendOutageNotice";

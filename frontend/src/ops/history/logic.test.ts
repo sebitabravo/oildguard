@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createDemoDataset, demoDataset, type DemoWheel, type HistoryPoint } from "../../demo/dataset";
+import { createDemoDataset, demoDataset, type DemoWheel, type HistoryPoint } from "../../demo/demoData";
 import {
   historyKpis,
   sliceHistory,

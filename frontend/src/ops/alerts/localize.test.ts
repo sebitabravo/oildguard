@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createDemoDataset } from "../../demo/dataset";
+import { createDemoDataset } from "../../demo/demoData";
 import { dictKeys } from "../../i18n";
 import { ageLabel, lifecycleLabel, localizeReason, roleLabel } from "./localize";
 import { LIFECYCLES, REASON_CODES, buildDemoAlerts, liveToRecord, type AlertRecord } from "./logic";

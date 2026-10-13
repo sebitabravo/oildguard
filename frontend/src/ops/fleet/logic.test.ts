@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createDemoDataset, demoDataset } from "../../demo/dataset";
+import { createDemoDataset, demoDataset } from "../../demo/demoData";
 import {
   buildWheelDetailHref,
   classifyRowState,

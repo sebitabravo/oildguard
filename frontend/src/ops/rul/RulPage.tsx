@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
-import { demoDataset, type DemoWheel } from "../../demo/dataset";
+import { demoDataset, type DemoWheel } from "../../demo/demoData";
 import { getRul, type RulData, type RulDataOk, type RulResponse } from "../../sim/api";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t } from "../../i18n";

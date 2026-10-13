@@ -48,7 +48,7 @@ import { resolveReadingStale } from "./readingFreshness";
 import { mergeLevelSeries } from "./levelSeries";
 import { formatDemoLabNote } from "./demoCopy";
 import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
-import { DEMO_REFERENCE_MS, demoDataset } from "../demo/dataset";
+import { DEMO_REFERENCE_MS, demoDataset } from "../demo/demoData";
 import { AlertBanner, Button, Notice, PageHeader, ProvenanceTag, SyntheticBadge, type Severity } from "../ui/foundation";
 import BackendOutageNotice from "../ui/BackendOutageNotice";
 export { BackendOutageNotice as BackendOutageBanner };

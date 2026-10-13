@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { DEMO_REFERENCE_MS, NOMINAL_LITERS, createDemoDataset } from "./dataset";
+import { DEMO_REFERENCE_MS, NOMINAL_LITERS, createDemoDataset } from "./demoData";
 
 describe("demo dataset", () => {
   test("is deterministic for a seed", () => {

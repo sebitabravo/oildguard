@@ -1,5 +1,5 @@
 import { useMemo, useState } from "preact/hooks";
-import { demoDataset, type HistoryWindow } from "../../demo/dataset";
+import { demoDataset, type HistoryWindow } from "../../demo/demoData";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t } from "../../i18n";
 import {

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { renderToString } from "preact-render-to-string";
-import { demoDataset } from "../../demo/dataset";
+import { demoDataset } from "../../demo/demoData";
 import { dict, t, type DictKey } from "../../i18n";
 import { buildDemoAlerts } from "./logic";
 import AlertDetailPage from "./AlertDetailPage";

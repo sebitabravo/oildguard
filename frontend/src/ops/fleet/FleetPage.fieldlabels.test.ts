@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { h } from "preact";
 import renderToString from "preact-render-to-string";
 import FleetPage, { FleetHeaderMeta, FleetKpiStrip } from "./FleetPage";
-import { createDemoDataset } from "../../demo/dataset";
+import { createDemoDataset } from "../../demo/demoData";
 import { fleetCounters, mergeLiveDevices } from "./logic";
 
 function elements(html: string, tag: string, className: string): string[] {

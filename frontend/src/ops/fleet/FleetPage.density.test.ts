@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { h } from "preact";
 import renderToString from "preact-render-to-string";
 import FleetPage from "./FleetPage";
-import { demoDataset } from "../../demo/dataset";
+import { demoDataset } from "../../demo/demoData";
 import { t } from "../../i18n";
 import { formatNumber } from "../../i18n/numberFormat";
 import { fleetCounters, mergeLiveDevices } from "./logic";

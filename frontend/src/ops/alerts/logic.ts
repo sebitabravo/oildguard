@@ -1,5 +1,5 @@
-import { DEMO_REFERENCE_MS, NOMINAL_LITERS } from "../../demo/dataset";
-import type { AlertLifecycle, DemoAlert, DemoDataset, DemoWheel, Recipient } from "../../demo/dataset";
+import { DEMO_REFERENCE_MS, NOMINAL_LITERS } from "../../demo/demoData";
+import type { AlertLifecycle, DemoAlert, DemoDataset, DemoWheel, Recipient } from "../../demo/demoData";
 import type { DashAlert } from "../../sim/api";
 import { RULES } from "./rules";
 

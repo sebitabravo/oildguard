@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "preact/hooks";
-import { demoDataset } from "../../demo/dataset";
+import { demoDataset } from "../../demo/demoData";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t } from "../../i18n";
 import { getLevelSeries, getWindows, type LevelSeriesPoint, type WindowsResponse } from "../../sim/api";

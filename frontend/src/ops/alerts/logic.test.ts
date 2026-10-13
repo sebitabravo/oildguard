@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { DEMO_REFERENCE_MS, createDemoDataset } from "../../demo/dataset";
+import { DEMO_REFERENCE_MS, createDemoDataset } from "../../demo/demoData";
 import type { DashAlert } from "../../sim/api";
 import {
   LEVELS, ROUTING, ageParts, applyLocalActions, availableActions, buildDemoAlerts, countActiveByLevel,

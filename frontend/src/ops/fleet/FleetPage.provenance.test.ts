@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { h } from "preact";
 import renderToString from "preact-render-to-string";
-import { createDemoDataset } from "../../demo/dataset";
+import { createDemoDataset } from "../../demo/demoData";
 import { t } from "../../i18n";
 import { mergeLiveDevices, type FleetRow } from "./logic";
 import { FleetWheelRow } from "./FleetPage";

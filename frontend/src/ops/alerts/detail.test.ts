@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createDemoDataset } from "../../demo/dataset";
+import { createDemoDataset } from "../../demo/demoData";
 import { channelEvidence, inspectionSteps, liveSignalWindow, signalWindow } from "./detail";
 import { buildDemoAlerts, evaluateChannel, type AlertRecord } from "./logic";
 import { RULES } from "./rules";

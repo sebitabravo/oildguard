@@ -4,8 +4,8 @@
 // inactividad ya implementado en el inventario de dispositivos (`isStale` en
 // platform/devices/logic.ts y DeviceInventoryPage.tsx, etiqueta
 // "devices.stale": "Nodes stale > 120 s") y el que separan los fixtures
-// DEMO (demo/dataset.ts: rueda "stale" con lastComm a -180 s, fresca a -8 s;
-// demo/dataset.test.ts exige > 120 s en las obsoletas).
+// DEMO (demo/demoData.ts, desde demo/demo-data.json: rueda "stale" con lastComm a -180 s,
+// fresca a -8 s; demo/dataset.test.ts exige > 120 s en las obsoletas).
 export const READING_STALE_AFTER_MS = 120_000;
 
 export function isReadingStale(

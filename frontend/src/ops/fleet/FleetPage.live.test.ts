@@ -3,7 +3,7 @@ import { h } from "preact";
 import renderToString from "preact-render-to-string";
 import { FleetLivePanelView } from "../../dash/fleetLive/FleetLivePanel";
 import type { FleetLiveSnapshot } from "../../dash/fleetLive/logic";
-import { createDemoDataset } from "../../demo/dataset";
+import { createDemoDataset } from "../../demo/demoData";
 import { FleetWheelRow } from "./FleetPage";
 import { mergeLiveDevices } from "./logic";
 

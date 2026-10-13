@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { demoDataset } from "../../demo/dataset";
+import { demoDataset } from "../../demo/demoData";
 import { getAlerts } from "../../sim/api";
 import { loadWithTimeout } from "../../ui/backendOrDemo";
 import {

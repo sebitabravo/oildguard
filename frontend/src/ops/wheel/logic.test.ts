@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { demoDataset } from "../../demo/dataset";
+import { demoDataset } from "../../demo/demoData";
 import {
   LIVE_WHEEL_ID,
   alertBannerKey,

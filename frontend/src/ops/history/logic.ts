@@ -1,4 +1,4 @@
-import type { DemoWheel, HistoryPoint, HistoryWindow } from "../../demo/dataset";
+import type { DemoWheel, HistoryPoint, HistoryWindow } from "../../demo/demoData";
 import { formatNumber } from "../../i18n/numberFormat";
 
 export interface HistoryKpiInput {

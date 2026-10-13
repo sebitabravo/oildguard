@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
-import { demoDataset } from "../../demo/dataset";
+import { demoDataset } from "../../demo/demoData";
 import { getFleetDevices } from "../../sim/api";
 import { formatNumber } from "../../i18n/numberFormat";
 import { t } from "../../i18n";

@@ -1,4 +1,4 @@
-import type { DemoTruck, DemoWheel } from "../../demo/dataset";
+import type { DemoTruck, DemoWheel } from "../../demo/demoData";
 import { formatNumber } from "../../i18n/numberFormat";
 
 export type FleetFilterState = "all" | "alert" | "no-link" | "out-of-service";

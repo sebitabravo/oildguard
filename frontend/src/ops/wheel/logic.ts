@@ -1,4 +1,4 @@
-import type { DemoWheel } from "../../demo/dataset";
+import type { DemoWheel } from "../../demo/demoData";
 import type { RestWindow } from "../../sim/signals";
 import type { ChartPoint } from "../../dash/LevelChart";
 import type { Severity } from "../../ui/foundation";
