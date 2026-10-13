@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import itertools
 import json
 import os
 import signal
@@ -17,11 +16,13 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from shared.signing import derive_device_key, sign_row
-from sim.generate import SAMPLE_RATE_HZ, iter_rows
+from sim.generate import SAMPLE_RATE_HZ
+from sim.physics import pressure_kpa_from_volume
 
 DEVICE_ID = "wheel-RH-01"
 BATCH_SECONDS = 1.0
 DEMO_START = datetime(2026, 1, 1, tzinfo=timezone.utc)
+DEMO_DATA_PATH = Path(__file__).with_name("demo-data.json")
 DEFAULT_BACKEND_PORT = 8001
 DEMO_HORIZON_SECONDS = 24 * 60 * 60
 DEMO_ACCELERATION_SECONDS = 120
@@ -48,27 +49,27 @@ def _master_key() -> bytes:
     return key
 
 
+def _demo_payload() -> dict[str, object]:
+    return json.loads(DEMO_DATA_PATH.read_text(encoding="utf-8"))
+
+
 def first_batch(
     seed: int = 7,
     start: datetime = DEMO_START,
     batch_index: int = 0,
 ) -> list[dict[str, object]]:
-    """Build one reproducible batch and sign it with the backend's device key."""
+    """Load the canonical demo templates and sign one reproducible batch."""
     master_key = _master_key()
     device_key = derive_device_key(master_key, DEVICE_ID)
-    batch_start = start + timedelta(seconds=batch_index * BATCH_SECONDS)
-    rows = list(
-        iter_rows(
-            "clean",
-            BATCH_SECONDS,
-            DEVICE_ID,
-            seed + batch_index,
-            start=batch_start,
-        )
-    )
+    payload = _demo_payload()
+    rows_per_batch = int(BATCH_SECONDS * SAMPLE_RATE_HZ)
+    rows = [dict(row) for row in payload["demo"]["ingestRows"][:rows_per_batch]]
     for row in rows:
+        elapsed = batch_index * BATCH_SECONDS + float(row["t_s"])
         row["seq"] = batch_index * int(BATCH_SECONDS * SAMPLE_RATE_HZ) + int(row["seq"])
-        row["t_s"] = f"{batch_index * BATCH_SECONDS + float(row['t_s']):.1f}"
+        row["t_s"] = f"{elapsed:.1f}"
+        row["device_id"] = DEVICE_ID
+        row["t_iso"] = (start + timedelta(seconds=elapsed)).isoformat()
     return [sign_row(row, device_key) for row in rows]
 
 
@@ -79,21 +80,41 @@ def iter_batches(
     target_drop_l: float = 4.0,
     calibration_seconds: float | None = None,
 ):
-    """Yield signed batches from one continuous, lab/demo-accelerated stream."""
+    """Yield signed batches from the canonical JSON templates."""
     master_key = _master_key()
     device_key = derive_device_key(master_key, DEVICE_ID)
+    payload = _demo_payload()
+    demo = payload["demo"]
+    templates = demo["ingestRows"]
+    if not templates:
+        raise RuntimeError("demo JSON must contain ingest row templates")
+    capacity_l = float(payload["physics"]["constants"]["capacityL"])
     rate_horizon = calibration_seconds if calibration_seconds is not None else seconds
-    leak_pct_per_h = target_drop_l / 95.0 * 100.0 * 3600.0 / max(1.0, rate_horizon - 2.0)
-    rows = iter_rows(
-        "slow-leak",
-        seconds,
-        DEVICE_ID,
-        seed,
-        leak_pct_per_h=leak_pct_per_h,
-        start=start,
-    )
+    leak_l_per_s = target_drop_l / max(1.0, rate_horizon - 2.0)
+    sample_count = int(round(seconds * SAMPLE_RATE_HZ))
     rows_per_batch = int(BATCH_SECONDS * SAMPLE_RATE_HZ)
-    while batch := list(itertools.islice(rows, rows_per_batch)):
+    for offset in range(0, sample_count, rows_per_batch):
+        batch = []
+        for seq in range(offset, min(offset + rows_per_batch, sample_count)):
+            row = dict(templates[seq % len(templates)])
+            elapsed = seq / SAMPLE_RATE_HZ
+            level_l = capacity_l - leak_l_per_s * max(0.0, elapsed - 2.0)
+            temperature_c = float(row["temperature_c"])
+            template_level_l = float(row["level_liters"])
+            pressure_noise = float(row["pressure_kpa"]) - pressure_kpa_from_volume(
+                template_level_l, temperature_c
+            )
+            row.update({
+                "t_iso": (start + timedelta(seconds=elapsed)).astimezone(timezone.utc).isoformat(),
+                "t_s": f"{elapsed:.1f}",
+                "seq": seq,
+                "device_id": DEVICE_ID,
+                "level_liters": f"{level_l:.4f}",
+                "level_pct": f"{100.0 * level_l / capacity_l:.3f}",
+                "pressure_kpa": f"{pressure_kpa_from_volume(max(0.0, level_l), temperature_c) + pressure_noise:.3f}",
+                "label": "slow-leak" if elapsed >= 2.0 else "normal",
+            })
+            batch.append(row)
         yield [sign_row(row, device_key) for row in batch]
 
 

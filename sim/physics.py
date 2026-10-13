@@ -68,6 +68,11 @@ RESEARCH_ROTATING_CAVITY = GearCase(r_out=0.50, r_in=0.15, length=0.70)
 ROTATING_STATIC_FROUDE_MAX = 0.10  # ASSUMPTION; transition requires bench data.
 ROTATING_RIMMING_FROUDE_MIN = 1.00  # ASSUMPTION; gravity/circulation boundary.
 ROTATING_RPM_MAX = 3000.0  # VERIFIED rotor ceiling, not a wheel-speed limit.
+ROTATING_SLOSH_HEIGHT_CAP_FACTOR = 0.15
+ROTATING_SLOSH_FROUDE_FACTOR = 0.10
+ROTATING_SAMPLES_DEFAULT = 360
+ROTATING_SAMPLES_MIN = 36
+ROTATING_SAMPLES_MAX = 4096
 
 # Ancla lineal histórica (NO física); solo la usa absurdity_check().
 SYNTHETIC_PROXY_KPA_AT_FULL = 28.0
@@ -86,7 +91,7 @@ def rotating_sensor_regime(wheel_rpm: float, gc: GearCase = RESEARCH_ROTATING_CA
 
 def submerged_fraction_per_revolution(
     volume_l: float, sensor_radius_m: float, wheel_rpm: float,
-    gc: GearCase = RESEARCH_ROTATING_CAVITY, samples: int = 360,
+    gc: GearCase = RESEARCH_ROTATING_CAVITY, samples: int = ROTATING_SAMPLES_DEFAULT,
 ) -> float:
     """Estimated wet fraction for an output-mounted sensor over one wheel turn.
 
@@ -109,8 +114,11 @@ def submerged_fraction_per_revolution(
     if regime == "slosh":
         omega = min(ROTATING_RPM_MAX, max(0.0, abs(float(wheel_rpm)))) * 2.0 * math.pi / 60.0
         froude = omega**2 * gc.r_out / G
-        surface_height += min(0.15 * gc.r_out, 0.10 * gc.r_out * froude)
-    count = min(4096, max(36, int(samples)))
+        surface_height += min(
+            ROTATING_SLOSH_HEIGHT_CAP_FACTOR * gc.r_out,
+            ROTATING_SLOSH_FROUDE_FACTOR * gc.r_out * froude,
+        )
+    count = min(ROTATING_SAMPLES_MAX, max(ROTATING_SAMPLES_MIN, int(samples)))
     wet = sum(
         radius * math.sin(2.0 * math.pi * i / count) <= surface_height
         for i in range(count)

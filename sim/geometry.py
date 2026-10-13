@@ -22,6 +22,7 @@ from dataclasses import dataclass
 
 # Tolerancia de la bisección: 1e-6 m = 1 micra, muy por debajo de cualquier sensor.
 HEAD_TOL_M = 1e-6
+EFFECTIVE_HEAD_TOL_M = HEAD_TOL_M * 1e-3
 
 
 @dataclass(frozen=True)
@@ -87,7 +88,7 @@ def head_from_volume(volume_l: float, gc: GearCase = DEFAULT_GEAR_CASE) -> float
     if volume_l >= gc.volume_full_l:
         return 2.0 * gc.r_out
     lo, hi = 0.0, 2.0 * gc.r_out
-    while hi - lo > HEAD_TOL_M * 1e-3:
+    while hi - lo > EFFECTIVE_HEAD_TOL_M:
         mid = 0.5 * (lo + hi)
         if volume_from_head(mid, gc) < volume_l:
             lo = mid
