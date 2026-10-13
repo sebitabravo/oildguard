@@ -29,8 +29,8 @@ real proposal), without breaking the honesty contract in `PRODUCT.md`.
   `/alerts/detail?id=`, `/alerts/rules` (read-only), `/devices`, `/link`, `/lab/sim`, `/lab/validation`,
   `/lab/bench`, `/report` (synthetic N1-N4 walk, labelled). Maintenance/Administration omitted.
 - D6 Login: honest demo gate ("this prototype has no authentication"), button enters `/fleet`.
-- D7 Content filter: no real mine names, no invented people, customers, USD/ROI figures, certifications,
-  bench results, interlocks or control actions (read-only posture). Stitch strings are never copied
+- D7 Content filter: no real mine names, invented people or customers, unsupported financial figures,
+  certifications, or bench results; no machine-control actions (read-only posture). Stitch strings are never copied
   verbatim; every figure comes from the backend, the simulator, or a labelled deterministic demo dataset.
   Team credit (Atuan, Aros, Bravo, Fernández) stays on the landing only. Hackathon context appears on
   the landing as "Proposal for Hack the Challenge 2026 (NTT DATA)", nowhere in the app shell.
