@@ -17,7 +17,24 @@
 .og-rul-card__metrics { display: grid; gap: 5px; color: var(--og-text-muted); font-size: 11px; }.og-rul-card__metrics b { color: var(--og-text-secondary); font-family: var(--og-mono); font-weight: 500; }
 .og-rul-projection { display: grid; gap: 5px; color: var(--og-text-muted); font: 10px var(--og-mono); }.og-rul-projection p { margin: 0; }.og-rul-projection .og-sparkline { width: 100%; height: 48px; color: var(--og-accent); }
 .og-rul-suppressed { min-height: 48px; margin: 0; color: var(--og-amber); font: 11px var(--og-mono); }
+.og-rul-band-chart { display: grid; gap: 12px; min-width: 0; margin: 18px 0 20px; padding: 18px 20px; color: var(--og-text-primary); background: var(--og-panel-inset); border: 1px solid var(--og-border-strong); border-left: 3px solid var(--og-accent); border-radius: var(--og-radius-md); }
+.og-rul-band-chart figcaption { color: var(--og-text-primary); font: 700 12px var(--og-mono); letter-spacing: .12em; }
+.og-rul-band-chart__confidence { margin: 0; color: var(--og-text-secondary); font: 11px var(--og-mono); }
+.og-rul-band-chart__note { max-width: 78ch; margin: 0; color: var(--og-text-secondary); font-size: 12px; line-height: 1.5; }
+.og-rul-band-interval { display: grid; gap: 4px; min-width: 0; padding-top: 10px; border-top: 1px solid var(--og-border-subtle); }
+.og-rul-band-interval__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.og-rul-band-interval__head h3 { margin: 0; color: var(--og-text-primary); font: 600 12px var(--og-mono); }
+.og-rul-band-interval__head p { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; color: var(--og-text-secondary); font: 11px var(--og-mono); }
+.og-rul-band-interval__head b { color: var(--og-text-primary); font-weight: 600; }
+.og-rul-band-interval__plot { display: block; width: 100%; height: 52px; overflow: visible; }
+.og-rul-band__baseline { stroke: var(--og-border-highlight); stroke-width: 2; }
+.og-rul-band__zero { stroke: var(--og-text-secondary); stroke-dasharray: 3 3; stroke-width: 1.5; }
+.og-rul-band__range { fill: color-mix(in srgb, var(--og-accent) 28%, transparent); stroke: var(--og-accent); stroke-width: 1.5; }
+.og-rul-band__estimate { stroke: var(--og-text-primary); stroke-width: 2; }
+.og-rul-band__marker { fill: var(--og-accent); stroke: var(--og-text-primary); stroke-width: 2; }
+.og-rul-band-chart__zero { justify-self: end; margin: -8px 0 0; color: var(--og-text-secondary); font: 10px var(--og-mono); }
+.og-rul-band-unavailable { margin: 18px 0 20px; padding: 12px 14px; color: var(--og-text-primary); background: var(--og-panel-inset); border: 1px solid var(--og-border-strong); border-left: 3px solid var(--og-amber); font-size: 12px; line-height: 1.5; }
 .og-rul-card footer { display: flex; justify-content: space-between; align-items: center; color: var(--og-text-muted); font: 10px var(--og-mono); }
 .og-rul-assumptions { margin-top: 20px; padding: 16px; background: var(--og-panel-inset); border: 1px solid var(--og-border-subtle); }.og-rul-assumptions h3 { margin: 0 0 7px; color: var(--og-text-primary); font-size: 14px; }.og-rul-assumptions p { max-width: 78ch; margin: 0; color: var(--og-text-secondary); font-size: 12px; line-height: 1.55; }
 @media (max-width: 980px) { .og-rul-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 700px) { .og-rul-page .og-filterbar { align-items: stretch; }.og-rul-page .og-filterbar > .og-seg, .og-rul-filter { min-height: 44px; width: 100%; }.og-rul-page .og-filterbar > .og-seg .og-seg__btn { flex: 1; min-height: 44px; }.og-rul-header-meta { justify-items: start; }.og-rul-grid { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .og-rul-page .og-filterbar { align-items: stretch; }.og-rul-page .og-filterbar > .og-seg, .og-rul-filter { min-height: 44px; width: 100%; }.og-rul-page .og-filterbar > .og-seg .og-seg__btn { flex: 1; min-height: 44px; }.og-rul-header-meta { justify-items: start; }.og-rul-grid { grid-template-columns: 1fr; }.og-rul-band-chart { padding: 14px; }.og-rul-band-interval__head { display: grid; } }
