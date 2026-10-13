@@ -18,9 +18,26 @@ From the repository root, run the one-command local demo:
 
 The script needs no Docker. It starts the local backend, a deterministic synthetic feeder, and a preview of the UI. Open the URL the script prints (`/monitoring`, `/wheel`, `/rul`). The dashboard labels all data as synthetic and the RUL estimate as synthetic.
 
+The backend uses port 8001 when available (otherwise a free port); set `OILGUARD_DEMO_BACKEND_PORT` to override it. The UI preview uses port 4321.
+
 The plain MQTT listener on `localhost:1883` is development-only and has no password; mTLS on `8883` is the secure path. On `8883` the broker sets `require_certificate true`, so a client without a valid certificate is refused during the TLS handshake.
 
 The Compose file uses local demo values for the InfluxDB and broker credentials. Replace them before exposing any service outside your machine.
+
+For the Python test environment, run from the repository root:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
+```
+
+Backend pins are in `backend/requirements.txt`, and the test client dependency is in `requirements-dev.txt`.
+
+### Test
+
+```bash
+PATH="$PWD/.venv/bin:$PATH" ./test.sh
+```
 
 ## Screenshots
 
