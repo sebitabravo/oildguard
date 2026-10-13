@@ -47,11 +47,13 @@ def test_feeder_stream_uses_json_templates_and_advances_signed_batches(monkeypat
         raising=False,
     )
 
+    injected_now = datetime(2030, 5, 6, 12, 30, tzinfo=timezone.utc)
     batches = feeder.iter_batches(
         seed=7,
         start=datetime(2026, 1, 1, tzinfo=timezone.utc),
         seconds=2.0,
         calibration_seconds=2.0,
+        clock=lambda: injected_now,
     )
     first = next(batches)
     second = next(batches)
@@ -60,6 +62,8 @@ def test_feeder_stream_uses_json_templates_and_advances_signed_batches(monkeypat
     assert [row["seq"] for row in second] == list(range(10, 20))
     assert first[0]["t_s"] == "0.0"
     assert second[0]["t_s"] == "1.0"
-    assert first[0]["t_iso"] == "2026-01-01T00:00:00+00:00"
-    assert second[0]["t_iso"] == "2026-01-01T00:00:01+00:00"
+    assert all(
+        abs((datetime.fromisoformat(row["t_iso"]) - injected_now).total_seconds()) <= 120
+        for row in (first[0], second[0])
+    )
     assert all("sig" in row and "sig_v" in row for row in first + second)

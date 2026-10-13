@@ -11,6 +11,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Callable
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -57,6 +58,7 @@ def first_batch(
     seed: int = 7,
     start: datetime = DEMO_START,
     batch_index: int = 0,
+    clock: Callable[[], datetime] | None = None,
 ) -> list[dict[str, object]]:
     """Load the canonical demo templates and sign one reproducible batch."""
     master_key = _master_key()
@@ -64,12 +66,13 @@ def first_batch(
     payload = _demo_payload()
     rows_per_batch = int(BATCH_SECONDS * SAMPLE_RATE_HZ)
     rows = [dict(row) for row in payload["demo"]["ingestRows"][:rows_per_batch]]
+    send_time = (clock or (lambda: datetime.now(timezone.utc)))()
     for row in rows:
         elapsed = batch_index * BATCH_SECONDS + float(row["t_s"])
         row["seq"] = batch_index * int(BATCH_SECONDS * SAMPLE_RATE_HZ) + int(row["seq"])
         row["t_s"] = f"{elapsed:.1f}"
         row["device_id"] = DEVICE_ID
-        row["t_iso"] = (start + timedelta(seconds=elapsed)).isoformat()
+        row["t_iso"] = (send_time + timedelta(seconds=elapsed)).astimezone(timezone.utc).isoformat()
     return [sign_row(row, device_key) for row in rows]
 
 
@@ -79,6 +82,7 @@ def iter_batches(
     seconds: float = 120.0,
     target_drop_l: float = 4.0,
     calibration_seconds: float | None = None,
+    clock: Callable[[], datetime] | None = None,
 ):
     """Yield signed batches from the canonical JSON templates."""
     master_key = _master_key()
@@ -93,6 +97,7 @@ def iter_batches(
     leak_l_per_s = target_drop_l / max(1.0, rate_horizon - 2.0)
     sample_count = int(round(seconds * SAMPLE_RATE_HZ))
     rows_per_batch = int(BATCH_SECONDS * SAMPLE_RATE_HZ)
+    send_time = (clock or (lambda: datetime.now(timezone.utc)))()
     for offset in range(0, sample_count, rows_per_batch):
         batch = []
         for seq in range(offset, min(offset + rows_per_batch, sample_count)):
@@ -105,7 +110,7 @@ def iter_batches(
                 template_level_l, temperature_c
             )
             row.update({
-                "t_iso": (start + timedelta(seconds=elapsed)).astimezone(timezone.utc).isoformat(),
+                "t_iso": (send_time + timedelta(seconds=elapsed)).astimezone(timezone.utc).isoformat(),
                 "t_s": f"{elapsed:.1f}",
                 "seq": seq,
                 "device_id": DEVICE_ID,
