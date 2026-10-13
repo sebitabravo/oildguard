@@ -98,7 +98,7 @@ log = logging.getLogger("oilguard-backend")
 INFLUXDB_URL = os.getenv("INFLUXDB_URL", "http://localhost:8086")
 INFLUXDB_ORG = os.getenv("INFLUXDB_ORG", "oilguard")
 INFLUXDB_BUCKET = os.getenv("INFLUXDB_BUCKET", "oilguard")
-INFLUXDB_TOKEN = os.getenv("INFLUXDB_TOKEN", "oilguard-local-admin-token")
+INFLUXDB_TOKEN = os.getenv("INFLUXDB_TOKEN", "")
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "oilguard/signals")
@@ -158,9 +158,20 @@ app = FastAPI(
 )
 
 # Local-demo CORS so the Vite dashboard (T11) can call the API directly.
+_DEFAULT_CORS_ORIGINS = (
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:4174",
+    "http://localhost:4321",
+)
+_CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("OILGUARD_CORS_ORIGINS", ",".join(_DEFAULT_CORS_ORIGINS)).split(",")
+    if origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_CORS_ORIGINS,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
@@ -1349,7 +1360,10 @@ def level_series(
 
     from ai import level as level_estimator
 
-    estimate = level_estimator.estimate(_samples_from_rows(rows))
+    try:
+        estimate = level_estimator.estimate(_samples_from_rows(rows))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     sigma_l = estimate.get("sigma_liters")
     has_truth = any(as_float(row.get("level_liters")) is not None for row in rows)
     series = []
@@ -1627,6 +1641,8 @@ def _start_mqtt_bridge() -> None:
 
 @app.on_event("startup")
 def on_startup() -> None:
+    if _INFLUX_WRITE and not INFLUXDB_TOKEN.strip():
+        raise RuntimeError("INFLUXDB_TOKEN is required when OILGUARD_INFLUX_WRITE=1")
     _probe_influx()
     _INFLUX_WRITER.start()
     _PIPELINE.start()

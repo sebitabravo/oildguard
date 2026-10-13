@@ -117,7 +117,7 @@ def fit_baseline(rest_samples: list[dict]) -> dict:
     n = min(len(ps), len(ts))
     ps, ts = ps[:n], ts[:n]
     if n == 0:
-        raise SystemExit("no valid baseline samples (pressure/temperature parse failed)")
+        raise ValueError("no valid baseline samples (pressure/temperature parse failed)")
     t_ref = sum(ts) / n
     mean_p = sum(ps) / n
     var_t = sum((t - t_ref) ** 2 for t in ts) / n if n > 1 else 0.0

@@ -138,6 +138,8 @@ def encode_row(row: dict[str, Any]) -> str | None:
         if value is None:
             continue
         rendered = str(value).lower() if isinstance(value, bool) else str(value)
+        if "\n" in rendered or "\r" in rendered:
+            raise ValueError(f"{name} tag value must not contain a line break")
         tags.append(f"{escaped_name}={_escape_tag(rendered)}")
     tag_part = _MEASUREMENT + ("," + ",".join(tags) if tags else "")
 

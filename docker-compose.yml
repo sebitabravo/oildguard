@@ -3,16 +3,16 @@ services:
     image: influxdb:2.7.6
     container_name: oilguard-influxdb
     ports:
-      - "8086:8086"
+      - "127.0.0.1:8086:8086"
     volumes:
       - influxdb-data:/var/lib/influxdb2
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: oilguard
-      DOCKER_INFLUXDB_INIT_PASSWORD: oilguard-local-demo
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${DOCKER_INFLUXDB_INIT_PASSWORD}
       DOCKER_INFLUXDB_INIT_ORG: oilguard
       DOCKER_INFLUXDB_INIT_BUCKET: oilguard
-      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: oilguard-local-admin-token
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${DOCKER_INFLUXDB_INIT_ADMIN_TOKEN}
     healthcheck:
       test: ["CMD", "influx", "ping"]
       interval: 10s
@@ -24,9 +24,9 @@ services:
     image: eclipse-mosquitto:2.0.18
     container_name: oilguard-mqtt
     ports:
-      - "1883:1883"
-      - "8883:8883"
-      - "9001:9001"
+      - "127.0.0.1:1883:1883"
+      - "127.0.0.1:8883:8883"
+      - "127.0.0.1:9001:9001"
     volumes:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/certs:/mosquitto/certs:ro
@@ -46,7 +46,7 @@ services:
       dockerfile: backend/Dockerfile
     container_name: oilguard-backend
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       influxdb:
         condition: service_healthy
@@ -56,7 +56,7 @@ services:
       INFLUXDB_URL: http://influxdb:8086
       INFLUXDB_ORG: oilguard
       INFLUXDB_BUCKET: oilguard
-      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN:-oilguard-local-admin-token}
+      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN}
       MQTT_HOST: mqtt
       OILGUARD_MQTT_CA: ${OILGUARD_MQTT_CA:-}
       OILGUARD_MQTT_CLIENT_CERT: ${OILGUARD_MQTT_CLIENT_CERT:-}
@@ -79,7 +79,7 @@ services:
     build: ./frontend
     container_name: oilguard-frontend
     ports:
-      - "5173:5173"
+      - "127.0.0.1:5173:5173"
     volumes:
       # Bind mount so the dev server serves live source instead of the frozen
       # COPY baked in at build time. The anonymous volume preserves the image's

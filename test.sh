@@ -5,5 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
-python3 -m pytest -q tests
+# El backend exige INFLUXDB_TOKEN cuando la escritura a Influx está activa.
+# Las pruebas usan un marcador obvio que no es una credencial.
+INFLUXDB_TOKEN="${INFLUXDB_TOKEN:-placeholder-para-pruebas}" python3 -m pytest -q tests
 (cd frontend && bun test src)
