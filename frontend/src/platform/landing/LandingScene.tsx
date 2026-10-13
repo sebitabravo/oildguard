@@ -150,6 +150,10 @@ export function sceneCopyForState(
   };
 }
 
+export function sceneVisibleNoteForState(state: SceneLoadState, note: string): string {
+  return state === "ready-3d" ? "" : note;
+}
+
 export default function LandingScene({
   scene,
   storyBeat,
@@ -449,7 +453,7 @@ export default function LandingScene({
         </div></div>
       </div>
     )}
-    <figcaption className={`flex flex-wrap items-baseline justify-between gap-x-og-100 gap-y-og-50 p-og-100 ${scene === "assembly" ? "px-0" : ""}`}><strong className="font-og-mono text-og-xs leading-og-xs font-normal tracking-[.08em]">{copy.caption}</strong><span className="font-og-mono text-og-xs leading-og-xs text-og-text-muted">{copy.note}</span></figcaption>
+    <figcaption className={`flex flex-wrap items-baseline justify-between gap-x-og-100 gap-y-og-50 p-og-100 ${scene === "assembly" ? "px-0" : ""}`}><strong className="font-og-mono text-og-xs leading-og-xs font-normal tracking-[.08em]">{copy.caption}</strong><span className="font-og-mono text-og-xs leading-og-xs text-og-text-muted">{sceneVisibleNoteForState(state, copy.note)}</span></figcaption>
     {showSensorDetails && <SensorDetails />}
     {showCycleDetails && cyclePhase && cycleVisual && (
       <div

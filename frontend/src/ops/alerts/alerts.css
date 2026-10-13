@@ -15,13 +15,15 @@
 .og-alerts-page .og-form-field { display: grid; gap: 6px; min-width: 0; }
 .og-alerts-page .og-form-field > span { color: var(--og-text-muted); font: 10px var(--og-mono); letter-spacing: .05em; text-transform: uppercase; }
 .og-alerts-page .og-form-field input, .og-alerts-page .og-form-field select { width: 100%; min-width: 0; min-height: 44px; }
+.og-alerts-page .og-form-field select { color-scheme: dark; color: var(--og-text-primary); border: 1px solid var(--og-border-strong); background-color: var(--og-surface); }
 .og-alerts-page .og-form-field input[type="search"] { min-width: 0; }
 .og-alerts-wheel-filter { display: flex; gap: 12px; align-items: center; margin: 12px 0 0; color: var(--og-accent); font-size: 12px; }
 .og-alerts-wheel-filter button { min-height: 28px; padding: 0 10px; color: var(--og-text-secondary); background: transparent; border: 1px solid var(--og-border-strong); border-radius: var(--og-radius-sm); cursor: pointer; font: 11px var(--og-mono); }
 
 .og-alerts-main { min-width: 0; margin-top: 18px; }
-.og-alerts-table-cue { display: none; }
-.og-alerts-table-wrap { overflow-x: auto; background: var(--og-surface); border: 1px solid var(--og-border-subtle); }
+.og-alerts-table-cue { display: block; margin: 0 0 8px; color: var(--og-text-muted); font: 11px var(--og-mono); }
+.og-alerts-table-wrap { position: relative; overflow-x: auto; background: var(--og-surface); border: 1px solid var(--og-border-subtle); }
+.og-alerts-table-wrap::after { position: absolute; top: 0; right: 0; bottom: 0; width: 20px; background: linear-gradient(90deg, transparent, var(--og-surface)); content: ""; pointer-events: none; }
 .og-alerts-table { width: 100%; min-width: 1120px; border-collapse: collapse; font-size: 12px; }
 .og-alerts-table th, .og-alerts-table td { padding: 12px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--og-border-subtle); }
 .og-alerts-table thead th { color: var(--og-text-muted); font: 10px var(--og-mono); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }

@@ -60,6 +60,10 @@ fijar, encajar ni suavizar el desplazamiento. */
 .landing summary:active { transform: scale(0.98); }
 .landing summary:focus-visible, .landing select:focus-visible { outline: 2px solid var(--og-accent); outline-offset: 3px; }
 
+.landing__assembly-controls { position: relative; z-index: 1; border-top: 1px solid var(--og-border-subtle); color: var(--og-text-primary); }
+.landing__assembly-controls button { min-height: 40px; padding-inline: 10px; color: var(--og-text-primary); border: 1px solid var(--og-border-strong); border-radius: var(--og-radius-control); background: var(--og-panel); }
+.landing__assembly-controls select { color-scheme: dark; color: var(--og-text-primary); background-color: var(--og-panel-2); }
+
 @media (prefers-reduced-motion: reduce) {
   .landing a, .landing button, .landing summary { transition: none; }
 }

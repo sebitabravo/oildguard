@@ -8,6 +8,7 @@
 // Etiqueta de modelo en todas partes: `synthetic-proxy` (NO PROBADO hasta el banco).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import type { ComponentChildren } from "preact";
 import {
   getAlerts,
   getHealth,
@@ -77,7 +78,8 @@ type BackendNote =
   | { kind: "error" }
   | null;
 
-export function DashboardLevelSourceBadge({ live, source, validity }: { live: boolean; source: Source; validity: LevelValidity }) {
+export function DashboardLevelSourceBadge({ live, source, validity, noTelemetry = false }: { live: boolean; source: Source; validity: LevelValidity; noTelemetry?: boolean }) {
+  if (noTelemetry) return null;
   if (live && (validity === "stale" || validity === "invalid")) {
     return <span className={`og-chip og-chip--${validity}`}>{t(validity === "stale" ? "ui.stale" : "ui.invalid")}</span>;
   }
@@ -89,6 +91,14 @@ export function DashboardLevelSourceBadge({ live, source, validity }: { live: bo
         : t("wheel.source.demoWheel")}
     </span>
   );
+}
+
+export function NoTelemetryContextLayout({ noTelemetry, status, children }: {
+  noTelemetry: boolean;
+  status: ComponentChildren;
+  children?: ComponentChildren;
+}) {
+  return noTelemetry ? <>{status}{children}</> : <>{children}{status}</>;
 }
 
 export function shouldShowLevelReading(levelSource: "LIVE" | "DEMO", storeRows: number, sourceMessageCode?: string): boolean {
@@ -163,10 +173,12 @@ function stageLabel(stage: DemoStageId): string {
 // booleano `readingStale` solo queda por compatibilidad con renders que ya
 // resolvieron fuera. Así la prueba pasa la marca envejecida sin precalcular
 // el booleano y revierte a falso si el cableado vuelve a `stale: false`.
-export function DashboardStatusNotices({ activeLevel, backendOutage, analyzerNotice, readingStale, live, demoActive, lastUpdateMs, nowMs }: {
+export function DashboardStatusNotices({ activeLevel, backendOutage, analyzerNotice, noTelemetry = false, loading = false, readingStale, live, demoActive, lastUpdateMs, nowMs }: {
   activeLevel: Severity | null;
   backendOutage: boolean;
   analyzerNotice: string | null;
+  noTelemetry?: boolean;
+  loading?: boolean;
   readingStale?: boolean;
   live?: boolean;
   demoActive?: boolean;
@@ -174,7 +186,7 @@ export function DashboardStatusNotices({ activeLevel, backendOutage, analyzerNot
   nowMs?: number;
 }) {
   const hasReadingInput = live !== undefined || demoActive !== undefined || lastUpdateMs !== undefined || nowMs !== undefined;
-  const resolvedStale = hasReadingInput
+  const resolvedStale = !loading && hasReadingInput
     ? resolveReadingStale({
         live: live ?? false,
         demoActive: demoActive ?? false,
@@ -182,11 +194,14 @@ export function DashboardStatusNotices({ activeLevel, backendOutage, analyzerNot
         nowMs: nowMs ?? Date.now(),
       })
     : readingStale === true;
-  const showStale = resolvedStale && !backendOutage;
+  const showStale = resolvedStale && !backendOutage && !noTelemetry;
   return (
     <>
       {backendOutage && <BackendOutageNotice />}
       {analyzerNotice && <div className="og-analyzer-notice" role="alert">{analyzerNotice}</div>}
+      {noTelemetry && !backendOutage && (
+        <div role="status"><Notice kind="info">{t("dash.reading.noTelemetry")}</Notice></div>
+      )}
       {showStale && (
         // Aviso obsoleto en su propia caja ámbar: sin el envoltorio rojo de
         // apagón para no anidar dos bordes ni mezclar carriles (el rojo queda
@@ -203,7 +218,7 @@ export function DashboardStatusNotices({ activeLevel, backendOutage, analyzerNot
       )}
       {activeLevel
         ? <AlertBanner severity={activeLevel}>{t(alertBannerKey(activeLevel))}</AlertBanner>
-        : backendOutage || showStale ? null : <Notice kind="info">{t("wheel.banner.none")}</Notice>}
+        : backendOutage || showStale || noTelemetry ? null : <Notice kind="info">{t("wheel.banner.none")}</Notice>}
     </>
   );
 }
@@ -433,6 +448,11 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
 
   const liveLevel = source === "live" && level ? Number(level.data.level_liters) : null;
   const levelSource = liveLevel !== null && Number.isFinite(liveLevel) && !demoActive ? "LIVE" : "DEMO";
+  const hasLevelReading = level !== null && shouldShowLevelReading(levelSource, storeRows, level.data.source_message?.code);
+  const noTelemetry = live && source === "live" && !demoActive && !hasLevelReading;
+  const hasConfidenceReading = !live || demoActive || (
+    hasLevelReading && typeof backendConfidence === "number" && Number.isFinite(backendConfidence)
+  );
   const pressureKpa = latestSignals?.pressureKpa ?? wheel.pressureKpa;
   const temperatureC = latestSignals?.temperatureC ?? wheel.temperatureC;
   const vibrationG = latestSignals?.vibrationG ?? wheel.vibRms;
@@ -448,7 +468,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
     : live
       ? (level?.data.t_iso ? Date.parse(level.data.t_iso) : null)
       : wheel.lastComm;
-  const readingStale = resolveReadingStale({ live, demoActive, lastUpdateMs, nowMs: Date.now() });
+  const readingStale = source !== "loading" && resolveReadingStale({ live, demoActive, lastUpdateMs, nowMs: Date.now() });
   const validity = sensorsFromBackend
     ? levelValidity({ moving, confidence, stale: readingStale })
     : wheel.validity;
@@ -465,7 +485,8 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   const votes = (["pressure_drop", "level_trend", "vib_impact"] as const)
     .filter((name) => channelStates[name] === "fired").length;
 
-  const sourceBadge = <DashboardLevelSourceBadge live={live} source={source} validity={validity} />;
+  const sourceBadge = <DashboardLevelSourceBadge live={live} source={source} validity={validity} noTelemetry={noTelemetry} />;
+  const dashboardStatusNotices = <DashboardStatusNotices activeLevel={activeLevel} backendOutage={backendOutage} analyzerNotice={analyzerNotice} noTelemetry={noTelemetry} loading={source === "loading"} live={live} demoActive={demoActive} lastUpdateMs={lastUpdateMs} nowMs={Date.now()} />;
   const links = wheelLinks(wheel.id);
   const rawFromBackend = liveSeries && rawRows.length > 0;
   const rawText = rawTelemetryText(
@@ -487,24 +508,24 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
         meta={<SyntheticBadge />}
       />
 
-      <WheelContext
-
-        truckId={wheel.truckId}
-        wheelId={wheel.id}
-        position={wheel.position}
-        regime={regime}
-        sourceBadge={sourceBadge}
-        lastUpdate={demoActive ? `${formatUtcTime(lastUpdateMs)} · DEMO` : formatUtcTime(lastUpdateMs)}
-        wheelOptions={wheelOptions}
-        onSelectWheel={selectWheel}
-      />
-
-      <Notice kind="simulation">
-        {t("dash.intro", { model: t("rul.model.syntheticProxy") })}{" "}
-        {t("dash.honesty")}
-      </Notice>
-
-      <DashboardStatusNotices activeLevel={activeLevel} backendOutage={backendOutage} analyzerNotice={analyzerNotice} live={live} demoActive={demoActive} lastUpdateMs={lastUpdateMs} nowMs={Date.now()} />
+      <NoTelemetryContextLayout noTelemetry={noTelemetry} status={dashboardStatusNotices}>
+        <>
+          <WheelContext
+            truckId={wheel.truckId}
+            wheelId={wheel.id}
+            position={wheel.position}
+            regime={regime}
+            sourceBadge={sourceBadge}
+            lastUpdate={demoActive ? `${formatUtcTime(lastUpdateMs)} · DEMO` : formatUtcTime(lastUpdateMs)}
+            wheelOptions={wheelOptions}
+            onSelectWheel={selectWheel}
+          />
+          <Notice kind="simulation">
+            {t("dash.intro", { model: t("rul.model.syntheticProxy") })}{" "}
+            {t("dash.honesty")}
+          </Notice>
+        </>
+      </NoTelemetryContextLayout>
 
       <TelemetryRow
 
@@ -513,7 +534,9 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
         confidence={confidence}
         validity={validity}
         levelSource={levelSource}
-        hasLevelReading={shouldShowLevelReading(levelSource, storeRows, level?.data.source_message?.code)}
+        hasLevelReading={hasLevelReading}
+        hasConfidenceReading={hasConfidenceReading}
+        noTelemetry={noTelemetry}
         sigmaSource={sigmaSource}
         confidenceSource={confidenceSource}
         pressureKpa={pressureKpa}
@@ -569,10 +592,13 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
               <span className="og-wheel-panel__meta">
                 <NumericEvidence field="sigma" source={sigmaSource} validity={validity}>
                   {t("wheel.numeric.sigma")} ±{formatNumber(sigmaL, 1)} L
-                </NumericEvidence>{" · "}
-                <NumericEvidence field="confidence" source={confidenceSource} validity={validity}>
-                  {t("ui.confidence")} {formatNumber(confidence, 2)} {t("wheel.numeric.unitless")}
                 </NumericEvidence>
+                {hasConfidenceReading && <>
+                  {" · "}
+                  <NumericEvidence field="confidence" source={confidenceSource} validity={validity}>
+                    {t("ui.confidence")} {formatNumber(confidence, 2)} {t("wheel.numeric.unitless")}
+                  </NumericEvidence>
+                </>}
               </span>
             </h3>
             <section aria-label={t("dash.series.levelHistory")} data-dashboard-series="level-history">

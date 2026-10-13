@@ -3,7 +3,7 @@ import "../theme.css";
 import { t } from "../i18n";
 import { type Section } from "../routes";
 import type { DictKey } from "../i18n";
-import { activeRoute, navGroups } from "../nav";
+import { activeRoute, navGroups, publicNavGroups } from "../nav";
 import { BackendStatePill } from "../ui/foundation";
 
 interface Props { section?: Section; title?: string; compact?: boolean; breadcrumb?: DictKey[]; }
@@ -33,7 +33,7 @@ const breadcrumbKeys = breadcrumb ?? [defaultBreadcrumb];
           <span><strong>OILGUARD</strong><small>TELEMETRY CORE</small></span>
         </a>
         <div class="og-sidebar__scroll">
-          {navGroups.map((group) => (
+          {publicNavGroups.map((group) => (
             <section class="og-nav-group">
               <div class="og-label og-nav-group__label">{t(group.label)}</div>
               {group.items.map((item) => (
@@ -57,7 +57,7 @@ const breadcrumbKeys = breadcrumb ?? [defaultBreadcrumb];
         <BackendStatePill client:load />
       </header>
       <nav class="og-mobile-nav" aria-label={t("nav.label")}>
-        {navGroups[0].items.slice(0, 5).map((item) => <a href={item.href}>{t(item.label)}</a>)}
+        {publicNavGroups[0].items.slice(0, 4).map((item) => <a href={item.href}>{t(item.label)}</a>)}
       </nav>
       <main class="og-content"><slot /></main>
     </div>

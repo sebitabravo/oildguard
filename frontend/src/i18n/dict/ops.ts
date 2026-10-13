@@ -211,6 +211,7 @@ export const ops = {
   "dash.backend.outage.detail": "La telemetría en vivo, las alertas y el RUL no están disponibles. No confundas esta vista con una flota sana.",
   "dash.reading.stale.title": "Lectura obsoleta · sin telemetría reciente",
   "dash.reading.stale.detail": "La última actualización en vivo supera los 120 s o no existe. Trata esta lectura como obsoleta.",
+  "dash.reading.noTelemetry": "Sin telemetría disponible para esta rueda.",
   "wheel.telemetry": "Telemetría actual",
   "wheel.card.level": "Nivel estimado de aceite",
   "wheel.card.levelNominal": "{value}% de 95 L nominal",

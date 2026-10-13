@@ -411,6 +411,7 @@ input:focus-visible,
 }
 .og-dock > * { pointer-events: auto; }
 .og-dock--right { justify-content: flex-end; }
+.og-viewport--wheel .og-dock > .og-hud { max-width: min(100%, 980px); padding: 12px; border: 1px solid var(--og-border-subtle); border-radius: var(--og-radius-md); background: color-mix(in srgb, var(--og-surface) 94%, transparent); }
 
 .og-hud__title {
   display: flex;

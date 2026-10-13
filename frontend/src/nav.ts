@@ -55,6 +55,15 @@ export const navGroups: NavGroup[] = [
   },
 ];
 
+const PUBLIC_MENU_EXCLUDED_IDS = new Set<RouteId>(["calibration", "lab-sim"]);
+
+export const publicNavGroups: NavGroup[] = navGroups
+  .map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !PUBLIC_MENU_EXCLUDED_IDS.has(item.id)),
+  }))
+  .filter((group) => group.items.length > 0);
+
 export function activeRoute(pathname: string): RouteId | null {
   if (pathname === "/") return null;
   const item = navGroups.flatMap((group) => group.items).find((entry) => pathname === entry.href || pathname.startsWith(`${entry.href}/`));

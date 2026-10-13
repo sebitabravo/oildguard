@@ -50,6 +50,8 @@ export interface TelemetryRowProps {
   validity: LevelValidity;
   levelSource: "LIVE" | "DEMO";
   hasLevelReading?: boolean;
+  hasConfidenceReading?: boolean;
+  noTelemetry?: boolean;
   sigmaSource: "LIVE" | "DEMO";
   confidenceSource: "LIVE" | "DEMO";
   pressureKpa: number;
@@ -94,7 +96,7 @@ function levelTone(percent: number): "nominal" | "warning" | "critical" {
   return percent < 30 ? "critical" : percent < 50 ? "warning" : "nominal";
 }
 
-export function TelemetryRow({ level, sigma, confidence, validity, levelSource, hasLevelReading, sigmaSource, confidenceSource, pressureKpa, temperatureC, vibrationG, tauS, pressureLive, temperatureLive, vibrationLive }: TelemetryRowProps) {
+export function TelemetryRow({ level, sigma, confidence, validity, levelSource, hasLevelReading, hasConfidenceReading = true, noTelemetry = false, sigmaSource, confidenceSource, pressureKpa, temperatureC, vibrationG, tauS, pressureLive, temperatureLive, vibrationLive }: TelemetryRowProps) {
   const showLevelReading = hasLevelReading ?? validity !== "invalid";
   const percent = (level / 95) * 100;
   return (
@@ -105,17 +107,21 @@ export function TelemetryRow({ level, sigma, confidence, validity, levelSource, 
         unit={showLevelReading ? "L" : undefined}
         status={showLevelReading ? levelTone(percent) : "warning"}
       >
-        <NumericEvidence field="level" source={levelSource} validity={validity}>
-          {showLevelReading
-            ? <>{t("wheel.card.levelNominal", { value: formatNumber(percent, 1) })}{" · "}{t("wheel.numeric.band", { value: formatNumber(sigma, 1) })}</>
-            : t("wheel.numeric.noReading")}
-        </NumericEvidence>
+        {!noTelemetry && (
+          <NumericEvidence field="level" source={levelSource} validity={validity}>
+            {showLevelReading
+              ? <>{t("wheel.card.levelNominal", { value: formatNumber(percent, 1) })}{" · "}{t("wheel.numeric.band", { value: formatNumber(sigma, 1) })}</>
+              : t("wheel.numeric.noReading")}
+          </NumericEvidence>
+        )}
         <NumericEvidence field="sigma" source={sigmaSource} validity={validity}>
           {t("wheel.numeric.sigma")} {formatNumber(sigma, 1)} L
         </NumericEvidence>
-        <NumericEvidence field="confidence" source={confidenceSource} validity={validity}>
-          {t("ui.confidence")} {formatNumber(confidence, 2)} {t("wheel.numeric.unitless")}
-        </NumericEvidence>
+        {hasConfidenceReading && (
+          <NumericEvidence field="confidence" source={confidenceSource} validity={validity}>
+            {t("ui.confidence")} {formatNumber(confidence, 2)} {t("wheel.numeric.unitless")}
+          </NumericEvidence>
+        )}
       </TelemetryCard>
       <TelemetryCard label={t("wheel.card.pressure")} value={formatNumber(pressureKpa, 2)} unit="kPa">
         <p className="og-wheel-card__note">{t("wheel.card.pressureNote")}</p>
