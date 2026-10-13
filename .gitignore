@@ -56,3 +56,13 @@ coverage/
 
 # Rust build output (edge-sim, bench crates)
 **/target/
+
+# AI tooling and planning files: kept on disk, not part of the public repository.
+# Only the Spanish UI rule stays tracked.
+.agents/
+.claude/
+/CLAUDE.md
+/odd/*
+!/odd/tasks/
+/odd/tasks/*
+!/odd/tasks/spanish-only.md
