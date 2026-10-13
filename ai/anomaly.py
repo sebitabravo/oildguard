@@ -35,9 +35,11 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import logging
 import math
 import statistics
-import sys
+
+log = logging.getLogger(__name__)
 
 # Mitad del ruido de reposo del transductor 0-10 kPa (0.01 kPa, ~0.25 L a 95 L): evita la
 # división por cero sin tapar la resolución real. Con 0.10 kPa (~5 L) el piso ahogaría todo.
@@ -235,9 +237,8 @@ def score_rows(
                 feats.append([residual(p, t, base["beta"], base["t_ref"]), v, t])
             clf, if_status = try_iforest(feats[:base["n"]], contamination)
             if clf is None:
-                print(
+                log.warning(
                     f"WARN iforest fallback: {if_status} for {key_name}; scoring with z-score baseline only",
-                    file=sys.stderr,
                 )
         clf_by_key[key] = (clf, if_status)
         iforest_statuses.append(if_status)
