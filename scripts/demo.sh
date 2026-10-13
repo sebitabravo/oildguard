@@ -104,6 +104,7 @@ if [[ ! "${OILGUARD_DEVICE_MASTER_KEY:-}" =~ ^[[:xdigit:]]{64}$ ]]; then
 fi
 export OILGUARD_DEVICE_MASTER_KEY
 
+export OILGUARD_REQUIRE_SIGNATURE=1
 export OILGUARD_INFLUX_WRITE=0
 export OILGUARD_CORS_ORIGINS="http://localhost:5173,http://localhost:5174,http://127.0.0.1:4174,http://localhost:4321,http://127.0.0.1:4321"
 

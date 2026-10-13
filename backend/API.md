@@ -296,7 +296,7 @@ recomputes per second for N tabs.
 
 `bench/stress/run_matrix.py`, 1000 devices x 10 Hz, 60 s, on a shared machine:
 
-| Case | Before (Claude, R2b) | After |
+| Case | Before (prior benchmark, R2b) | After |
 |---|---|---|
 | 1,000 devices, Influx ON | 3,142 rows/s, 31,098 drops, p50 4.1 s / p99 15.3 s | 4,213 rows/s, 29,446 drops, p50 0.94 s / p99 15.6 s |
 | 1,000 devices, Influx OFF | 9,005 rows/s, 3,726 drops | 5,189–9,968 rows/s, 0–24,132 drops |
@@ -582,7 +582,7 @@ correctness one, and the decision belongs to the maintainers. Setting the
 | `OILGUARD_FLEET_TICK_SECONDS` | `1` | WebSocket tick period |
 | `OILGUARD_DEVICE_KEYS` | _(empty)_ | explicit `device_id:hex_key` entries |
 | `OILGUARD_DEVICE_MASTER_KEY` | _(empty)_ | hex master key for derived device keys |
-| `OILGUARD_REQUIRE_SIGNATURE` | `0` | `1` rejects unsigned rows |
+| `OILGUARD_REQUIRE_SIGNATURE` | `1` | `1` rejects unsigned rows |
 
 With `OILGUARD_INFLUX_WRITE=0` the backend never opens an InfluxDB client and
 reports `disabled (OILGUARD_INFLUX_WRITE=0); rows kept in memory`. It reuses
@@ -742,7 +742,7 @@ bridge.
 
 Configure keys by device ID using `OILGUARD_DEVICE_KEYS` with comma-separated
 `device_id:hex_key` entries. `OILGUARD_REQUIRE_SIGNATURE=1` rejects unsigned
-rows; its default is `0`, which accepts unsigned demo rows. A present but
+rows; its default is `1`, so unsigned rows are rejected. A present but
 invalid signature is always rejected. A successful or partially rejected
 batch returns HTTP 200 and includes `rejected` plus `rejected_reasons` counts.
 When enforcement is enabled and every row is rejected, the backend returns

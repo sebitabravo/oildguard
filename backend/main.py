@@ -133,7 +133,7 @@ _DEVICE_MASTER_KEY = parse_master_key(os.getenv("OILGUARD_DEVICE_MASTER_KEY", ""
 # que una llave de una instalacion jamas se sirve para otra.
 _DEVICE_KEY_CACHE: dict[bytes, dict[str, bytes]] = {}
 DEVICE_KEY_CACHE_LIMIT = 100_000
-_REQUIRE_SIGNATURE = os.getenv("OILGUARD_REQUIRE_SIGNATURE", "0") == "1"
+_REQUIRE_SIGNATURE = os.getenv("OILGUARD_REQUIRE_SIGNATURE", "1") == "1"
 
 CAPACITY_L = 95.0  # GDY106 nominal, SAE 85W-140 (physics anchor)
 
