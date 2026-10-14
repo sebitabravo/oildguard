@@ -30,7 +30,7 @@ def _get_json(url: str, timeout: float = 2.0) -> dict[str, Any] | None:
     try:
         with urllib.request.urlopen(url, timeout=timeout) as resp:
             return json.loads(resp.read().decode("utf-8"))
-    except Exception:
+    except Exception:  # noqa: BLE001 - una sonda fallida deja la métrica no disponible
         return None
 
 
@@ -51,7 +51,7 @@ def _docker_stats(container: str) -> dict[str, Any] | None:
             check=True,
         ).stdout.strip()
         data = json.loads(out)
-    except Exception:
+    except Exception:  # noqa: BLE001 - Docker Stats es opcional para el resumen
         return None
     return {"cpu_pct": _pct(data.get("CPUPerc")), "mem": data.get("MemUsage")}
 

@@ -66,7 +66,8 @@ def welford_variance(values) -> float:
 
 
 def two_pass_variance(values) -> float:
-    # Sumas secuenciales de izquierda a derecha, igual que Rust: sin fsum, para que ambos lenguajes midan el mismo algoritmo.
+    # Sumas secuenciales de izquierda a derecha, igual que Rust: sin fsum, para que ambos lenguajes midan el mismo
+    # algoritmo.
     if not values:
         return 0.0
     total = 0.0
@@ -98,7 +99,6 @@ def _pairwise_sum(values) -> float:
 
 
 def _float_metrics(value: float, exact: Decimal, exact_mean: Decimal, *, include_mean_ulp: bool = True) -> dict:
-    exact_float = float(exact)
     absolute = abs(Decimal.from_float(value) - exact)
     relative = absolute / abs(exact) if exact else Decimal(0)
     result = {
@@ -155,7 +155,10 @@ def run_benchmark(n: int) -> dict:
         ("welford", lambda: welford_variance(floats)),
     ):
         value, seconds = _timed(fn)
-        variance_methods[label] = {**_float_metrics(value, exact_variance, exact_mean, include_mean_ulp=False), "seconds_median_5": seconds}
+        variance_methods[label] = {
+            **_float_metrics(value, exact_variance, exact_mean, include_mean_ulp=False),
+            "seconds_median_5": seconds,
+        }
 
     def integrate_float():
         total = 0.0
@@ -168,7 +171,12 @@ def run_benchmark(n: int) -> dict:
         return total
 
     integral, integral_seconds = _timed(integrate_float)
-    decimal_value, decimal_seconds = _timed(lambda: sum((Decimal.from_float(value / 10000) for value in levels), Decimal(0)) / Decimal(n))
+    decimal_value, decimal_seconds = _timed(
+        lambda: sum(
+            (Decimal.from_float(value / 10000) for value in levels),
+            Decimal(0),
+        ) / Decimal(n)
+    )
     # La conversión desde binario conserva el efecto del redondeo de contexto de Decimal.
     decimal_integral, decimal_integral_seconds = _timed(
         lambda: _decimal_integral(levels)
@@ -187,10 +195,21 @@ def run_benchmark(n: int) -> dict:
         "mean_methods": sums,
         "variance_methods": variance_methods,
         "leak_integral": {
-            "naive_float": {**_float_metrics(integral, exact_integral, exact_mean, include_mean_ulp=False), "seconds_median_5": integral_seconds},
-            "decimal_default_context": {"value": str(decimal_integral), "absolute_error": str(abs(decimal_integral - exact_integral)), "seconds_median_5": decimal_integral_seconds},
+            "naive_float": {
+                **_float_metrics(integral, exact_integral, exact_mean, include_mean_ulp=False),
+                "seconds_median_5": integral_seconds,
+            },
+            "decimal_default_context": {
+                "value": str(decimal_integral),
+                "absolute_error": str(abs(decimal_integral - exact_integral)),
+                "seconds_median_5": decimal_integral_seconds,
+            },
         },
-        "decimal_mean_default_context": {"value": str(decimal_value), "absolute_error": str(abs(decimal_value - exact_mean)), "seconds_median_5": decimal_seconds},
+        "decimal_mean_default_context": {
+            "value": str(decimal_value),
+            "absolute_error": str(abs(decimal_value - exact_mean)),
+            "seconds_median_5": decimal_seconds,
+        },
     }
 
 
@@ -215,7 +234,13 @@ def main() -> None:
     report = run_benchmark(args.n)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2) + "\n")
-    print(f"python n={args.n} mean_naive={report['mean_methods']['naive']['value']} mean_exact={report['exact']['level_mean_l']} integral_float={report['leak_integral']['naive_float']['value']} integral_exact={report['exact']['leak_integral_l']}")
+    print(
+        f"python n={args.n} "
+        f"mean_naive={report['mean_methods']['naive']['value']} "
+        f"mean_exact={report['exact']['level_mean_l']} "
+        f"integral_float={report['leak_integral']['naive_float']['value']} "
+        f"integral_exact={report['exact']['leak_integral_l']}"
+    )
 
 
 if __name__ == "__main__":
