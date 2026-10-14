@@ -1,0 +1,8 @@
+topic write oilguard/signals/#
+
+user backend
+topic read oilguard/signals/#
+topic write oilguard/signals/#
+
+user feeder
+topic write oilguard/signals/#
