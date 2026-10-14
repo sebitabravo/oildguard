@@ -4,7 +4,18 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   integrations: [preact()],
-  vite: { plugins: [tailwindcss()] },
+  vite: {
+    plugins: [tailwindcss()],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes("/node_modules/three/")) return "three-vendor";
+          },
+        },
+      },
+    },
+  },
   devToolbar: { enabled: false },
   server: {
     host: "0.0.0.0",

@@ -19,7 +19,7 @@ import {
   createHaulCyclePlayer,
   haulOilVisual,
   type HaulPlayDirection,
-} from "./scenes/haulCycle";
+} from "./haulCycleData";
 import SensorDetails from "./SensorDetails";
 import PressurePlot from "./PressurePlot";
 import assemblyPoster from "./posters/assembly.svg";

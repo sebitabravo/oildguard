@@ -57,13 +57,10 @@ export function resolveSceneState(view: SceneVisibility): { readonly state: Scen
 
 export type SceneModuleImporter = () => Promise<unknown>;
 
-// Importador por escena: el corte del conjunto (B04), los sensores (B05),
-// el ciclo de acarreo (B06) y el aceite en corte (B07) ya existen como
-// chunks diferidos.
+// Solo las escenas 3D cargan chunks; sensores y ciclo son UI/modelos del póster.
 export function sceneImporterFor(scene: LandingSceneId): SceneModuleImporter {
   if (scene === "assembly") return () => import("./scenes/assembly");
-  if (scene === "sensors") return () => import("./scenes/sensors");
-  if (scene === "cycle") return () => import("./scenes/haulCycle");
+  if (scene === "sensors" || scene === "cycle") return () => Promise.resolve();
   if (scene === "oil") return () => import("./scenes/oil");
   return () => Promise.reject(new Error(`Landing 3D chunk pending: ${scene}`));
 }

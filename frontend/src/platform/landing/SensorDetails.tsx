@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import { t } from "../../i18n";
-import { LANDING_SENSORS, sensorById, type LandingSensorId } from "./scenes/sensors";
+import { LANDING_SENSORS, sensorById, type LandingSensorId } from "./sensorsData";
 
 // Una sola tarjeta por selector: evita la cuadrícula perezosa de cuatro
 // tarjetas y conserva la identidad de punto de servicio trazada a B01.

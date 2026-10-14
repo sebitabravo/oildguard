@@ -91,8 +91,7 @@ export function FleetBackendOutageNotice({ backendState }: { backendState: Fleet
   return backendState === "unavailable" ? <BackendOutageNotice /> : null;
 }
 
-// Cada campo muestra su procedencia junto al valor para que ningún dato DEMO
-// se lea como vivo en una fila LIVE; el sigma sintético lleva su propio rótulo.
+// Cada campo conserva su procedencia; una sola marca visible resume los campos DEMO.
 export function FleetFieldSource({ source, liveConnected = true, visuallyHidden = false }: { source: FleetSource | "MIXED" | "CONFIGURATION"; liveConnected?: boolean; visuallyHidden?: boolean }) {
   if (source === "LIVE" && !liveConnected) return null;
   return (
@@ -118,9 +117,10 @@ export function FleetHeaderMeta({ liveLoaded, deviceCount, liveConnected = true 
 export function FleetWheelRow({ row, now, liveConnected = true }: { row: FleetRow; now: number; liveConnected?: boolean }) {
   const rowState = classifyRowState(row.wheel, row.lastComm, row.liveDevice);
   const values = row.wheel.history["250h"].flatMap((point) => point.liters === null ? [] : [point.liters]);
+  const hasDemoFields = Object.values(row.fieldSources).some((source) => source === "DEMO");
   return (
     <tr className={rowClass(row)} tabIndex={0} onClick={() => { window.location.href = buildWheelDetailHref(row.id); }} onKeyDown={(event) => { if (event.key === "Enter") window.location.href = buildWheelDetailHref(row.id); }}>
-      <td className="og-fleet-wheel-cell"><strong>{row.truckId} · {row.wheel.position}</strong><a href={buildWheelDetailHref(row.id)} className="og-mono">{row.id}</a><FleetFieldSource source="DEMO" liveConnected={liveConnected} visuallyHidden /></td>
+      <td className="og-fleet-wheel-cell"><strong>{row.truckId} · {row.wheel.position}</strong><a href={buildWheelDetailHref(row.id)} className="og-mono">{row.id}</a>{hasDemoFields && <FleetFieldSource source="DEMO" liveConnected={liveConnected} />}{hasDemoFields && <FleetFieldSource source="DEMO" liveConnected={liveConnected} visuallyHidden />}</td>
       <td className="og-fleet-level-cell"><div className="og-fleet-level"><LevelBar value={row.levelL} sigma={row.wheel.sigmaL} /><div className="og-fleet-level__value og-mono"><span>{formatNumber(row.levelL / 95 * 100, 1)}%</span><span>(~{formatNumber(row.levelL, 1)} <FleetFieldSource source={row.fieldSources.level} liveConnected={liveConnected} visuallyHidden={row.fieldSources.level !== "LIVE"} />)</span><span>± {formatNumber(row.wheel.sigmaL, 1)} L <FleetFieldSource source={row.fieldSources.sigma} liveConnected={liveConnected} visuallyHidden /></span></div><b className="og-fleet-level__state">{stateLabel(rowState)}</b></div></td>
       <td><div className="og-fleet-level__sparkline"><Sparkline values={values} label={t("fleet.sparkline")} /> <FleetFieldSource source={row.fieldSources.trend} liveConnected={liveConnected} visuallyHidden /></div></td>
       <td className="og-mono">{formatNumber(row.wheel.lossRateLPer100h, 2)} L/100 h <FleetFieldSource source={row.fieldSources.lossRate} liveConnected={liveConnected} visuallyHidden /></td>

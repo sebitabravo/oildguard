@@ -15,7 +15,7 @@ import {
   oilGateLabelKey,
   oilMassPressureKpa,
   oilPoint,
-} from "./scenes/oil";
+} from "./oilData";
 
 // Gráfica de sensibilidad presión/volumen (B07): curvas a tres temperaturas
 // calculadas con la física importada; cada cifra visible sale de oil.ts y
