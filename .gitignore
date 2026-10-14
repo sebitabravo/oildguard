@@ -70,5 +70,4 @@ coverage/
 # AI tooling config (impeccable): local only.
 .impeccable/
 frontend/public/models/*.glb
-/frontend/src/demo/demo-data.json
 .coverage
