@@ -10,7 +10,6 @@ def _main():
     return _main_module
 
 def parse_master_key(spec: str) -> bytes | None:
-    main = _main()
     """Llave maestra en hex; None si no se configuro. Nunca incluye el valor en el error."""
     spec = spec.strip()
     if not spec:

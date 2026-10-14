@@ -163,7 +163,7 @@ def fsm_agreement(rows: list[dict], windows: list[dict]) -> tuple[float, float]:
     rest_by_seq: dict[int, bool] = {}
     for w in windows:
         is_rest = w["state"] == "rest"
-        lo = float(w["start_t_s"]);
+        lo = float(w["start_t_s"])
         hi = float(w["end_t_s"])
         for r in rows:
             t = float(r.get("t_s", -1.0))

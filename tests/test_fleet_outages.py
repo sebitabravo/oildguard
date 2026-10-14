@@ -124,10 +124,14 @@ def test_closed_runs_are_bounded_per_device():
     spec: list[tuple[int, int, str]] = []
     seq = 1
     for index in range(10):
-        spec.append((seq, 0, f"s{seq}")); seq += 1
-        spec.append((seq, 1, f"s{seq}")); seq += 1
-        spec.append((seq, 1, f"s{seq}")); seq += 1
-        spec.append((seq, 0, f"s{seq}")); seq += 1
+        spec.append((seq, 0, f"s{seq}"))
+        seq += 1
+        spec.append((seq, 1, f"s{seq}"))
+        seq += 1
+        spec.append((seq, 1, f"s{seq}"))
+        seq += 1
+        spec.append((seq, 0, f"s{seq}"))
+        seq += 1
 
     _feed(tracker, _rows(spec))
     runs = tracker.runs("d1")

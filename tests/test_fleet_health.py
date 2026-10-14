@@ -166,7 +166,7 @@ def test_health_reprobes_after_the_ttl_expires(client, monkeypatch):
 
 def test_cache_is_invalidated_when_the_influx_configuration_changes(client, monkeypatch, manual_probes):
     monkeypatch.setattr(backend_main, "_count_influx_points", lambda: 5)
-    first = client.get("/health").json()
+    client.get("/health").json()
     manual_probes.run_all()
     assert client.get("/health").json()["influx_points"] == 5
 

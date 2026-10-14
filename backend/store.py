@@ -321,10 +321,7 @@ class TelemetryStore:
         """Retención y contadores por dispositivo para ``GET /fleet/devices``."""
         with self.lock:
             stats: dict[str, dict[str, Any]] = {}
-            # Un equipo cuyas filas se rechazan todas nunca entra al almacen;
-            # sin unionarlo aqui desapareceria del reporte de flota, que es
-            # justo el equipo que mas falta por ver.
-            for device in set(self._rows) | set(self._rejected):
+            for device in self._rows:
                 bucket = self._rows.get(device, ())
                 rejected = self._rejected.get(device, Counter())
                 latest_row = self.latest(device) if bucket else None
@@ -352,6 +349,18 @@ class TelemetryStore:
                     "latest": latest_signals(latest_row) if latest_row else None,
                 }
             return stats
+
+    def rejected_only_stats(self) -> dict[str, dict[str, Any]]:
+        """Contadores de rechazo para equipos sin filas aceptadas."""
+        with self.lock:
+            return {
+                device: {
+                    "rows_rejected": sum(reasons.values()),
+                    "rejected_reasons": dict(reasons),
+                }
+                for device, reasons in self._rejected.items()
+                if device not in self._rows
+            }
 
 
     def reverse(self, device_id: str) -> None:

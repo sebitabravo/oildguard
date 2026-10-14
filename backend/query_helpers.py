@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 
-from fastapi import HTTPException, Query
+from fastapi import Query
 
 try:
     from . import main as _main_module
@@ -15,7 +15,6 @@ def _main():
     return _main_module
 
 def _load_t10_evaluator() -> tuple[Any | None, str | None]:
-    main = _main()
     try:
         from ai.ladder import evaluate as evaluate_ladder  # type: ignore
     except Exception as exc:  # noqa: BLE001 - health informa si falta el analizador
@@ -30,7 +29,6 @@ def _analysis_status() -> dict[str, Any]:
 
 
 def _samples_from_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    main = _main()
     """Prepara muestras con la misma marca de reposo usada por el análisis T10."""
     samples = []
     for row in rows:
@@ -44,7 +42,6 @@ def _samples_from_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _downsample_evenly(points: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
-    main = _main()
     if len(points) <= limit:
         return points
     if limit == 1:
@@ -58,7 +55,6 @@ def _unevaluated_reason(
     analysis_available: bool,
     evaluated: bool,
 ) -> str | None:
-    main = _main()
     if evaluated:
         return None
     if not analysis_available:
@@ -73,7 +69,6 @@ def _unevaluated_reason(
 
 
 def _compose_rul_suppression_note(reason: str) -> str:
-    main = _main()
     detail = reason.strip()
     marker = "anomaly-only"
     if detail.lower().endswith(marker):

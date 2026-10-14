@@ -223,8 +223,6 @@ def test_websocket_tick_agrees_with_the_exact_endpoint():
     Este es el contrato que importa: la ruta incremental sustituye a la
     exacta solo si el cliente ve los mismos numeros.
     """
-    from starlette.testclient import TestClient
-
     import backend.main as backend_main
 
     with backend_main._store_lock:

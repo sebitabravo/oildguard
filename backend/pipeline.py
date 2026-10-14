@@ -74,7 +74,6 @@ class IngestPipeline:
         except queue.Full:
             with self._lock:
                 self._dropped += 1
-                dropped = self._dropped
             allowed, total = self._drop_limiter.should_log()
             if allowed:
                 log.warning(

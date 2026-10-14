@@ -188,7 +188,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(json.dumps({k: v for k, v in result.items() if k != "profile"}))
     else:
-        label = f"{result['devices']} devices x {result['rows_per_batch_per_device']}" if "rows_per_batch_per_device" in result else f"{result['devices']} devices x {args.per_device}"
+        label = (
+            f"{result['devices']} devices x {result['rows_per_batch_per_device']}"
+            if "rows_per_batch_per_device" in result
+            else f"{result['devices']} devices x {args.per_device}"
+        )
         print(
             f"{label:28s} {'signed' if result['signed'] else 'unsigned':8s} "
             f"rows={result['rows']:>8d} "

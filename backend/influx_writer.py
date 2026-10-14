@@ -42,6 +42,8 @@ def _escape_tag(value: str) -> str:
     ``replace`` por fila son millones de llamadas: se comprueba primero si hay
     algo que escapar.
     """
+    if "\n" in value or "\r" in value:
+        raise ValueError("tag value must not contain a line break")
     if _ESCAPE_CHARS.isdisjoint(value):
         return value
     return value.replace("\\", "\\\\").replace(",", "\\,").replace(" ", "\\ ").replace("=", "\\=")
@@ -209,7 +211,6 @@ class InfluxWriter:
             with self._lock:
                 self._dropped_batches += 1
                 self._dropped_points += len(rows)
-                dropped = self._dropped_batches
             allowed, total = self._drop_limiter.should_log()
             if allowed:
                 log.warning(

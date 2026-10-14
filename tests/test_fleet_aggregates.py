@@ -14,8 +14,6 @@ from backend import main as backend_main
 from backend.aggregates import (
     DEFAULT_METRICS,
     QUANTILE_INTERPOLATION,
-    aggregate_by_device,
-    aggregate_fleet,
     build_frame,
     parse_metrics,
 )
@@ -254,8 +252,13 @@ def test_fleet_devices_reports_verified_ratio_and_rejections(client, monkeypatch
     assert by_id["wheel-A"]["verified_ratio"] == pytest.approx(0.5)
     assert by_id["wheel-A"]["rejected_reasons"] == {"bad_signature": 1}
     assert by_id["wheel-A"]["rows_rejected"] == 1
-    assert by_id["wheel-B"]["verified_ratio"] == 0.0
-    assert by_id["wheel-B"]["rejected_reasons"] == {"unsigned": 1}
+    assert "wheel-B" not in by_id
+    assert client.get("/fleet/devices").json()["rejected_by_device"] == {
+        "wheel-B": {
+            "rows_rejected": 1,
+            "rejected_reasons": {"unsigned": 1},
+        }
+    }
     assert "wheel-A" not in str(by_id["wheel-A"]["rejected_reasons"])
 
 

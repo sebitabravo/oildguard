@@ -43,7 +43,7 @@ def test_rolling_fleet_serializes_observe_snapshot_and_eviction(monkeypatch) -> 
         try:
             for _ in range(64):
                 rolling.snapshot(1_000_000)
-        except BaseException as error:
+        except BaseException as error:  # noqa: BLE001
             thread_errors.append(error)
 
     def observe_rows() -> None:
@@ -51,7 +51,7 @@ def test_rolling_fleet_serializes_observe_snapshot_and_eviction(monkeypatch) -> 
         try:
             for index in range(64):
                 rolling.observe("existing", index + 2, (3.0,))
-        except BaseException as error:
+        except BaseException as error:  # noqa: BLE001
             thread_errors.append(error)
         finally:
             observer_finished.set()

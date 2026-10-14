@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from fastapi import HTTPException, Query
+from fastapi import Query
 
 try:
     from . import main as _main_module
@@ -104,6 +104,7 @@ def fleet_devices(
     """
     with main._store_lock:
         stats = main._STORE.device_stats()
+        rejected_by_device = main._STORE.rejected_only_stats()
     devices = [stats[device] for device in sorted(stats)]
     total_rows = sum(device["rows_retained"] for device in devices)
     within_budget = total_rows <= main.ALERT_LEVEL_ROW_BUDGET
@@ -131,6 +132,7 @@ def fleet_devices(
         "count": len(devices),
         "retention_rows": main.RETENTION_ROWS,
         "devices": devices,
+        "rejected_by_device": rejected_by_device,
         "alert_level": {
             "evaluated": bool(evaluate and devices),
             "mode": alert_level,

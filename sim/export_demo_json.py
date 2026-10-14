@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import argparse
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -61,7 +62,9 @@ def _seeded(seed: int):
 def _duty_cycle_temperature(index: int, count: int, offset: float, noise: float) -> float:
     cycles = max(2, math.floor(count / 7 + 0.5))
     phase = ((index / count) * cycles) % 1
-    warm = lambda elapsed: 64 + 15 * (1 - math.exp(-elapsed / 0.18))
+    def warm(elapsed: float) -> float:
+        return 64 + 15 * (1 - math.exp(-elapsed / 0.18))
+
     value = warm(phase) if phase < 0.6 else 64 + (warm(0.6) - 64) * math.exp(-(phase - 0.6) / 0.22)
     return _round_js(value + offset + (noise - 0.5) * 2.4)
 
@@ -79,11 +82,16 @@ def _history_for(random, level: float, loss_rate: float, wheel_temperature: floa
             refill = index == math.floor(count * 0.62)
             noisy_level = baseline + (2.4 if refill else 0) + (random() - 0.5) * 0.28
             is_gap = index in (math.floor(count * 0.28), math.floor(count * 0.76))
+            temperature = (
+                None
+                if is_gap
+                else _duty_cycle_temperature(index, count, temperature_offset, temperature_noise())
+            )
             point: dict[str, Any] = {
                 "at": DEMO_REFERENCE_MS - ((count - 1 - index) * (window_hours / (count - 1)) * 60 * 60 * 1000),
                 "liters": None if is_gap else _round_js(max(0, min(97, noisy_level))),
                 "sigma": _round_js(0.35 + random() * 0.35),
-                "temperatureC": None if is_gap else _duty_cycle_temperature(index, count, temperature_offset, temperature_noise()),
+                "temperatureC": temperature,
             }
             if refill:
                 point["event"] = "refill"
@@ -112,7 +120,11 @@ def _demo_dataset() -> dict[str, Any]:
             loss_rate = _round_js(1.2 + random() * 2 if alert_level else random() * 0.3, 2)
             temperature = _round_js(48 + random() * 25)
             wheel_id = f"wheel-{position}-{truck_index + 1:02d}"
-            last_comm = DEMO_REFERENCE_MS - 180_000 if state == "stale" else None if state == "link-down" else DEMO_REFERENCE_MS - 8_000
+            last_comm = (
+                DEMO_REFERENCE_MS - 180_000
+                if state == "stale"
+                else None if state == "link-down" else DEMO_REFERENCE_MS - 8_000
+            )
             wheel = {
                 "id": wheel_id,
                 "truckId": truck_id,
@@ -125,7 +137,11 @@ def _demo_dataset() -> dict[str, Any]:
                 "temperatureC": temperature,
                 "vibRms": _round_js(0.18 + random() * 0.5, 2),
                 "regime": "rest" if wheel_index == 0 else "movement",
-                "validity": "stale" if state == "stale" else "estimate" if state == "link-down" else "invalid" if is_980 else "valid",
+                "validity": (
+                    "stale"
+                    if state == "stale"
+                    else "estimate" if state == "link-down" else "invalid" if is_980 else "valid"
+                ),
                 "state": state,
                 "alertLevel": alert_level,
                 "lossRateLPer100h": loss_rate,
@@ -180,8 +196,16 @@ def _demo_dataset() -> dict[str, Any]:
 
 def _physics() -> dict[str, Any]:
     constants = {
-        "defaultGearCase": {"rOut": DEFAULT_GEAR_CASE.r_out, "rIn": DEFAULT_GEAR_CASE.r_in, "length": DEFAULT_GEAR_CASE.length},
-        "researchRotatingCavity": {"rOut": RESEARCH_ROTATING_CAVITY.r_out, "rIn": RESEARCH_ROTATING_CAVITY.r_in, "length": RESEARCH_ROTATING_CAVITY.length},
+        "defaultGearCase": {
+            "rOut": DEFAULT_GEAR_CASE.r_out,
+            "rIn": DEFAULT_GEAR_CASE.r_in,
+            "length": DEFAULT_GEAR_CASE.length,
+        },
+        "researchRotatingCavity": {
+            "rOut": RESEARCH_ROTATING_CAVITY.r_out,
+            "rIn": RESEARCH_ROTATING_CAVITY.r_in,
+            "length": RESEARCH_ROTATING_CAVITY.length,
+        },
         "rhoRef": RHO_REF,
         "rhoTRefC": RHO_T_REF_C,
         "betaRhoPerC": BETA_RHO_PER_C,
@@ -197,8 +221,18 @@ def _physics() -> dict[str, Any]:
         "rotatingSamplesMax": ROTATING_SAMPLES_MAX,
         "headToleranceM": EFFECTIVE_HEAD_TOL_M,
         "gdy106Train": {
-            "hs": {"zs": GDY106_TRAIN.hs.zs, "zp": GDY106_TRAIN.hs.zp, "zr": GDY106_TRAIN.hs.zr, "planets": GDY106_TRAIN.hs.planets},
-            "ls": {"zs": GDY106_TRAIN.ls.zs, "zp": GDY106_TRAIN.ls.zp, "zr": GDY106_TRAIN.ls.zr, "planets": GDY106_TRAIN.ls.planets},
+            "hs": {
+                "zs": GDY106_TRAIN.hs.zs,
+                "zp": GDY106_TRAIN.hs.zp,
+                "zr": GDY106_TRAIN.hs.zr,
+                "planets": GDY106_TRAIN.hs.planets,
+            },
+            "ls": {
+                "zs": GDY106_TRAIN.ls.zs,
+                "zp": GDY106_TRAIN.ls.zp,
+                "zr": GDY106_TRAIN.ls.zr,
+                "planets": GDY106_TRAIN.ls.planets,
+            },
         },
         "gearRatio": GEAR_RATIO,
     }
@@ -254,4 +288,9 @@ def export_demo_json(output_path: str | Path = DEFAULT_OUTPUT) -> Path:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Export deterministic OilGuard demo data.")
+    parser.add_argument("--copy-to", type=Path, help="Write an additional copy to this path.")
+    args = parser.parse_args()
     export_demo_json()
+    if args.copy_to is not None:
+        export_demo_json(args.copy_to)

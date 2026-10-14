@@ -20,25 +20,19 @@ OpenAPI docs are served at /docs and /openapi.json.
 
 from __future__ import annotations
 
-import asyncio
-import json
 import logging
 import os
-import sys
-import threading
 import time
 from collections import Counter
-from datetime import datetime, timezone
-from typing import Any, Literal
+from datetime import datetime as datetime, timezone as timezone
+from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Query
+from fastapi import HTTPException as HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
-from starlette.concurrency import run_in_threadpool
 
 from shared.messages import message
-from shared.signing import derive_device_key, parse_device_keys, verify_row
+from shared.signing import derive_device_key as derive_device_key, parse_device_keys, verify_row as verify_row
 
 # Los modulos hermanos se importan UNO POR UNO con su propio try/except.
 # En un solo try grande, que falte un simbolo en cualquiera de ellos cambia
@@ -327,7 +321,6 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
         _verified_total += sum(1 for row in accepted if row.get("sig_verified"))
         # Un solo recorrido de las filas aceptadas alimenta los agregados
         # incrementales; el corte de ventana es por reloj de cada dispositivo.
-        ts_of = _TISO.epoch
         rolling = _FLEET_ROLLING
         outages_tracker = _OUTAGES
         for row in accepted:

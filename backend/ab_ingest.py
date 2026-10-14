@@ -41,6 +41,11 @@ def check_clean_worktree(cwd: str = ".") -> None:
 
 
 def checkout(rev: str) -> None:
+    check_clean_worktree()
+    _checkout_transaction(rev)
+
+
+def _checkout_transaction(rev: str) -> None:
     subprocess.run(["git", "checkout", "-q", rev, "--", *FILES], check=True)
 
 
@@ -56,12 +61,12 @@ def main(rounds: int = 3) -> int:
     try:
         for _ in range(rounds):
             for label, args in CONFIGS:
-                checkout(BASE)
+                _checkout_transaction(BASE)
                 results.setdefault(label, {"base": [], "head": []})["base"].append(measure(args))
-                checkout("HEAD")
+                _checkout_transaction("HEAD")
                 results.setdefault(label, {"base": [], "head": []})["head"].append(measure(args))
     finally:
-        checkout("HEAD")
+        _checkout_transaction("HEAD")
 
     print(f"{'config':22s} {'baseline':>12s} {'HEAD':>12s} {'delta':>9s}")
     for label, _ in CONFIGS:
