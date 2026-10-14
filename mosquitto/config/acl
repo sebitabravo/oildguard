@@ -1,6 +1,12 @@
+# Bloque anonimo: solo escritura. El simulador de borde y el healthcheck del
+# broker publican sin credenciales, pero no pueden suscribirse ni leer nada.
 topic write oilguard/signals/#
 
+# El backend se suscribe a oilguard/signals y a oilguard/signals/+. El comodin
+# '#' no cubre el topic sin sufijo, asi que los dos van declarados por separado.
 user backend
+topic read oilguard/signals
+topic read oilguard/signals/+
 topic read oilguard/signals/#
 topic write oilguard/signals/#
 

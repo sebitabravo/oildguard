@@ -89,7 +89,16 @@ def test_mosquitto_acl_is_limited_to_signal_topics():
     assert "allow_anonymous false" in config
     assert config.count("acl_file /mosquitto/config/acl") == 2
     assert "topic write oilguard/signals/#" in acl
-    assert "user backend\ntopic read oilguard/signals/#\ntopic write oilguard/signals/#" in acl
+    # El backend se suscribe a oilguard/signals y a oilguard/signals/+, y el
+    # comodin '#' no cubre el topic sin sufijo: sin esta linea el SUBSCRIBE
+    # del topic base le quedaba denegado.
+    assert (
+        "user backend\n"
+        "topic read oilguard/signals\n"
+        "topic read oilguard/signals/+\n"
+        "topic read oilguard/signals/#\n"
+        "topic write oilguard/signals/#" in acl
+    )
     assert "user feeder\ntopic write oilguard/signals/#" in acl
 
 

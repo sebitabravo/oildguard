@@ -80,6 +80,38 @@ def configure_mqtt_tls(client: Any) -> None:
         client.tls_set_context(context)
 
 
+def build_mqtt_client(mqtt: Any) -> Any:
+    """Cliente paho que vale para 1.x y 2.x.
+
+    En 2.x la firma de los callbacks se eligio en el constructor; fijamos
+    VERSION1 para que los callbacks de cuatro argumentos de este modulo sigan
+    siendo validos. En 1.x no existe ese enum y el constructor va sin argumentos.
+    """
+    api_version = getattr(mqtt, "CallbackAPIVersion", None)
+    if api_version is not None:
+        return mqtt.Client(api_version.VERSION1)
+    return mqtt.Client()
+
+
+def apply_mqtt_credentials(client: Any) -> None:
+    """Aplica MQTT_USERNAME/MQTT_PASSWORD; sin usuario la conexion queda anonima.
+
+    Un usuario sin contrasena se avisa pero NO se degrada a anonimo: caer en
+    silencio reproduciria justo el fallo que esto arregla (el broker acepta la
+    conexion y despues deniega el SUBSCRIBE sin avisar).
+    """
+    username = os.getenv("MQTT_USERNAME", "").strip()
+    password = os.getenv("MQTT_PASSWORD", "")
+    if not username:
+        return
+    if not password:
+        log.warning(
+            "MQTT_USERNAME is set but MQTT_PASSWORD is empty; authenticating as %r anyway",
+            username,
+        )
+    client.username_pw_set(username, password)
+
+
 def bridge_timing_enabled() -> bool:
     """Instrumentacion del camino del puente (detras de bandera, cero coste si no)."""
     return os.getenv("OILGUARD_BRIDGE_TIMING", "0") == "1"
@@ -222,8 +254,9 @@ def run_forever(
             return forward_fn(rows)
         return post_to_backend(rows)
 
-    client = mqtt.Client()
+    client = build_mqtt_client(mqtt)
     configure_mqtt_tls(client)
+    apply_mqtt_credentials(client)
 
     def on_connect(_c: Any, _u: Any, _f: Any, rc: int) -> None:
         topics = subscription_topics(topic)
@@ -290,8 +323,9 @@ def publish_csv(path: str, host: str, port: int, topic: str, limit: int = 0) -> 
             rows.append(parse_csv_row(row))
             if limit and len(rows) >= limit:
                 break
-    client = mqtt.Client()
+    client = build_mqtt_client(mqtt)
     configure_mqtt_tls(client)
+    apply_mqtt_credentials(client)
     client.connect(host, port, keepalive=30)
     payload = json.dumps({"rows": rows})
     info = client.publish(topic, payload)

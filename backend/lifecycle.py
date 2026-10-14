@@ -14,16 +14,46 @@ def _main():
 
 def _probe_influx() -> None:
     main = _main()
+    """Sonda de arranque que comprueba la AUTENTICACION, no solo el puerto.
+
+    `/health` responde 200 con cualquier token, o sin token: probeando ahi el
+    backend queda en verde mientras cada escritura se va a 401 y las filas
+    terminan solo en memoria.
+
+    El token se valida contra `/api/v2/buckets`: es de solo lectura, barato, y
+    responde 401 con un token invalido. Ojo con `/api/v2/signin`: ese es el
+    endpoint de SESION y espera Basic auth, asi que devuelve 401 incluso con un
+    token perfectamente valido.
+
+    Es best-effort por diseno: un fallo avisa en WARNING y no impide arrancar.
+    """
+    url = main.INFLUXDB_URL
+    token = main.INFLUXDB_TOKEN.strip()
+    probe_url = f"{url}/api/v2/buckets" if token else f"{url}/health"
     try:
         import urllib.request
 
-        req = urllib.request.Request(f"{main.INFLUXDB_URL}/health", method="GET")
+        if not url:
+            main.log.warning("InfluxDB probe skipped: INFLUXDB_URL is empty")
+            return
+        if not token:
+            main.log.warning(
+                "InfluxDB probe without INFLUXDB_TOKEN: %s only proves the port answers",
+                probe_url,
+            )
+            req = urllib.request.Request(probe_url, method="GET")
+        else:
+            req = urllib.request.Request(  # noqa: S310 - local health probe
+                probe_url,
+                method="GET",
+                headers={"Authorization": f"Token {token}"},
+            )
         with urllib.request.urlopen(req, timeout=2) as resp:  # noqa: S310 - local health probe
-            main.log.info("InfluxDB probe %s -> %s", main.INFLUXDB_URL, resp.status)
+            main.log.info("InfluxDB probe %s -> %s", probe_url, resp.status)
     except Exception as exc:  # noqa: BLE001 - probe must never block startup
         main.log.warning(
             "InfluxDB probe failed (%s=%s); ingest falls back to memory store",
-            main.INFLUXDB_URL,
+            probe_url,
             exc,
         )
 

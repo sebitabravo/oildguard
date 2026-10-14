@@ -58,6 +58,10 @@ services:
       INFLUXDB_BUCKET: oilguard
       INFLUXDB_TOKEN: ${INFLUXDB_TOKEN}
       MQTT_HOST: mqtt
+      # Credenciales del broker en 1883: sin ellas el SUBSCRIBE cae como anonimo
+      # y el ACL solo le concede escritura.
+      MQTT_USERNAME: ${MQTT_BACKEND_USER:-}
+      MQTT_PASSWORD: ${MQTT_BACKEND_PASSWORD:-}
       OILGUARD_MQTT_CA: ${OILGUARD_MQTT_CA:-}
       OILGUARD_MQTT_CLIENT_CERT: ${OILGUARD_MQTT_CLIENT_CERT:-}
       OILGUARD_MQTT_CLIENT_KEY: ${OILGUARD_MQTT_CLIENT_KEY:-}

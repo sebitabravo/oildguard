@@ -40,7 +40,9 @@ def _count_influx_points() -> int | None:
             for record in table.records
         )
     except Exception as exc:  # noqa: BLE001 - la salud debe seguir disponible si Influx no responde
-        main.log.debug("InfluxDB persisted point count unavailable: %s", exc)
+        # Un 401 por token invalido es la senal de que la persistencia esta rota:
+        # en debug quedaba enterrada y /health seguia diciendo verde.
+        main.log.warning("InfluxDB persisted point count unavailable: %s", exc)
         return None
     finally:
         if client is not None:

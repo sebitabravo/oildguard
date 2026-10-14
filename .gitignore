@@ -27,6 +27,9 @@ influxdb-data/
 mosquitto/data/
 mosquitto/log/
 mosquitto/certs/
+# Credenciales del broker: passwd y los temporales que deja el script al rehacerlo.
+mosquitto/config/passwd
+mosquitto/config/passwd.*
 
 # OS / editor
 .DS_Store
