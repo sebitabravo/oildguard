@@ -71,3 +71,4 @@ coverage/
 .impeccable/
 frontend/public/models/*.glb
 /frontend/src/demo/demo-data.json
+.coverage
