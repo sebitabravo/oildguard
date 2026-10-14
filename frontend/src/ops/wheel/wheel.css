@@ -23,6 +23,7 @@
 .og-wheel-panel__meta .og-wheel-card__note { display: flex; flex-wrap: wrap; gap: 4px; overflow-wrap: anywhere; }
 .og-wheel-telemetry span.og-wheel-card__note > span,
 .og-wheel-panel__meta .og-wheel-card__note > span { flex: 1 1 100%; min-width: 0; }
+.og-wheel-telemetry .og-wheel-card__note > .og-badge--source { flex: 0 0 auto; }
 .og-wheel-telemetry .og-wheel-card__note + .og-wheel-card__note { margin-top: 6px; }
 .og-wheel-card__ref { margin: 0; color: var(--og-accent); font: 10px var(--og-mono); letter-spacing: .04em; text-transform: uppercase; }
 
