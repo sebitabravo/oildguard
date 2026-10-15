@@ -46,6 +46,7 @@ import { signingBadgeState } from "./signingBadge";
 import { analyzerUnavailableNotice, isBackendOutage } from "./analyzerAvailability";
 import { resolveReadingStale } from "./readingFreshness";
 import { liveLevelValue } from "./liveLevelValue";
+import { shouldPollLive } from "./livePolling";
 import { formatDemoLabNote } from "./demoCopy";
 import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
 import { DEMO_REFERENCE_MS, demoDataset } from "../demo/demoData";
@@ -243,19 +244,29 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   const [demoStage, setDemoStage] = useState<DemoStageId>("idle");
   const [demoTick, setDemoTick] = useState(0);
   const [fsmTick, setFsmTick] = useState(0);
+  const [documentHidden, setDocumentHidden] = useState(true);
   const mountT = useRef(Date.now());
+  const fetchInFlight = useRef(false);
+  const activeRequestController = useRef<AbortController | null>(null);
+  const demoActive = demoStage !== "idle";
+  const demoActiveRef = useRef(demoActive);
+  demoActiveRef.current = demoActive;
 
   const fetchAll = useCallback(async () => {
-    if (!live) return;
+    if (!live || demoActiveRef.current || fetchInFlight.current) return;
+    const controller = new AbortController();
+    fetchInFlight.current = true;
+    activeRequestController.current = controller;
     try {
       const [h, lv, al, ru, wi, ls] = await Promise.all([
-        getHealth(),
-        getLevel(LIVE_WHEEL_ID),
-        getAlerts(LIVE_WHEEL_ID),
-        getRul(LIVE_WHEEL_ID),
-        getWindows(50, LIVE_WHEEL_ID),
-        getLevelSeries(300, LIVE_WHEEL_ID, LIVE_SENSOR_SIGNALS),
+        getHealth(controller.signal),
+        getLevel(LIVE_WHEEL_ID, controller.signal),
+        getAlerts(LIVE_WHEEL_ID, controller.signal),
+        getRul(LIVE_WHEEL_ID, controller.signal),
+        getWindows(50, LIVE_WHEEL_ID, controller.signal),
+        getLevelSeries(300, LIVE_WHEEL_ID, LIVE_SENSOR_SIGNALS, controller.signal),
       ]);
+      if (controller.signal.aborted || demoActiveRef.current) return;
       setStoreRows(h.store_rows);
       setSigningStatus(h.signing);
       setAnalysisAvailable(h.analysis.available);
@@ -286,6 +297,7 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
           : [],
       ).slice(-300));
     } catch (e) {
+      if (controller.signal.aborted || demoActiveRef.current) return;
       console.debug("OilGuard backend request failed", e);
       setSigningStatus(undefined);
       setAnalysisAvailable(undefined);
@@ -293,6 +305,9 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
       setSensorRows([]);
       setBackendNote({ kind: "error" });
       setSource("demo");
+    } finally {
+      if (activeRequestController.current === controller) activeRequestController.current = null;
+      fetchInFlight.current = false;
     }
   }, [live]);
 
@@ -310,13 +325,55 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
       setSensorRows([]);
       setLatestSignals(null);
     }
-    void fetchAll();
     // El parámetro demo=1 inicia la demostración al abrir Monitoreo.
     if (new URLSearchParams(window.location.search).get("demo") === "1") {
+      demoActiveRef.current = true;
+      activeRequestController.current?.abort();
       setDemoTick(0);
       setDemoStage("clean");
+    } else {
+      void fetchAll();
     }
+    return () => {
+      activeRequestController.current?.abort();
+    };
   }, [fetchAll, live]);
+
+  useEffect(() => {
+    const updateVisibility = () => setDocumentHidden(document.visibilityState !== "visible");
+    document.addEventListener("visibilitychange", updateVisibility);
+    updateVisibility();
+    return () => document.removeEventListener("visibilitychange", updateVisibility);
+  }, []);
+
+  useEffect(() => {
+    const pollable = shouldPollLive({
+      live,
+      demoActive,
+      hidden: documentHidden,
+      inFlight: false,
+    });
+    if (!pollable) {
+      activeRequestController.current?.abort();
+      return;
+    }
+    const id = window.setInterval(() => {
+      if (shouldPollLive({
+        live,
+        demoActive,
+        hidden: documentHidden,
+        inFlight: fetchInFlight.current,
+      })) {
+        void fetchAll();
+      }
+    }, 5000);
+    return () => {
+      window.clearInterval(id);
+      activeRequestController.current?.abort();
+    };
+  }, [live, demoActive, documentHidden, fetchAll]);
+
+  useEffect(() => () => activeRequestController.current?.abort(), []);
 
   // Reloj FSM en vivo compartido con el simulador del camión (mismo vocabulario stateAt).
   useEffect(() => {
@@ -356,10 +413,13 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   }, [demoStage, demoTick]);
 
   const startDemo = () => {
+    demoActiveRef.current = true;
+    activeRequestController.current?.abort();
     setDemoTick(0);
     setDemoStage("clean");
   };
   const resetDemo = () => {
+    demoActiveRef.current = false;
     setDemoStage("idle");
     setDemoTick(0);
     emitDemoOil(1.0, "idle");
@@ -372,7 +432,6 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
     window.history.replaceState(null, "", url);
   };
 
-  const demoActive = demoStage !== "idle";
   const analyzerNotice = analyzerUnavailableNotice({
     analysisAvailable,
     alertStatus: alerts?.status,
