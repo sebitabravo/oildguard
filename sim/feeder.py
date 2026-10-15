@@ -213,9 +213,10 @@ def main() -> int:
         def format_es(value: float) -> str:
             return f"{value:g}".replace(".", ",")
 
+        floor_l_text = f"{floor_l:.1f}".replace(".", ",")
         print(
             f"Fuga demo: {format_es(leak_l_per_h)} L/h; piso {format_es(floor_pct)} % "
-            f"({format_es(floor_l)} L); el piso se alcanza en ~{format_es(minutes_to_floor)} min.",
+            f"({floor_l_text} L); el piso se alcanza en ~{format_es(minutes_to_floor)} min.",
             file=sys.stderr,
         )
         batches, sent_rows, failed_batches = run(stop, leak_l_per_h, floor_l)

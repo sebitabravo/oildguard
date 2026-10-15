@@ -50,6 +50,25 @@ def test_feeder_reports_invalid_leak_config_to_stderr(monkeypatch, capsys):
     assert "OILGUARD_DEMO_LEAK_L_PER_H" in capsys.readouterr().err
 
 
+def test_main_reports_and_passes_the_configured_floor(monkeypatch, capsys):
+    monkeypatch.setenv("OILGUARD_DEMO_LEAK_L_PER_H", "600")
+    monkeypatch.setenv("OILGUARD_DEMO_FLOOR_PCT", "40")
+    monkeypatch.setattr(feeder.signal, "signal", lambda *_args: None)
+    monkeypatch.setattr(feeder, "configured_ingest_url", lambda: "http://127.0.0.1:8001/ingest")
+    monkeypatch.setattr(feeder, "_demo_payload", lambda: {"physics": {"constants": {"capacityL": 95}}})
+    received = []
+
+    def fake_run(stop, leak_l_per_h, floor_l):
+        received.append((leak_l_per_h, floor_l))
+        return 1, 10, 0
+
+    monkeypatch.setattr(feeder, "run", fake_run)
+
+    assert feeder.main() == 0
+    assert received == [(600.0, 38.0)]
+    assert "Fuga demo: 600 L/h; piso 40 % (38,0 L); el piso se alcanza en ~5,7 min." in capsys.readouterr().err
+
+
 def test_feeder_level_respects_floor_through_24_hours(monkeypatch):
     _speed_up_day(monkeypatch)
     batches = feeder.iter_batches(
