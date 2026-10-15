@@ -7,6 +7,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_pytest_environment_supplies_hermetic_defaults():
+    assert os.environ.get("OILGUARD_REQUIRE_SIGNATURE") == "0"
+    assert os.environ.get("INFLUXDB_TOKEN") == "placeholder-para-pruebas"
+
+
 def test_backend_rejects_unsigned_rows_when_signature_setting_is_unset(monkeypatch):
     monkeypatch.delenv("OILGUARD_REQUIRE_SIGNATURE", raising=False)
     monkeypatch.delenv("OILGUARD_DEVICE_MASTER_KEY", raising=False)
