@@ -346,17 +346,19 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
     for device in affected_devices:
         try:
-            if _query_helpers.pinned_baseline(device) is not None:
-                continue
-            rows_for_baseline = _sorted_device_rows(device)
-            if not rows_for_baseline:
-                continue
-            from ai import level as level_estimator
+            def estimate_for_pin(baseline):
+                if baseline is not None:
+                    return None
+                rows_for_baseline = _sorted_device_rows(device)
+                if not rows_for_baseline:
+                    return None
+                from ai import level as level_estimator
 
-            estimate = level_estimator.estimate(
-                _samples_from_rows(rows_for_baseline)
-            )
-            _query_helpers.pin_baseline(device, estimate.get("baseline"))
+                return level_estimator.estimate(
+                    _samples_from_rows(rows_for_baseline), baseline=baseline
+                )
+
+            _query_helpers.compute_with_pinned_baseline(device, estimate_for_pin)
         except Exception as exc:  # noqa: BLE001 - baseline pinning must not fail ingest
             log.debug("Could not pin level baseline for %s during ingest: %s", device, exc)
 
@@ -562,19 +564,16 @@ def _t10_bundle(
             "then GET /alerts walks the N1–N4 ladder."
         ), message("alerts_no_rows_fallback"), True, False
     samples = _samples_from_rows(rows)
-    base = _query_helpers.pinned_baseline(device) if device is not None else None
     try:
-        bundle = evaluator(samples, baseline=base)
+        bundle = _query_helpers.compute_with_pinned_baseline(
+            device, lambda baseline: evaluator(samples, baseline=baseline)
+        )
     except Exception as exc:  # noqa: BLE001 - scoring must never 500 queries
         log.warning("T10 evaluation failed: %s", exc)
         return None, (
             f"T10 evaluation failed ({exc}); surface anomaly-only "
             f"(ai/flags.jsonl path) instead."
         ), message("alerts_evaluation_failed_fallback"), False, False
-    if base is None and device is not None:
-        _query_helpers.pin_baseline(
-            device, bundle.get("level", {}).get("baseline")
-        )
     fallback = (
         "memory-store grouping by recal_window flags (full T7 detector: "
         "sim/detect.py); rest-gated synthetic-proxy model, UNPROVEN until "
@@ -696,10 +695,12 @@ def level(device_id: str | None = Query(default=None)) -> dict:
         from ai import level as level_estimator
 
         rows = _sorted_device_rows(device)
-        base = _query_helpers.pinned_baseline(device) if device is not None else None
-        estimate = level_estimator.estimate(_samples_from_rows(rows), baseline=base)
-        if base is None and device is not None:
-            _query_helpers.pin_baseline(device, estimate.get("baseline"))
+        estimate = _query_helpers.compute_with_pinned_baseline(
+            device,
+            lambda baseline: level_estimator.estimate(
+                _samples_from_rows(rows), baseline=baseline
+            ),
+        )
         latest_estimate = level_estimator.latest_rest_estimate(estimate["estimates"])
         data = {
             "level_liters": latest_estimate.get("level_liters") if latest_estimate else None,

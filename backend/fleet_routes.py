@@ -77,15 +77,15 @@ def alert_level_for(
     rows = main._sorted_device_rows(device)
     if not rows:
         return None, "no_rows", None
-    base = main._query_helpers.pinned_baseline(device) if device is not None else None
     try:
-        bundle = evaluator(main._samples_from_rows(rows), baseline=base)
+        bundle = main._query_helpers.compute_with_pinned_baseline(
+            device,
+            lambda baseline: evaluator(
+                main._samples_from_rows(rows), baseline=baseline
+            ),
+        )
     except Exception:  # noqa: BLE001 - puntuar nunca debe tumbar la ruta
         return None, "evaluation_failed", None
-    if base is None and device is not None:
-        main._query_helpers.pin_baseline(
-            device, bundle.get("level", {}).get("baseline")
-        )
     latest = bundle.get("level", {}).get("latest")
     alerts = bundle.get("alerts") or []
     highest: str | None = None

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from collections import Counter
 import threading
-from typing import Any
+from typing import Any, Callable
 
 from fastapi import Query
 
@@ -39,6 +39,22 @@ def pin_baseline(device_id: str, baseline: dict[str, Any] | None) -> None:
 def reset_pinned_baselines() -> None:
     with _PINNED_BASELINES_LOCK:
         _PINNED_BASELINES.clear()
+
+
+def compute_with_pinned_baseline(
+    device_id: str | None,
+    compute: Callable[[dict[str, Any] | None], Any],
+) -> Any:
+    baseline = pinned_baseline(device_id) if device_id else None
+    result = compute(baseline)
+    if baseline is None and device_id and isinstance(result, dict):
+        candidate = result.get("baseline")
+        if candidate is None:
+            level_result = result.get("level")
+            if isinstance(level_result, dict):
+                candidate = level_result.get("baseline")
+        pin_baseline(device_id, candidate)
+    return result
 
 
 def _load_t10_evaluator() -> tuple[Any | None, str | None]:
@@ -158,12 +174,12 @@ def level_series(
     from ai import level as level_estimator
 
     try:
-        base = pinned_baseline(device) if device is not None else None
-        estimate = level_estimator.estimate(
-            main._samples_from_rows(rows), baseline=base
+        estimate = compute_with_pinned_baseline(
+            device,
+            lambda baseline: level_estimator.estimate(
+                main._samples_from_rows(rows), baseline=baseline
+            ),
         )
-        if base is None and device is not None:
-            pin_baseline(device, estimate.get("baseline"))
     except ValueError as exc:
         raise main.HTTPException(status_code=422, detail=str(exc)) from exc
     sigma_l = estimate.get("sigma_liters")
