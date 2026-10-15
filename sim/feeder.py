@@ -176,12 +176,19 @@ def run(
     floor_l: float = 0.0,
 ) -> tuple[int, int, int]:
     batches = sent_rows = failed_batches = 0
-    for batch in iter_batches(
-        seconds=DEMO_HORIZON_SECONDS,
-        calibration_seconds=DEMO_ACCELERATION_SECONDS,
-        leak_l_per_h=leak_l_per_h,
-        floor_l=floor_l,
-    ):
+    if leak_l_per_h is None and floor_l == 0.0:
+        generated_batches = iter_batches(
+            seconds=DEMO_HORIZON_SECONDS,
+            calibration_seconds=DEMO_ACCELERATION_SECONDS,
+        )
+    else:
+        generated_batches = iter_batches(
+            seconds=DEMO_HORIZON_SECONDS,
+            calibration_seconds=DEMO_ACCELERATION_SECONDS,
+            leak_l_per_h=leak_l_per_h,
+            floor_l=floor_l,
+        )
+    for batch in generated_batches:
         if stop.is_set():
             break
         ingested = post_batch(batch)
