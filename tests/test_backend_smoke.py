@@ -126,7 +126,7 @@ def test_rul_suppression_note_composes_reason_and_anomaly_fallback_once(client, 
         "params": {"r2": 0.001, "minimum_r2": 0.3},
     }
 
-    def evaluate(_samples):
+    def evaluate(_samples, baseline=None):
         return {
             "rul": {
                 "status": "suppressed",

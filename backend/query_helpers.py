@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections import Counter
+import threading
 from typing import Any
 
 from fastapi import Query
@@ -13,6 +14,32 @@ except ImportError:
 
 def _main():
     return _main_module
+
+
+_PINNED_BASELINES: dict[str, dict[str, Any]] = {}
+_PINNED_BASELINES_LOCK = threading.Lock()
+
+
+def pinned_baseline(device_id: str) -> dict[str, Any] | None:
+    with _PINNED_BASELINES_LOCK:
+        baseline = _PINNED_BASELINES.get(device_id)
+        return dict(baseline) if baseline is not None else None
+
+
+def pin_baseline(device_id: str, baseline: dict[str, Any] | None) -> None:
+    if not device_id or not isinstance(baseline, dict):
+        return
+    if not str(baseline.get("source", "")).startswith("first-rest-window"):
+        return
+    with _PINNED_BASELINES_LOCK:
+        if device_id not in _PINNED_BASELINES:
+            _PINNED_BASELINES[device_id] = dict(baseline)
+
+
+def reset_pinned_baselines() -> None:
+    with _PINNED_BASELINES_LOCK:
+        _PINNED_BASELINES.clear()
+
 
 def _load_t10_evaluator() -> tuple[Any | None, str | None]:
     try:
@@ -112,7 +139,8 @@ def level_series(
     inventar una verdad que no se midió sería exactamente el tipo de dato que
     este producto no debe mostrar.
     """
-    rows = main._sorted_device_rows(main.select_device(device_id))
+    device = main.select_device(device_id)
+    rows = main._sorted_device_rows(device)
     try:
         requested = _parse_series_signals(signals)
     except ValueError as exc:
@@ -130,7 +158,12 @@ def level_series(
     from ai import level as level_estimator
 
     try:
-        estimate = level_estimator.estimate(main._samples_from_rows(rows))
+        base = pinned_baseline(device) if device is not None else None
+        estimate = level_estimator.estimate(
+            main._samples_from_rows(rows), baseline=base
+        )
+        if base is None and device is not None:
+            pin_baseline(device, estimate.get("baseline"))
     except ValueError as exc:
         raise main.HTTPException(status_code=422, detail=str(exc)) from exc
     sigma_l = estimate.get("sigma_liters")

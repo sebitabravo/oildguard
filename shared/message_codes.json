@@ -16,7 +16,7 @@
   "ladder_n4_abrupt_drop": ["from_l", "to_l", "threshold_l"],
   "ladder_n4_critical_level": ["level_pct", "critical_pct"],
   "ladder_n4_extreme_collapse": ["z", "kurtosis"],
-  "level_memory_store_note": [],
+  "level_estimate_note": [],
   "level_no_rows_note": [],
   "rul_analyzer_unavailable_note": [],
   "rul_analyzer_unavailable_reason": [],

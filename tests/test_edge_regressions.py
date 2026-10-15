@@ -104,7 +104,8 @@ def test_device_stats_latest_fields_follow_highest_sequence() -> None:
     assert latest is not None
     assert stats["last_t_iso"] == latest["t_iso"]
     assert stats["last_t_s"] == latest["t_s"]
-    assert stats["latest_level_liters"] == latest["level_liters"]
+    assert "latest_level_liters" not in stats
+    assert "latest_level_pct" not in stats
 
 
 def test_ab_ingest_refuses_dirty_worktree(tmp_path) -> None:

@@ -51,10 +51,15 @@ export interface IngestAck {
 }
 
 export interface LevelData {
-  level_liters: number;
-  level_pct: number;
+  level_liters: number | null;
+  level_pct: number | null;
   capacity_liters: number;
-  confidence: number;
+  confidence: number | null;
+  sigma_liters?: number | null;
+  estimate_t_iso?: string | null;
+  estimate_seq?: number | null;
+  estimate_reason?: string | null;
+  truth_liters?: number | null;
   unit: string;
   t_iso?: string;
   seq?: number;

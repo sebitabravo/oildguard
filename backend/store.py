@@ -344,8 +344,6 @@ class TelemetryStore:
                     "rows_offered": offered,
                     "verified_ratio": (verified / offered) if offered else 0.0,
                     "rejected_reasons": dict(rejected),
-                    "latest_level_liters": as_float(latest_row.get("level_liters")) if latest_row else None,
-                    "latest_level_pct": as_float(latest_row.get("level_pct")) if latest_row else None,
                     "latest": latest_signals(latest_row) if latest_row else None,
                 }
             return stats

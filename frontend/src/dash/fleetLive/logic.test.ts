@@ -40,7 +40,9 @@ describe("fleet live logic", () => {
     expect(parseFleetPayload({ ...payload(), devices: null })).toBe(null);
     const parsed = parseFleetPayload(payload({ ingest: undefined }));
     expect(parsed?.devices).toBe(2);
-    expect(parsed?.metrics.level_liters?.p95).toBe(95);
+    expect(Object.keys(parsed?.metrics ?? {}).sort()).toEqual([
+      "pressure_kpa", "temperature_c", "vib_rms_g",
+    ]);
     expect(parsed?.latencyP99S).toBe(null);
   });
 
@@ -60,11 +62,14 @@ describe("fleet live logic", () => {
     const first = parseFleetPayload(payload())!;
     const second = parseFleetPayload(payload({
       as_of: "2026-10-10T09:00:02+00:00",
-      aggregates: { pressure_kpa: aggregates.pressure_kpa },
+      aggregates: {
+        pressure_kpa: aggregates.pressure_kpa,
+        level_liters: { mean: 94, p50: 94, p95: 95, p99: 95 },
+      },
     }))!;
     const merged = mergeFleetSnapshots(first, second);
     expect(merged.asOf).toContain("09:00:02");
-    expect(merged.metrics.level_liters?.p99).toBe(95);
+    expect("level_liters" in merged.metrics).toBe(false);
   });
 
   test("recognizes the backend no-rows response", () => {

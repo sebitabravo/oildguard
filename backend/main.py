@@ -501,6 +501,8 @@ try:
 except ImportError:
     import query_helpers as _query_helpers
 
+_STORE.on_clear(_query_helpers.reset_pinned_baselines)
+
 _load_t10_evaluator = _query_helpers._load_t10_evaluator
 
 
@@ -531,21 +533,27 @@ def _t10_bundle(
             "with its runtime packages included."
         ), message("alerts_analyzer_unavailable_fallback"), False, False
 
-    rows = _sorted_device_rows(select_device(device_id))
+    device = select_device(device_id)
+    rows = _sorted_device_rows(device)
     if not rows:
         return None, (
             "no rows ingested yet; POST SignalRow batches to /ingest, "
             "then GET /alerts walks the N1–N4 ladder."
         ), message("alerts_no_rows_fallback"), True, False
     samples = _samples_from_rows(rows)
+    base = _query_helpers.pinned_baseline(device) if device is not None else None
     try:
-        bundle = evaluator(samples)
+        bundle = evaluator(samples, baseline=base)
     except Exception as exc:  # noqa: BLE001 - scoring must never 500 queries
         log.warning("T10 evaluation failed: %s", exc)
         return None, (
             f"T10 evaluation failed ({exc}); surface anomaly-only "
             f"(ai/flags.jsonl path) instead."
         ), message("alerts_evaluation_failed_fallback"), False, False
+    if base is None and device is not None:
+        _query_helpers.pin_baseline(
+            device, bundle.get("level", {}).get("baseline")
+        )
     fallback = (
         "memory-store grouping by recal_window flags (full T7 detector: "
         "sim/detect.py); rest-gated synthetic-proxy model, UNPROVEN until "
@@ -646,7 +654,7 @@ app.add_api_route("/metrics/ingest", metrics_ingest, methods=["GET"])
 
 @app.get("/level")
 def level(device_id: str | None = Query(default=None)) -> dict:
-    """Latest fused-level reading. Confidence is a stub until S5 (T10)."""
+    """Latest rest-gated fused estimate and validation-only simulator truth."""
     device = select_device(device_id)
     latest = _latest_row(device)
     if latest is None:
@@ -659,16 +667,28 @@ def level(device_id: str | None = Query(default=None)) -> dict:
             "device_id": device,
             "source": "default (no rows ingested yet)",
             "source_message": message("source_no_rows"),
-            "reference": "GDY106 nominal 95 L SAE 85W-140",
+            "reference": "GDY106 nominal 95 L",
             "note": "POST SignalRow batches to /ingest; confidence lands in S5 (T10).",
             "note_message": message("level_no_rows_note"),
         }
     else:
+        from ai import level as level_estimator
+
+        rows = _sorted_device_rows(device)
+        base = _query_helpers.pinned_baseline(device) if device is not None else None
+        estimate = level_estimator.estimate(_samples_from_rows(rows), baseline=base)
+        if base is None and device is not None:
+            _query_helpers.pin_baseline(device, estimate.get("baseline"))
+        latest_estimate = level_estimator.latest_rest_estimate(estimate["estimates"])
         data = {
-            "level_liters": latest.get("level_liters"),
-            "level_pct": latest.get("level_pct"),
+            "level_liters": latest_estimate.get("level_liters") if latest_estimate else None,
+            "level_pct": latest_estimate.get("level_pct") if latest_estimate else None,
             "capacity_liters": CAPACITY_L,
-            "confidence": 0.0,
+            "confidence": estimate.get("confidence") if latest_estimate else None,
+            "sigma_liters": estimate.get("sigma_liters") if latest_estimate else None,
+            "estimate_t_iso": latest_estimate.get("t_iso") if latest_estimate else None,
+            "estimate_seq": latest_estimate.get("seq") if latest_estimate else None,
+            "estimate_reason": None if latest_estimate else "no_rest_estimate",
             "unit": "L",
             "t_iso": latest.get("t_iso"),
             "seq": latest.get("seq"),
@@ -677,10 +697,12 @@ def level(device_id: str | None = Query(default=None)) -> dict:
             "temperature_c": latest.get("temperature_c"),
             "source": "memory store (InfluxDB when reachable)",
             "source_message": message("source_memory_store"),
-            "reference": "GDY106 nominal 95 L SAE 85W-140",
-            "note": "Level echoes ingested ground truth; fused estimate + confidence land in S5 (T10).",
-            "note_message": message("level_memory_store_note"),
+            "reference": "GDY106 nominal 95 L",
+            "note": "Level is a rest-gated fused estimate; truth_liters is simulator ground truth for validation only.",
+            "note_message": message("level_estimate_note"),
         }
+        if "level_liters" in latest:
+            data["truth_liters"] = as_float(latest.get("level_liters"))
     return {
         "status": "ok",
         "kind": "oil-level",

@@ -97,7 +97,7 @@ def test_slow_leak_messages_cover_ladder_model_rul_and_fallback(client):
     assert alerts["fallback_message"] == {"code": "alerts_memory_fallback", "params": {}}
     level_data = client.get("/level").json()["data"]
     assert level_data["source_message"] == {"code": "source_memory_store", "params": {}}
-    assert level_data["note_message"] == {"code": "level_memory_store_note", "params": {}}
+    assert level_data["note_message"] == {"code": "level_estimate_note", "params": {}}
     assert by_level["N1"]["reason_message"] == {
         "code": "ladder_n1_trend_persistence",
         "params": {"window": by_level["N1"]["window_id"], "zone": by_level["N1"]["zone"]},
@@ -162,7 +162,11 @@ def test_ladder_emits_consecutive_window_confirmation_params(monkeypatch):
         "baseline": {"source": "test", "t_ref": 40.0},
         "sigma_liters": 0.5,
     }
-    monkeypatch.setattr(ladder.level_mod, "estimate", lambda _samples: level_output)
+    monkeypatch.setattr(
+        ladder.level_mod,
+        "estimate",
+        lambda _samples, baseline=None: level_output,
+    )
     monkeypatch.setattr(
         ladder.rul_mod,
         "extrapolate",
@@ -202,7 +206,11 @@ def test_analyzer_unavailable_and_evaluation_failure_fallbacks_are_coded(client,
         "params": {},
     }
 
-    monkeypatch.setattr(backend_main, "_load_t10_evaluator", lambda: (lambda _rows: 1 / 0, None))
+    monkeypatch.setattr(
+        backend_main,
+        "_load_t10_evaluator",
+        lambda: (lambda _rows, baseline=None: 1 / 0, None),
+    )
     alerts = client.get("/alerts").json()["data"]
     assert alerts["fallback_message"] == {
         "code": "alerts_evaluation_failed_fallback",

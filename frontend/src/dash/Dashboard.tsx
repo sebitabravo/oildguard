@@ -45,7 +45,7 @@ import { localizeBackendMessage, localizeBackendZone } from "./backendNotes";
 import { signingBadgeState } from "./signingBadge";
 import { analyzerUnavailableNotice, isBackendOutage } from "./analyzerAvailability";
 import { resolveReadingStale } from "./readingFreshness";
-import { mergeLevelSeries } from "./levelSeries";
+import { liveLevelValue } from "./liveLevelValue";
 import { formatDemoLabNote } from "./demoCopy";
 import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
 import { DEMO_REFERENCE_MS, demoDataset } from "../demo/demoData";
@@ -280,19 +280,11 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
           (ru.status === "unavailable" ? ru.data.note : al.data.fallback);
         if (diagnostic) console.debug("OilGuard analyzer unavailable", diagnostic);
       }
-      const lit = Number(lv.data.level_liters);
-      if (Number.isFinite(lit)) {
-        setHistory((prev) => {
-          const seriesPoints = ls.series.flatMap((point) =>
-            point.level_l !== null && Number.isFinite(point.level_l)
-              ? [{ t_s: point.t_s, liters: point.level_l }]
-              : [],
-          );
-          const merged = mergeLevelSeries(prev, seriesPoints);
-          const t = merged.length === 0 ? 0 : merged[merged.length - 1].t_s + 2;
-          return mergeLevelSeries(merged, [{ t_s: t, liters: lit }]).slice(-300);
-        });
-      }
+      setHistory(ls.series.flatMap((point) =>
+        point.level_l !== null && Number.isFinite(point.level_l)
+          ? [{ t_s: point.t_s, liters: point.level_l }]
+          : [],
+      ).slice(-300));
     } catch (e) {
       console.debug("OilGuard backend request failed", e);
       setSigningStatus(undefined);
@@ -446,9 +438,15 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   const demoOilCss = oilCssFor(demoOilState);
   const signingBadge = signingBadgeState(signingStatus);
 
-  const liveLevel = source === "live" && level ? Number(level.data.level_liters) : null;
-  const levelSource = liveLevel !== null && Number.isFinite(liveLevel) && !demoActive ? "LIVE" : "DEMO";
-  const hasLevelReading = level !== null && shouldShowLevelReading(levelSource, storeRows, level.data.source_message?.code);
+  const liveLevel = source === "live" && level ? liveLevelValue(level.data.level_liters) : null;
+  const liveLevelPct = source === "live" && level ? liveLevelValue(level.data.level_pct) : null;
+  const levelSource = source === "live" && !demoActive ? "LIVE" : "DEMO";
+  const hasLevelReading = level !== null && (
+    levelSource === "LIVE"
+      ? liveLevel !== null && liveLevelPct !== null &&
+        shouldShowLevelReading(levelSource, storeRows, level.data.source_message?.code)
+      : shouldShowLevelReading(levelSource, storeRows, level.data.source_message?.code)
+  );
   const noTelemetry = live && source === "live" && !demoActive && !hasLevelReading;
   const hasConfidenceReading = !live || demoActive || (
     hasLevelReading && typeof backendConfidence === "number" && Number.isFinite(backendConfidence)
@@ -621,8 +619,8 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
               <span style={{ color: demoOilCss, fontWeight: 700 }}>
                 {demoActive
                   ? t("dash.demo.fill", { value: formatOilText(demoFrac) })
-                  : level && live && source === "live" && shouldShowLevelReading(levelSource, storeRows, level.data.source_message?.code)
-                    ? `${formatNumber(Number(level.data.level_liters), 1)} L · ${formatNumber(Number(level.data.level_pct), 1)}%`
+                  : level && live && source === "live" && liveLevel !== null && liveLevelPct !== null && shouldShowLevelReading(levelSource, storeRows, level.data.source_message?.code)
+                    ? `${formatNumber(liveLevel, 1)} L · ${formatNumber(liveLevelPct, 1)}%`
                     : "—"}
               </span>
               <span className="og-wheel-status__source">
