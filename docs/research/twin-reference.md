@@ -334,7 +334,7 @@ What I could and could not verify (WebSearch + WebFetch, 2026-10-09):
 - No CC0 or CC-BY glTF of a 930E or another 290-360 t ultra-class truck was found or verified.
 - Repo precedent: `docs/models.md` already records that the HD465-7EO GLB (~55 t class, Sketchfab author drcrazzie) carries an embedded "CC-BY-4.0" string, but reuse beyond the repo is marked NOT-CLEARED until verified.
 
-**Recommendation:** a procedural parametric model built from the manual dimensions in sections 1-2 is the safer route: it removes third-party licence/attribution and trademark-ambiguity risk (CC-BY needs attribution and a verified rights chain; "Komatsu" marks on models are separate), it matches the thesis' "numbers traceable to the manual" claim, and every dimension in this report is cited. A GLB proxy is acceptable only as a clearly labelled visual aid (as the repo already does) and not as a source of geometry for the twin.
+**Recommendation:** a procedural parametric model built from the manual dimensions in sections 1-2 is the safer route: it removes third-party licence/attribution and trademark-ambiguity risk (CC-BY needs attribution and a verified rights chain; "Komatsu" marks on models are separate), it matches the thesis' "numbers traceable to the manual" claim, and every dimension in this report is cited. A GLB proxy is acceptable only as a clearly labelled visual aid; the repository's former HD465 reference-truck viewer has been removed, and the proxy must not be used as a source of geometry for the twin.
 
 ---
 
