@@ -184,7 +184,7 @@ printf '%s\n' \
 while true; do
   for pid in "${children[@]}"; do
     if ! kill -0 "$pid" 2>/dev/null; then
-      printf '%s\n' 'Error: un proceso de la demo finalizó de forma inesperada.' >&2
+      printf '%s\n' 'Error: falló inesperadamente un proceso de la demo.' >&2
       exit 1
     fi
   done
