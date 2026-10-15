@@ -124,8 +124,8 @@ def iter_batches(
     effective_floor_l = max(0.0, floor_l)
     sample_count = int(round(seconds * SAMPLE_RATE_HZ))
     rows_per_batch = int(BATCH_SECONDS * SAMPLE_RATE_HZ)
-    send_time = (clock or (lambda: datetime.now(timezone.utc)))()
     for offset in range(0, sample_count, rows_per_batch):
+        batch_clock = (clock or (lambda: datetime.now(timezone.utc)))()
         batch = []
         for seq in range(offset, min(offset + rows_per_batch, sample_count)):
             row = dict(templates[seq % len(templates)])
@@ -140,7 +140,9 @@ def iter_batches(
                 template_level_l, temperature_c
             )
             row.update({
-                "t_iso": (send_time + timedelta(seconds=elapsed)).astimezone(timezone.utc).isoformat(),
+                "t_iso": (
+                    batch_clock + timedelta(seconds=(seq - offset) / SAMPLE_RATE_HZ)
+                ).astimezone(timezone.utc).isoformat(),
                 "t_s": f"{elapsed:.1f}",
                 "seq": seq,
                 "device_id": DEVICE_ID,
