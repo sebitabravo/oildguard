@@ -8,8 +8,28 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_pytest_environment_supplies_hermetic_defaults():
-    assert os.environ.get("OILGUARD_REQUIRE_SIGNATURE") == "0"
-    assert os.environ.get("INFLUXDB_TOKEN") == "placeholder-para-pruebas"
+    env = os.environ.copy()
+    env.pop("OILGUARD_REQUIRE_SIGNATURE", None)
+    env.pop("INFLUXDB_TOKEN", None)
+    source = """
+import os
+import runpy
+
+runpy.run_path("tests/conftest.py")
+assert os.environ.get("OILGUARD_REQUIRE_SIGNATURE") == "0"
+assert os.environ.get("INFLUXDB_TOKEN") == "placeholder-para-pruebas"
+"""
+
+    result = subprocess.run(
+        [sys.executable, "-c", source],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
 
 
 def test_backend_rejects_unsigned_rows_when_signature_setting_is_unset(monkeypatch):
