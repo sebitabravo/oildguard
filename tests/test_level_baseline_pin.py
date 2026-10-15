@@ -83,6 +83,67 @@ def test_latest_rest_estimate_skips_trailing_gated_rows():
     }
 
 
+def test_latest_rest_estimate_uses_settled_samples_after_stop_transient():
+    estimates = [
+        {"seq": 1, "t_s": 0.0, "t_iso": "t0", "level_liters": 89.0},
+        {"seq": 2, "t_s": 1.0, "t_iso": "t1", "level_liters": 89.0},
+        {"seq": 3, "t_s": 2.0, "t_iso": "t2", "level_liters": 89.0},
+        {"seq": 4, "t_s": 3.0, "t_iso": "t3", "level_liters": 92.0},
+        {"seq": 5, "t_s": 4.0, "t_iso": "t4", "level_liters": 92.0},
+    ]
+
+    latest = level.latest_rest_estimate(estimates)
+
+    assert latest == {
+        "level_liters": 92.0,
+        "level_pct": round(100.0 * 92.0 / level.CAPACITY_L, 3),
+        "n": 2,
+        "t_iso": "t4",
+        "seq": 5,
+    }
+
+
+def test_latest_rest_estimate_skips_unsettled_run_for_previous_settled_run():
+    estimates = [
+        {"seq": 1, "t_s": 0.0, "t_iso": "t0", "level_liters": 89.0},
+        {"seq": 2, "t_s": 1.0, "t_iso": "t1", "level_liters": 89.0},
+        {"seq": 3, "t_s": 2.0, "t_iso": "t2", "level_liters": 89.0},
+        {"seq": 4, "t_s": 3.0, "t_iso": "t3", "level_liters": 92.0},
+        {"seq": 5, "t_s": 4.0, "t_iso": "t4", "level_liters": 92.0},
+        {"seq": 6, "t_s": 5.0, "t_iso": "t5", "level_liters": None, "gated": True},
+        {"seq": 7, "t_s": 6.0, "t_iso": "t6", "level_liters": 60.0},
+        {"seq": 8, "t_s": 7.0, "t_iso": "t7", "level_liters": 60.0},
+    ]
+
+    latest = level.latest_rest_estimate(estimates)
+
+    assert latest == {
+        "level_liters": 92.0,
+        "level_pct": round(100.0 * 92.0 / level.CAPACITY_L, 3),
+        "n": 2,
+        "t_iso": "t4",
+        "seq": 5,
+    }
+
+
+def test_latest_rest_estimate_falls_back_when_no_run_is_settled():
+    estimates = [
+        {"seq": 1, "t_s": 0.0, "t_iso": "t0", "level_liters": 89.0},
+        {"seq": 2, "t_s": 1.0, "t_iso": "t1", "level_liters": 91.0},
+        {"seq": 3, "t_s": 2.0, "t_iso": "t2", "level_liters": 90.0},
+    ]
+
+    latest = level.latest_rest_estimate(estimates)
+
+    assert latest == {
+        "level_liters": 90.0,
+        "level_pct": round(100.0 * 90.0 / level.CAPACITY_L, 3),
+        "n": 3,
+        "t_iso": "t2",
+        "seq": 3,
+    }
+
+
 @pytest.mark.parametrize("estimates", [[], [{"seq": 1, "level_liters": None}]])
 def test_latest_rest_estimate_returns_none_without_scored_rows(estimates):
     assert level.latest_rest_estimate(estimates) is None

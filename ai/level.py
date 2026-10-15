@@ -44,6 +44,7 @@ Stdlib only.
 
 from __future__ import annotations
 
+import math
 import os
 import statistics
 import sys
@@ -63,6 +64,9 @@ WARN_PCT = 50.0  # warning < 50%
 CRIT_PCT = 30.0  # critical < 30%
 MIN_BASELINE_N = 10
 SIGMA_L_SUPPRESS_L = 2.0  # precision gate consumed by ai/rul.py
+# Se excluye el transitorio de retorno de los primeros segundos al parar;
+# usa la misma regla de 3 s que sim/detect.py:REST_CONFIRM_S.
+REST_SETTLE_S = 3.0
 
 
 def _f(value, default: float = float("nan")) -> float:
@@ -262,7 +266,7 @@ def estimate(samples: list[dict], baseline: dict | None = None) -> dict:
 
 
 def latest_rest_estimate(estimates: list[dict]) -> dict | None:
-    """Return the latest consecutive scored run, ignoring trailing gated rows."""
+    """Return a settled median from the latest scored run, when available."""
     ordered = sorted(estimates, key=lambda item: int(_f(item.get("seq"), -1)))
     latest_index = len(ordered) - 1
     while latest_index >= 0 and (
@@ -273,19 +277,44 @@ def latest_rest_estimate(estimates: list[dict]) -> dict | None:
     if latest_index < 0:
         return None
 
-    start_index = latest_index
-    while start_index >= 0:
-        item = ordered[start_index]
-        if item.get("gated") or item.get("level_liters") is None:
+    def is_scored(item: dict) -> bool:
+        return not item.get("gated") and item.get("level_liters") is not None
+
+    runs = []
+    run_end = latest_index
+    while run_end >= 0:
+        run_start = run_end
+        while run_start > 0 and is_scored(ordered[run_start - 1]):
+            run_start -= 1
+        runs.append(ordered[run_start : run_end + 1])
+
+        run_end = run_start - 1
+        while run_end >= 0 and not is_scored(ordered[run_end]):
+            run_end -= 1
+
+    selected = None
+    for run in runs:
+        run_start_t_s = _f(run[0].get("t_s"))
+        if not math.isfinite(run_start_t_s):
+            continue
+        settled = []
+        for item in run:
+            item_t_s = _f(item.get("t_s"))
+            if math.isfinite(item_t_s) and item_t_s >= run_start_t_s + REST_SETTLE_S:
+                settled.append(item)
+        if settled:
+            selected = settled
             break
-        start_index -= 1
-    run = ordered[start_index + 1 : latest_index + 1]
-    liters = statistics.median(float(item["level_liters"]) for item in run)
-    latest = run[-1]
+
+    if selected is None:
+        selected = runs[0]
+
+    liters = statistics.median(float(item["level_liters"]) for item in selected)
+    latest = selected[-1]
     return {
         "level_liters": round(liters, 4),
         "level_pct": round(100.0 * liters / CAPACITY_L, 3),
-        "n": len(run),
+        "n": len(selected),
         "t_iso": latest.get("t_iso"),
         "seq": latest.get("seq"),
     }

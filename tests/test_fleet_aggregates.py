@@ -229,7 +229,7 @@ def test_fleet_devices_reports_per_device_retention_and_levels(seeded):
     assert by_id["wheel-A"]["rows_retained"] == 4
     assert by_id["wheel-B"]["rows_retained"] == 2
     assert by_id["wheel-A"]["last_t_iso"] == "2026-01-01T00:00:03+00:00"
-    assert by_id["wheel-A"]["latest_level_liters"] == pytest.approx(95.0, abs=3.0)
+    assert by_id["wheel-A"]["latest_level_liters"] == pytest.approx(165.7082, abs=0.001)
     assert by_id["wheel-A"]["verified_ratio"] == 0.0
     assert by_id["wheel-A"]["rows_rejected"] == 0
     assert by_id["wheel-A"]["rejected_reasons"] == {}
