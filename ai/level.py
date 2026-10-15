@@ -262,16 +262,24 @@ def estimate(samples: list[dict], baseline: dict | None = None) -> dict:
 
 
 def latest_rest_estimate(estimates: list[dict]) -> dict | None:
-    """Return a median from the trailing consecutive run of scored rows."""
+    """Return the latest consecutive scored run, ignoring trailing gated rows."""
     ordered = sorted(estimates, key=lambda item: int(_f(item.get("seq"), -1)))
-    run: list[dict] = []
-    for item in reversed(ordered):
+    latest_index = len(ordered) - 1
+    while latest_index >= 0 and (
+        ordered[latest_index].get("gated")
+        or ordered[latest_index].get("level_liters") is None
+    ):
+        latest_index -= 1
+    if latest_index < 0:
+        return None
+
+    start_index = latest_index
+    while start_index >= 0:
+        item = ordered[start_index]
         if item.get("gated") or item.get("level_liters") is None:
             break
-        run.append(item)
-    if not run:
-        return None
-    run.reverse()
+        start_index -= 1
+    run = ordered[start_index + 1 : latest_index + 1]
     liters = statistics.median(float(item["level_liters"]) for item in run)
     latest = run[-1]
     return {

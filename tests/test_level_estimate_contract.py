@@ -86,6 +86,24 @@ def test_level_endpoint_returns_pressure_estimate_and_validation_truth(client):
     assert data["confidence"] != 0.0
 
 
+def test_level_endpoint_keeps_last_rest_estimate_when_latest_rows_are_moving(client):
+    _ingest(client, _rows([95.0] * 10))
+    moving_rows = _rows([95.0] * 3, start_seq=10)
+    for row in moving_rows:
+        row["recal_window"] = 0
+        row["moving"] = 1
+        row["fsm_state"] = "HAUL"
+    _ingest(client, moving_rows)
+
+    response = client.get("/level")
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["level_liters"] == pytest.approx(95.0, abs=3.0)
+    assert data["estimate_seq"] == 9
+    assert data["estimate_t_iso"] == moving_rows[0]["t_iso"]
+
+
 def test_pinned_baseline_survives_eviction_and_tracks_later_leak(client):
     _ingest(client, _rows([95.0] * 10))
     assert client.get("/level").status_code == 200

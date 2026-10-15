@@ -60,6 +60,29 @@ def test_latest_rest_estimate_uses_trailing_run_median_and_breaks_on_gates():
     }
 
 
+def test_latest_rest_estimate_skips_trailing_gated_rows():
+    estimates = [
+        {"seq": 1, "t_iso": "t1", "level_liters": 90.0},
+        {"seq": 2, "t_iso": "t2", "level_liters": 92.0},
+        {"seq": 3, "t_iso": "t3", "level_liters": None, "gated": True},
+        {"seq": 4, "t_iso": "t4", "level_liters": 60.0, "train": True},
+        {"seq": 5, "t_iso": "t5", "level_liters": 64.0},
+        {"seq": 6, "t_iso": "t6", "level_liters": 62.0},
+        {"seq": 7, "t_iso": "t7", "level_liters": None, "gated": True},
+        {"seq": 8, "t_iso": "t8", "level_liters": None, "gated": True},
+    ]
+
+    latest = level.latest_rest_estimate(estimates)
+
+    assert latest == {
+        "level_liters": 62.0,
+        "level_pct": round(100.0 * 62.0 / level.CAPACITY_L, 3),
+        "n": 3,
+        "t_iso": "t6",
+        "seq": 6,
+    }
+
+
 @pytest.mark.parametrize("estimates", [[], [{"seq": 1, "level_liters": None}]])
 def test_latest_rest_estimate_returns_none_without_scored_rows(estimates):
     assert level.latest_rest_estimate(estimates) is None
