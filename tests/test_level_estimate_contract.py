@@ -117,6 +117,16 @@ def test_pinned_baseline_survives_eviction_and_tracks_later_leak(client):
     assert latest_series["level_l"] == pytest.approx(60.0, abs=3.0)
 
 
+def test_ingest_pins_baseline_before_first_rest_window_is_evicted(client):
+    _ingest(client, _rows([95.0] * 10))
+    _ingest(client, _rows([60.0] * 10, start_seq=10))
+
+    response = client.get("/level")
+
+    assert response.status_code == 200
+    assert response.json()["data"]["level_liters"] == pytest.approx(60.0, abs=3.0)
+
+
 def test_fleet_latest_level_matches_estimate_not_ingested_truth(client):
     _ingest(client, _rows([95.0] * 10, truth_liters=10.0))
 

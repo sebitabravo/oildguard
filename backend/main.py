@@ -339,6 +339,27 @@ def verify_and_store(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 as_float(row.get("link_down")),
             )
 
+    affected_devices = {
+        str(row.get("device_id"))
+        for row in accepted
+        if row.get("device_id")
+    }
+    for device in affected_devices:
+        try:
+            if _query_helpers.pinned_baseline(device) is not None:
+                continue
+            rows_for_baseline = _sorted_device_rows(device)
+            if not rows_for_baseline:
+                continue
+            from ai import level as level_estimator
+
+            estimate = level_estimator.estimate(
+                _samples_from_rows(rows_for_baseline)
+            )
+            _query_helpers.pin_baseline(device, estimate.get("baseline"))
+        except Exception as exc:  # noqa: BLE001 - baseline pinning must not fail ingest
+            log.debug("Could not pin level baseline for %s during ingest: %s", device, exc)
+
     rejected_count = sum(rejected_reasons.values())
     # El almacenamiento va primero y completo; Influx se encola despues y no
     # puede hacer fallar ni retrasar la ingesta.
