@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import signal
 import sys
@@ -37,6 +38,25 @@ def configured_ingest_url() -> str:
     if not 1 <= port <= 65535:
         raise RuntimeError("OILGUARD_DEMO_BACKEND_PORT must be a valid TCP port")
     return f"http://127.0.0.1:{port}/ingest"
+
+
+def demo_leak_config() -> tuple[float, float]:
+    def read_finite(name: str, default: str) -> float:
+        try:
+            value = float(os.environ.get(name, default))
+        except ValueError:
+            raise RuntimeError(f"{name} debe ser un número finito.") from None
+        if not math.isfinite(value):
+            raise RuntimeError(f"{name} debe ser un número finito.")
+        return value
+
+    leak_l_per_h = read_finite("OILGUARD_DEMO_LEAK_L_PER_H", "60")
+    floor_pct = read_finite("OILGUARD_DEMO_FLOOR_PCT", "40")
+    if leak_l_per_h <= 0:
+        raise RuntimeError("OILGUARD_DEMO_LEAK_L_PER_H debe ser mayor que cero.")
+    if not 0 <= floor_pct < 100:
+        raise RuntimeError("OILGUARD_DEMO_FLOOR_PCT debe estar entre 0 y 100, sin incluir 100.")
+    return leak_l_per_h, floor_pct
 
 
 def _master_key() -> bytes:
@@ -83,6 +103,8 @@ def iter_batches(
     target_drop_l: float = 4.0,
     calibration_seconds: float | None = None,
     clock: Callable[[], datetime] | None = None,
+    leak_l_per_h: float | None = None,
+    floor_l: float = 0.0,
 ):
     """Yield signed batches from the canonical JSON templates."""
     master_key = _master_key()
@@ -94,23 +116,33 @@ def iter_batches(
         raise RuntimeError("demo JSON must contain ingest row templates")
     capacity_l = float(payload["physics"]["constants"]["capacityL"])
     rate_horizon = calibration_seconds if calibration_seconds is not None else seconds
-    leak_l_per_s = target_drop_l / max(1.0, rate_horizon - 2.0)
+    leak_l_per_s = (
+        leak_l_per_h / 3600.0
+        if leak_l_per_h is not None
+        else target_drop_l / max(1.0, rate_horizon - 2.0)
+    )
+    effective_floor_l = max(0.0, floor_l)
     sample_count = int(round(seconds * SAMPLE_RATE_HZ))
     rows_per_batch = int(BATCH_SECONDS * SAMPLE_RATE_HZ)
-    send_time = (clock or (lambda: datetime.now(timezone.utc)))()
     for offset in range(0, sample_count, rows_per_batch):
+        batch_clock = (clock or (lambda: datetime.now(timezone.utc)))()
         batch = []
         for seq in range(offset, min(offset + rows_per_batch, sample_count)):
             row = dict(templates[seq % len(templates)])
             elapsed = seq / SAMPLE_RATE_HZ
-            level_l = capacity_l - leak_l_per_s * max(0.0, elapsed - 2.0)
+            level_l = max(
+                effective_floor_l,
+                capacity_l - leak_l_per_s * max(0.0, elapsed - 2.0),
+            )
             temperature_c = float(row["temperature_c"])
             template_level_l = float(row["level_liters"])
             pressure_noise = float(row["pressure_kpa"]) - pressure_kpa_from_volume(
                 template_level_l, temperature_c
             )
             row.update({
-                "t_iso": (send_time + timedelta(seconds=elapsed)).astimezone(timezone.utc).isoformat(),
+                "t_iso": (
+                    batch_clock + timedelta(seconds=(seq - offset) / SAMPLE_RATE_HZ)
+                ).astimezone(timezone.utc).isoformat(),
                 "t_s": f"{elapsed:.1f}",
                 "seq": seq,
                 "device_id": DEVICE_ID,
@@ -138,12 +170,19 @@ def post_batch(rows: list[dict[str, object]], timeout: float = 5.0) -> int:
         return 0
 
 
-def run(stop: threading.Event) -> tuple[int, int, int]:
+def run(
+    stop: threading.Event,
+    leak_l_per_h: float | None = None,
+    floor_l: float = 0.0,
+) -> tuple[int, int, int]:
     batches = sent_rows = failed_batches = 0
-    for batch in iter_batches(
+    generated_batches = iter_batches(
         seconds=DEMO_HORIZON_SECONDS,
         calibration_seconds=DEMO_ACCELERATION_SECONDS,
-    ):
+        leak_l_per_h=leak_l_per_h,
+        floor_l=floor_l,
+    )
+    for batch in generated_batches:
         if stop.is_set():
             break
         ingested = post_batch(batch)
@@ -160,9 +199,23 @@ def main() -> int:
     signal.signal(signal.SIGTERM, lambda _signum, _frame: stop.set())
     try:
         configured_ingest_url()
-        batches, sent_rows, failed_batches = run(stop)
-    except RuntimeError:
-        print("batches=0 rows=0 failed_batches=1")
+        leak_l_per_h, floor_pct = demo_leak_config()
+        capacity_l = float(_demo_payload()["physics"]["constants"]["capacityL"])
+        floor_l = capacity_l * floor_pct / 100.0
+        minutes_to_floor = (capacity_l - floor_l) / leak_l_per_h * 60.0
+
+        def format_es(value: float) -> str:
+            return f"{value:g}".replace(".", ",")
+
+        floor_l_text = f"{floor_l:.1f}".replace(".", ",")
+        print(
+            f"Fuga demo: {format_es(leak_l_per_h)} L/h; piso {format_es(floor_pct)} % "
+            f"({floor_l_text} L); el piso se alcanza en ~{format_es(minutes_to_floor)} min.",
+            file=sys.stderr,
+        )
+        batches, sent_rows, failed_batches = run(stop, leak_l_per_h, floor_l)
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
         return 1
     print(f"batches={batches} rows={sent_rows} failed_batches={failed_batches}")
     return 0

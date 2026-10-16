@@ -20,7 +20,7 @@ The frontend reads `PUBLIC_BACKEND_URL`; Compose sets it to
 | GET | `/health` | `ok` or `degraded` (session store, persisted Influx count, MQTT, signing, ingest metrics, and analyzer availability diagnostics) |
 | POST | `/ingest` | `ok` — accepted rows stored; per-row signature rejections returned in the ack |
 | GET | `/metrics/ingest` | `ok` — rolling row counters, queue backpressure and ingest latency p50/p95/p99 |
-| GET | `/level` | `ok` — latest ingested ground-truth row echoed; `confidence` remains the `0.0` placeholder on this endpoint (`backend/main.py:346-377`) |
+| GET | `/level` | `ok` — latest rest-gated fused level estimate; `truth_liters` is validation-only simulator ground truth when present |
 | GET | `/level/series?limit=300` | `ok` — rest-gated fused level series from the session store, evenly downsampled when needed |
 | GET | `/windows?limit=50` | `ok` — rest windows grouped from `recal_window` flags |
 | GET | `/alerts` | `ok` — T10 N1–N4 ladder over the memory store; `unavailable` when the analyzer cannot load |
@@ -832,8 +832,18 @@ single 4-field object (`device_id`, `pressure_kpa`, `temperature_c`,
 
 ## GET /level
 
-Latest ingested row by `seq` (echoes ground-truth level; this endpoint still
-returns placeholder `confidence: 0.0`):
+The level fields are the median of the trailing consecutive run of
+rest-gated pressure/temperature estimates. They use the device's pinned first
+rest-window baseline so retention eviction does not re-anchor a leaking wheel
+to 95 L. `confidence` and `sigma_liters` come from that estimator and are null
+when no rest estimate is available. `estimate_t_iso` and `estimate_seq` identify
+the last sample in the run; `estimate_reason` is `no_rest_estimate` when the
+run is absent. The ingestion fields (`t_iso`, `seq`, `device_id`,
+`pressure_kpa`, `temperature_c`) still describe the latest stored row.
+
+`truth_liters` is included only when the latest ingested row carries
+`level_liters`; it is simulator ground truth for validation only and must not
+be used by operations views.
 
 ```json
 {
@@ -841,29 +851,34 @@ returns placeholder `confidence: 0.0`):
   "kind": "oil-level",
   "as_of": "...",
   "data": {
-    "level_liters": 95.0,
-    "level_pct": 100.0,
+    "level_liters": 94.9,
+    "level_pct": 99.9,
     "capacity_liters": 95.0,
-    "confidence": 0.0,
+    "confidence": 0.9,
+    "sigma_liters": 0.5,
+    "estimate_t_iso": "...",
+    "estimate_seq": 4,
+    "estimate_reason": null,
     "unit": "L",
     "t_iso": "...",
     "seq": 4,
     "device_id": "wheel-RH-01",
+    "pressure_kpa": 2.5,
+    "temperature_c": 75.0,
     "source": "memory store (InfluxDB when reachable)",
     "source_message": {"code": "source_memory_store", "params": {}},
-    "note_message": {"code": "level_memory_store_note", "params": {}}
+    "reference": "GDY106 nominal 95 L",
+    "truth_liters": 95.0,
+    "note": "Level is a rest-gated fused estimate; truth_liters is simulator ground truth for validation only.",
+    "note_message": {"code": "level_estimate_note", "params": {}}
   }
 }
 ```
 
-T10 computes fused-level confidence in `ai/level.py:183-188`; the current
-`/level` route does not serve that estimate. The computed level summary is
-available under `/alerts` data, and RUL confidence is returned by `/rul`
-(`backend/main.py:429-487`).
-
-Empty store: returns the 95 L default with
+The no-rows response shape remains unchanged: it returns the 95 L default with
 `"source": "default (no rows ingested yet)"`, `source_message.code` set to
 `source_no_rows`, and `note_message.code` set to `level_no_rows_note`.
+
 
 ## GET /level/series
 
@@ -1004,7 +1019,7 @@ with that code. Empty parameters are shown as `—`.
 | `ladder_n4_abrupt_drop` | `from_l`, `to_l`, `threshold_l` |
 | `ladder_n4_critical_level` | `level_pct`, `critical_pct` |
 | `ladder_n4_extreme_collapse` | `z`, `kurtosis` |
-| `level_memory_store_note` | — |
+| `level_estimate_note` | — |
 | `level_no_rows_note` | — |
 | `rul_analyzer_unavailable_note` | — |
 | `rul_analyzer_unavailable_reason` | — |
@@ -1051,7 +1066,7 @@ curl -s localhost:8000/level
 curl -s localhost:8000/windows | head -c 600
 ```
 
-Expected: `ingested: 300`, `GET /level` 200 with the last row's
-`level_liters`, `GET /windows` 200 with rest windows in LOAD/DUMP
+Expected: `ingested: 300`, `GET /level` 200 with a rest-gated estimate and
+validation-only `truth_liters` when present, `GET /windows` 200 with rest windows in LOAD/DUMP
 zones. InfluxDB writes succeed under compose; standalone runs log
 `fallback-memory` and keep every row in the memory store.

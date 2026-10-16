@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import BenchScene, { type BenchMode } from "./BenchScene";
 import { BENCH_SENSORS } from "./sensors";
 import {
@@ -24,7 +24,6 @@ import Drawer from "../../ui/Drawer";
 import HonestyBadge from "../../ui/HonestyBadge";
 import { ProvenanceTag } from "../../ui/foundation";
 import { detectWebGL } from "../../ui/webgl";
-import { mountReferenceTruck, REFERENCE_TRUCK_ATTRIBUTION, REFERENCE_TRUCK_URL } from "../../twin/render/reference-truck";
 
 // Vista Rueda GDY106: corte 3D en el visor; el detalle (lectura de aceite,
 // sensores, cadena, inspección pasos 1-11) vive en el panel lateral.
@@ -43,31 +42,10 @@ export function BenchOilSourceBadge() {
   return <ProvenanceTag value="DEMO" />;
 }
 
-export async function preflightReferenceTruckAsset(
-  fetchAsset: typeof fetch,
-  mount: () => void,
-): Promise<boolean> {
-  try {
-    const response = await fetchAsset(REFERENCE_TRUCK_URL, { method: "HEAD" });
-    if (!response.ok) return false;
-    mount();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export function ReferenceTruckError() {
-  return <p className="og-body" role="alert">{t("bench.referenceTruck.error")}</p>;
-}
-
 const GDY106_CHAIN_PARTS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 export default function BenchView() {
   const [webglAvailable, setWebglAvailable] = useState(detectWebGL);
-  const [referenceTruckState, setReferenceTruckState] = useState<"idle" | "loading" | "loaded" | "error">("idle");
-  const referenceTruckContainer = useRef<HTMLDivElement>(null);
-  const referenceTruckRequested = referenceTruckState === "loading" || referenceTruckState === "loaded";
   const [initial] = useState(() => parseWheelUrl(window.location.search));
   const [selectedId, setSelectedId] = useState<string | null>(initial.sensorId);
   const [oilPct, setOilPct] = useState(Math.round((initial.oilLitres / CAPACITY_L) * 100));
@@ -77,29 +55,6 @@ export default function BenchView() {
   const [exploded, setExploded] = useState(initial.exploded);
   const onWebGLUnavailable = () => setWebglAvailable(false);
   const gearRatioDisplay = buildGearRatioDisplay();
-
-  useEffect(() => {
-    if (!referenceTruckRequested) return;
-    const container = referenceTruckContainer.current;
-    if (!container) return;
-    let disposed = false;
-    let cleanup: (() => void) | undefined;
-    const mount = () => {
-      if (disposed) return;
-      cleanup = mountReferenceTruck(
-        container,
-        () => { if (!disposed) setReferenceTruckState("loaded"); },
-        () => { if (!disposed) setReferenceTruckState("error"); },
-      );
-    };
-    void preflightReferenceTruckAsset(fetch, mount).then((available) => {
-      if (!available && !disposed) setReferenceTruckState("error");
-    });
-    return () => {
-      disposed = true;
-      cleanup?.();
-    };
-  }, [referenceTruckRequested]);
 
   useEffect(() => {
     const onDemoOil = (e: Event) => {
@@ -317,35 +272,6 @@ export default function BenchView() {
         </div>
         <div className="og-dock">{dock}</div>
       </div>
-      <section className="og-reference-truck" aria-labelledby="reference-truck-heading" style={{ margin: "16px 0", padding: "0 16px" }}>
-        <h2 id="reference-truck-heading" className="og-h2">{t("bench.referenceTruck.heading")}</h2>
-        <p className="og-body">{t("bench.referenceTruck.caveat")}</p>
-        <button
-          type="button"
-          className="og-btn og-btn--primary"
-          disabled={referenceTruckState === "loading"}
-          aria-expanded={referenceTruckState === "loading" || referenceTruckState === "loaded"}
-          onClick={() => setReferenceTruckState((current) => current === "loaded" ? "idle" : "loading")}
-        >
-          {t("bench.referenceTruck.button")}
-        </button>
-        {referenceTruckState === "error" && <ReferenceTruckError />}
-        {(referenceTruckState === "loading" || referenceTruckState === "loaded") && <>
-          {referenceTruckState === "loading" && <p className="og-body" role="status">{t("bench.referenceTruck.loading")}</p>}
-          <div
-            ref={referenceTruckContainer}
-            role="img"
-            aria-label={t("bench.referenceTruck.viewer")}
-            style={{ width: "100%", height: "clamp(240px, 42vw, 420px)", maxWidth: 960, overflow: "hidden", background: "var(--og-panel, #111923)", borderRadius: 8 }}
-          />
-          <p className="og-body" style={{ marginBottom: 4 }}>
-            {t("bench.referenceTruck.attribution").replace(" · ", ` · ${REFERENCE_TRUCK_ATTRIBUTION.author} · `)} {REFERENCE_TRUCK_ATTRIBUTION.license}
-          </p>
-          <a className="og-body" href={REFERENCE_TRUCK_ATTRIBUTION.source} target="_blank" rel="noreferrer">
-            {t("bench.referenceTruck.source")}
-          </a>
-        </>}
-      </section>
       <Drawer
         tabs={[
           { id: "status", label: t("drawer.status"), content: status },

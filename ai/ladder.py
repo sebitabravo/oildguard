@@ -197,11 +197,11 @@ def _abrupt(win: dict, prev: dict | None) -> tuple[bool, str, dict | None]:
     return False, "", None
 
 
-def evaluate(samples: list[dict]) -> dict:
+def evaluate(samples: list[dict], baseline: dict | None = None) -> dict:
     """Run level + RUL + N1–N4 ladder. Input: raw sample dicts (see
     ``ai/level.py``). Output bundle: level, rul, windows, alerts,
     escalation."""
-    lev = level_mod.estimate(samples)
+    lev = level_mod.estimate(samples, baseline=baseline)
     rul = rul_mod.extrapolate(lev)
     wins = summarize_windows(lev)
     slope = rul.get("slope_L_per_h")
@@ -337,6 +337,7 @@ def evaluate(samples: list[dict]) -> dict:
             "n_rest": lev.get("n_rest"),
             "n_scored": lev.get("n_scored"),
             "n_gated_out": lev.get("n_gated_out"),
+            "latest": level_mod.latest_rest_estimate(lev["estimates"]),
         },
         "rul": rul,
         "windows": wins,

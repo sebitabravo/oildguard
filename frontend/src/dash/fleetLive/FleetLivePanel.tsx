@@ -24,18 +24,16 @@ const METRIC_LABELS: Record<LiveMetric, string> = {
   pressure_kpa: "dash.live.metric.pressure",
   temperature_c: "dash.live.metric.temperature",
   vib_rms_g: "dash.live.metric.vibration",
-  level_liters: "dash.live.metric.level",
 };
 
 function metricUnit(metric: LiveMetric): string {
   if (metric === "pressure_kpa") return "kPa";
   if (metric === "temperature_c") return "°C";
-  if (metric === "vib_rms_g") return "g";
-  return "L";
+  return "g";
 }
 
 function metricDigits(metric: LiveMetric): number {
-  return metric === "temperature_c" || metric === "level_liters" ? 1 : 2;
+  return metric === "temperature_c" ? 1 : 2;
 }
 
 export function FleetLiveTelemetryFields({ snapshot }: { snapshot: FleetLiveSnapshot }) {

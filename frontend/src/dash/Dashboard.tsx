@@ -45,7 +45,8 @@ import { localizeBackendMessage, localizeBackendZone } from "./backendNotes";
 import { signingBadgeState } from "./signingBadge";
 import { analyzerUnavailableNotice, isBackendOutage } from "./analyzerAvailability";
 import { resolveReadingStale } from "./readingFreshness";
-import { mergeLevelSeries } from "./levelSeries";
+import { liveLevelValue } from "./liveLevelValue";
+import { shouldPollLive } from "./livePolling";
 import { formatDemoLabNote } from "./demoCopy";
 import { ALERT_SEVERITY_COLORS } from "./alertSeverity";
 import { DEMO_REFERENCE_MS, demoDataset } from "../demo/demoData";
@@ -243,19 +244,29 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   const [demoStage, setDemoStage] = useState<DemoStageId>("idle");
   const [demoTick, setDemoTick] = useState(0);
   const [fsmTick, setFsmTick] = useState(0);
+  const [documentHidden, setDocumentHidden] = useState(true);
   const mountT = useRef(Date.now());
+  const fetchInFlight = useRef(false);
+  const activeRequestController = useRef<AbortController | null>(null);
+  const demoActive = demoStage !== "idle";
+  const demoActiveRef = useRef(demoActive);
+  demoActiveRef.current = demoActive;
 
   const fetchAll = useCallback(async () => {
-    if (!live) return;
+    if (!live || demoActiveRef.current || fetchInFlight.current) return;
+    const controller = new AbortController();
+    fetchInFlight.current = true;
+    activeRequestController.current = controller;
     try {
       const [h, lv, al, ru, wi, ls] = await Promise.all([
-        getHealth(),
-        getLevel(LIVE_WHEEL_ID),
-        getAlerts(LIVE_WHEEL_ID),
-        getRul(LIVE_WHEEL_ID),
-        getWindows(50, LIVE_WHEEL_ID),
-        getLevelSeries(300, LIVE_WHEEL_ID, LIVE_SENSOR_SIGNALS),
+        getHealth(controller.signal),
+        getLevel(LIVE_WHEEL_ID, controller.signal),
+        getAlerts(LIVE_WHEEL_ID, controller.signal),
+        getRul(LIVE_WHEEL_ID, controller.signal),
+        getWindows(50, LIVE_WHEEL_ID, controller.signal),
+        getLevelSeries(300, LIVE_WHEEL_ID, LIVE_SENSOR_SIGNALS, controller.signal),
       ]);
+      if (controller.signal.aborted || demoActiveRef.current) return;
       setStoreRows(h.store_rows);
       setSigningStatus(h.signing);
       setAnalysisAvailable(h.analysis.available);
@@ -280,20 +291,13 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
           (ru.status === "unavailable" ? ru.data.note : al.data.fallback);
         if (diagnostic) console.debug("OilGuard analyzer unavailable", diagnostic);
       }
-      const lit = Number(lv.data.level_liters);
-      if (Number.isFinite(lit)) {
-        setHistory((prev) => {
-          const seriesPoints = ls.series.flatMap((point) =>
-            point.level_l !== null && Number.isFinite(point.level_l)
-              ? [{ t_s: point.t_s, liters: point.level_l }]
-              : [],
-          );
-          const merged = mergeLevelSeries(prev, seriesPoints);
-          const t = merged.length === 0 ? 0 : merged[merged.length - 1].t_s + 2;
-          return mergeLevelSeries(merged, [{ t_s: t, liters: lit }]).slice(-300);
-        });
-      }
+      setHistory(ls.series.flatMap((point) =>
+        point.level_l !== null && Number.isFinite(point.level_l)
+          ? [{ t_s: point.t_s, liters: point.level_l }]
+          : [],
+      ).slice(-300));
     } catch (e) {
+      if (controller.signal.aborted || demoActiveRef.current) return;
       console.debug("OilGuard backend request failed", e);
       setSigningStatus(undefined);
       setAnalysisAvailable(undefined);
@@ -301,6 +305,9 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
       setSensorRows([]);
       setBackendNote({ kind: "error" });
       setSource("demo");
+    } finally {
+      if (activeRequestController.current === controller) activeRequestController.current = null;
+      fetchInFlight.current = false;
     }
   }, [live]);
 
@@ -318,13 +325,55 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
       setSensorRows([]);
       setLatestSignals(null);
     }
-    void fetchAll();
     // El parámetro demo=1 inicia la demostración al abrir Monitoreo.
     if (new URLSearchParams(window.location.search).get("demo") === "1") {
+      demoActiveRef.current = true;
+      activeRequestController.current?.abort();
       setDemoTick(0);
       setDemoStage("clean");
+    } else {
+      void fetchAll();
     }
+    return () => {
+      activeRequestController.current?.abort();
+    };
   }, [fetchAll, live]);
+
+  useEffect(() => {
+    const updateVisibility = () => setDocumentHidden(document.visibilityState !== "visible");
+    document.addEventListener("visibilitychange", updateVisibility);
+    updateVisibility();
+    return () => document.removeEventListener("visibilitychange", updateVisibility);
+  }, []);
+
+  useEffect(() => {
+    const pollable = shouldPollLive({
+      live,
+      demoActive,
+      hidden: documentHidden,
+      inFlight: false,
+    });
+    if (!pollable) {
+      activeRequestController.current?.abort();
+      return;
+    }
+    const id = window.setInterval(() => {
+      if (shouldPollLive({
+        live,
+        demoActive,
+        hidden: documentHidden,
+        inFlight: fetchInFlight.current,
+      })) {
+        void fetchAll();
+      }
+    }, 5000);
+    return () => {
+      window.clearInterval(id);
+      activeRequestController.current?.abort();
+    };
+  }, [live, demoActive, documentHidden, fetchAll]);
+
+  useEffect(() => () => activeRequestController.current?.abort(), []);
 
   // Reloj FSM en vivo compartido con el simulador del camión (mismo vocabulario stateAt).
   useEffect(() => {
@@ -364,10 +413,13 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   }, [demoStage, demoTick]);
 
   const startDemo = () => {
+    demoActiveRef.current = true;
+    activeRequestController.current?.abort();
     setDemoTick(0);
     setDemoStage("clean");
   };
   const resetDemo = () => {
+    demoActiveRef.current = false;
     setDemoStage("idle");
     setDemoTick(0);
     emitDemoOil(1.0, "idle");
@@ -380,7 +432,6 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
     window.history.replaceState(null, "", url);
   };
 
-  const demoActive = demoStage !== "idle";
   const analyzerNotice = analyzerUnavailableNotice({
     analysisAvailable,
     alertStatus: alerts?.status,
@@ -446,9 +497,15 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
   const demoOilCss = oilCssFor(demoOilState);
   const signingBadge = signingBadgeState(signingStatus);
 
-  const liveLevel = source === "live" && level ? Number(level.data.level_liters) : null;
-  const levelSource = liveLevel !== null && Number.isFinite(liveLevel) && !demoActive ? "LIVE" : "DEMO";
-  const hasLevelReading = level !== null && shouldShowLevelReading(levelSource, storeRows, level.data.source_message?.code);
+  const liveLevel = source === "live" && level ? liveLevelValue(level.data.level_liters) : null;
+  const liveLevelPct = source === "live" && level ? liveLevelValue(level.data.level_pct) : null;
+  const levelSource = source === "live" && !demoActive ? "LIVE" : "DEMO";
+  const hasLevelReading = level !== null && (
+    levelSource === "LIVE"
+      ? liveLevel !== null && liveLevelPct !== null &&
+        shouldShowLevelReading(levelSource, storeRows, level.data.source_message?.code)
+      : shouldShowLevelReading(levelSource, storeRows, level.data.source_message?.code)
+  );
   const noTelemetry = live && source === "live" && !demoActive && !hasLevelReading;
   const hasConfidenceReading = !live || demoActive || (
     hasLevelReading && typeof backendConfidence === "number" && Number.isFinite(backendConfidence)
@@ -621,8 +678,8 @@ export default function Dashboard({ wheelId: initialWheelId }: { wheelId?: strin
               <span style={{ color: demoOilCss, fontWeight: 700 }}>
                 {demoActive
                   ? t("dash.demo.fill", { value: formatOilText(demoFrac) })
-                  : level && live && source === "live" && shouldShowLevelReading(levelSource, storeRows, level.data.source_message?.code)
-                    ? `${formatNumber(Number(level.data.level_liters), 1)} L · ${formatNumber(Number(level.data.level_pct), 1)}%`
+                  : level && live && source === "live" && liveLevel !== null && liveLevelPct !== null && shouldShowLevelReading(levelSource, storeRows, level.data.source_message?.code)
+                    ? `${formatNumber(liveLevel, 1)} L · ${formatNumber(liveLevelPct, 1)}%`
                     : "—"}
               </span>
               <span className="og-wheel-status__source">

@@ -1,13 +1,12 @@
 # 3D model provenance — HD465 visual proxy (S2-GLB)
 
-## 2026-10-12 — on-demand reference model
+## 2026-10-12 — on-demand reference model (removed from UI)
 
-The Komatsu HD465-7EO GLB is available again at
-`frontend/public/models/komatsu_hd-465-7eo.glb`, but only as an explicitly
-requested visual reference on `/wheel`. It is not a 930E model and is not
-loaded until the user selects the reference-truck button. This keeps the
-wheel scene, sensor values, labels, and provenance attached to the GDY106
-930E subject rather than implying that the two truck models are equivalent.
+The Komatsu HD465-7EO GLB is no longer included in `frontend/public/models/` or
+served by the app. The reference-truck button and viewer were removed from
+`/wheel`; the GLB remains here only as a historical provenance record. It is
+not a 930E model, so the wheel scene remains focused on the GDY106 930E subject
+without implying that the two truck models are equivalent.
 
 The embedded model metadata names **drcrazzie**, declares **CC-BY-4.0**, and
 provides this source URL:

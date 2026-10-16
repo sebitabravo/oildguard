@@ -11,11 +11,20 @@ fn counts_successful_connack_reconnects_but_not_initial_connection() {
     )));
 
     record_mqtt_event(&stats, &mut connected, &connack);
-    assert_eq!(stats.reconnects.load(std::sync::atomic::Ordering::Relaxed), 0);
+    assert_eq!(
+        stats.reconnects.load(std::sync::atomic::Ordering::Relaxed),
+        0
+    );
 
     record_mqtt_event(&stats, &mut connected, &Event::Outgoing(Outgoing::PingReq));
-    assert_eq!(stats.reconnects.load(std::sync::atomic::Ordering::Relaxed), 0);
+    assert_eq!(
+        stats.reconnects.load(std::sync::atomic::Ordering::Relaxed),
+        0
+    );
 
     record_mqtt_event(&stats, &mut connected, &connack);
-    assert_eq!(stats.reconnects.load(std::sync::atomic::Ordering::Relaxed), 1);
+    assert_eq!(
+        stats.reconnects.load(std::sync::atomic::Ordering::Relaxed),
+        1
+    );
 }

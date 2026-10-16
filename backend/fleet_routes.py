@@ -56,11 +56,13 @@ def fleet_aggregates(
     }
 
 
-def alert_level_for(device_id: str) -> tuple[str | None, str | None]:
+def alert_level_for(
+    device_id: str,
+) -> tuple[str | None, str | None, dict[str, Any] | None]:
     main = _main()
     """Nivel de alerta de un equipo segun la escalera T10, o por que falta.
 
-    Devuelve ``(nivel, razon)``; la razon es un token estable
+    Devuelve ``(nivel, razon, latest)``; la razon es un token estable
     (``analyzer_unavailable``, ``no_rows``, ``evaluation_failed``, ``no_alert``)
     para que la UI lo localice sin analizar prosa.
 
@@ -70,14 +72,21 @@ def alert_level_for(device_id: str) -> tuple[str | None, str | None]:
     """
     evaluator, import_reason = main._load_t10_evaluator()
     if evaluator is None:
-        return None, "analyzer_unavailable"
-    rows = main._sorted_device_rows(device_id)
+        return None, "analyzer_unavailable", None
+    device = main.select_device(device_id)
+    rows = main._sorted_device_rows(device)
     if not rows:
-        return None, "no_rows"
+        return None, "no_rows", None
     try:
-        bundle = evaluator(main._samples_from_rows(rows))
+        bundle = main._query_helpers.compute_with_pinned_baseline(
+            device,
+            lambda baseline: evaluator(
+                main._samples_from_rows(rows), baseline=baseline
+            ),
+        )
     except Exception:  # noqa: BLE001 - puntuar nunca debe tumbar la ruta
-        return None, "evaluation_failed"
+        return None, "evaluation_failed", None
+    latest = bundle.get("level", {}).get("latest")
     alerts = bundle.get("alerts") or []
     highest: str | None = None
     for alert in alerts:
@@ -87,8 +96,8 @@ def alert_level_for(device_id: str) -> tuple[str | None, str | None]:
         ):
             highest = level
     if highest is None:
-        return None, "no_alert"
-    return highest, None
+        return None, "no_alert", latest
+    return highest, None, latest
 
 
 def fleet_devices(
@@ -113,9 +122,21 @@ def fleet_devices(
     budget_reason = None
     if evaluate:
         for device in devices:
-            level, reason = main.alert_level_for(device["device_id"])
+            level, reason, latest = main.alert_level_for(device["device_id"])
             device["alert_level"] = level
             device["alert_level_reason"] = reason
+            device["latest_level_liters"] = (
+                latest.get("level_liters") if latest is not None else None
+            )
+            device["latest_level_pct"] = (
+                latest.get("level_pct") if latest is not None else None
+            )
+            device["latest_level_t_iso"] = (
+                latest.get("t_iso") if latest is not None else None
+            )
+            device["latest_level_reason"] = (
+                None if latest is not None else reason
+            )
     else:
         budget_reason = (
             "ladder_budget_exceeded" if alert_level == "auto" else "disabled_by_query"
@@ -123,6 +144,10 @@ def fleet_devices(
         for device in devices:
             device["alert_level"] = None
             device["alert_level_reason"] = budget_reason
+            device["latest_level_liters"] = None
+            device["latest_level_pct"] = None
+            device["latest_level_t_iso"] = None
+            device["latest_level_reason"] = budget_reason
 
     reasons = sorted({device["alert_level_reason"] for device in devices if device["alert_level_reason"]})
     return {

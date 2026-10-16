@@ -51,10 +51,15 @@ export interface IngestAck {
 }
 
 export interface LevelData {
-  level_liters: number;
-  level_pct: number;
+  level_liters: number | null;
+  level_pct: number | null;
   capacity_liters: number;
-  confidence: number;
+  confidence: number | null;
+  sigma_liters?: number | null;
+  estimate_t_iso?: string | null;
+  estimate_seq?: number | null;
+  estimate_reason?: string | null;
+  truth_liters?: number | null;
   unit: string;
   t_iso?: string;
   seq?: number;
@@ -296,7 +301,8 @@ export async function postIngest(rows: SignalRow[]): Promise<IngestAck> {
 
 export const getHealth = (signal?: AbortSignal): Promise<HealthResponse> => getJson("/health", signal);
 const withDevice = buildDeviceQuery;
-export const getLevel = (deviceId?: string): Promise<LevelResponse> => getJson(withDevice("/level", deviceId));
+export const getLevel = (deviceId?: string, signal?: AbortSignal): Promise<LevelResponse> =>
+  getJson(withDevice("/level", deviceId), signal);
 export function levelSeriesPath(limit = 300, deviceId?: string, signals?: LevelSeriesSignal[]): string {
   const path = withDevice(`/level/series?limit=${limit}`, deviceId);
   if (!signals?.length) return path;
@@ -305,16 +311,22 @@ export function levelSeriesPath(limit = 300, deviceId?: string, signals?: LevelS
   params.set("signals", signals.join(","));
   return `${pathname}?${params.toString().replace(/\+/g, "%20")}`;
 }
-export const getLevelSeries = (limit = 300, deviceId?: string, signals?: LevelSeriesSignal[]): Promise<LevelSeriesResponse> =>
-  getJson(levelSeriesPath(limit, deviceId, signals));
-export const getWindows = (limit = 50, deviceId?: string): Promise<WindowsResponse> =>
-  getJson(withDevice(`/windows?limit=${limit}`, deviceId));
+export const getLevelSeries = (
+  limit = 300,
+  deviceId?: string,
+  signals?: LevelSeriesSignal[],
+  signal?: AbortSignal,
+): Promise<LevelSeriesResponse> => getJson(levelSeriesPath(limit, deviceId, signals), signal);
+export const getWindows = (limit = 50, deviceId?: string, signal?: AbortSignal): Promise<WindowsResponse> =>
+  getJson(withDevice(`/windows?limit=${limit}`, deviceId), signal);
 /** T10 N1–N4 ladder over the memory store (honest fallback when empty). */
-export const getAlerts = (deviceId?: string): Promise<AlertsResponse> => getJson(withDevice("/alerts", deviceId));
+export const getAlerts = (deviceId?: string, signal?: AbortSignal): Promise<AlertsResponse> =>
+  getJson(withDevice("/alerts", deviceId), signal);
 /** T10 trend-extrapolated RUL (suppressed + anomaly-only when gated). */
-export const getRul = (deviceId?: string): Promise<RulResponse> => getJson(withDevice("/rul", deviceId));
-export const getFleetAggregates = (windowS = 10): Promise<FleetAggregatesResponse> =>
-  getJson(`/fleet/aggregates?window_s=${windowS}&group=fleet`);
-export const getIngestMetrics = (): Promise<IngestMetricsResponse> =>
-  getJson("/metrics/ingest");
-export const getFleetDevices = (): Promise<FleetDevice[]> => getJson("/fleet/devices");
+export const getRul = (deviceId?: string, signal?: AbortSignal): Promise<RulResponse> =>
+  getJson(withDevice("/rul", deviceId), signal);
+export const getFleetAggregates = (windowS = 10, signal?: AbortSignal): Promise<FleetAggregatesResponse> =>
+  getJson(`/fleet/aggregates?window_s=${windowS}&group=fleet`, signal);
+export const getIngestMetrics = (signal?: AbortSignal): Promise<IngestMetricsResponse> =>
+  getJson("/metrics/ingest", signal);
+export const getFleetDevices = (signal?: AbortSignal): Promise<FleetDevice[]> => getJson("/fleet/devices", signal);

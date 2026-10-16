@@ -23,7 +23,7 @@ jobs:
           cache-dependency-path: requirements-dev.txt
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m ruff check --exclude .venv backend ai sim tests
-      - run: python -m pytest -q
+      - run: python -m pytest -q --cov=backend --cov=ai --cov=sim --cov-fail-under=75
 
   frontend:
     runs-on: ubuntu-latest

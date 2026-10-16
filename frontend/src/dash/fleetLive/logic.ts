@@ -2,7 +2,6 @@ export const LIVE_METRICS = [
   "pressure_kpa",
   "temperature_c",
   "vib_rms_g",
-  "level_liters",
 ] as const;
 
 export type LiveMetric = (typeof LIVE_METRICS)[number];

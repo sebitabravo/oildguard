@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 
 from backend import main as backend_main
 from backend.aggregates import (
+    AVAILABLE_METRICS,
     DEFAULT_METRICS,
     QUANTILE_INTERPOLATION,
     build_frame,
@@ -28,6 +29,12 @@ DEVICE_A_MEAN = 2.5
 DEVICE_A_P50 = 2.5               # pos 1.5 -> 2 + 0.5*(3-2)
 DEVICE_A_P95 = 3.85              # pos 2.85 -> 3 + 0.85*(4-3)
 DEVICE_A_P99 = 3.97              # pos 2.97 -> 3 + 0.97*(4-3)
+
+
+def test_level_truth_remains_available_only_when_explicitly_requested():
+    assert "level_liters" not in DEFAULT_METRICS
+    assert "level_liters" in AVAILABLE_METRICS
+    assert parse_metrics("level_liters") == ["level_liters"]
 
 
 def _row(device_id: str, seq: int, t_s: float, pressure: float) -> dict:
@@ -222,7 +229,7 @@ def test_fleet_devices_reports_per_device_retention_and_levels(seeded):
     assert by_id["wheel-A"]["rows_retained"] == 4
     assert by_id["wheel-B"]["rows_retained"] == 2
     assert by_id["wheel-A"]["last_t_iso"] == "2026-01-01T00:00:03+00:00"
-    assert by_id["wheel-A"]["latest_level_liters"] == 90.0
+    assert by_id["wheel-A"]["latest_level_liters"] == pytest.approx(165.7082, abs=0.001)
     assert by_id["wheel-A"]["verified_ratio"] == 0.0
     assert by_id["wheel-A"]["rows_rejected"] == 0
     assert by_id["wheel-A"]["rejected_reasons"] == {}

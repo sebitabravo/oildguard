@@ -104,10 +104,11 @@ describe("fleet per-field provenance in mergeLiveDevices", () => {
     expect(row?.fieldSources.alert).toBe("DEMO");
   });
 
-  test("live device without a level keeps level DEMO while last-comm stays LIVE", () => {
+  test("live device with a null level keeps level DEMO while last-comm stays LIVE", () => {
     const live = mergeLiveDevices(dataset.trucks, [{
       device_id: "wheel-RH-01",
       truck_id: "OG-01",
+      latest_level_liters: null,
       last_t_iso: "2026-10-10T09:00:00.000Z",
     }]);
     const row = live.find((item) => item.id === "wheel-RH-01");
@@ -115,6 +116,7 @@ describe("fleet per-field provenance in mergeLiveDevices", () => {
     expect(row?.fieldSources.level).toBe("DEMO");
     expect(row?.fieldSources.lastComm).toBe("LIVE");
     expect(row?.fieldSources.temperature).toBe("DEMO");
+    expect(Number.isFinite(row?.levelL)).toBe(true);
   });
 
   test("live-only devices mark synthesized telemetry DEMO", () => {

@@ -44,7 +44,9 @@ Stdlib only.
 
 from __future__ import annotations
 
+import math
 import os
+import statistics
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -62,6 +64,9 @@ WARN_PCT = 50.0  # warning < 50%
 CRIT_PCT = 30.0  # critical < 30%
 MIN_BASELINE_N = 10
 SIGMA_L_SUPPRESS_L = 2.0  # precision gate consumed by ai/rul.py
+# Se excluye el transitorio de retorno de los primeros segundos al parar;
+# usa la misma regla de 3 s que sim/detect.py:REST_CONFIRM_S.
+REST_SETTLE_S = 3.0
 
 
 def _f(value, default: float = float("nan")) -> float:
@@ -112,7 +117,7 @@ def _group_rest_windows(scored: list[dict]) -> list[list[dict]]:
     return windows
 
 
-def estimate(samples: list[dict]) -> dict:
+def estimate(samples: list[dict], baseline: dict | None = None) -> dict:
     """Estimate oil level for rest-gated samples.
 
     Input: list of dicts with ``t_s``, ``seq``, ``pressure_kpa``,
@@ -152,31 +157,44 @@ def estimate(samples: list[dict]) -> dict:
         "estimates": [],
     }
     if not rest:
+        if baseline is not None:
+            out["baseline"] = {**baseline, "pinned": True}
         out["note"] = "no rest samples; zero estimates"
         return out
 
-    windows = _group_rest_windows(parsed)
-    # Baseline = first rest window in time order (>= 10 samples), else the
-    # first 30 rest samples chronologically — same rule as T9, so level
-    # provenance links 1:1 to anomaly flags.
-    first = windows[0] if windows else []
-    if len(first) >= MIN_BASELINE_N:
-        baseline_rows = list(first)
-        baseline_source = f"first-rest-window n={len(baseline_rows)}"
+    if baseline is None:
+        windows = _group_rest_windows(parsed)
+        # Baseline = first rest window in time order (>= 10 samples), else the
+        # first 30 rest samples chronologically — same rule as T9, so level
+        # provenance links 1:1 to anomaly flags.
+        first = windows[0] if windows else []
+        if len(first) >= MIN_BASELINE_N:
+            baseline_rows = list(first)
+            baseline_source = f"first-rest-window n={len(baseline_rows)}"
+        else:
+            baseline_rows = sorted(rest, key=lambda s: s["t_s"])[:30]
+            baseline_source = (
+                f"first-30-rest-samples (first window n<{MIN_BASELINE_N}) "
+                f"n={len(baseline_rows)}"
+            )
+        adapt = [
+            {"row": {"pressure_kpa": s["pressure_kpa"],
+                     "temperature_c": s["temperature_c"]},
+             "window": {"window_id": "0"}}
+            for s in baseline_rows
+        ]
+        base = fit_baseline(adapt)
+        base["source"] = baseline_source
+        base["seq_start"] = min(s["seq"] for s in baseline_rows)
+        base["seq_end"] = max(s["seq"] for s in baseline_rows)
+        train_ids = {id(s) for s in baseline_rows}
     else:
-        baseline_rows = sorted(rest, key=lambda s: s["t_s"])[:30]
-        baseline_source = (
-            f"first-30-rest-samples (first window n<{MIN_BASELINE_N}) "
-            f"n={len(baseline_rows)}"
-        )
-    adapt = [
-        {"row": {"pressure_kpa": s["pressure_kpa"],
-                 "temperature_c": s["temperature_c"]},
-         "window": {"window_id": "0"}}
-        for s in baseline_rows
-    ]
-    base = fit_baseline(adapt)
-    base["source"] = baseline_source
+        base = {**baseline, "pinned": True}
+        baseline_source = str(base.get("source", "pinned baseline"))
+        seq_start = int(_f(base.get("seq_start"), -1))
+        seq_end = int(_f(base.get("seq_end"), -1))
+        train_ids = set()
+
     out["baseline"] = base
     mu, sigma, beta, t_ref = base["mu"], base["sigma"], base["beta"], base["t_ref"]
     kpa_per_l = kpa_per_liter(CAPACITY_L, t_ref)
@@ -187,7 +205,6 @@ def estimate(samples: list[dict]) -> dict:
     confidence = max(0.0, min(1.0, 1.0 - sigma_l / 5.0))
     out["confidence"] = round(confidence, 3)
 
-    train_ids = {id(s) for s in baseline_rows}
     estimates = []
     for s in parsed:
         if not s["rest"] or s["pressure_kpa"] != s["pressure_kpa"] \
@@ -215,7 +232,10 @@ def estimate(samples: list[dict]) -> dict:
             "seq": s["seq"], "t_s": s["t_s"], "t_iso": s["t_iso"],
             "device_id": s["device_id"], "zone": s["zone"],
             "rest": True, "gated": False,
-            "train": id(s) in train_ids,
+            "train": (
+                id(s) in train_ids if baseline is None
+                else seq_start <= s["seq"] <= seq_end
+            ),
             "level_liters": round(level, 4),
             "level_pct": round(100.0 * level / CAPACITY_L, 3),
             "z": round(z, 3),
@@ -243,3 +263,58 @@ def estimate(samples: list[dict]) -> dict:
         f"present in the baseline reads high."
     )
     return out
+
+
+def latest_rest_estimate(estimates: list[dict]) -> dict | None:
+    """Return a settled median from the latest scored run, when available."""
+    ordered = sorted(estimates, key=lambda item: int(_f(item.get("seq"), -1)))
+    latest_index = len(ordered) - 1
+    while latest_index >= 0 and (
+        ordered[latest_index].get("gated")
+        or ordered[latest_index].get("level_liters") is None
+    ):
+        latest_index -= 1
+    if latest_index < 0:
+        return None
+
+    def is_scored(item: dict) -> bool:
+        return not item.get("gated") and item.get("level_liters") is not None
+
+    runs = []
+    run_end = latest_index
+    while run_end >= 0:
+        run_start = run_end
+        while run_start > 0 and is_scored(ordered[run_start - 1]):
+            run_start -= 1
+        runs.append(ordered[run_start : run_end + 1])
+
+        run_end = run_start - 1
+        while run_end >= 0 and not is_scored(ordered[run_end]):
+            run_end -= 1
+
+    selected = None
+    for run in runs:
+        run_start_t_s = _f(run[0].get("t_s"))
+        if not math.isfinite(run_start_t_s):
+            continue
+        settled = []
+        for item in run:
+            item_t_s = _f(item.get("t_s"))
+            if math.isfinite(item_t_s) and item_t_s >= run_start_t_s + REST_SETTLE_S:
+                settled.append(item)
+        if settled:
+            selected = settled
+            break
+
+    if selected is None:
+        selected = runs[0]
+
+    liters = statistics.median(float(item["level_liters"]) for item in selected)
+    latest = selected[-1]
+    return {
+        "level_liters": round(liters, 4),
+        "level_pct": round(100.0 * liters / CAPACITY_L, 3),
+        "n": len(selected),
+        "t_iso": latest.get("t_iso"),
+        "seq": latest.get("seq"),
+    }

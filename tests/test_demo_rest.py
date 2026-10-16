@@ -70,4 +70,11 @@ def test_run_uses_long_lived_stream_with_demo_acceleration(monkeypatch):
     monkeypatch.setattr(stop, "wait", lambda _seconds: None)
 
     assert feeder.run(stop) == (1, 1, 0)
-    assert requested_horizons == [{"seconds": 24 * 60 * 60, "calibration_seconds": 120}]
+    assert requested_horizons == [
+        {
+            "seconds": 86400,
+            "calibration_seconds": 120,
+            "leak_l_per_h": None,
+            "floor_l": 0.0,
+        }
+    ]

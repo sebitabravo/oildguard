@@ -17,7 +17,7 @@ try:  # paquete / módulo suelto (Docker copia backend/ a /app)
 except ImportError:
     from store import NUMERIC_COLUMNS  # type: ignore
 
-DEFAULT_METRICS = ("pressure_kpa", "temperature_c", "vib_rms_g", "level_liters")
+DEFAULT_METRICS = ("pressure_kpa", "temperature_c", "vib_rms_g")
 AVAILABLE_METRICS = tuple(NUMERIC_COLUMNS)
 QUANTILE_INTERPOLATION = "linear"
 QUANTILES = (("p50", 0.50), ("p95", 0.95), ("p99", 0.99))

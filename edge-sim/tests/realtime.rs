@@ -21,7 +21,9 @@ async fn zero_second_realtime_config_generates_first_row() {
     time::advance(Duration::from_millis(100)).await;
     tokio::task::yield_now().await;
 
-    let generated = stats.rows_generated.load(std::sync::atomic::Ordering::Relaxed);
+    let generated = stats
+        .rows_generated
+        .load(std::sync::atomic::Ordering::Relaxed);
     task.abort();
     assert!(generated > 0, "realtime generation produced no first row");
 }
